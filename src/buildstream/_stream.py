@@ -29,7 +29,7 @@ import tarfile
 import tempfile
 from contextlib import contextmanager, suppress
 from collections import deque
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Iterable, Callable
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._artifactproject import ArtifactProject
@@ -47,9 +47,9 @@ from ._scheduler import (
 from .element import Element
 from ._profile import Topics, PROFILER
 from ._project import ProjectRefStorage
-from ._remotespec import RemoteType, RemoteSpec
+from ._remotespec import RemoteSpec
 from ._state import State
-from .types import _KeyStrength, _PipelineSelection, _Scope
+from .types import _KeyStrength, _PipelineSelection, _Scope, _HostMount
 from .plugin import Plugin
 from . import utils, _yaml, _site, _pipeline
 
@@ -135,32 +135,46 @@ class Stream:
     # and `bst shell`.
     #
     # Args:
-    #    targets (list of str): Targets to pull
-    #    selection (_PipelineSelection): The selection mode for the specified targets
-    #    except_targets (list of str): Specified targets to except from fetching
-    #    connect_artifact_cache (bool): Whether to try to contact remote artifact caches
+    #    targets: Targets to pull
+    #    selection: The selection mode for the specified targets (_PipelineSelection)
+    #    except_targets: Specified targets to except from fetching
     #    load_artifacts (bool): Whether to load artifacts with artifact names
+    #    connect_artifact_cache: Whether to try to contact remote artifact caches
+    #    connect_source_cache: Whether to try to contact remote source caches
+    #    artifact_remotes: Artifact cache remotes specified on the commmand line
+    #    source_remotes: Source cache remotes specified on the commmand line
+    #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
+    #    ignore_project_source_remotes: Whether to ignore source remotes specified by projects
     #
     # Returns:
     #    (list of Element): The selected elements
     def load_selection(
         self,
-        targets,
+        targets: Iterable[str],
         *,
-        selection=_PipelineSelection.NONE,
-        except_targets=(),
-        connect_artifact_cache=False,
-        load_artifacts=False,
+        selection: str = _PipelineSelection.NONE,
+        except_targets: Iterable[str] = (),
+        load_artifacts: bool = False,
+        connect_artifact_cache: bool = False,
+        connect_source_cache: bool = False,
+        artifact_remotes: Iterable[RemoteSpec] = (),
+        source_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_artifact_remotes: bool = False,
+        ignore_project_source_remotes: bool = False,
     ):
         with PROFILER.profile(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, "-") for t in targets)):
             target_objects = self._load(
                 targets,
                 selection=selection,
                 except_targets=except_targets,
-                connect_artifact_cache=connect_artifact_cache,
                 load_artifacts=load_artifacts,
+                connect_artifact_cache=connect_artifact_cache,
+                connect_source_cache=connect_source_cache,
+                artifact_remotes=artifact_remotes,
+                source_remotes=source_remotes,
+                ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+                ignore_project_source_remotes=ignore_project_source_remotes,
             )
-
             return target_objects
 
     # shell()
@@ -168,40 +182,58 @@ class Stream:
     # Run a shell
     #
     # Args:
-    #    element (str): The name of the element to run the shell for
-    #    scope (_Scope): The scope for the shell (_Scope.BUILD or _Scope.RUN)
-    #    prompt (function): A function to return the prompt to display in the shell
-    #    mounts (list of HostMount): Additional directories to mount into the sandbox
+    #    target: The name of the element to run the shell for
+    #    scope: The scope for the shell, only BUILD or RUN are valid (_Scope)
+    #    prompt: A function to return the prompt to display in the shell
+    #    unique_id: (str): A unique_id to use to lookup an Element instance
+    #    mounts: Additional directories to mount into the sandbox
     #    isolate (bool): Whether to isolate the environment like we do in builds
     #    command (list): An argv to launch in the sandbox, or None
     #    usebuildtree (bool): Whether to use a buildtree as the source, given cli option
     #    pull_ (bool): Whether to attempt to pull missing or incomplete artifacts
-    #    unique_id: (str): Whether to use a unique_id to load an Element instance
+    #    artifact_remotes: Artifact cache remotes specified on the commmand line
+    #    source_remotes: Source cache remotes specified on the commmand line
+    #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
+    #    ignore_project_source_remotes: Whether to ignore source remotes specified by projects
     #
     # Returns:
     #    (int): The exit code of the launched shell
     #
     def shell(
         self,
-        element,
-        scope,
-        prompt,
+        target: str,
+        scope: int,
+        prompt: Callable[[Element], str],
         *,
-        mounts=None,
-        isolate=False,
-        command=None,
-        usebuildtree=False,
-        pull_=False,
-        unique_id=None,
+        unique_id: Optional[str] = None,
+        mounts: Optional[List[_HostMount]] = None,
+        isolate: bool = False,
+        command: Optional[List[str]] = None,
+        usebuildtree: bool = False,
+        pull_: bool = False,
+        artifact_remotes: Iterable[RemoteSpec] = (),
+        source_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_artifact_remotes: bool = False,
+        ignore_project_source_remotes: bool = False,
     ):
+        element: Element
 
         # Load the Element via the unique_id if given
-        if unique_id and element is None:
+        if unique_id and target is None:
             element = Plugin._lookup(unique_id)
         else:
             selection = _PipelineSelection.BUILD if scope == _Scope.BUILD else _PipelineSelection.RUN
 
-            elements = self.load_selection((element,), selection=selection, connect_artifact_cache=True)
+            elements = self.load_selection(
+                (target,),
+                selection=selection,
+                connect_artifact_cache=True,
+                connect_source_cache=True,
+                artifact_remotes=artifact_remotes,
+                source_remotes=source_remotes,
+                ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+                ignore_project_source_remotes=ignore_project_source_remotes,
+            )
 
             # Get element to stage from `targets` list.
             # If scope is BUILD, it will not be in the `elements` list.
@@ -260,24 +292,40 @@ class Stream:
     # Builds (assembles) elements in the pipeline.
     #
     # Args:
-    #    targets (list of str): Targets to build
-    #    selection (_PipelineSelection): The selection mode for the specified targets
-    #    ignore_junction_targets (bool): Whether junction targets should be filtered out
-    #    remote (str): The URL of a specific remote server to push to, or None
+    #    targets: Targets to build
+    #    selection: The selection mode for the specified targets (_PipelineSelection)
+    #    ignore_junction_targets: Whether junction targets should be filtered out
+    #    artifact_remotes: Artifact cache remotes specified on the commmand line
+    #    source_remotes: Source cache remotes specified on the commmand line
+    #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
+    #    ignore_project_source_remotes: Whether to ignore source remotes specified by projects
     #
     # If `remote` specified as None, then regular configuration will be used
     # to determine where to push artifacts to.
     #
-    def build(self, targets, *, selection=_PipelineSelection.PLAN, ignore_junction_targets=False, remote=None):
+    def build(
+        self,
+        targets: Iterable[str],
+        *,
+        selection: str = _PipelineSelection.PLAN,
+        ignore_junction_targets: bool = False,
+        artifact_remotes: Iterable[RemoteSpec] = (),
+        source_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_artifact_remotes: bool = False,
+        ignore_project_source_remotes: bool = False,
+    ):
 
         elements = self._load(
             targets,
             selection=selection,
             ignore_junction_targets=ignore_junction_targets,
-            connect_artifact_cache=True,
-            artifact_remote_url=remote,
-            connect_source_cache=True,
             dynamic_plan=True,
+            connect_artifact_cache=True,
+            connect_source_cache=True,
+            artifact_remotes=artifact_remotes,
+            source_remotes=source_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+            ignore_project_source_remotes=ignore_project_source_remotes,
         )
 
         # Assert that the elements are consistent
@@ -320,19 +368,29 @@ class Stream:
     # Fetches sources on the pipeline.
     #
     # Args:
-    #    targets (list of str): Targets to fetch
-    #    selection (_PipelineSelection): The selection mode for the specified targets
-    #    except_targets (list of str): Specified targets to except from fetching
-    #    remote (str|None): The URL of a specific remote server to pull from.
+    #    targets: Targets to fetch
+    #    selection: The selection mode for the specified targets (_PipelineSelection)
+    #    except_targets: Specified targets to except from fetching
+    #    source_remotes: Source cache remotes specified on the commmand line
+    #    ignore_project_source_remotes: Whether to ignore source remotes specified by projects
     #
-    def fetch(self, targets, *, selection=_PipelineSelection.PLAN, except_targets=None, remote=None):
+    def fetch(
+        self,
+        targets: Iterable[str],
+        *,
+        selection: str = _PipelineSelection.PLAN,
+        except_targets: Iterable[str] = (),
+        source_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_source_remotes: bool = False,
+    ):
 
         elements = self._load(
             targets,
             selection=selection,
             except_targets=except_targets,
             connect_source_cache=True,
-            source_remote_url=remote,
+            source_remotes=source_remotes,
+            ignore_project_source_remotes=ignore_project_source_remotes,
         )
 
         # Delegated to a shared fetch method
@@ -376,7 +434,8 @@ class Stream:
     # Args:
     #    targets (list of str): Targets to push
     #    selection (_PipelineSelection): The selection mode for the specified targets
-    #    remote (str): The URL of a specific remote server to push to, or None
+    #    source_remotes: Source cache remotes specified on the commmand line
+    #    ignore_project_source_remotes: Whether to ignore source remotes specified by projects
     #
     # If `remote` specified as None, then regular configuration will be used
     # to determine where to push sources to.
@@ -385,10 +444,22 @@ class Stream:
     # a fetch queue will be created if user context and available remotes allow for
     # attempting to fetch them.
     #
-    def source_push(self, targets, *, selection=_PipelineSelection.NONE, remote=None):
+    def source_push(
+        self,
+        targets,
+        *,
+        selection=_PipelineSelection.NONE,
+        source_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_source_remotes: bool = False,
+    ):
 
         elements = self._load(
-            targets, selection=selection, connect_source_cache=True, source_remote_url=remote, load_artifacts=True,
+            targets,
+            selection=selection,
+            load_artifacts=True,
+            connect_source_cache=True,
+            source_remotes=source_remotes,
+            ignore_project_source_remotes=ignore_project_source_remotes,
         )
 
         if not self._sourcecache.has_push_remotes():
@@ -408,24 +479,31 @@ class Stream:
     # Pulls artifacts from remote artifact server(s)
     #
     # Args:
-    #    targets (list of str): Targets to pull
-    #    selection (_PipelineSelection): The selection mode for the specified targets
-    #    ignore_junction_targets (bool): Whether junction targets should be filtered out
-    #    remote (str): The URL of a specific remote server to pull from, or None
+    #    targets: Targets to pull
+    #    selection: The selection mode for the specified targets (_PipelineSelection)
+    #    ignore_junction_targets: Whether junction targets should be filtered out
+    #    artifact_remotes: Artifact cache remotes specified on the commmand line
+    #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
     #
-    # If `remote` specified as None, then regular configuration will be used
-    # to determine where to pull artifacts from.
-    #
-    def pull(self, targets, *, selection=_PipelineSelection.NONE, ignore_junction_targets=False, remote=None):
+    def pull(
+        self,
+        targets: Iterable[str],
+        *,
+        selection: str = _PipelineSelection.NONE,
+        ignore_junction_targets: bool = False,
+        artifact_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_artifact_remotes: bool = False,
+    ):
 
         elements = self._load(
             targets,
             selection=selection,
             ignore_junction_targets=ignore_junction_targets,
-            connect_artifact_cache=True,
-            artifact_remote_url=remote,
             load_artifacts=True,
             attempt_artifact_metadata=True,
+            connect_artifact_cache=True,
+            artifact_remotes=artifact_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
         )
 
         if not self._artifacts.has_fetch_remotes():
@@ -439,30 +517,38 @@ class Stream:
 
     # push()
     #
-    # Pulls artifacts to remote artifact server(s)
+    # Pushes artifacts to remote artifact server(s), pulling them first if necessary,
+    # possibly from different remotes.
     #
     # Args:
     #    targets (list of str): Targets to push
     #    selection (_PipelineSelection): The selection mode for the specified targets
     #    ignore_junction_targets (bool): Whether junction targets should be filtered out
-    #    remote (str): The URL of a specific remote server to push to, or None
-    #
-    # If `remote` specified as None, then regular configuration will be used
-    # to determine where to push artifacts to.
+    #    artifact_remotes: Artifact cache remotes specified on the commmand line
+    #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
     #
     # If any of the given targets are missing their expected buildtree artifact,
     # a pull queue will be created if user context and available remotes allow for
     # attempting to fetch them.
     #
-    def push(self, targets, *, selection=_PipelineSelection.NONE, ignore_junction_targets=False, remote=None):
+    def push(
+        self,
+        targets: Iterable[str],
+        *,
+        selection: str = _PipelineSelection.NONE,
+        ignore_junction_targets: bool = False,
+        artifact_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_artifact_remotes: bool = False,
+    ):
 
         elements = self._load(
             targets,
             selection=selection,
             ignore_junction_targets=ignore_junction_targets,
-            connect_artifact_cache=True,
-            artifact_remote_url=remote,
             load_artifacts=True,
+            connect_artifact_cache=True,
+            artifact_remotes=artifact_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
         )
 
         if not self._artifacts.has_push_remotes():
@@ -481,48 +567,54 @@ class Stream:
     # Checkout target artifact to the specified location
     #
     # Args:
-    #    target (str): Target to checkout
-    #    location (str): Location to checkout the artifact to
-    #    force (bool): Whether files can be overwritten if necessary
-    #    selection (_PipelineSelection): The selection mode for the specified targets
-    #    integrate (bool): Whether to run integration commands
-    #    hardlinks (bool): Whether checking out files hardlinked to
-    #                      their artifacts is acceptable
-    #    tar (bool): If true, a tarball from the artifact contents will
-    #                be created, otherwise the file tree of the artifact
-    #                will be placed at the given location. If true and
-    #                location is '-', the tarball will be dumped on the
-    #                standard output.
-    #    pull (bool): If true will attempt to pull any missing or incomplete
-    #                 artifacts.
+    #    target: Target to checkout
+    #    location: Location to checkout the artifact to
+    #    force: Whether files can be overwritten if necessary
+    #    selection: The selection mode for the specified targets (_PipelineSelection)
+    #    integrate: Whether to run integration commands
+    #    hardlinks: Whether checking out files hardlinked to
+    #               their artifacts is acceptable
+    #    tar: If true, a tarball from the artifact contents will
+    #         be created, otherwise the file tree of the artifact
+    #         will be placed at the given location. If true and
+    #         location is '-', the tarball will be dumped on the
+    #         standard output.
+    #    pull: If true will attempt to pull any missing or incomplete
+    #          artifacts.
+    #    artifact_remotes: Artifact cache remotes specified on the commmand line
+    #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
     #
     def checkout(
         self,
-        target,
+        target: str,
         *,
-        location=None,
-        force=False,
-        selection=_PipelineSelection.RUN,
-        integrate=True,
-        hardlinks=False,
-        compression="",
-        pull=False,
-        tar=False,
+        location: Optional[str] = None,
+        force: bool = False,
+        selection: str = _PipelineSelection.RUN,
+        integrate: bool = True,
+        hardlinks: bool = False,
+        compression: str = "",
+        pull: bool = False,
+        tar: bool = False,
+        artifact_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_artifact_remotes: bool = False,
     ):
 
         elements = self._load(
             (target,),
             selection=selection,
-            connect_artifact_cache=True,
             load_artifacts=True,
             attempt_artifact_metadata=True,
+            connect_artifact_cache=True,
+            artifact_remotes=artifact_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
         )
 
         # self.targets contains a list of the loaded target objects
         # if we specify --deps build, Stream._load() will return a list
         # of build dependency objects, however, we need to prepare a sandbox
         # with the target (which has had its appropriate dependencies loaded)
-        target = self.targets[0]
+        element: Element = self.targets[0]
 
         self._check_location_writable(location, force=force, tar=tar)
 
@@ -541,10 +633,10 @@ class Stream:
                 _PipelineSelection.NONE: _Scope.NONE,
                 _PipelineSelection.ALL: _Scope.ALL,
             }
-            with target._prepare_sandbox(scope=scope[selection], integrate=integrate) as sandbox:
+            with element._prepare_sandbox(scope=scope[selection], integrate=integrate) as sandbox:
                 # Copy or move the sandbox to the target directory
                 virdir = sandbox.get_virtual_directory()
-                self._export_artifact(tar, location, compression, target, hardlinks, virdir)
+                self._export_artifact(tar, location, compression, element, hardlinks, virdir)
         except BstError as e:
             raise StreamError(
                 "Error while staging dependencies into a sandbox" ": '{}'".format(e), detail=e.detail, reason=e.reason
@@ -702,31 +794,42 @@ class Stream:
     # Checkout sources of the target element to the specified location
     #
     # Args:
-    #    target (str): The target element whose sources to checkout
-    #    location (str): Location to checkout the sources to
-    #    force (bool): Whether to overwrite existing directories/tarfiles
-    #    deps (str): The dependencies to checkout
-    #    except_targets ([str]): List of targets to except from staging
-    #    tar (bool): Whether to write a tarfile holding the checkout contents
-    #    compression (str): The type of compression for tarball
-    #    include_build_scripts (bool): Whether to include build scripts in the checkout
+    #    target: The target element whose sources to checkout
+    #    location: Location to checkout the sources to
+    #    force: Whether to overwrite existing directories/tarfiles
+    #    deps: The selection mode for the specified targets (_PipelineSelection)
+    #    except_targets: List of targets to except from staging
+    #    tar: Whether to write a tarfile holding the checkout contents
+    #    compression: The type of compression for tarball
+    #    include_build_scripts: Whether to include build scripts in the checkout
+    #    source_remotes: Source cache remotes specified on the commmand line
+    #    ignore_project_source_remotes: Whether to ignore source remotes specified by projects
     #
     def source_checkout(
         self,
-        target,
+        target: str,
         *,
-        location=None,
-        force=False,
-        deps="none",
-        except_targets=(),
-        tar=False,
-        compression=None,
-        include_build_scripts=False,
+        location: Optional[str] = None,
+        force: bool = False,
+        deps=_PipelineSelection.NONE,
+        except_targets: Iterable[str] = (),
+        tar: bool = False,
+        compression: Optional[str] = None,
+        include_build_scripts: bool = False,
+        source_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_source_remotes: bool = False,
     ):
 
         self._check_location_writable(location, force=force, tar=tar)
 
-        elements = self._load((target,), selection=deps, except_targets=except_targets)
+        elements = self._load(
+            (target,),
+            selection=deps,
+            except_targets=except_targets,
+            connect_source_cache=True,
+            source_remotes=source_remotes,
+            ignore_project_source_remotes=ignore_project_source_remotes,
+        )
 
         # Assert all sources are cached in the source dir
         self._fetch(elements)
@@ -751,11 +854,28 @@ class Stream:
     #    no_checkout (bool): Whether to skip checking out the source
     #    force (bool): Whether to ignore contents in an existing directory
     #    custom_dir (str): Custom location to create a workspace or false to use default location.
+    #    source_remotes: Source cache remotes specified on the commmand line
+    #    ignore_project_source_remotes: Whether to ignore source remotes specified by projects
     #
-    def workspace_open(self, targets, *, no_checkout, force, custom_dir):
+    def workspace_open(
+        self,
+        targets: Iterable[str],
+        *,
+        no_checkout: bool = False,
+        force: bool = False,
+        custom_dir: Optional[str] = None,
+        source_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_source_remotes: bool = False,
+    ):
         # This function is a little funny but it is trying to be as atomic as possible.
 
-        elements = self._load(targets, selection=_PipelineSelection.REDIRECT)
+        elements = self._load(
+            targets,
+            selection=_PipelineSelection.REDIRECT,
+            connect_source_cache=True,
+            source_remotes=source_remotes,
+            ignore_project_source_remotes=ignore_project_source_remotes,
+        )
 
         workspaces = self._context.get_workspaces()
 
@@ -1198,8 +1318,8 @@ class Stream:
     #
     def _load_elements_from_targets(
         self,
-        targets: List[str],
-        except_targets: List[str],
+        targets: Iterable[str],
+        except_targets: Iterable[str],
         *,
         rewritable: bool = False,
         valid_artifact_names: bool = False,
@@ -1352,36 +1472,40 @@ class Stream:
     # fully loaded.
     #
     # Args:
-    #    targets (list of str): Main targets to load
-    #    selection (_PipelineSelection): The selection mode for the specified targets
-    #    except_targets (list of str): Specified targets to except from fetching
+    #    targets: Main targets to load
+    #    selection: The selection mode for the specified targets  (_PipelineSelection)
+    #    except_targets: Specified targets to except from fetching
     #    ignore_junction_targets (bool): Whether junction targets should be filtered out
-    #    connect_artifact_cache (bool): Whether to try to contact remote artifact caches
-    #    connect_source_cache (bool): Whether to try to contact remote source caches
-    #    artifact_remote_url (str): A remote url for initializing the artifacts
-    #    source_remote_url (str): A remote url for initializing source caches
-    #    dynamic_plan (bool): Require artifacts as needed during the build
-    #    load_artifacts (bool): Whether to load artifacts with artifact names
-    #    attempt_artifact_metadata (bool): Whether to attempt to download artifact metadata in
+    #    dynamic_plan: Require artifacts as needed during the build
+    #    load_artifacts: Whether to load artifacts with artifact names
+    #    attempt_artifact_metadata: Whether to attempt to download artifact metadata in
     #                                      order to deduce build dependencies and reload.
+    #    connect_artifact_cache: Whether to try to contact remote artifact caches
+    #    connect_source_cache: Whether to try to contact remote source caches
+    #    artifact_remotes: Artifact cache remotes specified on the commmand line
+    #    source_remotes: Source cache remotes specified on the commmand line
+    #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
+    #    ignore_project_source_remotes: Whether to ignore source remotes specified by projects
     #
     # Returns:
     #    (list of Element): The primary element selection
     #
     def _load(
         self,
-        targets,
+        targets: Iterable[str],
         *,
-        selection=_PipelineSelection.NONE,
-        except_targets=(),
-        ignore_junction_targets=False,
-        connect_artifact_cache=False,
-        connect_source_cache=False,
-        artifact_remote_url=None,
-        source_remote_url=None,
-        dynamic_plan=False,
-        load_artifacts=False,
-        attempt_artifact_metadata=False,
+        selection: str = _PipelineSelection.NONE,
+        except_targets: Iterable[str] = (),
+        ignore_junction_targets: bool = False,
+        dynamic_plan: bool = False,
+        load_artifacts: bool = False,
+        attempt_artifact_metadata: bool = False,
+        connect_artifact_cache: bool = False,
+        connect_source_cache: bool = False,
+        artifact_remotes: Iterable[RemoteSpec] = (),
+        source_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_artifact_remotes: bool = False,
+        ignore_project_source_remotes: bool = False,
     ):
         elements, except_elements, artifacts = self._load_elements_from_targets(
             targets, except_targets, rewritable=False, valid_artifact_names=load_artifacts
@@ -1390,7 +1514,7 @@ class Stream:
         if artifacts:
             if selection in (_PipelineSelection.ALL, _PipelineSelection.RUN):
                 raise StreamError(
-                    "Error: '--deps {}' is not supported for artifact names".format(selection.value),
+                    "Error: '--deps {}' is not supported for artifact names".format(selection),
                     reason="deps-not-supported",
                 )
 
@@ -1400,20 +1524,15 @@ class Stream:
         # Hold on to the targets
         self.targets = elements
 
-        # FIXME: Instead of converting the URL to a RemoteSpec here, the CLI needs to
-        #        be enhanced to parse a fully qualified RemoteSpec (including certs etc)
-        #        from the command line, the CLI should be feeding the RemoteSpec through
-        #        the Stream API directly.
-        #
-        artifact_remote = None
-        if artifact_remote_url:
-            artifact_remote = RemoteSpec(RemoteType.ALL, artifact_remote_url, push=True)
-        source_remote = None
-        if source_remote_url:
-            source_remote = RemoteSpec(RemoteType.ALL, source_remote_url, push=True)
-
         # Connect to remote caches, this needs to be done before resolving element state
-        self._context.initialize_remotes(connect_artifact_cache, connect_source_cache, artifact_remote, source_remote)
+        self._context.initialize_remotes(
+            connect_artifact_cache,
+            connect_source_cache,
+            artifact_remotes,
+            source_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+            ignore_project_source_remotes=ignore_project_source_remotes,
+        )
 
         # In some cases we need to have an actualized artifact, with all of
         # it's metadata, such that we can derive attributes about the artifact
@@ -1444,7 +1563,12 @@ class Stream:
             # ensure those remotes are also initialized.
             #
             self._context.initialize_remotes(
-                connect_artifact_cache, connect_source_cache, artifact_remote, source_remote
+                connect_artifact_cache,
+                connect_source_cache,
+                artifact_remotes,
+                source_remotes,
+                ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+                ignore_project_source_remotes=ignore_project_source_remotes,
             )
 
         self.targets += artifacts
@@ -1806,7 +1930,7 @@ class Stream:
     #    (list): artifact names present in the targets
     #
     def _expand_and_classify_targets(
-        self, targets: List[str], valid_artifact_names: bool = False
+        self, targets: Iterable[str], valid_artifact_names: bool = False
     ) -> Tuple[List[str], List[str]]:
         initial_targets = []
         element_targets = []

@@ -46,6 +46,26 @@ if TYPE_CHECKING:
     # pylint: enable=cyclic-import
 
 
+# _CacheConfig
+#
+# A convenience object for parsing artifact/source cache configurations
+#
+class _CacheConfig:
+    def __init__(self, override_projects: bool, remote_specs: List[RemoteSpec]):
+        self.override_projects: bool = override_projects
+        self.remote_specs: List[RemoteSpec] = remote_specs
+
+    @classmethod
+    def new_from_node(cls, node: MappingNode) -> "_CacheConfig":
+        node.validate_keys(["override-project-caches", "servers"])
+        servers = node.get_sequence("servers", default=[], allowed_types=[MappingNode])
+
+        override_projects: bool = node.get_bool("push", default=False)
+        remote_specs: List[RemoteSpec] = [RemoteSpec.new_from_node(node) for node in servers]
+
+        return cls(override_projects, remote_specs)
+
+
 # Context()
 #
 # The Context object holds all of the user preferences
@@ -502,15 +522,19 @@ class Context:
     # Args:
     #    connect_artifact_cache: Whether to try to contact remote artifact caches
     #    connect_source_cache: Whether to try to contact remote source caches
-    #    artifact_remote: An overriding artifact cache remote, or None
-    #    source_remote: An overriding source cache remote, or None
+    #    artifact_remotes: Artifact cache remotes specified on the commmand line
+    #    source_remotes: Source cache remotes specified on the commmand line
+    #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
+    #    ignore_project_source_remotes: Whether to ignore artifact remotes specified by projects
     #
     def initialize_remotes(
         self,
         connect_artifact_cache: bool,
         connect_source_cache: bool,
-        artifact_remote: Optional[RemoteSpec],
-        source_remote: Optional[RemoteSpec],
+        artifact_remotes: Iterable[RemoteSpec] = (),
+        source_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_artifact_remotes: bool = False,
+        ignore_project_source_remotes: bool = False,
     ) -> None:
 
         # Ensure all projects are fully loaded.
@@ -528,34 +552,6 @@ class Context:
             if remote_execution:
                 self.pull_artifact_files, self.remote_execution_specs = self._load_remote_execution(remote_execution)
 
-        cli_artifact_remotes = [artifact_remote] if artifact_remote else []
-        cli_source_remotes = [source_remote] if source_remote else []
-
-        #
-        # Helper function to resolve which remote specs apply for a given project
-        #
-        def resolve_specs_for_project(
-            project: "Project", global_config: _CacheConfig, override_key: str, project_attribute: str,
-        ) -> List[RemoteSpec]:
-
-            # Obtain the overrides
-            override_node = self.get_overrides(project.name)
-            override_config_node = override_node.get_mapping(override_key, default={})
-            override_config = _CacheConfig.new_from_node(override_config_node)
-            if override_config.override_projects:
-                return override_config.remote_specs
-            elif global_config.override_projects:
-                return global_config.remote_specs
-
-            # If there were no explicit overrides, then take either the project specific
-            # config or fallback to the global config, and tack on the project recommended
-            # remotes at the end.
-            #
-            config_specs = override_config.remote_specs or global_config.remote_specs
-            project_specs = getattr(project, project_attribute)
-            all_specs = config_specs + project_specs
-            return list(utils._deduplicate(all_specs))
-
         #
         # Maintain our list of remote specs for artifact and source caches
         #
@@ -564,13 +560,22 @@ class Context:
             source_specs: List[RemoteSpec] = []
 
             if connect_artifact_cache:
-                artifact_specs = cli_artifact_remotes or resolve_specs_for_project(
-                    project, self._global_artifact_cache_config, "artifacts", "artifact_cache_specs",
+                artifact_specs = self._resolve_specs_for_project(
+                    project,
+                    artifact_remotes,
+                    ignore_project_artifact_remotes,
+                    self._global_artifact_cache_config,
+                    "artifacts",
+                    "artifact_cache_specs",
                 )
-
             if connect_source_cache:
-                source_specs = cli_source_remotes or resolve_specs_for_project(
-                    project, self._global_source_cache_config, "source-caches", "source_cache_specs",
+                source_specs = self._resolve_specs_for_project(
+                    project,
+                    source_remotes,
+                    ignore_project_source_remotes,
+                    self._global_source_cache_config,
+                    "source-caches",
+                    "source_cache_specs",
                 )
 
             # Advertize the per project remote specs publicly for the frontend
@@ -683,6 +688,64 @@ class Context:
     #                  Private methods                   #
     ######################################################
 
+    # _resolve_specs_for_project()
+    #
+    # Helper function to resolve which remote specs apply for a given project
+    #
+    # Args:
+    #    project: The project
+    #    cli_remotes: The remotes specified in the CLI
+    #    cli_override: Whether the CLI decided to override project suggestions
+    #    global_config: The global user configuration for this remote type
+    #    override_key: The key to lookup project overrides for this remote type
+    #    project_attribute: The Project attribute for project suggestions
+    #
+    # Returns:
+    #    The resolved remotes for this project.
+    #
+    def _resolve_specs_for_project(
+        self,
+        project: "Project",
+        cli_remotes: Iterable[RemoteSpec],
+        cli_override: bool,
+        global_config: _CacheConfig,
+        override_key: str,
+        project_attribute: str,
+    ) -> List[RemoteSpec]:
+
+        # Early return if the CLI is taking full control
+        if cli_override and cli_remotes:
+            return list(cli_remotes)
+
+        # Obtain the overrides
+        override_node = self.get_overrides(project.name)
+        override_config_node = override_node.get_mapping(override_key, default={})
+        override_config = _CacheConfig.new_from_node(override_config_node)
+
+        #
+        # Decide on what remotes to use from user config, if any
+        #
+        # Priority CLI -> Project overrides -> Global config
+        #
+        remotes: List[RemoteSpec]
+        if cli_remotes:
+            remotes = list(cli_remotes)
+        elif override_config.remote_specs:
+            remotes = override_config.remote_specs
+        else:
+            remotes = global_config.remote_specs
+
+        # If any of the configs have disabled project remotes, return now
+        #
+        if cli_override or override_config.override_projects or global_config.override_projects:
+            return remotes
+
+        # If there are any project recommendations, append them at the end
+        project_remotes = getattr(project, project_attribute)
+        remotes = list(utils._deduplicate(remotes + project_remotes))
+
+        return remotes
+
     # Force the resolved XDG variables into the environment,
     # this is so that they can be used directly to specify
     # preferred locations of things from user configuration
@@ -710,23 +773,3 @@ class Context:
             remote_execution_specs = None
 
         return pull_artifact_files, remote_execution_specs
-
-
-# _CacheConfig
-#
-# A convenience object for parsing artifact/source cache configurations
-#
-class _CacheConfig:
-    def __init__(self, override_projects: bool, remote_specs: List[RemoteSpec]):
-        self.override_projects: bool = override_projects
-        self.remote_specs: List[RemoteSpec] = remote_specs
-
-    @classmethod
-    def new_from_node(cls, node: MappingNode) -> "_CacheConfig":
-        node.validate_keys(["override-project-caches", "servers"])
-        servers = node.get_sequence("servers", default=[], allowed_types=[MappingNode])
-
-        override_projects: bool = node.get_bool("push", default=False)
-        remote_specs: List[RemoteSpec] = [RemoteSpec.new_from_node(node) for node in servers]
-
-        return cls(override_projects, remote_specs)

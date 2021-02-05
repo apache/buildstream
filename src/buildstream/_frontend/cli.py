@@ -5,9 +5,10 @@ from functools import partial
 import shutil
 import click
 from .. import _yaml
-from .._exceptions import BstError, LoadError, AppError
+from .._exceptions import BstError, LoadError, AppError, RemoteError
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection, _HostMount, _Scope
+from .._remotespec import RemoteSpec, RemoteSpecPurpose
 from ..utils import UtilError
 
 
@@ -34,6 +35,25 @@ class FastEnumType(click.Choice):
             value = value.value
 
         return self._enum(super().convert(value, param, ctx))
+
+
+class RemoteSpecType(click.ParamType):
+    name = "remote"
+
+    def __init__(self, purpose=RemoteSpecPurpose.ALL):
+        self.purpose = purpose
+
+    def convert(self, value, param, ctx):
+        spec = None
+        try:
+            spec = RemoteSpec.new_from_string(value, self.purpose)
+        except RemoteError as e:
+            self.fail("Failed to interpret remote: {}".format(e))
+
+        return spec
+
+    def __repr__(self):
+        return "REMOTE"
 
 
 ##################################################################
@@ -412,11 +432,38 @@ def init(app, project_name, min_version, element_path, force, target_directory):
     help="The dependencies to build",
 )
 @click.option(
-    "--remote", "-r", default=None, help="The URL of the remote cache (defaults to the first configured cache)"
+    "--artifact-remote",
+    "artifact_remotes",
+    type=RemoteSpecType(),
+    multiple=True,
+    help="A remote for uploading and downloading artifacts",
+)
+@click.option(
+    "--source-remote",
+    "source_remotes",
+    type=RemoteSpecType(),
+    multiple=True,
+    help="A remote for uploading and downloading cached sources",
+)
+@click.option(
+    "--ignore-project-artifact-remotes",
+    is_flag=True,
+    help="Ignore remote artifact cache servers recommended by projects",
+)
+@click.option(
+    "--ignore-project-source-remotes", is_flag=True, help="Ignore remote source cache servers recommended by projects"
 )
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def build(app, elements, deps, remote):
+def build(
+    app,
+    elements,
+    deps,
+    artifact_remotes,
+    source_remotes,
+    ignore_project_artifact_remotes,
+    ignore_project_source_remotes,
+):
     """Build elements in a pipeline
 
     Specifying no elements will result in building the default targets
@@ -444,7 +491,15 @@ def build(app, elements, deps, remote):
             # Junction elements cannot be built, exclude them from default targets
             ignore_junction_targets = True
 
-        app.stream.build(elements, selection=deps, ignore_junction_targets=ignore_junction_targets, remote=remote)
+        app.stream.build(
+            elements,
+            selection=deps,
+            ignore_junction_targets=ignore_junction_targets,
+            artifact_remotes=artifact_remotes,
+            source_remotes=source_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+            ignore_project_source_remotes=ignore_project_source_remotes,
+        )
 
 
 ##################################################################
@@ -586,10 +641,45 @@ def show(app, elements, deps, except_, order, format_):
     ),
 )
 @click.option("--pull", "pull_", is_flag=True, help="Attempt to pull missing or incomplete artifacts")
+@click.option(
+    "--artifact-remote",
+    "artifact_remotes",
+    type=RemoteSpecType(),
+    multiple=True,
+    help="A remote for uploading and downloading artifacts",
+)
+@click.option(
+    "--source-remote",
+    "source_remotes",
+    type=RemoteSpecType(),
+    multiple=True,
+    help="A remote for uploading and downloading cached sources",
+)
+@click.option(
+    "--ignore-project-artifact-remotes",
+    is_flag=True,
+    help="Ignore remote artifact cache servers recommended by projects",
+)
+@click.option(
+    "--ignore-project-source-remotes", is_flag=True, help="Ignore remote source cache servers recommended by projects"
+)
 @click.argument("element", required=False, type=click.Path(readable=False))
 @click.argument("command", type=click.STRING, nargs=-1)
 @click.pass_obj
-def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
+def shell(
+    app,
+    element,
+    command,
+    mount,
+    isolate,
+    build_,
+    cli_buildtree,
+    pull_,
+    artifact_remotes,
+    source_remotes,
+    ignore_project_artifact_remotes,
+    ignore_project_source_remotes,
+):
     """Run a command in the target element's sandbox environment
 
     When this command is executed from a workspace directory, the default
@@ -636,6 +726,10 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
                 command=command,
                 usebuildtree=cli_buildtree,
                 pull_=pull_,
+                artifact_remotes=artifact_remotes,
+                source_remotes=source_remotes,
+                ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+                ignore_project_source_remotes=ignore_project_source_remotes,
             )
         except BstError as e:
             raise AppError("Error launching shell: {}".format(e), detail=e.detail, reason=e.reason) from e
@@ -681,11 +775,18 @@ def source():
     help="The dependencies to fetch",
 )
 @click.option(
-    "--remote", "-r", default=None, help="The URL of the remote source cache (defaults to the first configured cache)"
+    "--source-remote",
+    "source_remotes",
+    type=RemoteSpecType(RemoteSpecPurpose.PULL),
+    multiple=True,
+    help="A remote for downloading sources",
+)
+@click.option(
+    "--ignore-project-source-remotes", is_flag=True, help="Ignore remote source cache servers recommended by projects"
 )
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def source_fetch(app, elements, deps, except_, remote):
+def source_fetch(app, elements, deps, except_, source_remotes, ignore_project_source_remotes):
     """Fetch sources required to build the pipeline
 
     Specifying no elements will result in fetching the default targets
@@ -713,7 +814,13 @@ def source_fetch(app, elements, deps, except_, remote):
         if not elements:
             elements = app.project.get_default_targets()
 
-        app.stream.fetch(elements, selection=deps, except_targets=except_, remote=remote)
+        app.stream.fetch(
+            elements,
+            selection=deps,
+            except_targets=except_,
+            source_remotes=source_remotes,
+            ignore_project_source_remotes=ignore_project_source_remotes,
+        )
 
 
 ##################################################################
@@ -738,11 +845,18 @@ def source_fetch(app, elements, deps, except_, remote):
     help="The dependencies to push",
 )
 @click.option(
-    "--remote", "-r", default=None, help="The URL of the remote source cache (defaults to the first configured cache)"
+    "--source-remote",
+    "source_remotes",
+    type=RemoteSpecType(RemoteSpecPurpose.PUSH),
+    multiple=True,
+    help="A remote for uploading sources",
+)
+@click.option(
+    "--ignore-project-source-remotes", is_flag=True, help="Ignore remote source cache servers recommended by projects"
 )
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def source_push(app, elements, deps, remote):
+def source_push(app, elements, deps, source_remotes, ignore_project_source_remotes):
     """Push sources required to build the pipeline
 
     Specifying no elements will result in pushing the sources of the default
@@ -765,7 +879,12 @@ def source_push(app, elements, deps, remote):
         if not elements:
             elements = app.project.get_default_targets()
 
-        app.stream.source_push(elements, selection=deps, remote=remote)
+        app.stream.source_push(
+            elements,
+            selection=deps,
+            source_remotes=source_remotes,
+            ignore_project_source_remotes=ignore_project_source_remotes,
+        )
 
 
 ##################################################################
@@ -865,9 +984,31 @@ def source_track(app, elements, deps, except_, cross_junctions):
     type=click.Path(file_okay=False),
     help="The directory to checkout the sources to",
 )
+@click.option(
+    "--source-remote",
+    "source_remotes",
+    type=RemoteSpecType(RemoteSpecPurpose.PULL),
+    multiple=True,
+    help="A remote for downloading cached sources",
+)
+@click.option(
+    "--ignore-project-source-remotes", is_flag=True, help="Ignore remote source cache servers recommended by projects"
+)
 @click.argument("element", required=False, type=click.Path(readable=False))
 @click.pass_obj
-def source_checkout(app, element, directory, force, deps, except_, tar, compression, build_scripts):
+def source_checkout(
+    app,
+    element,
+    directory,
+    force,
+    deps,
+    except_,
+    tar,
+    compression,
+    build_scripts,
+    source_remotes,
+    ignore_project_source_remotes,
+):
     """Checkout sources of an element to the specified location
 
     When this command is executed from a workspace directory, the default
@@ -901,6 +1042,8 @@ def source_checkout(app, element, directory, force, deps, except_, tar, compress
             tar=bool(tar),
             compression=compression,
             include_build_scripts=build_scripts,
+            source_remotes=source_remotes,
+            ignore_project_source_remotes=ignore_project_source_remotes,
         )
 
 
@@ -930,13 +1073,30 @@ def workspace():
     default=None,
     help="Only for use when a single Element is given: Set the directory to use to create the workspace",
 )
+@click.option(
+    "--source-remote",
+    "source_remotes",
+    type=RemoteSpecType(RemoteSpecPurpose.PULL),
+    multiple=True,
+    help="A remote for downloading cached sources",
+)
+@click.option(
+    "--ignore-project-source-remotes", is_flag=True, help="Ignore remote source cache servers recommended by projects"
+)
 @click.argument("elements", nargs=-1, type=click.Path(readable=False), required=True)
 @click.pass_obj
-def workspace_open(app, no_checkout, force, directory, elements):
+def workspace_open(app, no_checkout, force, directory, source_remotes, ignore_project_source_remotes, elements):
     """Open a workspace for manual source modification"""
 
     with app.initialized():
-        app.stream.workspace_open(elements, no_checkout=no_checkout, force=force, custom_dir=directory)
+        app.stream.workspace_open(
+            elements,
+            no_checkout=no_checkout,
+            force=force,
+            custom_dir=directory,
+            source_remotes=source_remotes,
+            ignore_project_source_remotes=ignore_project_source_remotes,
+        )
 
 
 ##################################################################
@@ -1124,9 +1284,34 @@ def artifact_show(app, deps, artifacts):
 @click.option(
     "--directory", default=None, type=click.Path(file_okay=False), help="The directory to checkout the artifact to"
 )
+@click.option(
+    "--artifact-remote",
+    "artifact_remotes",
+    type=RemoteSpecType(RemoteSpecPurpose.PULL),
+    multiple=True,
+    help="A remote for downloading artifacts",
+)
+@click.option(
+    "--ignore-project-artifact-remotes",
+    is_flag=True,
+    help="Ignore remote artifact cache servers recommended by projects",
+)
 @click.argument("target", required=False, type=click.Path(readable=False))
 @click.pass_obj
-def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, pull_, directory, target):
+def artifact_checkout(
+    app,
+    force,
+    deps,
+    integrate,
+    hardlinks,
+    tar,
+    compression,
+    pull_,
+    directory,
+    artifact_remotes,
+    ignore_project_artifact_remotes,
+    target,
+):
     """Checkout contents of an artifact
 
     When this command is executed from a workspace directory, the default
@@ -1186,6 +1371,8 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
             pull=pull_,
             compression=compression,
             tar=bool(tar),
+            artifact_remotes=artifact_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
         )
 
 
@@ -1205,11 +1392,20 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
     help="The dependency artifacts to pull",
 )
 @click.option(
-    "--remote", "-r", default=None, help="The URL of the remote cache (defaults to the first configured cache)"
+    "--artifact-remote",
+    "artifact_remotes",
+    type=RemoteSpecType(RemoteSpecPurpose.PULL),
+    multiple=True,
+    help="A remote for downloading artifacts",
+)
+@click.option(
+    "--ignore-project-artifact-remotes",
+    is_flag=True,
+    help="Ignore remote artifact cache servers recommended by projects",
 )
 @click.argument("artifacts", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def artifact_pull(app, artifacts, deps, remote):
+def artifact_pull(app, deps, artifact_remotes, ignore_project_artifact_remotes, artifacts):
     """Pull a built artifact from the configured remote artifact cache.
 
     Specifying no elements will result in pulling the default targets
@@ -1220,8 +1416,8 @@ def artifact_pull(app, artifacts, deps, remote):
     is to pull the workspace element.
 
     By default the artifact will be pulled one of the configured caches
-    if possible, following the usual priority order. If the `--remote` flag
-    is given, only the specified cache will be queried.
+    if possible, following the usual priority order. If the `--artifact-remote`
+    flag is given, only the specified cache will be queried.
 
     Specify `--deps` to control which artifacts to pull:
 
@@ -1240,7 +1436,13 @@ def artifact_pull(app, artifacts, deps, remote):
             # Junction elements cannot be pulled, exclude them from default targets
             ignore_junction_targets = True
 
-        app.stream.pull(artifacts, selection=deps, remote=remote, ignore_junction_targets=ignore_junction_targets)
+        app.stream.pull(
+            artifacts,
+            selection=deps,
+            ignore_junction_targets=ignore_junction_targets,
+            artifact_remotes=artifact_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+        )
 
 
 ##################################################################
@@ -1259,12 +1461,21 @@ def artifact_pull(app, artifacts, deps, remote):
     help="The dependencies to push",
 )
 @click.option(
-    "--remote", "-r", default=None, help="The URL of the remote cache (defaults to the first configured cache)"
+    "--artifact-remote",
+    "artifact_remotes",
+    type=RemoteSpecType(RemoteSpecPurpose.PUSH),
+    multiple=True,
+    help="A remote for uploading artifacts",
+)
+@click.option(
+    "--ignore-project-artifact-remotes",
+    is_flag=True,
+    help="Ignore remote artifact cache servers recommended by projects",
 )
 @click.argument("artifacts", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def artifact_push(app, artifacts, deps, remote):
-    """Push a built artifact to a remote artifact cache.
+def artifact_push(app, deps, artifact_remotes, ignore_project_artifact_remotes, artifacts):
+    """Push built artifacts to a remote artifact cache, possibly pulling them first.
 
     Specifying no elements will result in pushing the default targets
     of the project. If no default targets are configured, all project
@@ -1272,9 +1483,6 @@ def artifact_push(app, artifacts, deps, remote):
 
     When this command is executed from a workspace directory, the default
     is to push the workspace element.
-
-    The default destination is the highest priority configured cache. You can
-    override this by passing a different cache URL with the `--remote` flag.
 
     If bst has been configured to include build trees on artifact pulls,
     an attempt will be made to pull any required build trees to avoid the
@@ -1296,7 +1504,13 @@ def artifact_push(app, artifacts, deps, remote):
             # Junction elements cannot be pushed, exclude them from default targets
             ignore_junction_targets = True
 
-        app.stream.push(artifacts, selection=deps, remote=remote, ignore_junction_targets=ignore_junction_targets)
+        app.stream.push(
+            artifacts,
+            selection=deps,
+            ignore_junction_targets=ignore_junction_targets,
+            artifact_remotes=artifact_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+        )
 
 
 ################################################################

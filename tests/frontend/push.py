@@ -529,7 +529,7 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
         # Use a separate local cache for this to ensure the complete element is pulled.
         cli2_path = os.path.join(str(tmpdir), "cli2")
         cli2 = Cli(cli2_path)
-        result = cli2.run(project=project, args=["artifact", "pull", "element1.bst", "--remote", share.repo])
+        result = cli2.run(project=project, args=["artifact", "pull", "element1.bst", "--artifact-remote", share.repo])
         result.assert_success()
 
         # Ensure element1 is cached locally
@@ -594,7 +594,9 @@ def test_push_already_cached(caplog, cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_build_remote_option(caplog, cli, tmpdir, datafiles):
+@pytest.mark.parametrize("use_remote", [True, False], ids=["with_cli_remote", "without_cli_remote"])
+@pytest.mark.parametrize("ignore_project", [True, False], ids=["ignore_project_caches", "include_project_caches"])
+def test_build_remote_option(caplog, cli, tmpdir, datafiles, use_remote, ignore_project):
     project = str(datafiles)
     caplog.set_level(1)
 
@@ -609,16 +611,37 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles):
         # Configure shareuser remote in user conf
         cli.configure({"artifacts": {"servers": [{"url": shareuser.repo, "push": True}]}})
 
-        result = cli.run(project=project, args=["build", "--remote", sharecli.repo, "target.bst"])
+        args = ["build", "target.bst"]
+        if use_remote:
+            args += ["--artifact-remote", sharecli.repo]
+        if ignore_project:
+            args += ["--ignore-project-artifact-remotes"]
+
+        result = cli.run(project=project, args=args)
 
         # Artifacts should have only been pushed to sharecli, as that was provided via the cli
         result.assert_success()
         all_elements = ["target.bst", "import-bin.bst", "compose-all.bst"]
         for element_name in all_elements:
             assert element_name in result.get_pushed_elements()
-            assert_shared(cli, sharecli, project, element_name)
-            assert_not_shared(cli, shareuser, project, element_name)
-            assert_not_shared(cli, shareproject, project, element_name)
+
+            # Test shared state of project recommended cache depending
+            # on whether we decided to ignore project suggestions.
+            #
+            if ignore_project:
+                assert_not_shared(cli, shareproject, project, element_name)
+            else:
+                assert_shared(cli, shareproject, project, element_name)
+
+            # If we specified a remote on the command line, this replaces any remotes
+            # specified in user configuration.
+            #
+            if use_remote:
+                assert_not_shared(cli, shareuser, project, element_name)
+                assert_shared(cli, sharecli, project, element_name)
+            else:
+                assert_shared(cli, shareuser, project, element_name)
+                assert_not_shared(cli, sharecli, project, element_name)
 
 
 # This test ensures that we are able to run `bst artifact push` in non strict mode

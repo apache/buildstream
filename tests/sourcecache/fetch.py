@@ -91,7 +91,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             digest = sourcecache.export(source)._get_digest()
 
             # Push the source to the remote
-            res = cli.run(project=project_dir, args=["source", "push", "--remote", share.repo, element_name])
+            res = cli.run(project=project_dir, args=["source", "push", "--source-remote", share.repo, element_name])
             res.assert_success()
 
             # check the share has the proto and the object
@@ -217,7 +217,7 @@ def test_source_pull_partial_fallback_fetch(cli, tmpdir, datafiles):
             digest = sourcecache.export(source)._get_digest()
 
             # Push the source to the remote
-            res = cli.run(project=project_dir, args=["source", "push", "--remote", share.repo, element_name])
+            res = cli.run(project=project_dir, args=["source", "push", "--source-remote", share.repo, element_name])
             res.assert_success()
 
             # Remove the cas content, only keep the proto and such around

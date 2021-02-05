@@ -711,7 +711,7 @@ class App:
                             _Scope.BUILD,
                             self.shell_prompt,
                             isolate=True,
-                            usebuildtree="always",
+                            usebuildtree=True,
                             unique_id=unique_id,
                         )
                     except BstError as e:
