@@ -35,7 +35,7 @@ from .exceptions import LoadErrorReason
 from ._options import OptionPool
 from .node import ScalarNode, SequenceNode, MappingNode, ProvenanceInformation, _assert_symbol_name
 from ._pluginfactory import ElementFactory, SourceFactory, load_plugin_origin
-from .types import CoreWarnings
+from .types import CoreWarnings, _HostMount
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._loader import Loader, LoadContext
 from .element import Element
@@ -50,27 +50,6 @@ if TYPE_CHECKING:
 
 # Project Configuration file
 _PROJECT_CONF_FILE = "project.conf"
-
-
-# HostMount()
-#
-# A simple object describing the behavior of
-# a host mount.
-#
-class HostMount:
-    def __init__(self, path, host_path=None, optional=False):
-
-        # Support environment variable expansion in host mounts
-        path = os.path.expandvars(path)
-        if host_path is not None:
-            host_path = os.path.expandvars(host_path)
-
-        self.path = path  # Path inside the sandbox
-        self.host_path = host_path  # Path on the host
-        self.optional = optional  # Optional mounts do not incur warnings or errors
-
-        if self.host_path is None:
-            self.host_path = self.path
 
 
 # Represents project configuration that can have different values for junctions.
@@ -159,7 +138,7 @@ class Project:
         self._fatal_warnings: List[str] = []  # A list of warnings which should trigger an error
         self._shell_command: List[str] = []  # The default interactive shell command
         self._shell_environment: Dict[str, str] = {}  # Statically set environment vars
-        self._shell_host_files: List[str] = []  # A list of HostMount objects
+        self._shell_host_files: List[_HostMount] = []  # A list of HostMount objects
 
         # This is a lookup table of lists indexed by project,
         # the child dictionaries are lists of ScalarNodes indicating
@@ -256,7 +235,7 @@ class Project:
     # Returns:
     #    (list): The shell command
     #    (dict): The shell environment
-    #    (list): The list of HostMount objects
+    #    (list): The list of _HostMount objects
     #
     def get_shell_config(self):
         return (self._shell_command, self._shell_environment, self._shell_host_files)
@@ -915,7 +894,7 @@ class Project:
         host_files = shell_options.get_sequence("host-files", default=[])
         for host_file in host_files:
             if isinstance(host_file, ScalarNode):
-                mount = HostMount(host_file.as_str())
+                mount = _HostMount(host_file.as_str())
             else:
                 # Some validation
                 host_file.validate_keys(["path", "host_path", "optional"])
@@ -924,7 +903,7 @@ class Project:
                 path = host_file.get_str("path")
                 host_path = host_file.get_str("host_path", default=None)
                 optional = host_file.get_bool("optional", default=False)
-                mount = HostMount(path, host_path, optional)
+                mount = _HostMount(path, host_path, optional)
 
             self._shell_host_files.append(mount)
 

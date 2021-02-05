@@ -7,7 +7,7 @@ import click
 from .. import _yaml
 from .._exceptions import BstError, LoadError, AppError
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
-from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection
+from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection, _HostMount, _Scope
 from ..utils import UtilError
 
 
@@ -611,8 +611,6 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
     If no COMMAND is specified, the default is to attempt
     to run an interactive shell.
     """
-    from ..element import _Scope
-    from .._project import HostMount
 
     # Buildtree can only be used with build shells
     if cli_buildtree:
@@ -626,7 +624,7 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
             if not element:
                 raise AppError('Missing argument "ELEMENT".')
 
-        mounts = [HostMount(path, host_path) for host_path, path in mount]
+        mounts = [_HostMount(path, host_path) for host_path, path in mount]
 
         try:
             exitcode = app.stream.shell(
