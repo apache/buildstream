@@ -44,6 +44,20 @@ class RemoteType(FastEnum):
         return ""
 
 
+# RemoteSpecPurpose():
+#
+# What a RemoteSpec is going to be used for.
+#
+# This is currently only used to control the behavior
+# of RemoteSpec.new_from_string(), after that, a RemoteSpec
+# has a `push` attribute which is either True or False.
+#
+class RemoteSpecPurpose(FastEnum):
+    ALL = 0  # Pushing and pulling
+    PUSH = 1  # Only pushing
+    PULL = 2  # Only pulling
+
+
 # RemoteSpec():
 #
 # This data structure holds all of the details required to
@@ -252,6 +266,116 @@ class RemoteSpec:
             spec_node=spec_node,
         )
 
+    # new_from_string():
+    #
+    # Creates a RemoteSpec() from a string, used to parse CLI parameters
+    #
+    # If certificates are passed, they are interpreted as relative to the
+    # current working directory.
+    #
+    # Args:
+    #    string: The user provided string
+    #    purpose: The purpose this RemoteSpec is intended for (RemoteSpecPurpose)
+    #
+    # Returns:
+    #    The described RemoteSpec instance.
+    #
+    # Raises:
+    #    RemoteError: In case parsing the string fails
+    #
+    @classmethod
+    def new_from_string(cls, string: str, purpose: int = RemoteSpecPurpose.ALL) -> "RemoteSpec":
+        url: Optional[str] = None
+        instance_name: Optional[str] = None
+        remote_type: str = RemoteType.ALL
+        push: bool = True
+        server_cert: Optional[str] = None
+        client_key: Optional[str] = None
+        client_cert: Optional[str] = None
+
+        if purpose == RemoteSpecPurpose.PULL:
+            push = False
+
+        split = string.split(",")
+        if len(split) > 1:
+            for split_string in split:
+                subsplit = split_string.split("=")
+
+                if len(subsplit) != 2:
+                    raise RemoteError(
+                        "Invalid format '{}' found in remote specification: {}".format(split_string, string)
+                    )
+
+                key: str = subsplit[0]
+                val: str = subsplit[1]
+
+                if key == "url":
+                    url = val
+                elif key == "instance-name":
+                    instance_name = val
+                elif key == "type":
+                    remote_type = val
+                    if remote_type not in [RemoteType.INDEX, RemoteType.STORAGE, RemoteType.ALL]:
+                        raise RemoteError(
+                            "Value for remote 'type' must be one of: {}".format(
+                                ", ".join([RemoteType.INDEX, RemoteType.STORAGE, RemoteType.ALL])
+                            )
+                        )
+                elif key == "push":
+
+                    # Provide a sensible error for `bst artifact push --remote url=http://pony.com,push=False ...`
+                    if purpose != RemoteSpecPurpose.ALL:
+                        raise RemoteError("The 'push' key is invalid and assumed to be {}".format(push))
+
+                    if val in ("True", "true"):
+                        push = True
+                    elif val in ("False", "false"):
+                        push = False
+                    else:
+                        raise RemoteError("Value for 'push' must be 'True' or 'False'")
+                elif key == "server-cert":
+                    server_cert = cls._resolve_path(val, os.getcwd())
+                elif key == "client-key":
+                    client_key = cls._resolve_path(val, os.getcwd())
+                elif key == "client-cert":
+                    client_cert = cls._resolve_path(val, os.getcwd())
+                else:
+                    raise RemoteError("Unexpected key '{}' encountered".format(key))
+        else:
+            # No commas, only the URL was specified
+            url = string
+
+        if not url:
+            raise RemoteError("No URL specified in remote")
+
+        return cls(
+            remote_type,
+            url,
+            push=push,
+            server_cert=server_cert,
+            client_key=client_key,
+            client_cert=client_cert,
+            instance_name=instance_name,
+        )
+
+    # _resolve_path()
+    #
+    # Resolve a path relative to the base directory
+    #
+    # Args:
+    #    path: The path
+    #    basedir: The base directory
+    #
+    # Returns:
+    #    The resolved path
+    #
+    @classmethod
+    def _resolve_path(cls, path: str, basedir: Optional[str]) -> str:
+        path = os.path.expanduser(path)
+        if basedir:
+            path = os.path.join(basedir, path)
+        return path
+
     # _parse_auth():
     #
     # Parse the "auth" data
@@ -276,9 +400,7 @@ class RemoteSpec:
         for key in auth_keys:
             value = auth_node.get_str(key, None)
             if value:
-                value = os.path.expanduser(value)
-                if basedir:
-                    value = os.path.join(basedir, value)
+                value = cls._resolve_path(value, basedir)
             auth_values[key] = value
 
         server_cert = auth_values["server-cert"]
