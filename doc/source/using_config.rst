@@ -225,8 +225,14 @@ Using artifact :ref:`cache servers <config_cache_servers>` is an essential means
 *build avoidance*, as it will allow you to avoid building an element which has already
 been built and uploaded to a common artifact server.
 
-Artifact cache servers can be declared in three different ways, with differing
-priorities.
+Artifact cache servers can be declared in different ways, with differing priorities.
+
+
+Command line
+''''''''''''
+Various commands which involve connecting to artifact servers allow
+:ref:`specifying remotes <invoking_specify_remotes>`, remotes specified
+on the command line replace all user configuration.
 
 
 Global caches
@@ -300,8 +306,14 @@ to be rebuilt because of changes in the dependency graph, as BuildStream will fi
 to download the source code from the cache server before attempting to obtain it from an
 external source, which may suffer higher latencies.
 
-Source cache servers can be declared in three different ways, with differing
-priorities.
+Source cache servers can be declared in different ways, with differing priorities.
+
+
+Command line
+''''''''''''
+Various commands which involve connecting to source cache servers allow
+:ref:`specifying remotes <invoking_specify_remotes>`, remotes specified
+on the command line replace all user configuration.
 
 
 Global caches

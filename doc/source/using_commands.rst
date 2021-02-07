@@ -9,6 +9,77 @@ invoked on the command line, where, in most cases, this will be from the
 project's main directory.
 
 
+Commonly used parameters
+------------------------
+
+
+.. _invoking_specify_remotes:
+
+Remotes
+~~~~~~~
+Remote :ref:`cache servers <config_cache_servers>` can be specified on the
+command line for commands which may result in communicating with such servers.
+
+Any command which has arguments to specify a ``REMOTE``, such as ``--artifact-remote``
+or ``--source-remote``, will override whatever was set in the user configuration,
+and will have an accompanying switch which allows the command to decide whether
+to ignore any remote :ref:`artifact <project_artifact_cache>` or :ref:`source <project_source_cache>`
+caches suggested by project configuration.
+
+Remotes can be specified on the command line either as a simple URI, or as
+a comma separated list of key value pairs.
+
+**Specifying a remote using a URI**
+
+.. code:: shell
+
+   bst artifact push --remote https://artifacts.com/artifacts:8088 element.bst
+
+**Specifying a remote using key value pairs**
+
+.. code:: shell
+
+   bst build --artifact-remote \
+       url=https://artifacts.com/artifacts:8088,type=index,server-cert=~/artifacts.cert \
+       element.bst
+
+
+Attributes
+''''''''''
+Here is the list attributes which can be spefied when providing a ``REMOTE`` on the command line:
+
+* ``url``
+
+  The URL of the remote, possibly including a port number.
+
+* ``instance-name``
+
+  The instance name of this remote, used for sharding by some implementations.
+
+* ``type``
+
+  Whether this remote is to be used for indexing, storage or both, as explained
+  in the corresponding :ref:`user configuration documentation <config_cache_servers>`
+
+* ``push``
+
+  Normally one need not specify this, as it is often inferred by the command
+  being used. In some cases, like :ref:`bst build <invoking_build>`, it can
+  be useful to specify multiple remotes, and only allow pushing to some of
+  the remotes.
+
+  If unspecified, this is assumed to be ``True`` and BuildStream will attempt
+  to push to the remote, but fallback to only pulling if insufficient credentials
+  were provided.
+
+* ``server-cert``, ``client-cert``, ``client-key``:
+
+  These keys specify the attributes of the :ref:`authentication configuration <config_remote_auth>`.
+
+  When specifying these on the command line, they are interpreted as paths relative
+  to the current working directory.
+
+
 Top-level commands
 ------------------
 
