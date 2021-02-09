@@ -288,7 +288,7 @@ class BuildElement(Element):
         root_list = self.__layout.get("/", None)
         if root_list:
             element_list = [element for element, _ in root_list]
-            with sandbox.batch(SandboxFlags.NONE), self.timed_activity("Integrating sandbox", silent_nested=True):
+            with self.timed_activity("Integrating sandbox", silent_nested=True), sandbox.batch(SandboxFlags.NONE):
                 for dep in self.dependencies(element_list):
                     dep.integrate(sandbox)
 
