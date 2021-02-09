@@ -282,6 +282,7 @@ class Context:
             path = os.path.expanduser(path)
             path = os.path.expandvars(path)
             path = os.path.normpath(path)
+            path = os.path.abspath(path)
             setattr(self, directory, path)
 
             # Relative paths don't make sense in user configuration. The exception is
