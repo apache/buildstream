@@ -62,18 +62,24 @@ jobs:
     - name: Update repo
       run: |
 
+        # First reset the branch state to the initial commit, this ensures that
+        # we do not pollute the repository with the history of every docs package
+        # we've ever published (history of docs packages for major releases is
+        # also stored as GitHub release assets)
+        #
+        cd pages/
+        git reset --hard GH_PAGES_FIRST_COMMIT
+
         # Copy the docs asset over and overwrite the orphan gh-pages branch, ensure
         # that we disable GitHub's jekyll by creating the .nojekyll file, otherwise
         # it will interfere with the rendering of the site.
         #
-        mkdir -p pages/docs
-        cp -a docs/doc/build/html/* pages/docs/
-        cp -a docs/docs.tgz pages/docs/
-        touch pages/docs/.nojekyll
+        cp -a ../docs/doc/build/html/* .
+        cp -a ../docs/docs.tgz .
+        touch .nojekyll
 
-        cd pages/
         git add .
         git config --local user.email "merge-ci@ponyland"
         git config --local user.name  "Github Actions Nightly Job"
         git commit -m "Update repo for docs build $GITHUB_RUN_NUMBER"
-        git push "https://$GITHUB_ACTOR:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git" gh-pages
+        git push --force "https://$GITHUB_ACTOR:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git" gh-pages
