@@ -13,6 +13,9 @@ notifications:
 #
 github:
 
+  description: "BuildStream, the software integration tool"
+  homepage: https://buildstream.build/
+
   # Main features
   features:
     # Enable wiki for documentation
