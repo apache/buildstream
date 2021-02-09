@@ -179,6 +179,7 @@ class Context():
             path = os.path.expanduser(path)
             path = os.path.expandvars(path)
             path = os.path.normpath(path)
+            path = os.path.abspath(path)
             setattr(self, directory, path)
 
         # Load quota configuration
