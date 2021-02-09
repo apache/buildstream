@@ -58,6 +58,7 @@ jobs:
       with:
         ref: gh-pages
         path: pages
+        fetch-depth: 0
 
     - name: Update repo
       run: |
