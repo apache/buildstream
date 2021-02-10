@@ -5,20 +5,17 @@
 User configuration
 ==================
 User configuration and preferences can be specified in a user provided
-configuration file, and usually also on the command line.
+configuration file, and in most cases these preferences can be overridden
+using :ref:`command line options <commands>`.
 
-Values specified in a user provided configuration file override the
-defaults, while command line options take precedence over any other
-specified configurations.
+Values that are not specified in a user configuration file assume
+their :ref:`default values <config_defaults>`.
 
 
 Configuration file
 ------------------
-Users can provide a configuration file to override parameters in
-the default configuration.
-
-Unless a configuration file is explicitly specified on the command line when
-invoking ``bst``, an attempt is made to load user specific configuration from
+Unless a configuration file is explicitly specified on the :ref:`command line <invoking_bst>`
+when invoking ``bst``, an attempt is made to load user specific configuration from
 ``$XDG_CONFIG_HOME/buildstream.conf``. On most Linux based systems, the location
 will be ``~/.config/buildstream.conf``
 
@@ -32,6 +29,518 @@ will be ``~/.config/buildstream.conf``
    from ``$XDG_CONFIG_HOME/buildstream1.conf`` and BuildStream 2 will load
    it's configuration from ``$XDG_CONFIG_HOME/buildstream2.conf``, while
    any version will fallback to ``$XDG_CONFIG_HOME/buildstream.conf``.
+
+
+
+Working directories
+-------------------
+The working directories control where BuildStream will store data. While
+these will have sane defaults, you may want to change these directories
+depending on your partitioning scheme and where you may have extra space.
+
+Environment variables and ``~/`` home directory expressions are supported
+when specifying working directories.
+
+Working directories are configured at the toplevel of your configuration file, like so:
+
+.. code:: yaml
+
+   #
+   # Configure working directories
+   #
+   sourcedir: ~/buildstream/sources
+
+
+Attributes
+~~~~~~~~~~
+
+* ``sourcedir``
+
+  This is the location where BuildStream stores the source code it downloads
+  for builds.
+
+* ``logdir``
+
+  This is the location where BuildStream stores log files of build command
+  output and basically logs pertaining to any activity BuildStream orchestrates.
+
+* ``cachedir``
+
+  This is the location where BuildStream stores the local *CAS* (*Content Addressable Storage*).
+
+  The *CAS* is used to cache anything and everything which BuildStream may
+  reuse at a later time.
+
+  .. attention::
+
+     While it may be beneficial at times to delete the entire cache directory
+     manually in order to free up disk space, one should keep in mind that
+     the ``sourcedir`` and ``logdir`` are configured as subdirectories of
+     this directory when default configuration is used.
+
+     Take care not to accidentally remove all your cached downloaded sources
+     when deleting your cache.
+
+* ``workspacedir``
+
+  A default location for :ref:`opening workspaces <invoking_workspace_open>`.
+
+  .. note::
+
+     By default this is configured to ``.``, which is to say workspaces are
+     created as a subdirectory of the current working directory by default.
+
+     Because of this, the ``workspacedir`` directory is the only directory
+     which is allowed to be declared as a relative path.
+
+
+.. _config_local_cache:
+
+Local cache control
+-------------------
+Beyond deciding what directory you intend to place the cache, there are
+some controls on what is cached locally and how.
+
+These are controlled by the attributes of a ``cache`` dictionary at the
+toplevel of your configuration file, like so:
+
+.. code::
+
+   #
+   # Control the cache
+   #
+   cache:
+
+     # Allow using as much free space as possible
+     quota: infinity
+
+     # Avoid pulling large amounts of data we don't need locally
+     pull-buildtrees: False
+
+     #
+     # Avoid caching build trees if we don't need them
+     cache-buildtrees: auto
+
+
+Attributes
+~~~~~~~~~~
+
+* ``quota``
+
+  This controls how much data you allow BuildStream to cache locally.
+
+  An attempt will be made to error out instead of exceeding the maximum
+  quota which the user has allowed here. Given that it is impossible for
+  BuildStream to know how much data a given build will create, this quota
+  is implemented on a best effort basis.
+
+  The ``quota`` can be specified in multiple ways:
+
+  * The special ``infinity`` value
+
+    This default value states that BuildStream can use as much space as
+    is available on the filesystem where the cache resides.
+
+  * A number in bytes.
+
+  * A human readable number, suffixed in K, M, G or T
+
+    E.g. ``250K`` being 250 kilobytes, ``100M`` being 100 megabytes, etc.
+
+  * A percentage value, e.g. ``80%``
+
+    Percentage values are taken to represent a percentage of the partition
+    size on the filesystem where the cache has been configured.
+
+* ``pull-buildtrees``
+
+  Whether to pull *build trees* when downloading remote artifacts.
+
+  The *build tree* of an artifact is the directory where a build took
+  place, this is useful for :ref:`running a build shell <invoking_shell>`
+  in order to observe how an element was built or to debug how a
+  build failed if the build failed remotely.
+
+  Since build trees are rather expensive, the default is to not pull
+  build trees for every artifact. If you need a build tree that exists
+  remotely, it will be possible to download it as an option at the
+  time you run a command which requires it.
+
+* ``cache-buildtrees``
+
+  Whether to cache build trees when creating artifacts, if build trees
+  are cached locally and the client is configured to push to remote servers,
+  then build trees will be pushed along with any uploaded artifacts.
+
+  This configuration has three possible values:
+
+  * ``never``: Never cache build trees
+  * ``auto``: Only cache the build trees where necessary (e.g. for failed builds)
+  * ``always``: Always cache the build tree.
+
+
+Scheduler controls
+------------------
+Controls related to how the scheduler works are exposed as attributes of the
+toplevel ``scheduler`` dictionary, like so:
+
+.. code:: yaml
+
+   #
+   # Control the scheduler
+   #
+   scheduler:
+
+     # Allow building up to four seperate elements at a time
+     builders: 4
+
+     # Continue building as many elements as possible if anything fails
+     on-error: continue
+
+
+Attributes
+~~~~~~~~~~
+
+* ``fetchers``
+
+  The number of concurrent tasks which download sources or artifacts.
+
+* ``pushers``
+
+  The number of concurrent tasks which upload sources or artifacts.
+
+* ``builders``
+
+  The number of concurrent tasks which build elements.
+
+  .. note::
+
+     This does not control the number of processes in the scope of the
+     build of a single element, but rather the number of elements which
+     may be built in parallel.
+
+* ``network-retries``
+
+  The number of times to retry a task which failed due to network connectivity issues.
+
+* ``on-error``
+
+  What to do when a task fails and BuildStream is running in non-interactive mode. This can
+  be set to the following values:
+
+  * ``continue``: Continue with other tasks, a summary of errors will be printed at the end
+  * ``quit``: Quit after all ongoing tasks have completed
+  * ``terminate``: Abort any ongoing tasks and exit immediately
+
+  .. note::
+
+     If BuildStream is running in interactive mode, then the ongoing build will be suspended
+     and the user will be prompted and asked what to do when a task fails.
+
+     Interactive mode is automatically enabled if BuildStream is connected to a terminal
+     rather than being run automatically, or, it can be specified on the :ref:`command line <invoking_bst>`.
+
+
+Build controls
+--------------
+Some aspects about how elements get built can be controlled by attributes of the ``build``
+dictionary at the toplevel, like so:
+
+.. code:: yaml
+
+   #
+   # Build controls
+   #
+   build:
+
+     #
+     # Allow up to 4 parallel processes to execute within the scope of one build
+     #
+     max-jobs: 4
+
+
+Attributes
+~~~~~~~~~~
+
+* ``max-jobs``
+
+  This is a best effort attempt to instruct build systems on how many parallel
+  processes to use when building an element.
+
+  It is supported by most popular build systems such as ``make``, ``cmake``, ``ninja``,
+  etc, via environment variables such as ``MAXJOBS`` and similar command line options.
+
+  When using the special value ``0``, BuildStream will allocate the number of threads
+  available on the host and limit this with a hard coded value of ``8``, which was
+  found to be an optimial number when building even on hosts with many cores.
+
+* ``dependencies``
+
+  This instructs what dependencies of the target elements should be built, valid
+  values for this attribute are:
+
+  * ``plan``: Only build elements required to generate the expected target artifacts
+  * ``all``: Build elements even if they are build dependencies of artifacts which are already cached
+
+
+Logging controls
+----------------
+Various aspects of how BuildStream presents output and UI can be controlled with
+attributes of the toplevel ``logging`` dictionary, like so:
+
+.. code:: yaml
+
+   #
+   # Control logging output
+   #
+   logging:
+
+     #
+     # Whether to be verbose
+     #
+     verbose: True
+
+
+Attributes
+~~~~~~~~~~
+
+* ``verbose``
+
+  Whether to use verbose logging.
+
+* ``debug``
+
+  Whether to print messages related to debugging BuildStream itself.
+
+* ``key-length``
+
+  When displaying abbreviated cache keys, this controls the number of characters
+  of the cache key which should be printed.
+
+* ``throttle-ui-updates``
+
+  Whether the throttle updates to the status bar in interactive mode. If set to ``True``,
+  then the status bar will be updated once per second.
+
+* ``error-lines``
+
+  The maximum number of lines to print in the main logging output related to an
+  error processing an element, these will be the last lines found in the relevant
+  element's stdout and stderr.
+
+* ``message-lines``
+
+  The maximum number of lines to print in a detailed message sent to the main logging output.
+
+* ``element-format``
+
+  The default format to use when printing out elements in :ref:`bst show <invoking_show>`
+  output, and when printing the pipeline summary at the beginning of sessions.
+
+  The format is specified as a string containing variables which will be expanded
+  in the resulting string, variables must be specified using a leading percent sign
+  and enclosed in curly braces, a colon can be specified in the variable to perform
+  python style string alignments, e.g.:
+
+  .. code:: yaml
+
+     logging:
+
+       #
+       # Set the element format
+       #
+       element-format: |
+
+         %{state: >12} %{full-key} %{name} %{workspace-dirs}
+
+  Variable names which can be used in the element format consist of:
+
+  * ``name``
+
+    The :ref:`element path <format_element_names>`, which is the name of the element including
+    any leading junctions.
+
+  * ``key``
+
+    The abbreviated cache key, the length of which is controlled by the ``key-length`` logging configuration.
+
+  * ``full-key``
+
+    The full cache key.
+
+  * ``state``
+
+    The element state, this will be formatted as one of the following:
+
+    * ``no reference``: If the element still needs to be :ref:`tracked <invoking_source_track>`.
+    * ``junction``: If the element is a junction and as such does not have any relevant state.
+    * ``failed``: If the element has been built and the build has failed.
+    * ``cached``: If the element has been successfully built and is present in the local cache.
+    * ``fetch needed``: If the element cannot be built yet because the sources need to be :ref:`fetched <invoking_source_fetch>`.
+    * ``buildable``: If the element has all of it's sources and build dependency artifacts cached locally.
+    * ``waiting``: If the element has all of it's sources cached but it's build dependencies are not yet locally cached.
+
+  * ``config``
+
+    The :ref:`element configuration <format_config>`, formatted in YAML.
+
+  * ``vars``
+
+    The resolved :ref:`element variables <format_variables>`, formatted as a simple YAML dictionary.
+
+  * ``env``
+
+    The resolved :ref:`environment variables <format_environment>`, formatted as a simple YAML dictionary.
+
+  * ``public``
+
+    The resolved :ref:`public data <format_public>`, formatted in YAML.
+
+  * ``workspaced``
+
+    If the element has an open workspace, this will expand to the string *"(workspaced)"*, otherwise
+    it will expand to an empty string.
+
+  * ``workspace-dirs``
+
+    If the element has an open workspace, this will expand to the workspace directory, prefixed with
+    the text *"Workspace: "*, otherwise it will expand to an empty string.
+
+  * ``deps``
+
+    A list of the :ref:`element paths <format_element_names>` of all dependency elements.
+
+  * ``build-deps``
+
+    A list of the :ref:`element paths <format_element_names>` of all build dependency elements.
+
+  * ``runtime-deps``
+
+    A list of the :ref:`element paths <format_element_names>` of all runtime dependency elements.
+
+* ``message-format``
+
+  The format to use for messages being logged in the aggregated main logging output.
+
+  Similarly to the ``element-format``, The format is specified as a string containing variables which
+  will be expanded in the resulting string, and variables must be specified using a leading percent sign
+  and enclosed in curly braces, e.g.:
+
+  .. code:: yaml
+
+     logging:
+
+       #
+       # Set the message format
+       #
+       message-format: |
+
+         [%{elapsed}][%{key}][%{element}] %{action} %{message}
+
+  Variable names which can be used in the element format consist of:
+
+  * ``elapsed``
+
+    If this message announces the completion of (successful or otherwise) of an activity, then
+    this will expand to a time code showing how much time elapsed for the given activity, in
+    the format: ``HH:MM:SS``, otherwise an empty time code will be displayed in the format:
+    ``--:--:--``.
+
+  * ``elapsed-us``
+
+    Similar to the ``elapsed`` variable, however the timecode will include microsecond precision.
+
+  * ``wallclock``
+
+    This will display a timecode for each message displaying the local wallclock time, in the
+    format ``HH:MM:SS``.
+
+  * ``wallclock-us``
+
+    Similar to the ``wallclock`` variable, however the timecode will include microsecond precision.
+
+  * ``key``
+
+    The abbreviated cache key of the element the message is related to, the length of which is controlled
+    by the ``key-length`` logging configuration.
+
+    If the message in question is not related to any element, then this will expand to whitespace
+    of equal length.
+
+  * ``element``
+
+    This will be formatted to an indicator consisting of the type of activity which is being
+    performed on the element (e.g. *"build"* or *"fetch"* etc), and the :ref:`element path <format_element_names>`
+    of the element this message is related to.
+
+    If the message in question is not related to any element, then a string will be formatted
+    to indicate that this message is related to a core activity instead.
+
+  * ``action``
+
+    A classifier of the type of message this is, the possible values this will expand to are:
+
+    * ``DEBUG``
+
+      This is a message related to debugging BuildStream itself
+
+    * ``STATUS``
+
+      A message showing some detail of what is currently happening, this message will not
+      be displayed unless verbose output is enabled.
+
+    * ``INFO``
+
+      An informative message, this may be printed for instance when discovering a new
+      ref for source code when running :ref:`bst source track <invoking_source_track>`.
+
+    * ``WARN``
+
+      A warning message.
+
+    * ``ERROR``
+
+      An error message.
+
+    * ``BUG``
+
+      A bug happened in BuildStream, this will usually be accompanied by a python stack trace.
+
+    * ``START``
+
+      An activity related to an element started.
+
+      Any ``START`` message will always be accompanied by a later ``SUCCESS``, ``FAILURE``
+      or ``SKIPPED`` message.
+
+    * ``SUCCESS``
+
+      An activity related to an element completed successfully.
+
+    * ``FAILURE``
+
+      An activity related to an element failed.
+
+    * ``SKIPPED``
+
+      After strating this activity, it was discovered that no work was needed and
+      the activity was skipped.
+
+  * ``message``
+
+    The brief message, or the path to the corresponding log file, will be printed here.
+
+    When this is a scheduler related message about the commencement or completion of
+    an element related activity, then the path to the corresponding log for that activity
+    will be printed here.
+
+    If it is a message issued for any other reason, then the message text will be formatted here.
+
+  .. note::
+
+     Messages issued by the core or by plugins are allowed to provide detailed accounts, these
+     are the indented multiline messages which sometimes get displayed in the main aggregated
+     logging output, and will be printed regardless of the logging ``message-format`` value.
 
 
 Remote services
@@ -63,7 +572,9 @@ The ``auth`` configuration block looks like this:
      client-cert: client.crt
      client-key: client.key
 
-**Attributes:**
+
+Attributes
+''''''''''
 
 * ``server-cert``
 
@@ -129,7 +640,9 @@ Cache server configuration is declared in the following way:
        client-cert: client.crt
        client-key: client.key
 
-**Attributes:**
+
+Attributes
+''''''''''
 
 * ``override-project-caches``
 
@@ -402,7 +915,8 @@ using the ``remote-execution`` key, like so:
        url: http://cache.flalback.example.com:50052
        instance-name: main
 
-**Attributes:**
+Attributes
+''''''''''
 
 * ``pull-artifact-files``
 
@@ -479,10 +993,11 @@ which looks like this:
 
 .. _user_config_project_overrides:
 
-Project specific value
-----------------------
+Project specific values
+-----------------------
 The ``projects`` key can be used to specify project specific configurations,
 the supported configurations on a project wide basis are listed here.
+
 
 .. _user_config_strict_mode:
 
@@ -493,7 +1008,6 @@ to rebuild when their dependencies have changed. This is enabled
 by default, but recommended to turn off in developer scenarios where
 you might want to build a large system and test it quickly after
 modifying some low level component.
-
 
 **Example**
 
@@ -512,7 +1026,7 @@ modifying some low level component.
 
 .. _config_default_mirror:
 
-Default Mirror
+Default mirror
 ~~~~~~~~~~~~~~
 When using :ref:`mirrors <project_essentials_mirrors>`, a default mirror can
 be defined to be fetched first.
@@ -520,9 +1034,9 @@ The default mirror is defined by its name, e.g.
 
 .. code:: yaml
 
-  projects:
-    project-name:
-      default-mirror: oz
+   projects:
+     project-name:
+       default-mirror: oz
 
 
 .. note::
@@ -531,45 +1045,71 @@ The default mirror is defined by its name, e.g.
    ``--default-mirror`` command-line option.
 
 
-.. _config_local_cache:
+Project options
+~~~~~~~~~~~~~~~
+One can specify values to use for :ref:`project options <project_options>` for the projects
+you use here, this avoids needing to specify the options on the command line every time.
 
-Local cache expiry
-~~~~~~~~~~~~~~~~~~
-BuildStream locally caches artifacts, build trees, log files and sources within a
-cache located at ``~/.cache/buildstream`` (unless a $XDG_CACHE_HOME environment
-variable exists). When building large projects, this cache can get very large,
-thus BuildStream will attempt to clean up the cache automatically by expiring the least
-recently *used* artifacts.
-
-By default, cache expiry will begin once the file system which contains the cache
-approaches maximum usage. However, it is also possible to impose a quota on the local
-cache in the user configuration. This can be done in two ways:
-
-1. By restricting the maximum size of the cache directory itself.
-
-For example, to ensure that BuildStream's cache does not grow beyond 100 GB,
-simply declare the following in your user configuration (``~/.config/buildstream.conf``):
+**Example**
 
 .. code:: yaml
 
-  cache:
-    quota: 100G
+   projects:
 
-This quota defines the maximum size of the artifact cache in bytes.
-Other accepted values are: K, M, G or T (or you can simply declare the value in bytes, without the suffix).
-This uses the same format as systemd's
-`resource-control <https://www.freedesktop.org/software/systemd/man/systemd.resource-control.html>`_.
+     #
+     # Configure the debug flag offered by `project-name`
+     #
+     project-name:
+       options:
+         debug-build: True
 
-2. By expiring artifacts once the file system which contains the cache exceeds a specified usage.
 
-To ensure that we start cleaning the cache once we've used 80% of local disk space (on the file system
-which mounts the cache):
+Source cache servers
+~~~~~~~~~~~~~~~~~~~~
+As already described in the section concerning configuration of
+:ref:`source cache servers <config_source_caches>`, these can be specified on a per project basis.
+
+
+Artifact cache servers
+~~~~~~~~~~~~~~~~~~~~~~
+As already described in the section concerning configuration of
+:ref:`artifact cache servers <config_artifact_caches>`, these can be specified on a per project basis.
+
+
+Remote execution configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Following the same format as the toplevel :ref:`remote execution configuration <user_config_remote_execution_service>`,
+the global configuration can be overridden on a per project basis in this project override section.
+
+**Example**
 
 .. code:: yaml
 
-  cache:
-    quota: 80%
+   projects:
 
+     project-name:
+
+       #
+       # If `project-name` is built as the toplevel project in this BuildStream session,
+       # then use this remote execution configuration instead of any globally defined
+       # remote execution configuration.
+       #
+       remote-execution:
+         pull-artifact-files: True
+         execution-service:
+           url: http://execution.example.com:50051
+           instance-name: main
+
+.. note::
+
+   Only one remote execution service will be considered for any invocation of BuildStream.
+
+   If you are building a project which has a junction into another subproject for which you have
+   specified a project specific remote execution service for in your user configuration, then
+   it will be ignored in the context of building that toplevel project.
+
+
+.. _config_defaults:
 
 Default configuration
 ---------------------
