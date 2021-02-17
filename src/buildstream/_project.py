@@ -33,10 +33,7 @@ from ._profile import Topics, PROFILER
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
 from ._options import OptionPool
-from ._artifactcache import ArtifactCache
-from ._sourcecache import SourceCache
-from .node import ScalarNode, SequenceNode, _assert_symbol_name
-from .sandbox import SandboxRemote
+from .node import ScalarNode, SequenceNode, MappingNode, ProvenanceInformation, _assert_symbol_name
 from ._pluginfactory import ElementFactory, SourceFactory, load_plugin_origin
 from .types import CoreWarnings
 from ._projectrefs import ProjectRefs, ProjectRefStorage
@@ -44,11 +41,12 @@ from ._loader import Loader, LoadContext
 from .element import Element
 from ._includes import Includes
 from ._workspaces import WORKSPACE_PROJECT_FILE
+from ._remotespec import RemoteSpec
+
 
 if TYPE_CHECKING:
-    from .node import ProvenanceInformation, MappingNode
     from ._context import Context
-    from ._remote import RemoteSpec
+
 
 # Project Configuration file
 _PROJECT_CONF_FILE = "project.conf"
@@ -112,14 +110,14 @@ class Project:
         cli_options: Optional[Dict[str, str]] = None,
         default_mirror: Optional[str] = None,
         parent_loader: Optional[Loader] = None,
-        provenance_node: Optional["ProvenanceInformation"] = None,
+        provenance_node: Optional[ProvenanceInformation] = None,
         search_for_project: bool = True,
         load_project: bool = True,
     ):
         #
         # Public members
         #
-        self.name: Optional[str] = None  # The project name
+        self.name: str = ""  # The project name
         self.directory: Optional[str] = directory  # The project directory
         self.element_path: Optional[str] = None  # The project relative element path
 
@@ -134,19 +132,18 @@ class Project:
         self.config: ProjectConfig = ProjectConfig()
         self.first_pass_config: ProjectConfig = ProjectConfig()
 
-        self.base_environment: Union["MappingNode", Dict[str, str]] = {}  # The base set of environment variables
+        self.base_environment: Union[MappingNode, Dict[str, str]] = {}  # The base set of environment variables
         self.base_env_nocache: List[str] = []  # The base nocache mask (list) for the environment
 
         # Remote specs for communicating with remote services
-        self.artifact_cache_specs: List["RemoteSpec"] = []  # Artifact caches
-        self.source_cache_specs: List["RemoteSpec"] = []  # Source caches
-        self.remote_execution_specs: List["RemoteSpec"] = []  # Remote execution services
+        self.artifact_cache_specs: List[RemoteSpec] = []  # Artifact caches
+        self.source_cache_specs: List[RemoteSpec] = []  # Source caches
 
         self.element_factory: Optional[ElementFactory] = None  # ElementFactory for loading elements
         self.source_factory: Optional[SourceFactory] = None  # SourceFactory for loading sources
 
-        self.sandbox: Optional["MappingNode"] = None
-        self.splits: Optional["MappingNode"] = None
+        self.sandbox: Optional[MappingNode] = None
+        self.splits: Optional[MappingNode] = None
 
         #
         # Private members
@@ -864,32 +861,17 @@ class Project:
         # the values from our loaded configuration dictionary.
         #
 
-        # Load artifacts pull/push configuration for this project
-        self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config, self.directory)
+        # Load artifact remote specs
+        caches = config.get_sequence("artifacts", default=[], allowed_types=[MappingNode])
+        for node in caches:
+            spec = RemoteSpec.new_from_node(node, self.directory)
+            self.artifact_cache_specs.append(spec)
 
-        # If there is a junction Element which specifies that we want to remotely cache
-        # its elements, append the junction's remotes to the artifact cache specs list
-        if self.junction:
-            parent = self.junction._get_project()
-            if self.junction.ignore_junction_remotes:
-                self.artifact_cache_specs = []
-
-            if self.junction.cache_junction_elements:
-                self.artifact_cache_specs = parent.artifact_cache_specs + self.artifact_cache_specs
-
-        # Load source caches with pull/push config
-        self.source_cache_specs = SourceCache.specs_from_config_node(config, self.directory)
-
-        # Load remote-execution configuration for this project
-        project_specs = SandboxRemote.specs_from_config_node(config, self.directory)
-        override_specs = SandboxRemote.specs_from_config_node(self._context.get_overrides(self.name), self.directory)
-
-        if override_specs is not None:
-            self.remote_execution_specs = override_specs
-        elif project_specs is not None:
-            self.remote_execution_specs = project_specs
-        else:
-            self.remote_execution_specs = self._context.remote_execution_specs
+        # Load source cache remote specs
+        caches = config.get_sequence("source-caches", default=[], allowed_types=[MappingNode])
+        for node in caches:
+            spec = RemoteSpec.new_from_node(node, self.directory)
+            self.source_cache_specs.append(spec)
 
         # Load sandbox environment variables
         self.base_environment = config.get_mapping("environment")

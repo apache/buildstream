@@ -46,7 +46,7 @@ def test_push_pull_deps(cli, tmpdir, datafiles, deps, expected_states):
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
 
         # First build the target element and push to the remote.
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
         result = cli.run(project=project, args=["build", target])
         result.assert_success()
 
@@ -90,7 +90,9 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
     ) as share2:
 
         # Build the target and push it to share2 only.
-        cli.configure({"artifacts": [{"url": share1.repo, "push": False}, {"url": share2.repo, "push": True},]})
+        cli.configure(
+            {"artifacts": {"servers": [{"url": share1.repo, "push": False}, {"url": share2.repo, "push": True},]}}
+        )
         result = cli.run(project=project, args=["build", "target.bst"])
         result.assert_success()
 
@@ -137,9 +139,7 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
 
         # Configure the default push location to be bad_share; we will assert that
         # nothing actually gets pushed there.
-        cli.configure(
-            {"artifacts": {"url": bad_share.repo, "push": True},}
-        )
+        cli.configure({"artifacts": {"servers": [{"url": bad_share.repo, "push": True},]}})
 
         # Now try `bst artifact push` to the good_share.
         result = cli.run(project=project, args=["artifact", "push", "target.bst", "--remote", good_share.repo])
@@ -175,7 +175,9 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
         # First build the target element and push to the remote.
-        cli.configure({"artifacts": {"url": share.repo, "push": True}, "projects": {"test": {"strict": False}}})
+        cli.configure(
+            {"artifacts": {"servers": [{"url": share.repo, "push": True}]}, "projects": {"test": {"strict": False}}}
+        )
         result = cli.run(project=project, args=["build", "target.bst"])
         result.assert_success()
         assert cli.get_element_state(project, "target.bst") == "cached"
@@ -225,7 +227,7 @@ def test_push_pull_cross_junction(cli, tmpdir, datafiles):
         generate_junction(tmpdir, subproject_path, junction_path, store_ref=True)
 
         # First build the target element and push to the remote.
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
         result = cli.run(project=project, args=["build", "junction.bst:import-etc.bst"])
         result.assert_success()
         assert cli.get_element_state(project, "junction.bst:import-etc.bst") == "cached"
@@ -290,7 +292,7 @@ def test_pull_missing_blob(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
         _test_pull_missing_blob(cli, project, share, share)
 
@@ -305,10 +307,12 @@ def test_pull_missing_blob_split_share(cli, tmpdir, datafiles):
     with create_split_share(indexshare, storageshare) as (index, storage):
         cli.configure(
             {
-                "artifacts": [
-                    {"url": index.repo, "push": True, "type": "index"},
-                    {"url": storage.repo, "push": True, "type": "storage"},
-                ]
+                "artifacts": {
+                    "servers": [
+                        {"url": index.repo, "push": True, "type": "index"},
+                        {"url": storage.repo, "push": True, "type": "storage"},
+                    ]
+                }
             }
         )
 
@@ -345,7 +349,7 @@ def test_pull_missing_local_blob(cli, tmpdir, datafiles):
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
 
         # First build the import-bin element and push to the remote.
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
         result = cli.run(project=project, args=["source", "track", input_name])
         result.assert_success()
@@ -376,7 +380,7 @@ def test_pull_missing_notifies_user(caplog, cli, tmpdir, datafiles):
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
 
-        cli.configure({"artifacts": {"url": share.repo}})
+        cli.configure({"artifacts": {"servers": [{"url": share.repo}]}})
         result = cli.run(project=project, args=["build", "target.bst"])
 
         result.assert_success()
@@ -393,18 +397,14 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles):
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare1")) as shareuser, create_artifact_share(
         os.path.join(str(tmpdir), "artifactshare2")
-    ) as shareproject, create_artifact_share(os.path.join(str(tmpdir), "artifactshare3")) as sharecli:
-
-        # Add shareproject repo url to project.conf
-        with open(os.path.join(project, "project.conf"), "a") as projconf:
-            projconf.write("artifacts:\n  url: {}\n  push: True".format(shareproject.repo))
+    ) as sharecli:
 
         # Configure shareuser remote in user conf
-        cli.configure({"artifacts": {"url": shareuser.repo, "push": True}})
+        cli.configure({"artifacts": {"servers": [{"url": shareuser.repo, "push": True}]}})
 
-        # Push the artifacts to the shareuser and shareproject remotes.
-        # Assert that shareuser and shareproject have the artfifacts cached,
-        # but sharecli doesn't, then delete locally cached elements
+        # Push the artifacts to the shareuser remote.
+        # Assert that shareuser has the artfifacts cached, but sharecli doesn't,
+        # then delete locally cached elements
         result = cli.run(project=project, args=["build", "target.bst"])
         result.assert_success()
         all_elements = ["target.bst", "import-bin.bst", "compose-all.bst"]
@@ -412,11 +412,10 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles):
             assert element_name in result.get_pushed_elements()
             assert_not_shared(cli, sharecli, project, element_name)
             assert_shared(cli, shareuser, project, element_name)
-            assert_shared(cli, shareproject, project, element_name)
             cli.remove_artifact_from_cache(project, element_name)
 
         # Now check that a build with cli set as sharecli results in nothing being pulled,
-        # as it doesn't have them cached and shareuser/shareproject should be ignored. This
+        # as it doesn't have them cached and shareuser should be ignored. This
         # will however result in the artifacts being built and pushed to it
         result = cli.run(project=project, args=["build", "--remote", sharecli.repo, "target.bst"])
         result.assert_success()
@@ -432,7 +431,6 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles):
         for element_name in all_elements:
             assert cli.get_element_state(project, element_name) == "cached"
             assert element_name in result.get_pulled_elements()
-        assert shareproject.repo not in result.stderr
         assert shareuser.repo not in result.stderr
         assert sharecli.repo in result.stderr
 
@@ -457,7 +455,7 @@ def test_pull_access_rights(cli, tmpdir, datafiles):
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
 
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
         result = cli.run(project=project, args=["build", "compose-all.bst"])
         result.assert_success()
 
@@ -519,7 +517,7 @@ def test_pull_artifact(cli, tmpdir, datafiles):
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
 
         # First build the target element and push to the remote.
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
         result = cli.run(project=project, args=["build", element])
         result.assert_success()
@@ -557,7 +555,7 @@ def test_dynamic_build_plan(cli, tmpdir, datafiles):
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
 
         # First build the target element and push to the remote.
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
         result = cli.run(project=project, args=["build", target])
         result.assert_success()
 

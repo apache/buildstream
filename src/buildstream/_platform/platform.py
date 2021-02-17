@@ -55,7 +55,7 @@ class Platform:
             raise Error
 
     @classmethod
-    def create_instance(cls):
+    def create_instance(cls) -> "Platform":
         return Platform()
 
     def get_cpu_count(self, cap=None):

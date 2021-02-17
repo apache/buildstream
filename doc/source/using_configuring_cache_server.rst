@@ -13,41 +13,13 @@ In addition to the local caches, you can configure one or more remote caches and
 BuildStream will then try to pull a suitable object from one of the remotes,
 falling back to performing a local build or fetching a source if needed.
 
-Configuring BuildStream to use remote caches
---------------------------------------------
-A project will often set up continuous build infrastructure that pushes
-cached objects to a shared cache, so developers working on the project can
-make use of these pre-made objects instead of having to each build the whole
-project locally. The project can declare this cache in its
-project configuration file for :ref:`artifacts <project_essentials_artifacts>`
-and :ref:`sources <project_source_cache>`.
-
-Users can declare additional remote caches in the :ref:`user configuration
-<config_artifacts>`. There are several use cases for this: your project may not
-define its own cache, it may be useful to have a local mirror of its cache, or
-you may have a reason to share artifacts privately.
-
-Remote caches are identified by their URL. There are currently two supported
-protocols:
-
-* ``http``: Pull and push access, without transport-layer security
-* ``https``: Pull and push access, with transport-layer security
-
-BuildStream allows you to configure as many caches as you like, and will query
-them in a specific order:
-
-1. Project-specific overrides in the user config
-2. Project configuration
-3. User configuration
-
-When an an object is created locally, BuildStream will try to push it to all the
-caches which have the ``push: true`` flag set. You can also manually push
-artifacts to a specific cache using the :ref:`bst artifact push command
-<invoking_artifact_push>`.
-
-Objects are identified using the element or sources :ref:`cache key <cachekeys>`
-so the objects provided by a cache should be interchangable with those provided
-by any other cache.
+On the client side, cache servers are declared and configured in
+:ref:`user configuration <config_cache_servers>`, and since it is typical
+for projects to maintain their own cache servers, it is also possible for
+projects to provide recommended :ref:`artifact cache servers <project_artifact_cache>`
+and :ref:`source cache servers <project_source_cache>` through project
+configuration, so that downstream users can download from services
+provided by upstream projects by default.
 
 
 Setting up a remote cache
@@ -173,7 +145,9 @@ Instance with push and requiring client authentication:
    For this scenario, you can add the `--index-only` flag to the above
    commands, and configure BuildStream to store artifact metadata and
    files in a separate caches (e.g. bst-artifact-server and Buildbarn)
-   using :ref:`"types" <project_essentials_split_artifacts>`.
+   using the ``type`` attribute of a :ref:`cache server <config_cache_servers>`
+   configuration.
+
 
 Managing the cache with systemd
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -260,14 +234,15 @@ We can then check if the services are successfully running with:
 For more information on systemd services see: 
 `Creating Systemd Service Files <https://www.devdungeon.com/content/creating-systemd-service-files>`_.
 
+
 Declaring remote caches
 ~~~~~~~~~~~~~~~~~~~~~~~
 Remote caches can be declared within either:
 
-1. The project configuration for :ref:`artifact <project_essentials_artifacts>`
-   and :ref:`sources <project_source_cache>`, or
-2. The user configuration for :ref:`artifacts <config_artifacts>` and
-   :ref:`sources <config_sources>`.
+1. The user configuration for :ref:`artifacts <config_artifact_caches>` and
+   :ref:`sources <config_source_caches>`.
+2. The project configuration for :ref:`artifact <project_artifact_cache>`
+   and :ref:`sources <project_source_cache>`.
 
 Please follow the above links to see examples showing how we declare remote
-caches in both the project configuration and the user configuration, respectively.
+caches in both user configuration the project configuration, respectively.

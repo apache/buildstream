@@ -76,7 +76,7 @@ To accomplish this, you will need to know the cache key of the stack element
 which was built remotely, possibly by inspecting the remote build log or by
 deriving it with an equally configured BuildStream project, and you will
 need read access to the artifact cache server which the build was uploaded to,
-this should be configured in your :ref:`user configuration file <config_artifacts>`.
+this should be configured in your :ref:`user configuration file <config_artifact_caches>`.
 
 You can then checkout the remotely built stack using the
 :ref:`bst artifact checkout <invoking_artifact_checkout>` command and providing

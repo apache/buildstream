@@ -14,6 +14,15 @@ Format
   o BREAKING CHANGE: Stack element dependencies are now hard required to be
     both build and runtime dependencies.
 
+  o BREAKING CHANGE: The old and deprecated "remote-execution" configuration style
+    is no longer supported, one must now specify the "execution-service" block
+    and cannot specify a "url" in the "remote-execution" dictionary anymore.
+
+  o BREAKING CHANGE: Full redesign of remote cache configurations, junction
+    configurations related to artifact pulling/pushing policies have been
+    removed, users will need to view the new documentation and update
+    cache configuration accordingly.
+
 Core
 ----
 

@@ -787,7 +787,7 @@ def cli_remote_execution(tmpdir, remote_services):
     if remote_services.artifact_storage_service:
         artifacts.append({"url": remote_services.artifact_storage_service, "push": True, "type": "storage"})
     if artifacts:
-        fixture.configure({"artifacts": artifacts})
+        fixture.configure({"artifacts": {"servers": artifacts}})
 
     remote_execution = {}
     if remote_services.action_service:
@@ -806,7 +806,7 @@ def cli_remote_execution(tmpdir, remote_services):
         fixture.configure({"remote-execution": remote_execution})
 
     if remote_services.source_service:
-        fixture.configure({"source-caches": [{"url": remote_services.source_service,}]})
+        fixture.configure({"source-caches": {"servers": [{"url": remote_services.source_service,}]}})
 
     return fixture
 

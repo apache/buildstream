@@ -53,15 +53,6 @@ Overview
      overrides:
        subproject-junction.bst: local-junction.bst
 
-     # Optionally declare whether elements within the junction project
-     # should interact with project remotes (default: False).
-     cache-junction-elements: False
-
-     # Optionally ignore junction remotes, this means that BuildStream
-     # will not attempt to pull artifacts from the junction project's
-     # remote(s) (default: False).
-     ignore-junction-remotes: False
-
 With a junction element in place, local elements can depend on elements in
 the other BuildStream project using :ref:`element paths <format_element_names>`.
 For example, if you have a ``toolchain.bst`` junction element referring to
@@ -350,12 +341,10 @@ class JunctionElement(Element):
 
     def configure(self, node):
 
-        node.validate_keys(["path", "options", "cache-junction-elements", "ignore-junction-remotes", "overrides"])
+        node.validate_keys(["path", "options", "overrides"])
 
         self.path = node.get_str("path", default="")
         self.options = node.get_mapping("options", default={})
-        self.cache_junction_elements = node.get_bool("cache-junction-elements", default=False)
-        self.ignore_junction_remotes = node.get_bool("ignore-junction-remotes", default=False)
 
         # The overrides dictionary has the target junction
         # to override as a key, and the ScalarNode of the

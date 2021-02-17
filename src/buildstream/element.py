@@ -2731,14 +2731,6 @@ class Element(Plugin):
 
         return self.__tainted
 
-    # __use_remote_execution():
-    #
-    # Returns True if remote execution is configured, defaults to user defined
-    # project-specific overrides, project config, or global user config.
-    #
-    def __use_remote_execution(self):
-        return bool(self.__remote_execution_specs)
-
     # __collect_overlaps():
     #
     # A context manager for collecting overlap warnings and errors.
@@ -2780,7 +2772,7 @@ class Element(Plugin):
         else:
             output_node_properties = None
 
-        if directory is not None and allow_remote and self.__use_remote_execution():
+        if directory is not None and allow_remote and context.remote_execution_specs:
 
             self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
 
@@ -2794,7 +2786,6 @@ class Element(Plugin):
                 stdout=stdout,
                 stderr=stderr,
                 config=config,
-                specs=self.__remote_execution_specs,
                 output_files_required=output_files_required,
                 output_node_properties=output_node_properties,
             )
@@ -2865,12 +2856,6 @@ class Element(Plugin):
         self.__variables.expand(self.__config)
 
         self._configure(self.__config)
-
-        # Extract remote execution URL
-        if load_element.first_pass:
-            self.__remote_execution_specs = None
-        else:
-            self.__remote_execution_specs = project.remote_execution_specs
 
         # Extract Sandbox config
         sandbox_config = self.__extract_sandbox_config(project, load_element)
