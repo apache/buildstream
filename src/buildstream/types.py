@@ -25,7 +25,8 @@ Foundation types
 
 """
 
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
+import os
 
 from ._types import MetaFastEnum
 
@@ -308,6 +309,25 @@ class _ProjectInformation:
         self.provenance = provenance_node.get_provenance() if provenance_node else None
         self.duplicates = duplicates
         self.internal = internal
+
+
+# _HostMount()
+#
+# A simple object describing the behavior of a host mount.
+#
+class _HostMount:
+    def __init__(self, path: str, host_path: Optional[str] = None, optional: bool = False) -> None:
+
+        # Support environment variable expansion in host mounts
+        path = os.path.expandvars(path)
+        if host_path is None:
+            host_path = path
+        else:
+            host_path = os.path.expandvars(host_path)
+
+        self.path: str = path  # Path inside the sandbox
+        self.host_path: str = host_path  # Path on the host
+        self.optional: bool = optional  # Optional mounts do not incur warnings or errors
 
 
 ########################################

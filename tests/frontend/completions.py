@@ -128,7 +128,18 @@ def test_commands(cli, cmd, word_idx, expected):
         ("bst -", 1, MAIN_OPTIONS),
         ("bst --l", 1, ["--log-file "]),
         # Test that options of subcommands also complete
-        ("bst --no-colors build -", 3, ["--deps ", "-d ", "--remote ", "-r "]),
+        (
+            "bst --no-colors build -",
+            3,
+            [
+                "--deps ",
+                "-d ",
+                "--artifact-remote ",
+                "--source-remote ",
+                "--ignore-project-artifact-remotes ",
+                "--ignore-project-source-remotes ",
+            ],
+        ),
         # Test the behavior of completing after an option that has a
         # parameter that cannot be completed, vs an option that has
         # no parameter

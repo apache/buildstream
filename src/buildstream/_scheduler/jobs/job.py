@@ -30,10 +30,10 @@ import traceback
 
 # BuildStream toplevel imports
 from ... import utils
+from ..._utils import terminate_thread
 from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
 from ...types import FastEnum
-from ._job import terminate_thread
 from ..._signals import TerminateException
 
 

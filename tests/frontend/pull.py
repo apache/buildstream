@@ -119,8 +119,8 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
 
 # Tests that:
 #
-#  * `bst artifact push --remote` pushes to the given remote, not one from the config
-#  * `bst artifact pull --remote` pulls from the given remote
+#  * `bst artifact push --artifact-remote` pushes to the given remote, not one from the config
+#  * `bst artifact pull --artifact-remote` pulls from the given remote
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_specific_remote(cli, tmpdir, datafiles):
@@ -142,7 +142,7 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
         cli.configure({"artifacts": {"servers": [{"url": bad_share.repo, "push": True},]}})
 
         # Now try `bst artifact push` to the good_share.
-        result = cli.run(project=project, args=["artifact", "push", "target.bst", "--remote", good_share.repo])
+        result = cli.run(project=project, args=["artifact", "push", "target.bst", "--artifact-remote", good_share.repo])
         result.assert_success()
 
         # Assert that all the artifacts are in the share we pushed
@@ -158,7 +158,7 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
         artifactdir = os.path.join(cli.directory, "artifacts")
         shutil.rmtree(artifactdir)
 
-        result = cli.run(project=project, args=["artifact", "pull", "target.bst", "--remote", good_share.repo])
+        result = cli.run(project=project, args=["artifact", "pull", "target.bst", "--artifact-remote", good_share.repo])
         result.assert_success()
 
         # And assert that it's again in the local cache, without having built
@@ -417,7 +417,7 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles):
         # Now check that a build with cli set as sharecli results in nothing being pulled,
         # as it doesn't have them cached and shareuser should be ignored. This
         # will however result in the artifacts being built and pushed to it
-        result = cli.run(project=project, args=["build", "--remote", sharecli.repo, "target.bst"])
+        result = cli.run(project=project, args=["build", "--artifact-remote", sharecli.repo, "target.bst"])
         result.assert_success()
         for element_name in all_elements:
             assert element_name not in result.get_pulled_elements()
@@ -426,7 +426,7 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles):
 
         # Now check that a clean build with cli set as sharecli should result in artifacts only
         # being pulled from it, as that was provided via the cli and is populated
-        result = cli.run(project=project, args=["build", "--remote", sharecli.repo, "target.bst"])
+        result = cli.run(project=project, args=["build", "--artifact-remote", sharecli.repo, "target.bst"])
         result.assert_success()
         for element_name in all_elements:
             assert cli.get_element_state(project, element_name) == "cached"

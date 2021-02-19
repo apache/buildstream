@@ -43,6 +43,15 @@ CLI
   o BREAKING CHANGE: `bst shell --use-buildtree` is now a boolean flag.
     `--use-buildtree=ask` and `--use-buildtree=try` are no longer supported.
 
+  o BREAKING CHANGE: `--remote` options removed, replaced by `--artifact-remote` or `--source-remote`
+
+  o BREAKING CHANGE: All old obsolete/deprecated commands removed, including:
+    - bst fetch (now bst source fetch)
+    - bst track (now bst source track)
+    - bst checkout (now bst artifact checkout)
+    - bst pull (now bst artifact pull)
+    - bst push (now bst artifact push)
+
 
 ==================
 buildstream 1.93.5

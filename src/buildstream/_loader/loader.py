@@ -27,12 +27,12 @@ from ..element import Element
 from ..node import Node
 from .._profile import Topics, PROFILER
 from .._includes import Includes
+from .._utils import valid_chars_name
+from ..types import CoreWarnings, _KeyStrength
 
-from ._loader import valid_chars_name
 from .types import Symbol
 from . import loadelement
 from .loadelement import LoadElement, Dependency, DependencyType, extract_depends_from_node
-from ..types import CoreWarnings, _KeyStrength
 
 
 # Loader():

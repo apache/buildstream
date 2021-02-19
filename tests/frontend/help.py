@@ -19,9 +19,7 @@ def test_help_main(cli):
     assert_help(result.output)
 
 
-@pytest.mark.parametrize(
-    "command", [("artifact"), ("build"), ("checkout"), ("shell"), ("show"), ("source"), ("workspace")]
-)
+@pytest.mark.parametrize("command", [("artifact"), ("build"), ("shell"), ("show"), ("source"), ("workspace")])
 def test_help(cli, command):
     result = cli.run(args=[command, "--help"])
     result.assert_success()
