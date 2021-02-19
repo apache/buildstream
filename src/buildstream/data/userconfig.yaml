@@ -3,12 +3,6 @@
 #
 #    Work Directories
 #
-#
-# Note that BuildStream forces the XDG Base Directory names
-# into the environment if they are not already set, and allows
-# expansion of '~' and environment variables when specifying
-# paths.
-#
 
 # Location to store sources
 sourcedir: ${XDG_CACHE_HOME}/buildstream/sources
@@ -26,26 +20,14 @@ workspacedir: .
 #    Cache
 #
 cache:
-  # Size of the artifact cache in bytes - BuildStream will attempt to keep the
-  # artifact cache within this size.
-  # If the value is suffixed with K, M, G or T, the specified memory size is
-  # parsed as Kilobytes, Megabytes, Gigabytes, or Terabytes (with the base
-  # 1024), respectively.
-  # Alternatively, a percentage value may be specified, which is taken relative
-  # to the isize of the file system containing the cache.
+
+  # Use as much space as possible
   quota: infinity
 
   # Whether to pull build trees when downloading element artifacts
   pull-buildtrees: False
 
-  # Whether to cache build trees on artifact creation:
-  #
-  #  always  - Always cache artifact build tree content
-  #  auto    - Only cache build trees when necessary, e.g., for failed builds
-  #  never   - Never cache artifact build tree content. This is not recommended
-  #            for normal users as this breaks core functionality such as
-  #            debugging failed builds and may break additional functionality
-  #            in future versions.
+  # Whether to cache build trees on artifact creation
   #
   cache-buildtrees: auto
 
@@ -67,12 +49,8 @@ scheduler:
   # Maximum number of retries for network tasks.
   network-retries: 2
 
-  # What to do when an element fails, if not running in
-  # interactive mode:
-  #
-  #  continue  - Continue queueing jobs as much as possible
-  #  quit      - Exit after all ongoing jobs complete
-  #  terminate - Terminate any ongoing jobs and exit
+  # Control what to do when a task fails, if not running in
+  # interactive mode
   #
   on-error: quit
 
@@ -85,16 +63,10 @@ build:
   #
   # Maximum number of jobs to run per build task.
   #
-  # The default behavior when this is set to 0, is to use the
-  # maximum number of threads available, with a maximum of 8.
-  #
   max-jobs: 0
 
   #
-  # Control which dependencies to build:
-  #
-  #  plan - Only dependencies required for the build plan
-  #  all  - All dependencies
+  # Control which dependencies to build
   #
   dependencies: plan
 
@@ -126,24 +98,11 @@ logging:
   # Format string for printing the pipeline at startup, this
   # also determines the default display format for `bst show`
   #
-  # See `bst show --help` for details on which symbols can be
-  # used in the format string.
   element-format: |
 
     %{state: >12} %{full-key} %{name} %{workspace-dirs}
 
-  # Format string for all log messages.
-  #
-  # Following symbols can be used in the format string:
-  #
-  # elapsed       - Time spent on this operation
-  # elapsed-us    - Time spent on this operation (with microsecond precision)
-  # wallclock     - Current wallclock time
-  # wallclock-us  - Current wallclock time (with microsecond precision)
-  # key           - The abbreviated cache key (if all sources are consistent)
-  # element       - Name of the element
-  # action        - Type of the message
-  # message       - The main message text
+  # Format string for log messages.
   #
   message-format: |
 

@@ -309,7 +309,6 @@ class Context:
                 "logging",
                 "projects",
                 "cache",
-                "prompt",
                 "workspacedir",
                 "remote-execution",
             ]
