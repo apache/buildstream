@@ -828,6 +828,13 @@ def source_fetch(app, elements, deps, except_, source_remotes, ignore_project_so
 ##################################################################
 @source.command(name="push", short_help="Push sources in a pipeline")
 @click.option(
+    "--except",
+    "except_",
+    multiple=True,
+    type=click.Path(readable=False),
+    help="Except certain dependencies from pushing",
+)
+@click.option(
     "--deps",
     "-d",
     default=_PipelineSelection.NONE,
@@ -856,7 +863,7 @@ def source_fetch(app, elements, deps, except_, source_remotes, ignore_project_so
 )
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def source_push(app, elements, deps, source_remotes, ignore_project_source_remotes):
+def source_push(app, elements, deps, except_, source_remotes, ignore_project_source_remotes):
     """Push sources required to build the pipeline
 
     Specifying no elements will result in pushing the sources of the default
@@ -882,6 +889,7 @@ def source_push(app, elements, deps, source_remotes, ignore_project_source_remot
         app.stream.source_push(
             elements,
             selection=deps,
+            except_targets=except_,
             source_remotes=source_remotes,
             ignore_project_source_remotes=ignore_project_source_remotes,
         )

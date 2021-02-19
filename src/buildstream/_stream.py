@@ -434,6 +434,7 @@ class Stream:
     # Args:
     #    targets (list of str): Targets to push
     #    selection (_PipelineSelection): The selection mode for the specified targets
+    #    except_targets: Specified targets to except from pushing
     #    source_remotes: Source cache remotes specified on the commmand line
     #    ignore_project_source_remotes: Whether to ignore source remotes specified by projects
     #
@@ -449,6 +450,7 @@ class Stream:
         targets,
         *,
         selection=_PipelineSelection.NONE,
+        except_targets: Iterable[str] = (),
         source_remotes: Iterable[RemoteSpec] = (),
         ignore_project_source_remotes: bool = False,
     ):
@@ -456,6 +458,7 @@ class Stream:
         elements = self._load(
             targets,
             selection=selection,
+            except_targets=except_targets,
             load_artifacts=True,
             connect_source_cache=True,
             source_remotes=source_remotes,
