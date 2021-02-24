@@ -45,6 +45,10 @@ class ElementProxy(PluginProxy):
     ##############################################################
 
     @property
+    def BST_ELEMENT_HAS_ARTIFACT(self):
+        return cast("Element", self._plugin).BST_ELEMENT_HAS_ARTIFACT
+
+    @property
     def project_name(self):
         return cast("Element", self._plugin).project_name
 
@@ -182,3 +186,6 @@ class ElementProxy(PluginProxy):
         return element._stage_artifact(
             sandbox, path=path, action=action, include=include, exclude=exclude, orphans=orphans, owner=owner
         )
+
+    def _get_source_element(self) -> "Element":
+        return cast("Element", self._plugin)._get_source_element()
