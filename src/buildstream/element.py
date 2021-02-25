@@ -300,7 +300,6 @@ class Element(Plugin):
         self.__build_result = None  # The result of assembling this Element (success, description, detail)
         # Artifact class for direct artifact composite interaction
         self.__artifact = None  # type: Optional[Artifact]
-        self.__dynamic_public = None
         self.__sandbox_config = None  # type: Optional[SandboxConfig]
 
         self.__batch_prepare_assemble = False  # Whether batching across prepare()/assemble() is configured
@@ -317,6 +316,7 @@ class Element(Plugin):
 
         self.__environment: Dict[str, str] = {}
         self.__variables: Optional[Variables] = None
+        self.__public: "MappingNode" = Node.from_dict({})
 
         if artifact:
             self.__initialize_from_artifact(artifact)
@@ -761,43 +761,11 @@ class Element(Plugin):
            domain: A public domain name to fetch data for
 
         Returns:
-
-        .. note::
-
-           This can only be called the abstract methods which are
-           called as a part of the :ref:`build phase <core_element_build_phase>`
-           and never before.
+           The public data for the requested *domain*, if *domain* does not exist
+           for this element, then an empty node will be returned.
         """
-        if self.__dynamic_public is None:
-            self.__load_public_data()
-
-        # Disable type-checking since we can't easily tell mypy that
-        # `self.__dynamic_public` can't be None here.
-        data = self.__dynamic_public.get_mapping(domain, default=None)  # type: ignore
-        if data is not None:
-            data = data.clone()
-
-        return data
-
-    def set_public_data(self, domain: str, data: "MappingNode[Node]") -> None:
-        """Set public data on this element
-
-        Args:
-           domain: A public domain name to fetch data for
-           data: The public data dictionary for the given domain
-
-        This allows an element to dynamically mutate public data of
-        elements or add new domains as the result of success completion
-        of the :func:`Element.assemble() <buildstream.element.Element.assemble>`
-        method.
-        """
-        if self.__dynamic_public is None:
-            self.__load_public_data()
-
-        if data is not None:
-            data = data.clone()
-
-        self.__dynamic_public[domain] = data  # type: ignore
+        data = self.__public.get_mapping(domain, default={})
+        return data.clone()
 
     def get_environment(self) -> Dict[str, str]:
         """Fetch the environment suitable for running in the sandbox
@@ -1221,6 +1189,21 @@ class Element(Plugin):
     #
     def __set_build_result(self, success, description, detail=None):
         self.__build_result = (success, description, detail)
+
+    # _set_public_data():
+    #
+    # Set public data on this element
+    #
+    # Args:
+    #    domain: A public domain name to fetch data for
+    #    data: The public data dictionary for the given domain
+    #
+    # This internal function allows the core and core components to doctor
+    # the public data after being loaded, as the filter element does for instance
+    # in order to propagate some public data from it's dependency forward to itself.
+    #
+    def _set_public_data(self, domain: str, data: "MappingNode[Node]") -> None:
+        self.__public[domain] = data.clone()  # type: ignore
 
     # _cached_success():
     #
@@ -1739,10 +1722,6 @@ class Element(Plugin):
                     # sandboxes.
                     sandbox._disable_run()
 
-                # By default, the dynamic public data is the same as the static public data.
-                # The plugin's assemble() method may modify this, though.
-                self.__dynamic_public = self.__public.clone()
-
                 # Call the abstract plugin methods
 
                 # Step 1 - Configure
@@ -1779,7 +1758,7 @@ class Element(Plugin):
 
         context = self._get_context()
         buildresult = self.__build_result
-        publicdata = self.__dynamic_public
+        publicdata = self.__public
         sandbox_vroot = sandbox.get_virtual_directory()
         collectvdir = None
         sandbox_build_dir = None
@@ -2438,6 +2417,7 @@ class Element(Plugin):
             self.__environment = artifact.load_environment()
             self.__sandbox_config = artifact.load_sandbox_config()
             self.__variables = artifact.load_variables()
+            self.__public = self.__artifact.load_public_data()
 
         self.__cache_key = artifact.strong_key
         self.__strict_cache_key = artifact.strict_key
@@ -3152,16 +3132,6 @@ class Element(Plugin):
             for filename in element_files:
                 if filter_func(filename):
                     yield filename
-
-    # __load_public_data():
-    #
-    # Loads the public data from the cached artifact
-    #
-    def __load_public_data(self):
-        self.__assert_cached()
-        assert self.__dynamic_public is None
-
-        self.__dynamic_public = self.__artifact.load_public_data()
 
     def __load_build_result(self):
         self.__assert_cached()

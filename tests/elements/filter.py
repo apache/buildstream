@@ -28,21 +28,6 @@ def test_filter_include(datafiles, cli, tmpdir):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "basic"))
-def test_filter_include_dynamic(datafiles, cli, tmpdir):
-    project = str(datafiles)
-    result = cli.run(project=project, args=["build", "output-dynamic-include.bst"])
-    result.assert_success()
-
-    checkout = os.path.join(tmpdir.dirname, tmpdir.basename, "checkout")
-    result = cli.run(
-        project=project, args=["artifact", "checkout", "output-dynamic-include.bst", "--directory", checkout]
-    )
-    result.assert_success()
-    assert os.path.exists(os.path.join(checkout, "foo"))
-    assert not os.path.exists(os.path.join(checkout, "bar"))
-
-
-@pytest.mark.datafiles(os.path.join(DATA_DIR, "basic"))
 def test_filter_exclude(datafiles, cli, tmpdir):
     project = str(datafiles)
     result = cli.run(project=project, args=["build", "output-exclude.bst"])
