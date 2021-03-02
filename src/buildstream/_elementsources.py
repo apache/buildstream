@@ -211,6 +211,9 @@ class ElementSources:
     #    SourceError: If one of the element sources has an error
     #
     def fetch(self):
+        if self._cached is None:
+            self.query_cache()
+
         if self.cached():
             return
 
@@ -386,8 +389,6 @@ class ElementSources:
         # Also generate the cache key for the combined element sources
         unique_key = self.get_unique_key()
         self._cache_key = _cachekey.generate_key(unique_key)
-
-        self.query_cache()
 
     # preflight():
     #

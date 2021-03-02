@@ -21,7 +21,6 @@
 # Local imports
 from . import Queue, QueueStatus
 from ..resources import ResourceType
-from ..jobs import JobStatus
 from ..._exceptions import SkipJob
 
 
@@ -43,10 +42,6 @@ class PullQueue(Queue):
             return QueueStatus.SKIP
 
     def done(self, _, element, result, status):
-
-        if status is JobStatus.FAIL:
-            return
-
         element._load_artifact_done()
 
     @staticmethod
