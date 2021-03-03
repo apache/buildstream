@@ -25,7 +25,7 @@ from typing import Optional, Callable, Iterator, TextIO
 
 from . import _signals
 from ._exceptions import BstError
-from ._message import Message, MessageType
+from ._message import Message, MessageType, unconditional_messages
 from ._state import State, Task
 
 
@@ -48,6 +48,13 @@ class _TimeData:
         self.start_time: datetime.datetime = start_time
 
 
+class _JobInfo:
+    def __init__(self, action_name: str, element_name: str, element_key: str) -> None:
+        self.action_name = action_name
+        self.element_name = element_name
+        self.element_key = element_key
+
+
 # _MessengerLocal
 #
 # Thread local storage for the messenger
@@ -55,13 +62,6 @@ class _TimeData:
 class _MessengerLocal(threading.local):
     def __init__(self) -> None:
         super().__init__()
-
-        # The callback to call when propagating messages
-        #
-        # FIXME: The message handler is currently not strongly typed,
-        #        as it uses a kwarg, we cannot declare it with Callable.
-        #        We can use `Protocol` to strongly type this with python >= 3.8
-        self.message_handler = None
 
         # The open file handle for this task
         self.log_handle: Optional[TextIO] = None
@@ -71,6 +71,9 @@ class _MessengerLocal(threading.local):
 
         # Level of silent messages depth in this task
         self.silence_scope_depth: int = 0
+
+        # Job
+        self.job: Optional[_JobInfo] = None
 
 
 # Messenger()
@@ -97,13 +100,24 @@ class Messenger:
         # Thread local storage
         self._locals: _MessengerLocal = _MessengerLocal()
 
+        # The callback to call when propagating messages
+        #
+        # FIXME: The message handler is currently not strongly typed,
+        #        as it uses a kwarg, we cannot declare it with Callable.
+        #        We can use `Protocol` to strongly type this with python >= 3.8
+        self._message_handler = None
+
+    def setup_new_action_context(self, action_name: str, element_name: str, element_key: str) -> None:
+        self._locals.silence_scope_depth = 0
+        self._locals.job = _JobInfo(action_name, element_name, element_key)
+
     # set_message_handler()
     #
     # Sets the handler for any status messages propagated through
     # the messenger.
     #
     def set_message_handler(self, handler) -> None:
-        self._locals.message_handler = handler
+        self._message_handler = handler
 
     # set_state()
     #
@@ -137,12 +151,31 @@ class Messenger:
         # If we are recording messages, dump a copy into the open log file.
         self._record_message(message)
 
+        # Always add the log filename automatically
+        message.logfile = self._locals.log_filename
+
+        is_silenced = self._silent_messages()
+        job = self._locals.job
+
+        if job is not None:
+            # Automatically add message information from the job context
+            message.action_name = job.action_name
+            message.task_element_name = job.element_name
+            message.task_element_key = job.element_key
+
+            # Don't forward LOG messages from jobs
+            if message.message_type == MessageType.LOG:
+                return
+
+            # Don't forward JOB messages if they are currently silent
+            if is_silenced and (message.message_type not in unconditional_messages):
+                return
+
         # Send it off to the log handler (can be the frontend,
         # or it can be the child task which will propagate
         # to the frontend)
-        assert self._locals.message_handler
-
-        self._locals.message_handler(message, is_silenced=self._silent_messages())
+        assert self._message_handler
+        self._message_handler(message, is_silenced=is_silenced)
 
     # status():
     #
@@ -362,7 +395,6 @@ class Messenger:
         # Create the fully qualified logfile in the log directory,
         # appending the pid and .log extension at the end.
         self._locals.log_filename = os.path.join(logdir, "{}.{}.log".format(filename, os.getpid()))
-        self._locals.silence_scope_depth = 0
 
         # Ensure the directory exists first
         directory = os.path.dirname(self._locals.log_filename)
