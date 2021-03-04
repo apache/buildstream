@@ -357,10 +357,14 @@ class LogLine(Widget):
                 else:
                     if element.get_kind() == "junction":
                         line = p.fmt_subst(line, "state", "junction", fg="magenta")
+                    elif not element._can_query_cache():
+                        line = p.fmt_subst(line, "state", "waiting", fg="blue")
                     elif element._cached_failure():
                         line = p.fmt_subst(line, "state", "failed", fg="red")
                     elif element._cached_success():
                         line = p.fmt_subst(line, "state", "cached", fg="magenta")
+                    elif not element._can_query_source_cache():
+                        line = p.fmt_subst(line, "state", "waiting", fg="blue")
                     elif element._fetch_needed():
                         line = p.fmt_subst(line, "state", "fetch needed", fg="red")
                     elif element._buildable():

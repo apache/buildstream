@@ -816,7 +816,6 @@ class Loader:
             )
 
         element = Element._new_from_load_element(load_element)
-        element._initialize_state()
 
         # Handle the case where a subproject has no ref
         #
@@ -830,6 +829,7 @@ class Loader:
 
         # Handle the case where a subproject needs to be fetched
         #
+        element._query_source_cache()
         if element._should_fetch():
             self.load_context.fetch_subprojects([element])
 

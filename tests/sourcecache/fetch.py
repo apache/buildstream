@@ -74,7 +74,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements([element_name])[0]
-            element._initialize_state()
+            element._query_source_cache()
             assert not element._cached_sources()
             source = list(element.sources())[0]
 
@@ -114,9 +114,9 @@ def test_source_fetch(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements([element_name])[0]
-            element._initialize_state()
 
             # check that we have the source in the cas now and it's not fetched
+            element._query_source_cache()
             assert element._cached_sources()
             assert os.listdir(os.path.join(str(tmpdir), "cache", "sources", "git")) == []
 
@@ -134,7 +134,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements([element_name])[0]
-            element._initialize_state()
+            element._query_source_cache()
             assert not element._cached_sources()
             source = list(element.sources())[0]
 
@@ -152,7 +152,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
 
             # Check that the source in both in the source dir and the local CAS
             element = project.load_elements([element_name])[0]
-            element._initialize_state()
+            element._query_source_cache()
             assert element._cached_sources()
 
 
@@ -168,7 +168,7 @@ def test_pull_fail(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements([element_name])[0]
-            element._initialize_state()
+            element._query_source_cache()
             assert not element._cached_sources()
             source = list(element.sources())[0]
 
@@ -200,7 +200,7 @@ def test_source_pull_partial_fallback_fetch(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements([element_name])[0]
-            element._initialize_state()
+            element._query_source_cache()
             assert not element._cached_sources()
             source = list(element.sources())[0]
 

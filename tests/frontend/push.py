@@ -372,8 +372,8 @@ def test_push_after_pull(cli, tmpdir, datafiles):
         #
         result = cli.run(project=project, args=["build", "target.bst"])
         result.assert_success()
-        assert result.get_pulled_elements() == ["target.bst"]
-        assert result.get_pushed_elements() == []
+        assert "target.bst" in result.get_pulled_elements()
+        assert "target.bst" not in result.get_pushed_elements()
 
         # Delete the artifact locally again.
         cli.remove_artifact_from_cache(project, "target.bst")
@@ -385,8 +385,8 @@ def test_push_after_pull(cli, tmpdir, datafiles):
         )
         result = cli.run(project=project, args=["build", "target.bst"])
         result.assert_success()
-        assert result.get_pulled_elements() == ["target.bst"]
-        assert result.get_pushed_elements() == ["target.bst"]
+        assert "target.bst" in result.get_pulled_elements()
+        assert "target.bst" in result.get_pushed_elements()
 
 
 # Ensure that when an artifact's size exceeds available disk space

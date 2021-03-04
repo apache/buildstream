@@ -64,7 +64,7 @@ def test_source_staged(tmpdir, cli, datafiles):
         # now check that the source is in the refs file, this is pretty messy but
         # seems to be the only way to get the sources?
         element = project.load_elements(["import-bin.bst"])[0]
-        element._initialize_state()
+        element._query_source_cache()
         source = list(element.sources())[0]
         assert element._cached_sources()
         assert sourcecache.contains(source)
@@ -99,7 +99,7 @@ def test_source_fetch(tmpdir, cli, datafiles):
         sourcecache = context.sourcecache
 
         element = project.load_elements(["import-dev.bst"])[0]
-        element._initialize_state()
+        element._query_source_cache()
         source = list(element.sources())[0]
         assert element._cached_sources()
 
@@ -133,9 +133,9 @@ def test_staged_source_build(tmpdir, datafiles, cli):
         project.ensure_fully_loaded()
 
         element = project.load_elements(["import-dev.bst"])[0]
-        element._initialize_state()
 
         # check consistency of the source
+        element._query_source_cache()
         assert not element._cached_sources()
 
     res = cli.run(project=project_dir, args=["build", "target.bst"])
