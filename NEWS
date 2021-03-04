@@ -2,6 +2,11 @@
 (unreleased)
 ============
 
+
+==================
+buildstream 1.93.6
+==================
+
 Format
 ------
   o The `script` element no longer has a `layout` configuration directly, and now
