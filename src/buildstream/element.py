@@ -226,7 +226,7 @@ class Element(Plugin):
         load_element: "LoadElement",
         plugin_conf: Dict[str, Any],
         *,
-        artifact: Artifact = None,
+        artifact_key: str = None,
     ):
 
         self.__cache_key_dict = None  # Dict for cache key calculation
@@ -318,8 +318,8 @@ class Element(Plugin):
         self.__environment: Dict[str, str] = {}
         self.__variables: Optional[Variables] = None
 
-        if artifact:
-            self.__initialize_from_artifact(artifact)
+        if artifact_key:
+            self.__initialize_from_artifact_key(artifact_key)
         else:
             self.__initialize_from_yaml(load_element, plugin_conf)
 
@@ -1907,8 +1907,11 @@ class Element(Plugin):
     #
     # Returns: True if the artifact has been downloaded, False otherwise
     #
-    def _load_artifact(self, *, pull):
+    def _load_artifact(self, *, pull, strict=None):
         context = self._get_context()
+
+        if strict is None:
+            strict = context.get_strict()
 
         pull_buildtrees = context.pull_buildtrees and not self._get_workspace()
 
@@ -1932,7 +1935,7 @@ class Element(Plugin):
         # Attempt to pull artifact with the strict cache key
         pulled = pull and artifact.pull(pull_buildtrees=pull_buildtrees)
 
-        if artifact.cached() or context.get_strict():
+        if artifact.cached() or strict:
             self.__artifact = artifact
             return pulled
         elif self.__pull_pending:
@@ -2871,16 +2874,31 @@ class Element(Plugin):
         self.__variables.expand(sandbox_config)
         self.__sandbox_config = SandboxConfig.new_from_node(sandbox_config, platform=context.platform)
 
-    # __initialize_from_artifact()
+    # __initialize_from_artifact_key()
     #
-    # Initialize the element state from an Artifact object
+    # Initialize the element state from an artifact key
     #
-    def __initialize_from_artifact(self, artifact: Artifact):
-        self.__artifact = artifact
-        artifact.query_cache()
-        self._mimic_artifact()
-        if not artifact.cached():
+    def __initialize_from_artifact_key(self, key: str):
+        # At this point we only know the key which was specified on the command line,
+        # so we will pretend all keys are equal.
+        #
+        # If the artifact is cached, then the real keys will be loaded from the
+        # artifact in `_load_artifact()` and `_load_artifact_done()`.
+        #
+        self.__cache_key = key
+        self.__strict_cache_key = key
+        self.__weak_cache_key = key
+
+        # ArtifactElement requires access to the artifact early on to walk
+        # dependencies.
+        self._load_artifact(pull=False)
+
+        if not self._cached():
+            # Remotes are not initialized when artifact elements are loaded.
+            # Always consider pull pending if the artifact is not cached.
             self.__pull_pending = True
+        else:
+            self._load_artifact_done()
 
     @classmethod
     def __compose_default_splits(cls, project, defaults, first_pass):

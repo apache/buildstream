@@ -51,17 +51,10 @@ class ArtifactElement(Element):
     def __init__(self, context, ref):
         project_name, element_name, key = verify_artifact_ref(ref)
 
-        # At this point we only know the key which was specified on the command line,
-        # so we will pretend all keys are equal.
-        #
-        # If the artifact is cached, then the real keys will be loaded from the
-        # artifact instead.
-        #
-        artifact = Artifact(self, context, strong_key=key, strict_key=key, weak_key=key)
         project = ArtifactProject(project_name, context)
         load_element = LoadElement(Node.from_dict({}), element_name, project.loader)  # NOTE element has no .bst suffix
 
-        super().__init__(context, project, load_element, None, artifact=artifact)
+        super().__init__(context, project, load_element, None, artifact_key=key)
 
     ########################################################
     #                      Public API                      #
@@ -127,6 +120,10 @@ class ArtifactElement(Element):
     ########################################################
     #         Override internal Element methods            #
     ########################################################
+
+    def _load_artifact(self, *, pull, strict=None):  # pylint: disable=useless-super-delegation
+        # Always operate in strict mode as artifact key has been specified explicitly.
+        return super()._load_artifact(pull=pull, strict=True)
 
     # Once we've finished loading an artifact, we assume the
     # state of the loaded artifact. This is also used if the
