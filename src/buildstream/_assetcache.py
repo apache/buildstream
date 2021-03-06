@@ -327,19 +327,18 @@ class AssetCache:
         # Hold on to the project specs
         self._project_specs = project_specs
 
-        with self.context.messenger.timed_activity("Initializing remote caches", silent_nested=True):
-            for spec in specs:
-                # This can be called multiple times, ensure that we only try
-                # to instantiate each remote once.
-                #
-                if spec in self._remotes:
-                    continue
+        for spec in specs:
+            # This can be called multiple times, ensure that we only try
+            # to instantiate each remote once.
+            #
+            if spec in self._remotes:
+                continue
 
-                remote = RemotePair(self.cas, spec)
-                if remote.error:
-                    self.context.messenger.warn("Failed to initialize remote {}: {}".format(spec.url, remote.error))
+            remote = RemotePair(self.cas, spec)
+            if remote.error:
+                self.context.messenger.warn("Failed to initialize remote {}: {}".format(spec.url, remote.error))
 
-                self._remotes[spec] = remote
+            self._remotes[spec] = remote
 
         # Determine overall existance of push or fetch remotes
         self._has_fetch_remotes = any(remote.storage for _, remote in self._remotes.items()) and any(

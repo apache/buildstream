@@ -593,9 +593,10 @@ class Context:
 
         # Now initialize the underlying asset caches
         #
-        self.artifactcache.setup_remotes(self._active_artifact_cache_specs, self.project_artifact_cache_specs)
-        self.elementsourcescache.setup_remotes(self._active_source_cache_specs, self.project_source_cache_specs)
-        self.sourcecache.setup_remotes(self._active_source_cache_specs, self.project_source_cache_specs)
+        with self.messenger.timed_activity("Initializing remote caches", silent_nested=True):
+            self.artifactcache.setup_remotes(self._active_artifact_cache_specs, self.project_artifact_cache_specs)
+            self.elementsourcescache.setup_remotes(self._active_source_cache_specs, self.project_source_cache_specs)
+            self.sourcecache.setup_remotes(self._active_source_cache_specs, self.project_source_cache_specs)
 
     # get_workspaces():
     #
