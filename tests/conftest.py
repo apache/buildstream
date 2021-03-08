@@ -27,7 +27,6 @@ import pytest
 from buildstream.testing import register_repo_kind, sourcetests_collection_hook
 from buildstream.testing._fixtures import (  # pylint: disable=unused-import
     default_thread_number,
-    reset_global_node_state,
     thread_check,
 )
 from buildstream.testing.integration import integration_cache  # pylint: disable=unused-import
