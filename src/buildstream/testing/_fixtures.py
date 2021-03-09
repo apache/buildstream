@@ -21,8 +21,6 @@ import time
 import psutil
 import pytest
 
-from buildstream import node, DownloadableFileSource
-
 
 # Number of seconds to wait for background threads to exit.
 _AWAIT_THREADS_TIMEOUT_SECONDS = 5
@@ -54,10 +52,3 @@ def thread_check(default_thread_number):
     assert has_no_unexpected_background_threads(default_thread_number)
     yield
     assert has_no_unexpected_background_threads(default_thread_number)
-
-
-# Reset global state in node.pyx to improve test isolation
-@pytest.fixture(autouse=True)
-def reset_global_node_state():
-    node._reset_global_state()
-    DownloadableFileSource._reset_url_opener()

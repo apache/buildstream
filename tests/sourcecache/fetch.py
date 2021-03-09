@@ -151,6 +151,9 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
             assert ("SUCCESS Fetching from {}".format(repo.source_config(ref=ref)["url"])) in res.stderr
 
             # Check that the source in both in the source dir and the local CAS
+            project = Project(project_dir, context)
+            project.ensure_fully_loaded()
+
             element = project.load_elements([element_name])[0]
             element._query_source_cache()
             assert element._cached_sources()
