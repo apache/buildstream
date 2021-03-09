@@ -25,9 +25,9 @@ will be ``~/.config/buildstream.conf``
    can have separate configuration files in your ``${XDG_CONFIG_HOME}``.
 
    You can do this by naming them according to the major versions of
-   BuildStream you have installed. BuildStream 1 will load it's configuration
+   BuildStream you have installed. BuildStream 1 will load its configuration
    from ``$XDG_CONFIG_HOME/buildstream1.conf`` and BuildStream 2 will load
-   it's configuration from ``$XDG_CONFIG_HOME/buildstream2.conf``, while
+   its configuration from ``$XDG_CONFIG_HOME/buildstream2.conf``, while
    any version will fallback to ``$XDG_CONFIG_HOME/buildstream.conf``.
 
 
@@ -377,8 +377,8 @@ Attributes
     * ``failed``: If the element has been built and the build has failed.
     * ``cached``: If the element has been successfully built and is present in the local cache.
     * ``fetch needed``: If the element cannot be built yet because the sources need to be :ref:`fetched <invoking_source_fetch>`.
-    * ``buildable``: If the element has all of it's sources and build dependency artifacts cached locally.
-    * ``waiting``: If the element has all of it's sources cached but it's build dependencies are not yet locally cached.
+    * ``buildable``: If the element has all of its sources and build dependency artifacts cached locally.
+    * ``waiting``: If the element has all of its sources cached but its build dependencies are not yet locally cached.
 
   * ``config``
 
@@ -586,7 +586,7 @@ Attributes
   The client certificate is used by the remote server to decrypt
   traffic being uploaded to the server.
 
-  The remote server will have it's own copy of this certificate, but the
+  The remote server will have its own copy of this certificate, but the
   client needs to send this certificate's identity to the server so that
   the server knows which certificate to use.
 
