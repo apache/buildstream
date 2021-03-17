@@ -1264,10 +1264,12 @@ class Element(Plugin):
     #    (bool): Whether this element can currently be built
     #
     def _buildable(self):
-        if self._fetch_needed():
+        # This check must be before `_fetch_needed()` as source cache status
+        # is not always available for non-build pipelines.
+        if not self.__assemble_scheduled:
             return False
 
-        if not self.__assemble_scheduled:
+        if self._fetch_needed():
             return False
 
         return self.__build_deps_uncached == 0
