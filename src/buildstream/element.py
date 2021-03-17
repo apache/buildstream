@@ -2412,10 +2412,12 @@ class Element(Plugin):
                     rdep.__build_deps_uncached -= 1
                     assert not rdep.__build_deps_uncached < 0
 
-                    if rdep.__buildable_callback is not None and rdep._buildable():
+                    if rdep._buildable():
                         rdep.__update_cache_key_non_strict()
-                        rdep.__buildable_callback(rdep)
-                        rdep.__buildable_callback = None
+
+                        if rdep.__buildable_callback is not None:
+                            rdep.__buildable_callback(rdep)
+                            rdep.__buildable_callback = None
 
     # _walk_artifact_files()
     #
