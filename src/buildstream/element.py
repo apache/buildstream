@@ -1454,7 +1454,7 @@ class Element(Plugin):
                 # Run any integration commands provided by the dependencies
                 # once they are all staged and ready
                 if integrate:
-                    with self.timed_activity("Integrating sandbox"):
+                    with self.timed_activity("Integrating sandbox"), sandbox.batch(SandboxFlags.NONE):
                         for dep in self._dependencies(scope):
                             dep.integrate(sandbox)
 
