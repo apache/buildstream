@@ -195,9 +195,13 @@ class Stream:
     #
     # Args:
     #    elements (list of Element): The elements to check
+    #    sources_of_cached_elements (bool): True to query the source cache for elements with a cached artifact
     #    only_sources (bool): True to only query the source cache
     #
-    def query_cache(self, elements, *, only_sources=False):
+    def query_cache(self, elements, *, sources_of_cached_elements=False, only_sources=False):
+        # It doesn't make sense to combine these flags
+        assert not sources_of_cached_elements or not only_sources
+
         with self._context.messenger.timed_activity("Query cache", silent_nested=True):
             # Enqueue complete build plan as this is required to determine `buildable` status.
             plan = list(_pipeline.dependencies(elements, _Scope.ALL))
@@ -210,7 +214,7 @@ class Stream:
                     pass
                 elif not only_sources and element._get_cache_key(strength=_KeyStrength.WEAK):
                     element._load_artifact(pull=False)
-                    if not element._can_query_cache() or not element._cached_success():
+                    if sources_of_cached_elements or not element._can_query_cache() or not element._cached_success():
                         element._query_source_cache()
                     if not element._pull_pending():
                         element._load_artifact_done()
@@ -385,7 +389,11 @@ class Stream:
                 for element in self.targets:
                     element._set_artifact_files_required(scope=scope)
 
-        self.query_cache(elements)
+        source_push_enabled = self._sourcecache.has_push_remotes()
+
+        # If source push is enabled, the source cache status of all elements
+        # is required, independent of whether the artifact is already available.
+        self.query_cache(elements, sources_of_cached_elements=source_push_enabled)
 
         # Now construct the queues
         #
@@ -401,7 +409,7 @@ class Stream:
         if self._artifacts.has_push_remotes():
             self._add_queue(ArtifactPushQueue(self._scheduler, skip_uncached=True))
 
-        if self._sourcecache.has_push_remotes():
+        if source_push_enabled:
             self._add_queue(SourcePushQueue(self._scheduler))
 
         # Enqueue elements
