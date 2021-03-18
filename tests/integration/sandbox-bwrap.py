@@ -29,3 +29,13 @@ def test_sandbox_bwrap_cleanup_build(cli, tmpdir, datafiles):
     # Here, BuildStream should not attempt any rmdir etc.
     result = cli.run(project=project, args=['build', element_name])
     assert result.exit_code == 0
+
+
+@pytest.mark.skipif(not HAVE_BWRAP, reason='Only available with bubblewrap')
+@pytest.mark.datafiles(DATA_DIR)
+def test_sandbox_bwrap_dev_shm(cli, datafiles):
+    project = str(datafiles)
+    element_name = 'sandbox-bwrap/test-dev-shm.bst'
+
+    result = cli.run(project=project, args=['build', element_name])
+    assert result.exit_code == 0
