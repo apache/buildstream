@@ -1264,10 +1264,12 @@ class Element(Plugin):
     #    (bool): Whether this element can currently be built
     #
     def _buildable(self):
-        if self._fetch_needed():
+        # This check must be before `_fetch_needed()` as source cache status
+        # is not always available for non-build pipelines.
+        if not self.__assemble_scheduled:
             return False
 
-        if not self.__assemble_scheduled:
+        if self._fetch_needed():
             return False
 
         return self.__build_deps_uncached == 0
@@ -2410,10 +2412,12 @@ class Element(Plugin):
                     rdep.__build_deps_uncached -= 1
                     assert not rdep.__build_deps_uncached < 0
 
-                    if rdep.__buildable_callback is not None and rdep._buildable():
+                    if rdep._buildable():
                         rdep.__update_cache_key_non_strict()
-                        rdep.__buildable_callback(rdep)
-                        rdep.__buildable_callback = None
+
+                        if rdep.__buildable_callback is not None:
+                            rdep.__buildable_callback(rdep)
+                            rdep.__buildable_callback = None
 
     # _walk_artifact_files()
     #
