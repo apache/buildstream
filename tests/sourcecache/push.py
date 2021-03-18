@@ -287,3 +287,35 @@ def test_push_missing_source_after_build(cli, tmpdir, datafiles):
         res.assert_success()
         assert "fetch:{}".format(element_name) in res.stderr
         assert "Pushed source" in res.stderr
+
+
+# Regression test for https://github.com/apache/buildstream/issues/1456
+# Test that a build pipeline with source push enabled doesn't fail if an
+# element is already cached.
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_push_source_twice(cli, tmpdir, datafiles):
+    cache_dir = os.path.join(str(tmpdir), "cache")
+    project_dir = str(datafiles)
+    element_name = "import-bin.bst"
+
+    with create_artifact_share(os.path.join(str(tmpdir), "sourceshare")) as share:
+        user_config_file = str(tmpdir.join("buildstream.conf"))
+        user_config = {
+            "scheduler": {"pushers": 1},
+            "source-caches": {"servers": [{"url": share.repo, "push": True,}]},
+            "cachedir": cache_dir,
+        }
+        _yaml.roundtrip_dump(user_config, file=user_config_file)
+        cli.configure(user_config)
+
+        res = cli.run(project=project_dir, args=["build", element_name])
+        res.assert_success()
+        assert "fetch:{}".format(element_name) in res.stderr
+        assert "Pushed source" in res.stderr
+
+        # The second build pipeline is a no-op as everything is already cached.
+        # However, this verifies that the pipeline behaves as expected.
+        res = cli.run(project=project_dir, args=["build", element_name])
+        res.assert_success()
+        assert "fetch:{}".format(element_name) not in res.stderr
+        assert "Pushed source" not in res.stderr
