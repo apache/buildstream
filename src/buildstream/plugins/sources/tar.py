@@ -77,7 +77,7 @@ class ReadableTarInfo(tarfile.TarInfo):
         # Respect umask instead of the file mode stored in the archive.
         # The only bit used from the embedded mode is the executable bit for files.
         umask = utils.get_umask()
-        if self.isdir() or bool(self.__permission | 0o100):
+        if self.isdir() or bool(self.__permission & 0o100):
             return 0o777 & ~umask
         else:
             return 0o666 & ~umask
