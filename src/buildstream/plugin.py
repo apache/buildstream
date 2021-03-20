@@ -110,7 +110,21 @@ Class Reference
 """
 
 import itertools
+
+#
+# In some cases (on Debian with python 3.9 it has been seen) when multiple threads
+# enter the Plugin.blocking_activity() context manager simultaneously, we get ImportErrors
+# from the multiprocessing submodules complaining that we are importing symbols from
+# partially initialized submodules (hinting at possible circular imports).
+#
+# Ensuring that these submodules have been initialized up front circumvents these edge
+# case stack trace bugs from occurring.
+#
 import multiprocessing
+import multiprocessing.queues
+import multiprocessing.synchronize
+import multiprocessing.popen_forkserver  # type: ignore
+
 import os
 import pickle
 import queue
