@@ -574,7 +574,7 @@ class Artifact:
 
         # Check whether public data and logs are available
         logfile_digests = [logfile.digest for logfile in artifact.logs]
-        digests = [artifact.public_data] + logfile_digests
+        digests = [artifact.low_diversity_meta, artifact.high_diversity_meta, artifact.public_data] + logfile_digests
         if not self._cas.contains_files(digests):
             self._cached = False
             return False
