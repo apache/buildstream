@@ -3,3 +3,17 @@ Copyright 2021 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
+
+
+Software deriving from third parties:
+
+  * doc/bst2html.py
+
+    This file is largely derived from https://github.com/Kronuz/ansi2html.git
+    which is under the MIT license and as such is acceptable to redistribute
+    under the Apache License.
+
+  * src/buildstream/_frontend/complete.py
+
+    This file is forked from the click library which is under BSD license
+    and as such is acceptable to redistribute under the Apache License.
