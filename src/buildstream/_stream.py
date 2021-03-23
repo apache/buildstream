@@ -195,9 +195,13 @@ class Stream:
     #
     # Args:
     #    elements (list of Element): The elements to check
-    #    sources (bool): True to only query the source cache
+    #    sources_of_cached_elements (bool): True to query the source cache for elements with a cached artifact
+    #    only_sources (bool): True to only query the source cache
     #
-    def query_cache(self, elements, *, sources=False):
+    def query_cache(self, elements, *, sources_of_cached_elements=False, only_sources=False):
+        # It doesn't make sense to combine these flags
+        assert not sources_of_cached_elements or not only_sources
+
         with self._context.messenger.timed_activity("Query cache", silent_nested=True):
             # Enqueue complete build plan as this is required to determine `buildable` status.
             plan = list(_pipeline.dependencies(elements, _Scope.ALL))
@@ -208,9 +212,9 @@ class Stream:
                     # This is the case for artifact elements, which load the
                     # artifact early on.
                     pass
-                elif not sources and element._get_cache_key(strength=_KeyStrength.WEAK):
+                elif not only_sources and element._get_cache_key(strength=_KeyStrength.WEAK):
                     element._load_artifact(pull=False)
-                    if not element._can_query_cache() or not element._cached_success():
+                    if sources_of_cached_elements or not element._can_query_cache() or not element._cached_success():
                         element._query_source_cache()
                     if not element._pull_pending():
                         element._load_artifact_done()
@@ -322,7 +326,7 @@ class Stream:
 
         # Ensure we have our sources if we are launching a build shell
         if scope == _Scope.BUILD and not usebuildtree:
-            self.query_cache([element], sources=True)
+            self.query_cache([element], only_sources=True)
             self._fetch([element])
             _pipeline.assert_sources_cached(self._context, [element])
 
@@ -385,7 +389,11 @@ class Stream:
                 for element in self.targets:
                     element._set_artifact_files_required(scope=scope)
 
-        self.query_cache(elements)
+        source_push_enabled = self._sourcecache.has_push_remotes()
+
+        # If source push is enabled, the source cache status of all elements
+        # is required, independent of whether the artifact is already available.
+        self.query_cache(elements, sources_of_cached_elements=source_push_enabled)
 
         # Now construct the queues
         #
@@ -401,7 +409,7 @@ class Stream:
         if self._artifacts.has_push_remotes():
             self._add_queue(ArtifactPushQueue(self._scheduler, skip_uncached=True))
 
-        if self._sourcecache.has_push_remotes():
+        if source_push_enabled:
             self._add_queue(SourcePushQueue(self._scheduler))
 
         # Enqueue elements
@@ -438,7 +446,7 @@ class Stream:
             ignore_project_source_remotes=ignore_project_source_remotes,
         )
 
-        self.query_cache(elements, sources=True)
+        self.query_cache(elements, only_sources=True)
 
         # Delegated to a shared fetch method
         self._fetch(elements, announce_session=True)
@@ -512,7 +520,7 @@ class Stream:
             ignore_project_source_remotes=ignore_project_source_remotes,
         )
 
-        self.query_cache(elements, sources=True)
+        self.query_cache(elements, only_sources=True)
 
         if not self._sourcecache.has_push_remotes():
             raise StreamError("No source caches available for pushing sources")
@@ -897,7 +905,7 @@ class Stream:
         )
 
         # Assert all sources are cached in the source dir
-        self.query_cache(elements, sources=True)
+        self.query_cache(elements, only_sources=True)
         self._fetch(elements)
         _pipeline.assert_sources_cached(self._context, elements)
 
@@ -948,7 +956,7 @@ class Stream:
         # If we're going to checkout, we need at least a fetch,
         #
         if not no_checkout:
-            self.query_cache(elements, sources=True)
+            self.query_cache(elements, only_sources=True)
             self._fetch(elements, fetch_original=True)
 
         expanded_directories = []

@@ -1596,9 +1596,7 @@ class Element(Plugin):
     def __should_schedule(self):
         # We're processing if we're already scheduled, we've
         # finished assembling or if we're waiting to pull.
-        processing = (
-            self.__assemble_scheduled or self.__assemble_done or (self._can_query_cache() and self._pull_pending())
-        )
+        processing = self.__assemble_scheduled or self.__assemble_done or self._pull_pending()
 
         # We should schedule a build when
         return (
