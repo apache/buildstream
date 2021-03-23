@@ -551,24 +551,13 @@ class Artifact:
     #     (bool): Whether artifact is in local cache
     #
     def query_cache(self):
-        context = self._context
-
         artifact = self._load_proto()
         if not artifact:
             self._cached = False
             return False
 
-        # Determine whether directories are required
-        require_directories = context.require_artifact_directories
-        # Determine whether file contents are required as well
-        require_files = context.require_artifact_files or self._element._artifact_files_required()
-
         # Check whether 'files' subdirectory is available, with or without file contents
-        if (
-            require_directories
-            and str(artifact.files)
-            and not self._cas.contains_directory(artifact.files, with_files=require_files)
-        ):
+        if str(artifact.files) and not self._cas.contains_directory(artifact.files, with_files=True):
             self._cached = False
             return False
 
@@ -616,10 +605,20 @@ class Artifact:
     # Mark the artifact as cached without querying the filesystem.
     # This is used as optimization when we know the artifact is available.
     #
-    def set_cached(self):
-        self._proto = self._load_proto()
-        assert self._proto
-        self._cached = True
+    def set_cached(self, cached=True, *, strong_key=None):
+        if strong_key:
+            assert not self._cache_key or self._cache_key == strong_key
+            self._cache_key = strong_key
+
+        if cached:
+            self._proto = self._load_proto()
+            assert self._proto
+            if self._cache_key:
+                assert self._cache_key == self._proto.strong_key
+            else:
+                self._cache_key = self._proto.strong_key
+
+        self._cached = cached
 
     # pull()
     #

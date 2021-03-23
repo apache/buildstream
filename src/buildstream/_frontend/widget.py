@@ -500,7 +500,6 @@ class LogLine(Widget):
             values["Storage Service"] = format_spec(specs.storage_spec)
             if specs.action_spec:
                 values["Action Cache Service"] = format_spec(specs.action_spec)
-            values["Pull artifact files"] = context.pull_artifact_files
             text += self._format_values(values)
 
         # Print information about each loaded project

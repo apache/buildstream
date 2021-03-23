@@ -146,9 +146,6 @@ class ElementProxy(PluginProxy):
     def get_variable(self, varname: str) -> Optional[str]:
         return cast("Element", self._plugin).get_variable(varname)
 
-    def get_logs(self) -> List[str]:
-        return cast("Element", self._plugin).get_logs()
-
     ##############################################################
     #                   Element Internal APIs                    #
     ##############################################################

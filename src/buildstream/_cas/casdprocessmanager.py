@@ -51,10 +51,11 @@ _CASD_TIMEOUT = 300  # in seconds
 #     log_dir (str): The directory for the logs
 #     log_level (LogLevel): Log level to give to buildbox-casd for logging
 #     cache_quota (int): User configured cache quota
+#     remote_cache_spec (RemoteSpec): Optional remote cache server
 #     protect_session_blobs (bool): Disable expiry for blobs used in the current session
 #
 class CASDProcessManager:
-    def __init__(self, path, log_dir, log_level, cache_quota, protect_session_blobs):
+    def __init__(self, path, log_dir, log_level, cache_quota, remote_cache_spec, protect_session_blobs):
         self._log_dir = log_dir
 
         self._socket_path = self._make_socket_path(path)
@@ -70,6 +71,16 @@ class CASDProcessManager:
 
         if protect_session_blobs:
             casd_args.append("--protect-session-blobs")
+
+        if remote_cache_spec:
+            casd_args.append("--cas-remote={}".format(remote_cache_spec.url))
+            if remote_cache_spec.instance_name:
+                casd_args.append("--cas-instance={}".format(remote_cache_spec.instance_name))
+            if remote_cache_spec.server_cert:
+                casd_args.append("--cas-server-cert={}".format(remote_cache_spec.server_cert))
+            if remote_cache_spec.client_key:
+                casd_args.append("--cas-client-key={}".format(remote_cache_spec.client_key))
+                casd_args.append("--cas-client-cert={}".format(remote_cache_spec.client_cert))
 
         casd_args.append(path)
 

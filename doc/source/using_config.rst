@@ -900,7 +900,6 @@ using the ``remote-execution`` key, like so:
 .. code:: yaml
 
    remote-execution:
-     pull-artifact-files: True
      execution-service:
        url: http://execution.fallback.example.com:50051
        instance-name: main
@@ -917,16 +916,6 @@ using the ``remote-execution`` key, like so:
 
 Attributes
 ''''''''''
-
-* ``pull-artifact-files``
-
-  This determines whether you want the artifacts which were built remotely
-  to be downloaded into the local CAS, so that it is ready for checkout
-  directly after a built completes.
-
-  If this is set to ``false``, then you will need to download the artifacts
-  you intend to use with :ref:`bst artifact checkout <invoking_artifact_checkout>`
-  after your build completes.
 
 * ``execution-service``
 
@@ -1095,7 +1084,6 @@ the global configuration can be overridden on a per project basis in this projec
        # remote execution configuration.
        #
        remote-execution:
-         pull-artifact-files: True
          execution-service:
            url: http://execution.example.com:50051
            instance-name: main

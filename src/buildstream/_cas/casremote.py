@@ -55,6 +55,11 @@ class CASRemote(BaseRemote):
     # be called outside of init().
     #
     def _configure_protocols(self):
+        if not self.spec:
+            # Remote cache (handled by default instance in casd)
+            self.local_cas_instance_name = ""
+            return
+
         local_cas = self.cascache.get_local_cas()
         request = local_cas_pb2.GetInstanceNameForRemotesRequest()
         cas_endpoint = request.content_addressable_storage

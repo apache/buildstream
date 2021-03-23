@@ -38,6 +38,7 @@ from ._scheduler import (
     Scheduler,
     SchedStatus,
     TrackQueue,
+    CacheQueryQueue,
     FetchQueue,
     SourcePushQueue,
     BuildQueue,
@@ -202,20 +203,27 @@ class Stream:
             # Enqueue complete build plan as this is required to determine `buildable` status.
             plan = list(_pipeline.dependencies(elements, _Scope.ALL))
 
-            for element in plan:
-                if element._can_query_cache():
-                    # Cache status already available.
-                    # This is the case for artifact elements, which load the
-                    # artifact early on.
-                    pass
-                elif not sources and element._get_cache_key(strength=_KeyStrength.WEAK):
-                    element._load_artifact(pull=False)
-                    if not element._can_query_cache() or not element._cached_success():
+            if self._context.remote_cache_spec:
+                # Parallelize cache queries if a remote cache is configured
+                self._reset()
+                self._add_queue(CacheQueryQueue(self._scheduler, sources=sources), track=True)
+                self._enqueue_plan(plan)
+                self._run()
+            else:
+                for element in plan:
+                    if element._can_query_cache():
+                        # Cache status already available.
+                        # This is the case for artifact elements, which load the
+                        # artifact early on.
+                        pass
+                    elif not sources and element._get_cache_key(strength=_KeyStrength.WEAK):
+                        element._load_artifact(pull=False)
+                        if not element._can_query_cache() or not element._cached_success():
+                            element._query_source_cache()
+                        if not element._pull_pending():
+                            element._load_artifact_done()
+                    elif element._has_all_sources_resolved():
                         element._query_source_cache()
-                    if not element._pull_pending():
-                        element._load_artifact_done()
-                elif element._has_all_sources_resolved():
-                    element._query_source_cache()
 
     # shell()
     #
@@ -373,17 +381,6 @@ class Stream:
 
         # Assert that the elements are consistent
         _pipeline.assert_consistent(self._context, elements)
-
-        if self._context.remote_execution_specs:
-            # Remote execution is configured.
-            # Require artifact files only for target elements and their runtime dependencies.
-            self._context.set_artifact_files_optional()
-
-            # fetch blobs of targets if options set
-            if self._context.pull_artifact_files:
-                scope = _Scope.ALL if selection == _PipelineSelection.ALL else _Scope.RUN
-                for element in self.targets:
-                    element._set_artifact_files_required(scope=scope)
 
         self.query_cache(elements)
 
@@ -788,7 +785,7 @@ class Stream:
                 self._context.messenger.warn("{} is cached without log files".format(ref))
                 continue
 
-            artifact_logs[obj.name] = obj.get_logs()
+            artifact_logs[obj.name] = obj._get_logs()
 
         return artifact_logs
 
