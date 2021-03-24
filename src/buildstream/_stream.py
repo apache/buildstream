@@ -271,7 +271,7 @@ class Stream:
             elements = self.load_selection(
                 (target,),
                 selection=selection,
-                connect_artifact_cache=True,
+                connect_artifact_cache=pull_,
                 connect_source_cache=True,
                 artifact_remotes=artifact_remotes,
                 source_remotes=source_remotes,
@@ -670,7 +670,7 @@ class Stream:
             selection=selection,
             load_artifacts=True,
             attempt_artifact_metadata=True,
-            connect_artifact_cache=True,
+            connect_artifact_cache=pull,
             artifact_remotes=artifact_remotes,
             ignore_project_artifact_remotes=ignore_project_artifact_remotes,
         )
@@ -685,7 +685,7 @@ class Stream:
 
         self.query_cache(elements)
 
-        uncached_elts = [elt for elt in elements if not elt._cached()]
+        uncached_elts = [elt for elt in elements if elt._pull_pending()]
         if uncached_elts and pull:
             self._context.messenger.info("Attempting to fetch missing or incomplete artifact")
             self._reset()
