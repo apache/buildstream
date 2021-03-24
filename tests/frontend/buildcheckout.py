@@ -148,6 +148,27 @@ def test_non_strict_pull_build_strict_checkout(datafiles, cli, tmpdir):
         assert os.path.exists(filename)
 
 
+# Regression test for https://github.com/apache/buildstream/issues/1469
+# Test that artifact checkout without pull doesn't trigger a BUG in non-strict mode.
+@pytest.mark.datafiles(DATA_DIR)
+def test_non_strict_checkout_uncached(datafiles, cli, tmpdir):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, "checkout")
+
+    element_name = "target.bst"
+
+    with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
+
+        cli.configure({"artifacts": {"servers": [{"url": share.repo}]}})
+
+        # Attempt to checkout an uncached artifact with remote artifact server
+        # configured but pull disabled.
+        result = cli.run(
+            project=project, args=["--no-strict", "artifact", "checkout", element_name, "--directory", checkout]
+        )
+        result.assert_main_error(ErrorDomain.STREAM, "uncached-checkout-attempt")
+
+
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("strict,hardlinks", [("non-strict", "hardlinks"),])
 def test_build_invalid_suffix(datafiles, cli, strict, hardlinks):
