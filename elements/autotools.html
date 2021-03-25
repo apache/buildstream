@@ -1,0 +1,395 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>autotools - Autotools build element &mdash; BuildStream 1.93.6+36.ga935429a documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="local - stage local files and directories" href="../sources/local.html" />
+    <link rel="prev" title="manual - Manual build element" href="manual.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> BuildStream
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.93.6+36.ga935429a
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core_format.html">Project format</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../core_plugins.html">Plugin specific documentation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../core_plugins.html#general-elements">General elements</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../core_plugins.html#build-elements">Build elements</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="manual.html">manual - Manual build element</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">autotools - Autotools build element</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../core_plugins.html#sources">Sources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core_plugins.html#external-plugins">External plugins</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core_framework.html">Plugin API reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../main_core.html">Reference</a> &raquo;</li>
+        
+          <li><a href="../core_plugins.html">Plugin specific documentation</a> &raquo;</li>
+        
+      <li>autotools - Autotools build element</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/elements/autotools.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-elements.autotools"></span><div class="section" id="autotools-autotools-build-element">
+<h1>autotools - Autotools build element<a class="headerlink" href="#autotools-autotools-build-element" title="Permalink to this headline">¶</a></h1>
+<p>This is a <a class="reference internal" href="../buildstream.buildelement.html#module-buildstream.buildelement" title="buildstream.buildelement"><code class="xref py py-mod docutils literal notranslate"><span class="pre">BuildElement</span></code></a> implementation for
+using Autotools build scripts (also known as the <a class="reference external" href="https://en.wikipedia.org/wiki/GNU_Build_System">GNU Build System</a>).</p>
+<p>You will often want to pass additional arguments to <code class="docutils literal notranslate"><span class="pre">configure</span></code>. This should
+be done on a per-element basis by setting the <code class="docutils literal notranslate"><span class="pre">conf-local</span></code> variable.  Here is
+an example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+  <span class="nt">conf-local</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+    <span class="no">--disable-foo --enable-bar</span>
+</pre></div>
+</div>
+<p>If you want to pass extra options to <code class="docutils literal notranslate"><span class="pre">configure</span></code> for every element in your
+project, set the <code class="docutils literal notranslate"><span class="pre">conf-global</span></code> variable in your project.conf file. Here is
+an example of that:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">elements</span><span class="p">:</span>
+  <span class="nt">autotools</span><span class="p">:</span>
+    <span class="nt">variables</span><span class="p">:</span>
+      <span class="nt">conf-global</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+        <span class="no">--disable-gtk-doc --disable-static</span>
+</pre></div>
+</div>
+<p>Here is the default configuration for the <code class="docutils literal notranslate"><span class="pre">autotools</span></code> element in full:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Autotools default configurations</span>
+
+<span class="nt">variables</span><span class="p">:</span>
+
+  <span class="nt">autogen</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+    <span class="no">export NOCONFIGURE=1;</span>
+
+    <span class="no">if [ -x %{conf-cmd} ]; then true;</span>
+    <span class="no">elif [ -x %{conf-root}/autogen ]; then %{conf-root}/autogen;</span>
+    <span class="no">elif [ -x %{conf-root}/autogen.sh ]; then %{conf-root}/autogen.sh;</span>
+    <span class="no">elif [ -x %{conf-root}/bootstrap ]; then %{conf-root}/bootstrap;</span>
+    <span class="no">elif [ -x %{conf-root}/bootstrap.sh ]; then %{conf-root}/bootstrap.sh;</span>
+    <span class="no">else autoreconf -ivf %{conf-root};</span>
+    <span class="no">fi</span>
+
+  <span class="c1"># Project-wide extra arguments to be passed to `configure`</span>
+  <span class="nt">conf-global</span><span class="p">:</span> <span class="s">&#39;&#39;</span>
+
+  <span class="c1"># Element-specific extra arguments to be passed to `configure`.</span>
+  <span class="nt">conf-local</span><span class="p">:</span> <span class="s">&#39;&#39;</span>
+
+  <span class="c1"># For backwards compatibility only, do not use.</span>
+  <span class="nt">conf-extra</span><span class="p">:</span> <span class="s">&#39;&#39;</span>
+
+  <span class="nt">conf-cmd</span><span class="p">:</span> <span class="s">&quot;%{conf-root}/configure&quot;</span>
+  
+  <span class="nt">conf-args</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+
+    <span class="no">--prefix=%{prefix} \</span>
+    <span class="no">--exec-prefix=%{exec_prefix} \</span>
+    <span class="no">--bindir=%{bindir} \</span>
+    <span class="no">--sbindir=%{sbindir} \</span>
+    <span class="no">--sysconfdir=%{sysconfdir} \</span>
+    <span class="no">--datadir=%{datadir} \</span>
+    <span class="no">--includedir=%{includedir} \</span>
+    <span class="no">--libdir=%{libdir} \</span>
+    <span class="no">--libexecdir=%{libexecdir} \</span>
+    <span class="no">--localstatedir=%{localstatedir} \</span>
+    <span class="no">--sharedstatedir=%{sharedstatedir} \</span>
+    <span class="no">--mandir=%{mandir} \</span>
+    <span class="no">--infodir=%{infodir} %{conf-extra} %{conf-global} %{conf-local}</span>
+
+  <span class="nt">configure</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+
+    <span class="no">%{conf-cmd} %{conf-args}</span>
+
+  <span class="nt">make</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">make</span>
+  <span class="nt">make-install</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">make -j1 DESTDIR=&quot;%{install-root}&quot; install</span>
+
+  <span class="c1"># Set this if the sources cannot handle parallelization.</span>
+  <span class="c1">#</span>
+  <span class="c1"># notparallel: True</span>
+
+
+  <span class="c1"># Automatically remove libtool archive files</span>
+  <span class="c1">#</span>
+  <span class="c1"># Set remove-libtool-modules to &quot;true&quot; to remove .la files for </span>
+  <span class="c1"># modules intended to be opened with lt_dlopen()</span>
+  <span class="c1">#</span>
+  <span class="c1"># Set remove-libtool-libraries to &quot;true&quot; to remove .la files for</span>
+  <span class="c1"># libraries</span>
+  <span class="c1">#</span>
+  <span class="c1"># Value must be &quot;true&quot; or &quot;false&quot;</span>
+  <span class="nt">remove-libtool-modules</span><span class="p">:</span> <span class="s">&quot;false&quot;</span>  
+  <span class="nt">remove-libtool-libraries</span><span class="p">:</span> <span class="s">&quot;false&quot;</span>
+
+  <span class="nt">delete-libtool-archives</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+    <span class="no">if %{remove-libtool-modules} || %{remove-libtool-libraries}; then</span>
+      <span class="no">find &quot;%{install-root}&quot; -name &quot;*.la&quot; -print0 | while read -d &#39;&#39; -r file; do</span>
+        <span class="no">if grep &#39;^shouldnotlink=yes$&#39; &quot;${file}&quot; &amp;&gt;/dev/null; then</span>
+          <span class="no">if %{remove-libtool-modules}; then</span>
+            <span class="no">echo &quot;Removing ${file}.&quot;</span>
+            <span class="no">rm &quot;${file}&quot;</span>
+          <span class="no">else</span>
+            <span class="no">echo &quot;Not removing ${file}.&quot;</span>
+          <span class="no">fi</span>
+        <span class="no">else</span>
+          <span class="no">if %{remove-libtool-libraries}; then</span>
+            <span class="no">echo &quot;Removing ${file}.&quot;</span>
+            <span class="no">rm &quot;${file}&quot;</span>
+          <span class="no">else</span>
+            <span class="no">echo &quot;Not removing ${file}.&quot;</span>
+          <span class="no">fi</span>
+        <span class="no">fi</span>
+      <span class="no">done</span>
+    <span class="no">fi</span>
+
+<span class="nt">config</span><span class="p">:</span>
+
+  <span class="c1"># Commands for configuring the software</span>
+  <span class="c1">#</span>
+  <span class="nt">configure-commands</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="p p-Indicator">|</span>
+    <span class="no">%{autogen}</span>
+  <span class="p p-Indicator">-</span> <span class="p p-Indicator">|</span>
+    <span class="no">%{configure}</span>
+
+  <span class="c1"># Commands for building the software</span>
+  <span class="c1">#</span>
+  <span class="nt">build-commands</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="p p-Indicator">|</span>
+    <span class="no">%{make}</span>
+
+  <span class="c1"># Commands for installing the software into a</span>
+  <span class="c1"># destination folder</span>
+  <span class="c1">#</span>
+  <span class="nt">install-commands</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="p p-Indicator">|</span>
+    <span class="no">%{make-install}</span>
+  <span class="p p-Indicator">-</span> <span class="p p-Indicator">|</span>
+    <span class="no">%{delete-libtool-archives}</span>
+
+  <span class="c1"># Commands for stripping debugging information out of</span>
+  <span class="c1"># installed binaries</span>
+  <span class="c1">#</span>
+  <span class="nt">strip-commands</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="p p-Indicator">|</span>
+    <span class="no">%{strip-binaries}</span>
+
+<span class="c1"># Use max-jobs CPUs for building and enable verbosity</span>
+<span class="nt">environment</span><span class="p">:</span>
+  <span class="nt">MAKEFLAGS</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">-j%{max-jobs}</span>
+  <span class="nt">V</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+
+<span class="c1"># And dont consider MAKEFLAGS or V as something which may</span>
+<span class="c1"># affect build output.</span>
+<span class="nt">environment-nocache</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">MAKEFLAGS</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">V</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>See <a class="reference internal" href="../buildstream.buildelement.html#core-buildelement-builtins"><span class="std std-ref">built-in functionality documentation</span></a> for
+details on common configuration options for build elements.</p>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../sources/local.html" class="btn btn-neutral float-right" title="local - stage local files and directories" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="manual.html" class="btn btn-neutral float-left" title="manual - Manual build element" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2017-2020, The BuildStream Contributors.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,272 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>BuildStream and Docker &mdash; BuildStream 1.93.6+36.ga935429a documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="buildstream package" href="buildstream.html" />
+    <link rel="prev" title="Additional writings" href="core_additional.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BuildStream
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.93.6+36.ga935429a
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_format.html">Project format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_framework.html">Plugin API reference</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="core_additional.html">Additional writings</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">BuildStream and Docker</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#run-buildstream-inside-docker">Run BuildStream inside Docker</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#generate-docker-images">Generate Docker images</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="main_core.html">Reference</a> &raquo;</li>
+        
+          <li><a href="core_additional.html">Additional writings</a> &raquo;</li>
+        
+      <li>BuildStream and Docker</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/additional_docker.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="buildstream-and-docker">
+<span id="bst-and-docker"></span><h1>BuildStream and Docker<a class="headerlink" href="#buildstream-and-docker" title="Permalink to this headline">¶</a></h1>
+<p>BuildStream integrates with Docker in multiple ways. Here are some ways in
+which these integrations work.</p>
+<div class="section" id="run-buildstream-inside-docker">
+<h2>Run BuildStream inside Docker<a class="headerlink" href="#run-buildstream-inside-docker" title="Permalink to this headline">¶</a></h2>
+<p>Refer to the <a class="reference external" href="https://buildstream.build/docker_install.html">BuildStream inside Docker</a>
+documentation for instructions on how to run BuildStream as a Docker container.</p>
+</div>
+<div class="section" id="generate-docker-images">
+<h2>Generate Docker images<a class="headerlink" href="#generate-docker-images" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference external" href="https://github.com/apache/buildstream/blob/master/contrib/bst-docker-import">bst-docker-import script</a>
+can be used to generate a Docker image from built artifacts.</p>
+<p>You can download it and make it executable like this:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir -p ~/.local/bin
+curl --get https://raw.githubusercontent.com/apache/buildstream/master/contrib/bst-docker-import &gt; ~/.local/bin/bst-docker-import
+chmod +x ~/.local/bin/bst-docker-import
+</pre></div>
+</div>
+<p>Check if <code class="docutils literal notranslate"><span class="pre">~/.local/bin</span></code> appears in your PATH environment variable – if it
+doesn’t, you should
+<a class="reference external" href="https://stackoverflow.com/questions/14637979/">edit your ~/.profile so that it does</a>.</p>
+<p>Once the script is available in your PATH and assuming you have Docker
+installed, you can start using the <code class="docutils literal notranslate"><span class="pre">bst-docker-import</span></code> script. Here is a
+minimal example to generate an image called <code class="docutils literal notranslate"><span class="pre">bst-hello</span></code> from an element
+called <code class="docutils literal notranslate"><span class="pre">hello.bst</span></code> assuming it is already built:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bst-docker-import -t bst-hello hello.bst
+</pre></div>
+</div>
+<p>This script can also be used if you are running BuildStream inside Docker. In
+this case, you will need to supply the command that you are using to run
+BuildStream using the <code class="docutils literal notranslate"><span class="pre">-c</span></code> option.  If you are using the
+<a class="reference external" href="https://github.com/apache/buildstream/blob/master/contrib//bst-here">bst-here wrapper script</a>,
+you can achieve the same results as the above example like this:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bst-docker-import -c bst-here -t bst-hello hello.bst
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="buildstream.html" class="btn btn-neutral float-right" title="buildstream package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="core_additional.html" class="btn btn-neutral float-left" title="Additional writings" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2017-2020, The BuildStream Contributors.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

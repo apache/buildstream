@@ -1,0 +1,284 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Caches &mdash; BuildStream 1.93.6+36.ga935429a documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Sandboxing" href="arch_sandboxing.html" />
+    <link rel="prev" title="Cache keys" href="arch_cachekeys.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BuildStream
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.93.6+36.ga935429a
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_architecture.html">Architecture</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="arch_overview.html">Overview of modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_program_flow.html">Overview of program flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_data_model.html">Data model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_dependency_model.html">Dependency model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_scheduler.html">Scheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_cachekeys.html">Cache keys</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Caches</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#content-addressable-storage-cas">Content Addressable Storage (CAS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#artifact-caches">Artifact caches</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#source-caches">Source caches</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="arch_sandboxing.html">Sandboxing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_remote_execution.html">Remote execution</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="main_architecture.html">Architecture</a> &raquo;</li>
+        
+      <li>Caches</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/arch_caches.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="caches">
+<span id="id1"></span><h1>Caches<a class="headerlink" href="#caches" title="Permalink to this headline">¶</a></h1>
+<p>BuildStream uses local caches to avoid repeating work, and can have remote
+caches configured to allow the results of work to be shared between multiple
+users. There are caches for both elements and sources that map keys to relevant
+metadata and point to data in CAS.</p>
+<div class="section" id="content-addressable-storage-cas">
+<h2>Content Addressable Storage (CAS)<a class="headerlink" href="#content-addressable-storage-cas" title="Permalink to this headline">¶</a></h2>
+<p>The majority of data is stored in Content Addressable Storage or CAS, which
+indexes stored files by the SHA256 hash of their contents. This allows for a
+flat file structure as well as any repeated data to be shared across a CAS. In
+order to store directory structures BuildStream’s CAS uses <a class="reference external" href="https://developers.google.com/protocol-buffers/docs/overview">protocol buffers</a>
+for storing directory and file information as defined in Googles <a class="reference external" href="https://github.com/bazelbuild/remote-apis">REAPI</a>.</p>
+<p><a class="reference internal" href="using_configuring_cache_server.html#artifact-command-reference"><span class="std std-ref">bst-artifact-server</span></a> runs a <a class="reference external" href="https://grpc.io">grpc</a> CAS
+service (also defined in REAPI) that both artifact and source cache use,
+allowing them to download and upload files to a remote service.</p>
+</div>
+<div class="section" id="artifact-caches">
+<h2>Artifact caches<a class="headerlink" href="#artifact-caches" title="Permalink to this headline">¶</a></h2>
+<p>Artifacts store build results of an element which is then referred to by its
+cache key (described in <a class="reference internal" href="arch_cachekeys.html#cachekeys"><span class="std std-ref">Cache keys</span></a>). The artifacts information is then
+stored in a protocol buffer, defined in <code class="docutils literal notranslate"><span class="pre">artifact.proto</span></code>, which includes
+metadata such as the digest of the files root; strong and weak keys; and log
+files digests. The digests point to locations in the CAS of relavant files and
+directories, allowing BuildStream to query remote CAS servers for this
+information.</p>
+<p><a class="reference internal" href="using_configuring_cache_server.html#artifact-command-reference"><span class="std std-ref">bst-artifact-server</span></a> uses grpc to implement
+the Remote Asset API for an artifact service, that BuildStream then uses to
+query, retrieve and update artifact references, before using this information to
+download the files and other data from the remote CAS.</p>
+</div>
+<div class="section" id="source-caches">
+<h2>Source caches<a class="headerlink" href="#source-caches" title="Permalink to this headline">¶</a></h2>
+<p>Sources are cached by running the <a class="reference internal" href="buildstream.source.html#buildstream.source.Source.stage" title="buildstream.source.Source.stage"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Source.stage</span></code></a> method and capturing the directory output of
+this into the CAS, which then use the sources key to refer to this. The source
+key will be calculated with the plugins defined <a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.get_unique_key" title="buildstream.plugin.Plugin.get_unique_key"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Plugin.get_unique_key</span></code></a> and, depending on whether the source
+requires previous sources to be staged (e.g. the patch plugin), the unique key
+of all sources listed before it in an element. Source caches are simpler than
+artifacts, as they just need to map a source key to a directory digest, with no
+additional metadata.</p>
+<p>Similar to artifacts, <a class="reference internal" href="using_configuring_cache_server.html#artifact-command-reference"><span class="std std-ref">bst-artifact-server</span></a>
+uses grpc to implement the Remote Asset API that allows BuildStream to query for
+these source digests, which can then be used to retrieve sources from a CAS.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Not all plugins use the same result as the staged output for workspaces. As a
+result when initialising a workspace, BuildStream may require fetching the
+original source if it only has the source in the source cache.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="arch_sandboxing.html" class="btn btn-neutral float-right" title="Sandboxing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="arch_cachekeys.html" class="btn btn-neutral float-left" title="Cache keys" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2017-2020, The BuildStream Contributors.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

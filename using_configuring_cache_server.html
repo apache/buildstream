@@ -1,0 +1,506 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Configuring Cache Servers &mdash; BuildStream 1.93.6+36.ga935429a documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="using_examples.html" />
+    <link rel="prev" title="Commands" href="using_commands.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BuildStream
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.93.6+36.ga935429a
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_using.html">Using</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="using_tutorial.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_developing.html">Developing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_handling_files.html">Handling files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_junctions.html">Combining projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_config.html">User configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_commands.html">Commands</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Configuring Cache Servers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#setting-up-a-remote-cache">Setting up a remote cache</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#setting-up-the-user">Setting up the user</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#installing-the-server">Installing the server</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#command-reference">Command reference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#key-pair-for-the-server">Key pair for the server</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#authenticating-users">Authenticating users</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#serve-the-cache-over-https">Serve the cache over https</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#managing-the-cache-with-systemd">Managing the cache with systemd</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#declaring-remote-caches">Declaring remote caches</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using_examples.html">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="main_using.html">Using</a> &raquo;</li>
+        
+      <li>Configuring Cache Servers</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/using_configuring_cache_server.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="configuring-cache-servers">
+<span id="cache-servers"></span><h1>Configuring Cache Servers<a class="headerlink" href="#configuring-cache-servers" title="Permalink to this headline">¶</a></h1>
+<p>BuildStream caches the results of builds in a local artifact cache, and will
+avoid building an element if there is a suitable build already present in the
+local artifact cache. Similarly it will cache sources and avoid pulling them if
+present in the local cache. See <a class="reference internal" href="arch_caches.html#caches"><span class="std std-ref">caches</span></a> for more details.</p>
+<p>In addition to the local caches, you can configure one or more remote caches and
+BuildStream will then try to pull a suitable object from one of the remotes,
+falling back to performing a local build or fetching a source if needed.</p>
+<p>On the client side, cache servers are declared and configured in
+<a class="reference internal" href="using_config.html#config-cache-servers"><span class="std std-ref">user configuration</span></a>, and since it is typical
+for projects to maintain their own cache servers, it is also possible for
+projects to provide recommended <a class="reference internal" href="format_project.html#project-artifact-cache"><span class="std std-ref">artifact cache servers</span></a>
+and <a class="reference internal" href="format_project.html#project-source-cache"><span class="std std-ref">source cache servers</span></a> through project
+configuration, so that downstream users can download from services
+provided by upstream projects by default.</p>
+<div class="section" id="setting-up-a-remote-cache">
+<h2>Setting up a remote cache<a class="headerlink" href="#setting-up-a-remote-cache" title="Permalink to this headline">¶</a></h2>
+<p>The rest of this page outlines how to set up a shared cache.</p>
+<div class="section" id="setting-up-the-user">
+<h3>Setting up the user<a class="headerlink" href="#setting-up-the-user" title="Permalink to this headline">¶</a></h3>
+<p>A specific user is not needed, however, a dedicated user to own the cache is
+recommended.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>useradd artifacts
+</pre></div>
+</div>
+<p>The recommended approach is to run two instances on different ports.
+One instance has push disabled and doesn’t require client authentication.
+The other instance has push enabled and requires client authentication.</p>
+<p>Alternatively, you can set up a reverse proxy and handle authentication
+and authorization there.</p>
+</div>
+<div class="section" id="installing-the-server">
+<h3>Installing the server<a class="headerlink" href="#installing-the-server" title="Permalink to this headline">¶</a></h3>
+<p>You will also need to install BuildStream on the cache server in order
+to receive uploaded artifacts over ssh. Follow the instructions for installing
+BuildStream <a class="reference external" href="https://buildstream.build/install.html">here</a>.</p>
+<p>When installing BuildStream on the cache server, it must be installed
+in a system wide location, with <code class="docutils literal notranslate"><span class="pre">pip3</span> <span class="pre">install</span> <span class="pre">.</span></code> in the BuildStream
+checkout directory.</p>
+<p>Otherwise, some tinkering is required to ensure BuildStream is available
+in <code class="docutils literal notranslate"><span class="pre">PATH</span></code> when its companion <code class="docutils literal notranslate"><span class="pre">bst-artifact-server</span></code> program is run
+remotely.</p>
+<p>You can install only the artifact server companion program without
+requiring BuildStream’s more exigent dependencies by setting the
+<code class="docutils literal notranslate"><span class="pre">BST_ARTIFACTS_ONLY</span></code> environment variable at install time, like so:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">BST_ARTIFACTS_ONLY</span><span class="o">=</span><span class="mi">1</span> <span class="n">pip3</span> <span class="n">install</span> <span class="o">.</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="command-reference">
+<span id="artifact-command-reference"></span><h3>Command reference<a class="headerlink" href="#command-reference" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="bst-artifact-server">
+<h4>bst-artifact-server<a class="headerlink" href="#bst-artifact-server" title="Permalink to this headline">¶</a></h4>
+<p>CAS Artifact Server</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst-artifact-server <span class="o">[</span>OPTIONS<span class="o">]</span> REPO
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt id="cmdoption-bst-artifact-server-p">
+<span id="cmdoption-bst-artifact-server-port"></span><code class="sig-name descname"><span class="pre">-p</span></code><code class="sig-prename descclassname"></code><code class="sig-prename descclassname"><span class="pre">,</span> </code><code class="sig-name descname"><span class="pre">--port</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;port&gt;</span></code><a class="headerlink" href="#cmdoption-bst-artifact-server-p" title="Permalink to this definition">¶</a></dt>
+<dd><p><strong>Required</strong> Port number</p>
+</dd></dl>
+
+<dl class="std option">
+<dt id="cmdoption-bst-artifact-server-server-key">
+<code class="sig-name descname"><span class="pre">--server-key</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;server_key&gt;</span></code><a class="headerlink" href="#cmdoption-bst-artifact-server-server-key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Private server key for TLS (PEM-encoded)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt id="cmdoption-bst-artifact-server-server-cert">
+<code class="sig-name descname"><span class="pre">--server-cert</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;server_cert&gt;</span></code><a class="headerlink" href="#cmdoption-bst-artifact-server-server-cert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Public server certificate for TLS (PEM-encoded)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt id="cmdoption-bst-artifact-server-client-certs">
+<code class="sig-name descname"><span class="pre">--client-certs</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;client_certs&gt;</span></code><a class="headerlink" href="#cmdoption-bst-artifact-server-client-certs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Public client certificates for TLS (PEM-encoded)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt id="cmdoption-bst-artifact-server-enable-push">
+<code class="sig-name descname"><span class="pre">--enable-push</span></code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-bst-artifact-server-enable-push" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allow clients to upload blobs and update artifact cache</p>
+</dd></dl>
+
+<dl class="std option">
+<dt id="cmdoption-bst-artifact-server-quota">
+<code class="sig-name descname"><span class="pre">--quota</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;quota&gt;</span></code><a class="headerlink" href="#cmdoption-bst-artifact-server-quota" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum disk usage in bytes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>10000000000.0</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt id="cmdoption-bst-artifact-server-index-only">
+<code class="sig-name descname"><span class="pre">--index-only</span></code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-bst-artifact-server-index-only" title="Permalink to this definition">¶</a></dt>
+<dd><p>Only provide the BuildStream artifact and source services (“index”), not the CAS (“storage”)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt id="cmdoption-bst-artifact-server-log-level">
+<code class="sig-name descname"><span class="pre">--log-level</span></code><code class="sig-prename descclassname"> <span class="pre">&lt;log_level&gt;</span></code><a class="headerlink" href="#cmdoption-bst-artifact-server-log-level" title="Permalink to this definition">¶</a></dt>
+<dd><p>The log level to launch with</p>
+<dl class="field-list simple">
+<dt class="field-odd">Options</dt>
+<dd class="field-odd"><p>warning | info | trace</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt id="cmdoption-bst-artifact-server-arg-REPO">
+<span id="cmdoption-bst-artifact-server-arg-repo"></span><code class="sig-name descname"><span class="pre">REPO</span></code><code class="sig-prename descclassname"></code><a class="headerlink" href="#cmdoption-bst-artifact-server-arg-REPO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Required argument</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="key-pair-for-the-server">
+<span id="server-authentication"></span><h3>Key pair for the server<a class="headerlink" href="#key-pair-for-the-server" title="Permalink to this headline">¶</a></h3>
+<p>For TLS you need a key pair for the server. The following example creates
+a self-signed key, which requires clients to have a copy of the server certificate
+(e.g., in the project directory).
+You can also use a key pair obtained from a trusted certificate authority instead.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>openssl req -new -newkey rsa:4096 -x509 -sha256 -days <span class="m">3650</span> -nodes -batch -subj <span class="s2">&quot;/CN=artifacts.com&quot;</span> -out server.crt -keyout server.key
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note that in the <code class="docutils literal notranslate"><span class="pre">-subj</span> <span class="pre">&quot;/CN=&lt;foo&gt;&quot;</span></code> argument, <code class="docutils literal notranslate"><span class="pre">/CN</span></code> is the <em>certificate common name</em>,
+and as such <code class="docutils literal notranslate"><span class="pre">&lt;foo&gt;</span></code> should be the public hostname of the server. IP addresses will
+<strong>not</strong> provide you with working authentication.</p>
+<p>In addition to this, ensure that the host server is recognised by the client.
+You may need to add the line: <code class="docutils literal notranslate"><span class="pre">&lt;ip</span> <span class="pre">address&gt;</span></code> <code class="docutils literal notranslate"><span class="pre">&lt;hostname&gt;</span></code> to
+your <code class="docutils literal notranslate"><span class="pre">/etc/hosts</span></code> file.</p>
+</div>
+</div>
+<div class="section" id="authenticating-users">
+<h3>Authenticating users<a class="headerlink" href="#authenticating-users" title="Permalink to this headline">¶</a></h3>
+<p>In order to give permission to a given user to upload
+artifacts, create a TLS key pair on the client.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>openssl req -new -newkey rsa:4096 -x509 -sha256 -days <span class="m">3650</span> -nodes -batch -subj <span class="s2">&quot;/CN=client&quot;</span> -out client.crt -keyout client.key
+</pre></div>
+</div>
+<p>Copy the public client certificate <code class="docutils literal notranslate"><span class="pre">client.crt</span></code> to the server and then add it
+to the authorized keys, like so:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat client.crt &gt;&gt; /home/artifacts/authorized.crt
+</pre></div>
+</div>
+</div>
+<div class="section" id="serve-the-cache-over-https">
+<h3>Serve the cache over https<a class="headerlink" href="#serve-the-cache-over-https" title="Permalink to this headline">¶</a></h3>
+<p>Public instance without push:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bst-artifact-server --port <span class="m">11001</span> --server-key server.key --server-cert server.crt /home/artifacts/artifacts
+</pre></div>
+</div>
+<p>Instance with push and requiring client authentication:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bst-artifact-server --port <span class="m">11002</span> --server-key server.key --server-cert server.crt --client-certs authorized.crt --enable-push /home/artifacts/artifacts
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>BuildStream’s artifact cache uses <a class="reference external" href="https://github.com/bazelbuild/remote-apis/">Bazel’s Remote Execution CAS and Remote
+Asset API</a>.</p>
+<p>Sometimes, when using Remote Execution, it is useful to run
+BuildStream with just a basic CAS server, without using the
+Remote Asset API, but BuildStream still needs to store these to
+work correctly.</p>
+<p>For this scenario, you can add the <cite>–index-only</cite> flag to the above
+commands, and configure BuildStream to store artifact metadata and
+files in a separate caches (e.g. bst-artifact-server and Buildbarn)
+using the <code class="docutils literal notranslate"><span class="pre">type</span></code> attribute of a <a class="reference internal" href="using_config.html#config-cache-servers"><span class="std std-ref">cache server</span></a>
+configuration.</p>
+</div>
+</div>
+<div class="section" id="managing-the-cache-with-systemd">
+<h3>Managing the cache with systemd<a class="headerlink" href="#managing-the-cache-with-systemd" title="Permalink to this headline">¶</a></h3>
+<p>We recommend running the cache as a systemd service, especially if it is running
+on a dedicated server, as this will allow systemd to manage the cache, in case
+the server encounters any issues.</p>
+<p>Below are two examples of how to run the cache server as a systemd service. The
+first, is for pull only and the other is configured for push &amp; pull. Notice that
+the two configurations use different ports.</p>
+<p><code class="docutils literal notranslate"><span class="pre">bst-artifact-serve.service</span></code>:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Pull</span>
+<span class="c1">#</span>
+<span class="k">[Unit]</span>
+<span class="na">Description</span><span class="o">=</span><span class="s">Buildstream Artifact pull server</span>
+<span class="na">After</span><span class="o">=</span><span class="s">remote-fs.target network-online.target</span>
+
+<span class="k">[Service]</span>
+<span class="na">Environment</span><span class="o">=</span><span class="s">&quot;LC_ALL=C.UTF-8&quot;</span>
+<span class="na">ExecStart</span><span class="o">=</span><span class="s">/usr/local/bin/bst-artifact-server --port 11001 --server-key {{certs_path}}/server.key --server-cert {{certs_path}}/server.crt {{artifacts_path}}</span>
+<span class="na">User</span><span class="o">=</span><span class="s">artifacts</span>
+
+<span class="k">[Install]</span>
+<span class="na">WantedBy</span><span class="o">=</span><span class="s">multi-user.target</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">bst-artifact-serve-receive.service</span></code>:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Pull/Push</span>
+<span class="c1">#</span>
+<span class="k">[Unit]</span>
+<span class="na">Description</span><span class="o">=</span><span class="s">Buildstream Artifact pull/push server</span>
+<span class="na">After</span><span class="o">=</span><span class="s">remote-fs.target network-online.target</span>
+
+<span class="k">[Service]</span>
+<span class="na">Environment</span><span class="o">=</span><span class="s">&quot;LC_ALL=C.UTF-8&quot;</span>
+<span class="na">ExecStart</span><span class="o">=</span><span class="s">/usr/local/bin/bst-artifact-server --port 11002 --server-key {{certs_path}}/server.key --server-cert {{certs_path}}/server.crt --client-certs {{certs_path}}/authorized.crt --enable-push {{artifacts_path}}</span>
+<span class="na">User</span><span class="o">=</span><span class="s">artifacts</span>
+
+<span class="k">[Install]</span>
+<span class="na">WantedBy</span><span class="o">=</span><span class="s">multi-user.target</span>
+</pre></div>
+</div>
+<p>Here we define when systemd should start the service, which is after the networking
+stack has been started, we then define how to run the cache with the desired
+configuration, under the artifacts user. The {{ }} are there to denote where you
+should change these files to point to your desired locations.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You may need to run some of the following commands as the superuser.</p>
+</div>
+<p>These files should be copied to <code class="docutils literal notranslate"><span class="pre">/etc/systemd/system/</span></code>. We can then start these services
+with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>systemctl <span class="nb">enable</span> bst-artifact-serve.service
+systemctl <span class="nb">enable</span> bst-artifact-serve-receive.service
+</pre></div>
+</div>
+<p>Then, to start these services:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>systemctl start bst-artifact-serve.service
+systemctl start bst-artifact-serve-receive.service
+</pre></div>
+</div>
+<p>We can then check if the services are successfully running with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>journalctl -u bst-artifact-serve.service
+journalctl -u bst-artifact-serve-receive.service
+</pre></div>
+</div>
+<p>For more information on systemd services see:
+<a class="reference external" href="https://www.devdungeon.com/content/creating-systemd-service-files">Creating Systemd Service Files</a>.</p>
+</div>
+<div class="section" id="declaring-remote-caches">
+<h3>Declaring remote caches<a class="headerlink" href="#declaring-remote-caches" title="Permalink to this headline">¶</a></h3>
+<p>Remote caches can be declared within either:</p>
+<ol class="arabic simple">
+<li><p>The user configuration for <a class="reference internal" href="using_config.html#config-artifact-caches"><span class="std std-ref">artifacts</span></a> and
+<a class="reference internal" href="using_config.html#config-source-caches"><span class="std std-ref">sources</span></a>.</p></li>
+<li><p>The project configuration for <a class="reference internal" href="format_project.html#project-artifact-cache"><span class="std std-ref">artifact</span></a>
+and <a class="reference internal" href="format_project.html#project-source-cache"><span class="std std-ref">sources</span></a>.</p></li>
+</ol>
+<p>Please follow the above links to see examples showing how we declare remote
+caches in both user configuration the project configuration, respectively.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="using_examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="using_commands.html" class="btn btn-neutral float-left" title="Commands" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2017-2020, The BuildStream Contributors.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

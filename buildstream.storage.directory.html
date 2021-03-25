@@ -1,0 +1,560 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Directory &mdash; BuildStream 1.93.6+36.ga935429a documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Contributing" href="CONTRIBUTING.html" />
+    <link rel="prev" title="buildstream.storage package" href="buildstream.storage.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BuildStream
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.93.6+36.ga935429a
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_format.html">Project format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_framework.html">Plugin API reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="buildstream.html">buildstream package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="buildstream.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="buildstream.sandbox.html">buildstream.sandbox package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="buildstream.storage.html">buildstream.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.testing.html">buildstream.testing package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="main_core.html">Reference</a> &raquo;</li>
+        
+          <li><a href="buildstream.html">buildstream package</a> &raquo;</li>
+        
+          <li><a href="buildstream.storage.html">buildstream.storage package</a> &raquo;</li>
+        
+      <li>Directory</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/buildstream.storage.directory.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-buildstream.storage.directory"></span><div class="section" id="directory">
+<h1>Directory<a class="headerlink" href="#directory" title="Permalink to this headline">¶</a></h1>
+<p>This is a virtual Directory class to isolate the rest of BuildStream
+from the backing store implementation.  Sandboxes are allowed to read
+from and write to the underlying storage, but all others must use this
+Directory class to access files and directories in the sandbox.</p>
+<p>See also: <a class="reference internal" href="arch_sandboxing.html#sandboxing"><span class="std std-ref">Sandboxing</span></a>.</p>
+<dl class="py exception">
+<dt id="buildstream.storage.directory.VirtualDirectoryError">
+<em class="property"><span class="pre">exception</span> </em><code class="sig-name descname"><span class="pre">VirtualDirectoryError</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.VirtualDirectoryError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">buildstream._exceptions.BstError</span></code></p>
+<p>Raised by Directory functions when system calls fail.
+This will be handled internally by the BuildStream core,
+if you need to handle this error, then it should be reraised,
+or either of the <a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError" title="buildstream.element.ElementError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementError</span></code></a> or <a class="reference internal" href="buildstream.source.html#buildstream.source.SourceError" title="buildstream.source.SourceError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceError</span></code></a>
+exceptions should be raised from this error.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="buildstream.storage.directory.Directory">
+<em class="property"><span class="pre">class</span> </em><code class="sig-name descname"><span class="pre">Directory</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">external_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.descend">
+<code class="sig-name descname"><span class="pre">descend</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_symlinks</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory.descend" title="Permalink to this definition">¶</a></dt>
+<dd><p>Descend one or more levels of directory hierarchy and return a new
+Directory object for that directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*paths</strong> – A list of strings which are all directory names.</p></li>
+<li><p><strong>create</strong> – If this is true, the directories will be created if
+they don’t already exist.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Yields</dt>
+<dd class="field-even"><p>A Directory object representing the found directory.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#buildstream.storage.directory.VirtualDirectoryError" title="buildstream.storage.directory.VirtualDirectoryError"><strong>VirtualDirectoryError</strong></a> – if any of the components in subdirectory_spec
+    cannot be found, or are files, or symlinks to files.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.import_files">
+<code class="sig-name descname"><span class="pre">import_files</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">external_pathspec</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#buildstream.storage.directory.Directory" title="buildstream.storage.directory.Directory"><span class="pre">buildstream.storage.directory.Directory</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_callback</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">report_written</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_mtime</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">can_link</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult" title="buildstream.utils.FileListResult"><span class="pre">buildstream.utils.FileListResult</span></a><a class="headerlink" href="#buildstream.storage.directory.Directory.import_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Imports some or all files from external_path into this directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>external_pathspec</strong> – Either a string containing a pathname, or a
+Directory object, to use as the source.</p></li>
+<li><p><strong>filter_callback</strong> – Optional filter callback. Called with the
+relative path as argument for every file in the source directory.
+The file is imported only if the callable returns True.
+If no filter callback is specified, all files will be imported.</p></li>
+<li><p><strong>report_written</strong> – Return the full list of files
+written. Defaults to true. If false, only a list of
+overwritten files is returned.</p></li>
+<li><p><strong>update_mtime</strong> – Update the access and modification time
+of each file copied to the time specified in seconds.</p></li>
+<li><p><strong>can_link</strong> – Whether it’s OK to create a hard link to the
+original content, meaning the stored copy will change when the
+original files change. Setting this doesn’t guarantee hard
+links will be made.</p></li>
+<li><p><strong>properties</strong> – Optional list of strings representing file properties
+to capture when importing.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Yields</dt>
+<dd class="field-even"><p>A report of files imported and overwritten.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.import_single_file">
+<code class="sig-name descname"><span class="pre">import_single_file</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">external_pathspec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory.import_single_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Imports a single file from an external path</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.export_files">
+<code class="sig-name descname"><span class="pre">export_files</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_directory</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">can_link</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">can_destroy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory.export_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies everything from this into to_directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>to_directory</strong> (<em>string</em>) – a path outside this directory object
+where the contents will be copied to.</p></li>
+<li><p><strong>can_link</strong> (<em>bool</em>) – Whether we can create hard links in to_directory
+instead of copying. Setting this does not guarantee hard links will be used.</p></li>
+<li><p><strong>can_destroy</strong> (<em>bool</em>) – Can we destroy the data already in this
+directory when exporting? If set, this may allow data to be
+moved rather than copied which will be quicker.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.export_to_tar">
+<code class="sig-name descname"><span class="pre">export_to_tar</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tarfile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">destination_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mtime</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1321009871</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory.export_to_tar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports this directory into the given tar file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tarfile</strong> (<em>TarFile</em>) – A Python TarFile object to export into.</p></li>
+<li><p><strong>destination_dir</strong> (<em>str</em>) – The prefix for all filenames inside the archive.</p></li>
+<li><p><strong>mtime</strong> (<em>int</em>) – mtimes of all files in the archive are set to this.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.is_empty">
+<code class="sig-name descname"><span class="pre">is_empty</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory.is_empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return true if this directory has no files, subdirectories or links in it.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.set_deterministic_user">
+<code class="sig-name descname"><span class="pre">set_deterministic_user</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory.set_deterministic_user" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets all files in this directory to the current user’s euid/egid.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.mark_unmodified">
+<code class="sig-name descname"><span class="pre">mark_unmodified</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory.mark_unmodified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Marks all files in this directory (recursively) as unmodified.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.list_modified_paths">
+<code class="sig-name descname"><span class="pre">list_modified_paths</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory.list_modified_paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide a list of relative paths which have been modified since the
+last call to mark_unmodified. Includes directories only if
+they are empty.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Yields</dt>
+<dd class="field-odd"><p>(List(str)) - list of all modified files with relative paths.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.list_relative_paths">
+<code class="sig-name descname"><span class="pre">list_relative_paths</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory.list_relative_paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide a list of all relative paths in this directory. Includes
+directories only if they are empty.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Yields</dt>
+<dd class="field-odd"><p>(List(str)) - list of all files with relative paths.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.get_size">
+<code class="sig-name descname"><span class="pre">get_size</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory.get_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an approximation of the storage space in bytes used by this directory
+and all files and subdirectories in it. Storage space varies by implementation
+and effective space used may be lower than this number due to deduplication.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.exists">
+<code class="sig-name descname"><span class="pre">exists</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_symlinks</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#buildstream.storage.directory.Directory.exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether the specified path exists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*paths</strong> – A list of strings which are all path components.</p></li>
+<li><p><strong>follow_symlinks</strong> – True to follow symlinks.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if the path exists, False otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.stat">
+<code class="sig-name descname"><span class="pre">stat</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_symlinks</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">os.stat_result</span><a class="headerlink" href="#buildstream.storage.directory.Directory.stat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the status of a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*paths</strong> – A list of strings which are all path components.</p></li>
+<li><p><strong>follow_symlinks</strong> – True to follow symlinks.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A <cite>os.stat_result</cite> object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.isfile">
+<code class="sig-name descname"><span class="pre">isfile</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_symlinks</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#buildstream.storage.directory.Directory.isfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether the specified path is an existing regular file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*paths</strong> – A list of strings which are all path components.</p></li>
+<li><p><strong>follow_symlinks</strong> – True to follow symlinks.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if the path is an existing regular file, False otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.isdir">
+<code class="sig-name descname"><span class="pre">isdir</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_symlinks</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#buildstream.storage.directory.Directory.isdir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether the specified path is an existing directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*paths</strong> – A list of strings which are all path components.</p></li>
+<li><p><strong>follow_symlinks</strong> – True to follow symlinks.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if the path is an existing directory, False otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.islink">
+<code class="sig-name descname"><span class="pre">islink</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_symlinks</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#buildstream.storage.directory.Directory.islink" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether the specified path is an existing symlink.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*paths</strong> – A list of strings which are all path components.</p></li>
+<li><p><strong>follow_symlinks</strong> – True to follow symlinks.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if the path is an existing symlink, False otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.open_file">
+<code class="sig-name descname"><span class="pre">open_file</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'r'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory.open_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Open file and return a corresponding file object. In text mode,
+UTF-8 is used as encoding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*paths</strong> – A list of strings which are all path components.</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – An optional string that specifies the mode in which the file is opened.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.file_digest">
+<code class="sig-name descname"><span class="pre">file_digest</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">str</span><a class="headerlink" href="#buildstream.storage.directory.Directory.file_digest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a digest of a file. The digest algorithm is implementation-
+defined.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>*paths</strong> – A list of strings which are all path components.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.readlink">
+<code class="sig-name descname"><span class="pre">readlink</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">str</span><a class="headerlink" href="#buildstream.storage.directory.Directory.readlink" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a string representing the path to which the symbolic link points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>*paths</strong> – A list of strings which are all path components.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.remove">
+<code class="sig-name descname"><span class="pre">remove</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">paths</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recursive</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a file, symlink or directory. Symlinks are not followed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*paths</strong> – A list of strings which are all path components.</p></li>
+<li><p><strong>recursive</strong> – True to delete non-empty directories.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.storage.directory.Directory.rename">
+<code class="sig-name descname"><span class="pre">rename</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dest</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory.rename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rename a file, symlink or directory. If destination path exists
+already and is a file or empty directory, it will be replaced.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*src</strong> – Source path components.</p></li>
+<li><p><strong>*dest</strong> – Destination path components.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="CONTRIBUTING.html" class="btn btn-neutral float-right" title="Contributing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="buildstream.storage.html" class="btn btn-neutral float-left" title="buildstream.storage package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2017-2020, The BuildStream Contributors.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,363 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Foundation types &mdash; BuildStream 1.93.6+36.ga935429a documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Node - Parsed YAML configuration" href="buildstream.node.html" />
+    <link rel="prev" title="Plugin API reference" href="core_framework.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BuildStream
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.93.6+36.ga935429a
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_format.html">Project format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="core_framework.html">Plugin API reference</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Foundation types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html">Node - Parsed YAML configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html">Plugin - Base plugin class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html">Source - Base source class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#sourcefetcher-object-for-fetching-individual-urls">SourceFetcher - Object for fetching individual URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html">DownloadableFileSource - Abstract class for sources downloaded from a URI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html">Element - Base element class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html">BuildElement - Abstract class for build elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html">ScriptElement - Abstract class for scripting elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html">Sandbox - The build sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html">Exceptions - API for Error Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html">Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.testing.html">buildstream.testing package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="main_core.html">Reference</a> &raquo;</li>
+        
+          <li><a href="core_framework.html">Plugin API reference</a> &raquo;</li>
+        
+      <li>Foundation types</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/buildstream.types.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-buildstream.types"></span><div class="section" id="foundation-types">
+<h1>Foundation types<a class="headerlink" href="#foundation-types" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="buildstream.types.FastEnum">
+<em class="property"><span class="pre">class</span> </em><code class="sig-name descname"><span class="pre">FastEnum</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.types.FastEnum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A reimplementation of a subset of the <cite>Enum</cite> functionality, which is far quicker than <cite>Enum</cite>.</p>
+<p><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code> attributes accesses can be really slow, and slow down the execution noticeably.
+This reimplementation doesn’t suffer the same problems, but also does not reimplement everything.</p>
+<dl class="py attribute">
+<dt id="buildstream.types.FastEnum.name">
+<code class="sig-name descname"><span class="pre">name</span></code><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#buildstream.types.FastEnum.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the current Enum entry, same as <code class="xref py py-func docutils literal notranslate"><span class="pre">enum.Enum.name()</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="buildstream.types.FastEnum.value">
+<code class="sig-name descname"><span class="pre">value</span></code><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#buildstream.types.FastEnum.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>The value of the current Enum entry, same as <code class="xref py py-func docutils literal notranslate"><span class="pre">enum.Enum.value()</span></code></p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="buildstream.types.FastEnum.values">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">values</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.types.FastEnum.values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all the possible values for the enum.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the list of all possible values for the enum</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="buildstream.types.CoreWarnings">
+<em class="property"><span class="pre">class</span> </em><code class="sig-name descname"><span class="pre">CoreWarnings</span></code><a class="headerlink" href="#buildstream.types.CoreWarnings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Some common warnings which are raised by core functionalities within BuildStream are found in this class.</p>
+<dl class="py attribute">
+<dt id="buildstream.types.CoreWarnings.OVERLAPS">
+<code class="sig-name descname"><span class="pre">OVERLAPS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'overlaps'</span></em><a class="headerlink" href="#buildstream.types.CoreWarnings.OVERLAPS" title="Permalink to this definition">¶</a></dt>
+<dd><p>This warning will be produced when buildstream detects an overlap on an element
+which is not whitelisted. See <a class="reference internal" href="format_public.html#public-overlap-whitelist"><span class="std std-ref">Overlap Whitelist</span></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="buildstream.types.CoreWarnings.UNSTAGED_FILES">
+<code class="sig-name descname"><span class="pre">UNSTAGED_FILES</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'unstaged-files'</span></em><a class="headerlink" href="#buildstream.types.CoreWarnings.UNSTAGED_FILES" title="Permalink to this definition">¶</a></dt>
+<dd><p>This warning will be produced when a file cannot be staged. This can happen when
+a file overlaps with a directory in the sandbox that is not empty.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="buildstream.types.CoreWarnings.REF_NOT_IN_TRACK">
+<code class="sig-name descname"><span class="pre">REF_NOT_IN_TRACK</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'ref-not-in-track'</span></em><a class="headerlink" href="#buildstream.types.CoreWarnings.REF_NOT_IN_TRACK" title="Permalink to this definition">¶</a></dt>
+<dd><p>This warning will be produced when a source is configured with a reference
+which is found to be invalid based on the configured track</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="buildstream.types.CoreWarnings.BAD_ELEMENT_SUFFIX">
+<code class="sig-name descname"><span class="pre">BAD_ELEMENT_SUFFIX</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'bad-element-suffix'</span></em><a class="headerlink" href="#buildstream.types.CoreWarnings.BAD_ELEMENT_SUFFIX" title="Permalink to this definition">¶</a></dt>
+<dd><p>This warning will be produced when an element whose name does not end in .bst
+is referenced either on the command line or by another element</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="buildstream.types.CoreWarnings.BAD_CHARACTERS_IN_NAME">
+<code class="sig-name descname"><span class="pre">BAD_CHARACTERS_IN_NAME</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'bad-characters-in-name'</span></em><a class="headerlink" href="#buildstream.types.CoreWarnings.BAD_CHARACTERS_IN_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>This warning will be produced when a filename for a target contains invalid
+characters in its name.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="buildstream.types.OverlapAction">
+<em class="property"><span class="pre">class</span> </em><code class="sig-name descname"><span class="pre">OverlapAction</span></code><a class="headerlink" href="#buildstream.types.OverlapAction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#buildstream.types.FastEnum" title="buildstream.types.FastEnum"><code class="xref py py-class docutils literal notranslate"><span class="pre">buildstream.types.FastEnum</span></code></a></p>
+<p>Defines what action to take when files staged into the sandbox overlap.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This only dictates what happens when functions such as
+<a class="reference internal" href="buildstream.element.html#buildstream.element.Element.stage_artifact" title="buildstream.element.Element.stage_artifact"><code class="xref py py-func docutils literal notranslate"><span class="pre">Element.stage_artifact()</span></code></a> and
+<a class="reference internal" href="buildstream.element.html#buildstream.element.Element.stage_dependency_artifacts" title="buildstream.element.Element.stage_dependency_artifacts"><code class="xref py py-func docutils literal notranslate"><span class="pre">Element.stage_dependency_artifacts()</span></code></a>
+are called multiple times in an Element’s <a class="reference internal" href="buildstream.element.html#buildstream.element.Element.stage" title="buildstream.element.Element.stage"><code class="xref py py-func docutils literal notranslate"><span class="pre">Element.stage()</span></code></a>
+implementation, and the files staged from one function call result in overlapping files staged
+from previous invocations.</p>
+<p>If multiple staged elements overlap eachother within a single call to
+<a class="reference internal" href="buildstream.element.html#buildstream.element.Element.stage_dependency_artifacts" title="buildstream.element.Element.stage_dependency_artifacts"><code class="xref py py-func docutils literal notranslate"><span class="pre">Element.stage_dependency_artifacts()</span></code></a>,
+then the <a class="reference internal" href="format_public.html#public-overlap-whitelist"><span class="std std-ref">overlap whitelist</span></a> will be ovserved, and warnings will
+be issued for overlapping files, which will be fatal warnings if
+<a class="reference internal" href="#buildstream.types.CoreWarnings.OVERLAPS" title="buildstream.types.CoreWarnings.OVERLAPS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CoreWarnings.OVERLAPS</span></code></a> is specified
+as a <a class="reference internal" href="format_project.html#configurable-warnings"><span class="std std-ref">fatal warning</span></a>.</p>
+</div>
+<dl class="py attribute">
+<dt id="buildstream.types.OverlapAction.ERROR">
+<code class="sig-name descname"><span class="pre">ERROR</span></code><em class="property"> <span class="pre">=</span> <span class="pre">&lt;buildstream.types.OverlapAction</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#buildstream.types.OverlapAction.ERROR" title="Permalink to this definition">¶</a></dt>
+<dd><p>It is an error to overlap previously staged files</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="buildstream.types.OverlapAction.WARNING">
+<code class="sig-name descname"><span class="pre">WARNING</span></code><em class="property"> <span class="pre">=</span> <span class="pre">&lt;buildstream.types.OverlapAction</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#buildstream.types.OverlapAction.WARNING" title="Permalink to this definition">¶</a></dt>
+<dd><p>A warning will be issued for previously staged files, which will fatal if
+<a class="reference internal" href="#buildstream.types.CoreWarnings.OVERLAPS" title="buildstream.types.CoreWarnings.OVERLAPS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CoreWarnings.OVERLAPS</span></code></a> is specified
+as a <a class="reference internal" href="format_project.html#configurable-warnings"><span class="std std-ref">fatal warning</span></a> in the project.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="buildstream.types.OverlapAction.IGNORE">
+<code class="sig-name descname"><span class="pre">IGNORE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">&lt;buildstream.types.OverlapAction</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#buildstream.types.OverlapAction.IGNORE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overlapping files are acceptable, and do not cause any warning or error.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="buildstream.node.html" class="btn btn-neutral float-right" title="Node - Parsed YAML configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="core_framework.html" class="btn btn-neutral float-left" title="Plugin API reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2017-2020, The BuildStream Contributors.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
