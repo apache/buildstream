@@ -167,25 +167,59 @@ class FilterElement(Element):
         self.exclude = self.exclude_node.as_str_list()
         self.include_orphans = node.get_bool("include-orphans")
         self.pass_integration = node.get_bool("pass-integration", False)
+        self.filter_element = None
 
-    def preflight(self):
+    def configure_dependencies(self, dependencies):
+
         # Exactly one build-depend is permitted
-        build_deps = list(self._dependencies(_Scope.BUILD, recurse=False))
-        if len(build_deps) != 1:
-            detail = "Full list of build-depends:\n"
-            deps_list = "  \n".join([x.name for x in build_deps])
+        if len(dependencies) != 1:
+            detail = "Full list of build dependencies:\n"
+            deps_list = "  \n".join([x.path for x in dependencies])
             detail += deps_list
             raise ElementError(
-                "{}: {} element must have exactly 1 build-dependency, actually have {}".format(
-                    self, type(self).__name__, len(build_deps)
+                "{}: {} element must have exactly 1 build dependency, actually have {}".format(
+                    self, type(self).__name__, len(dependencies)
                 ),
                 detail=detail,
                 reason="filter-bdepend-wrong-count",
             )
 
-        # That build-depend must not also be a runtime-depend
+        # Hold on to the element being filtered for later (this is actually an ElementProxy)
+        #
+        self.filter_element = dependencies[0].element
+
+        # If the filter element does not produce an artifact, fail and inform user that the dependency
+        # must produce artifacts
+        if not self.filter_element.BST_ELEMENT_HAS_ARTIFACT:
+            detail = "{} does not produce an artifact, so there is nothing to filter".format(dependencies[0].path)
+            raise ElementError(
+                "{}: {} element's build dependency must produce an artifact".format(self, type(self).__name__),
+                detail=detail,
+                reason="filter-bdepend-no-artifact",
+            )
+
+        # Optionally inherit the integration public data
+        if self.pass_integration:
+
+            # Integration commands of the build dependency
+            pub_data = self.filter_element.get_public_data("bst")
+            integration_commands = pub_data.get_str_list("integration-commands", [])
+
+            # Integration commands of the filter element itself
+            filter_pub_data = self.get_public_data("bst")
+            filter_integration_commands = filter_pub_data.get_str_list("integration-commands", [])
+
+            # Concatenate the command lists
+            filter_pub_data["integration-commands"] = integration_commands + filter_integration_commands
+            self._set_public_data("bst", filter_pub_data)
+
+    def preflight(self):
+
+        # The filter element must not also be a runtime dependency
         runtime_deps = list(self._dependencies(_Scope.RUN, recurse=False))
-        if build_deps[0] in runtime_deps:
+
+        # The filter_element is an ElementProxy, check if the proxied element is in the runtime deps.
+        if self.filter_element._plugin in runtime_deps:
             detail = "Full list of runtime depends:\n"
             deps_list = "  \n".join([x.name for x in runtime_deps])
             detail += deps_list
@@ -195,16 +229,6 @@ class FilterElement(Element):
                 ),
                 detail=detail,
                 reason="filter-bdepend-also-rdepend",
-            )
-
-        # If a parent does not produce an artifact, fail and inform user that the dependency
-        # must produce artifacts
-        if not build_deps[0].BST_ELEMENT_HAS_ARTIFACT:
-            detail = "{} does not produce an artifact, so there is nothing to filter".format(build_deps[0].name)
-            raise ElementError(
-                "{}: {} element's build dependency must produce an artifact".format(self, type(self).__name__),
-                detail=detail,
-                reason="filter-bdepend-no-artifact",
             )
 
     def get_unique_key(self):
@@ -220,61 +244,49 @@ class FilterElement(Element):
 
     def stage(self, sandbox):
         with self.timed_activity("Staging artifact", silent_nested=True):
-            for dep in self.dependencies(recurse=False):
-                # Check that all the included/excluded domains exist
-                pub_data = dep.get_public_data("bst")
-                split_rules = pub_data.get_mapping("split-rules", {})
-                unfound_includes = []
-                for domain in self.include:
-                    if domain not in split_rules:
-                        unfound_includes.append(domain)
-                unfound_excludes = []
-                for domain in self.exclude:
-                    if domain not in split_rules:
-                        unfound_excludes.append(domain)
 
-                detail = []
-                if unfound_includes:
-                    detail.append("Unknown domains were used in {}".format(self.include_node.get_provenance()))
-                    detail.extend([" - {}".format(domain) for domain in unfound_includes])
+            # Check that all the included/excluded domains exist
+            pub_data = self.filter_element.get_public_data("bst")
+            split_rules = pub_data.get_mapping("split-rules", {})
+            unfound_includes = []
+            for domain in self.include:
+                if domain not in split_rules:
+                    unfound_includes.append(domain)
+            unfound_excludes = []
+            for domain in self.exclude:
+                if domain not in split_rules:
+                    unfound_excludes.append(domain)
 
-                if unfound_excludes:
-                    detail.append("Unknown domains were used in {}".format(self.exclude_node.get_provenance()))
-                    detail.extend([" - {}".format(domain) for domain in unfound_excludes])
+            detail = []
+            if unfound_includes:
+                detail.append("Unknown domains were used in {}".format(self.include_node.get_provenance()))
+                detail.extend([" - {}".format(domain) for domain in unfound_includes])
 
-                if detail:
-                    detail = "\n".join(detail)
-                    raise ElementError("Unknown domains declared.", detail=detail)
+            if unfound_excludes:
+                detail.append("Unknown domains were used in {}".format(self.exclude_node.get_provenance()))
+                detail.extend([" - {}".format(domain) for domain in unfound_excludes])
 
-                dep.stage_artifact(sandbox, include=self.include, exclude=self.exclude, orphans=self.include_orphans)
+            if detail:
+                detail = "\n".join(detail)
+                raise ElementError("Unknown domains declared.", detail=detail)
+
+            self.filter_element.stage_artifact(
+                sandbox, include=self.include, exclude=self.exclude, orphans=self.include_orphans
+            )
 
     def assemble(self, sandbox):
-        if self.pass_integration:
-            build_deps = list(self.dependencies(recurse=False))
-            assert len(build_deps) == 1
-            dep = build_deps[0]
-
-            # Integration commands of the build dependency
-            pub_data = dep.get_public_data("bst")
-            integration_commands = pub_data.get_str_list("integration-commands", [])
-
-            # Integration commands of the filter element itself
-            filter_pub_data = self.get_public_data("bst")
-            filter_integration_commands = filter_pub_data.get_str_list("integration-commands", [])
-
-            # Concatenate the command lists
-            filter_pub_data["integration-commands"] = integration_commands + filter_integration_commands
-            self.set_public_data("bst", filter_pub_data)
 
         return ""
 
+    #
+    # Private abstract method which yields the element which provides sources, for
+    # the purpose of redirecting commands like `source checkout` or `workspace open`
+    # and such.
+    #
     def _get_source_element(self):
         # Filter elements act as proxies for their sole build-dependency
         #
-        build_deps = list(self._dependencies(_Scope.BUILD, recurse=False))
-        assert len(build_deps) == 1
-        output_elm = build_deps[0]._get_source_element()
-        return output_elm
+        return self.filter_element._get_source_element()
 
 
 def setup():
