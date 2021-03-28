@@ -70,7 +70,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
             cls._isas.add(Platform.get_host_arch())
 
     @classmethod
-    def check_sandbox_config(cls, platform, config):
+    def check_sandbox_config(cls, config):
         if config.build_os not in cls._osfamilies:
             raise SandboxError("OS '{}' is not supported by buildbox-run.".format(config.build_os))
         if config.build_arch not in cls._isas:
