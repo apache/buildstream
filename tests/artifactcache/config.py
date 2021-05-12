@@ -11,6 +11,7 @@ from buildstream.utils import _deduplicate
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 
+from buildstream.testing import runcli
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 
 from tests.testutils import dummy_context
@@ -94,14 +95,13 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
     project_config["name"] = "test"
     project_config["min-version"] = "2.0"
 
-    user_config_file = str(tmpdir.join("buildstream.conf"))
-    _yaml.roundtrip_dump(user_config, file=user_config_file)
-
     project_dir = tmpdir.mkdir("project")
     project_config_file = str(project_dir.join("project.conf"))
     _yaml.roundtrip_dump(project_config, file=project_config_file)
 
-    with dummy_context(config=user_config_file) as context:
+    with runcli.configured(str(tmpdir), user_config) as user_config_file, dummy_context(
+        config=user_config_file
+    ) as context:
         project = Project(str(project_dir), context)
         project.ensure_fully_loaded()
 
