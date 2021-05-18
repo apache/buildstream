@@ -16,8 +16,8 @@
 #     push: true
 #
 # Basic usage:
-#  - docker-compose -f ci.buildbarn-remote-cache.yml up
-#  - docker-compose -f ci.buildbarn-remote-cache.yml down
+#  - docker-compose -f ci.buildbarn.yml up
+#  - docker-compose -f ci.buildbarn.yml down
 
 version: '3.4'
 

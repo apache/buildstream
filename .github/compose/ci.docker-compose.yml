@@ -58,7 +58,7 @@ services:
     environment:
       BST_PLUGINS_EXPERIMENTAL_VERSION: master
 
-  remote-execution:
+  buildgrid:
     <<: *tests-template
     command: tox -vvvvv -- --color=yes --remote-execution
     environment:
@@ -72,7 +72,7 @@ services:
     #
     network_mode: host
 
-  buildstream-remote-cache:
+  bst-artifact-server:
     <<: *tests-template
     command: tox -vvvvv -- --color=yes --remote-cache
     environment:
@@ -84,7 +84,7 @@ services:
     #
     network_mode: host
 
-  buildbarn-remote-cache:
+  buildbarn:
     <<: *tests-template
     command: tox -vvvvv -- --color=yes --remote-cache
     environment:

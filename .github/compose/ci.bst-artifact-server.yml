@@ -11,8 +11,8 @@
 #      push: true
 #
 # Basic usage:
-#  - docker-compose -f ci.buildstream-remote-cache.yml up
-#  - docker-compose -f ci.buildstream-remote-cache.yml down
+#  - docker-compose -f ci.bst-artifact-server.yml up
+#  - docker-compose -f ci.bst-artifact-server.yml down
 #
 version: "3.2"
 
