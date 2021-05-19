@@ -36,6 +36,36 @@ def message_handler(message, context):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout(cli, tmpdir, datafiles):
+    cachedir = os.path.join(str(tmpdir), "cache")
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, "checkout")
+
+    with create_artifact_share(os.path.join(str(tmpdir), "remote-cache")) as remote_cache:
+        # Enable remote cache
+        cli.configure({"cache": {"storage-service": {"url": remote_cache.repo}}})
+
+        # First build it
+        result = cli.run(project=project, args=["build", "target.bst"])
+        result.assert_success()
+
+        # Discard the local CAS cache
+        shutil.rmtree(str(os.path.join(cachedir, "cas")))
+
+        # Now check it out, this should automatically fetch the necessary blobs
+        # from the remote cache
+        result = cli.run(project=project, args=["artifact", "checkout", "target.bst", "--directory", checkout])
+        result.assert_success()
+
+        # Check that the executable hello file is found in the checkout
+        filename = os.path.join(checkout, "usr", "bin", "hello")
+        assert os.path.exists(filename)
+
+        filename = os.path.join(checkout, "usr", "include", "pony.h")
+        assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_source_artifact_caches(cli, tmpdir, datafiles):
     cachedir = os.path.join(str(tmpdir), "cache")
     project_dir = str(datafiles)
