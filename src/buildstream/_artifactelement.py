@@ -24,7 +24,6 @@ from contextlib import suppress
 
 from . import Element
 from . import _cachekey
-from ._artifact import Artifact
 from ._artifactproject import ArtifactProject
 from ._exceptions import ArtifactElementError
 from ._loader import LoadElement
