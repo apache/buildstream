@@ -22,7 +22,6 @@ from typing import List, Dict, Tuple, Iterable, Optional
 import grpc
 
 from . import utils
-from .node import MappingNode
 from ._cas import CASRemote, CASCache
 from ._exceptions import AssetCacheError, RemoteError
 from ._remotespec import RemoteSpec, RemoteType
