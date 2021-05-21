@@ -11,16 +11,17 @@
 #      push: true
 #
 # Basic usage:
-#  - docker-compose -f ci.buildstream-remote-cache.yml up
-#  - docker-compose -f ci.buildstream-remote-cache.yml down
+#  - docker-compose -f ci.bst-artifact-server.yml up
+#  - docker-compose -f ci.bst-artifact-server.yml down
 #
 version: "3.2"
 
 services:
   controller:
     image: buildstream/buildstream:dev
-    command: ["bst-artifact-server","--port",
-      "50052",
+    command: ["bst-artifact-server",
+      "--log-level", "warning",
+      "--port", "50052",
       "--enable-push",
       "/artifacts"
     ]

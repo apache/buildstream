@@ -87,9 +87,9 @@ jobs:
         # and they also map to corresponding filenames of services which are expected
         # to be run in the background
         test-name:
-          - remote-execution
-          - buildstream-remote-cache
-          - buildbarn-remote-cache
+          - bst-artifact-server
+          - buildbarn
+          - buildgrid
 
     steps:
       - name: Check out repository

@@ -75,6 +75,9 @@ class LogLevel(click.Choice):
         super().__init__([m.lower() for m in LogLevel.Levels._member_names_])  # pylint: disable=no-member
 
     def convert(self, value, param, ctx) -> "LogLevel.Levels":
+        if isinstance(value, LogLevel.Levels):
+            value = value.value
+
         return LogLevel.Levels(super().convert(value, param, ctx))
 
     @classmethod
