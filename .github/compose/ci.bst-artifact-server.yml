@@ -18,7 +18,7 @@ version: "3.2"
 
 services:
   controller:
-    image: buildstream/buildstream:dev
+    image: buildstream/buildstream:nightly
     command: ["bst-artifact-server",
       "--log-level", "warning",
       "--port", "50052",
