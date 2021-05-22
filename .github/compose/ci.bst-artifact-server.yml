@@ -20,7 +20,6 @@ services:
   controller:
     image: buildstream/buildstream:nightly
     command: ["bst-artifact-server",
-      "--log-level", "warning",
       "--port", "50052",
       "--enable-push",
       "/artifacts"
