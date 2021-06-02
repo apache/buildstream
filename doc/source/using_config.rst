@@ -96,8 +96,8 @@ Attributes
 
 .. _config_local_cache:
 
-Local cache control
--------------------
+Cache control
+-------------
 Beyond deciding what directory you intend to place the cache, there are
 some controls on what is cached locally and how.
 
@@ -120,6 +120,17 @@ toplevel of your configuration file, like so:
      #
      # Avoid caching build trees if we don't need them
      cache-buildtrees: auto
+
+     #
+     # Support CAS server as remote cache
+     # Useful to minimize network traffic with remote execution
+     # or to work with limited local disk space
+     storage-service:
+       url: https://cache-server.com/cas:11001
+       auth:
+         server-cert: server.crt
+         client-cert: client.crt
+         client-key: client.key
 
 
 Attributes
@@ -177,6 +188,40 @@ Attributes
   * ``never``: Never cache build trees
   * ``auto``: Only cache the build trees where necessary (e.g. for failed builds)
   * ``always``: Always cache the build tree.
+
+* ``storage-service``
+
+  An optional :ref:`service configuration <user_config_remote_execution_service>`
+  to use a *Content Addressable Storage* service as a remote cache. Write access
+  is required.
+
+  This service is compatible with the *storage* service offered by
+  :ref:`cache servers <config_cache_servers>`.
+
+  Without this option, all content is stored in the local cache. This includes
+  CAS objects from fetched sources, build outputs and pulled artifacts.
+  With this option, content is primarily stored in the remote cache and the
+  local cache is populated only as needed. E.g. ``bst artifact checkout``
+  will download CAS objects on demand from the remote cache.
+  This feature is incompatible with offline operation.
+
+  This is primarily useful in combination with
+  :ref:`remote execution <user_config_remote_execution>` to minimize downloads
+  of build outputs, which may not be needed locally. The elimination of
+  unnecessary downloads reduces total build time, especially if the bandwidth
+  between the local system and the remote execution cluster is limited.
+
+  .. tip::
+
+     Skip the ``storage-service`` option in the
+     :ref:`remote execution <user_config_remote_execution>` configuration to
+     use the same CAS service for caching and remote execution.
+
+  It is also possible to configure this with local builds without remote
+  execution. This enables operation with a small local cache even with large
+  projects. However, for local builds this can result in a longer total build
+  time due to additional network transfers. This is only recommended with a
+  high bandwidth connection to a storage-service, ideally in a local network.
 
 
 Scheduler controls
@@ -931,6 +976,11 @@ Attributes
 
   This service is compatible with the *storage* service offered by
   :ref:`cache servers <config_cache_servers>`.
+
+  This is optional if a ``storage-service`` is configured in the
+  :ref:`cache configuration <config_local_cache>`, in which case actual file
+  contents of build outputs will only be downloaded as needed, e.g. on
+  ``bst artifact checkout``.
 
 * ``action-cache-service``
 
