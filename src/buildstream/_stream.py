@@ -426,6 +426,11 @@ class Stream:
         ignore_project_source_remotes: bool = False,
     ):
 
+        if self._context.remote_cache_spec:
+            self._context.messenger.warn(
+                "Cache Storage Service is configured, fetched sources may not be available in the local cache"
+            )
+
         elements = self._load(
             targets,
             selection=selection,
@@ -543,6 +548,11 @@ class Stream:
         artifact_remotes: Iterable[RemoteSpec] = (),
         ignore_project_artifact_remotes: bool = False,
     ):
+
+        if self._context.remote_cache_spec:
+            self._context.messenger.warn(
+                "Cache Storage Service is configured, pulled artifacts may not be available in the local cache"
+            )
 
         elements = self._load(
             targets,
