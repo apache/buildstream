@@ -37,7 +37,7 @@ from ..types import FastEnum, SourceRef
 from .._exceptions import CASCacheError
 
 from .casdprocessmanager import CASDProcessManager
-from .casremote import _CASBatchRead, _CASBatchUpdate, BlobNotFound
+from .casremote import CASRemote, _CASBatchRead, _CASBatchUpdate, BlobNotFound
 
 _BUFFER_SIZE = 65536
 
@@ -69,6 +69,7 @@ class CASCache:
         *,
         casd=True,
         cache_quota=None,
+        remote_cache_spec=None,
         protect_session_blobs=True,
         log_level=CASLogLevel.WARNING,
         log_directory=None
@@ -80,18 +81,25 @@ class CASCache:
         self._cache_usage_monitor = None
         self._cache_usage_monitor_forbidden = False
 
+        self._remote_cache = bool(remote_cache_spec)
+
         self._casd_process_manager = None
         self._casd_channel = None
         if casd:
             assert log_directory is not None, "log_directory is required when casd is True"
             log_dir = os.path.join(log_directory, "_casd")
             self._casd_process_manager = CASDProcessManager(
-                path, log_dir, log_level, cache_quota, protect_session_blobs
+                path, log_dir, log_level, cache_quota, remote_cache_spec, protect_session_blobs
             )
 
             self._casd_channel = self._casd_process_manager.create_channel()
             self._cache_usage_monitor = _CASCacheUsageMonitor(self._casd_channel)
             self._cache_usage_monitor.start()
+        else:
+            assert not self._remote_cache
+
+        self._default_remote = CASRemote(None, self)
+        self._default_remote.init()
 
     # get_cas():
     #
@@ -142,6 +150,9 @@ class CASCache:
             self._casd_process_manager.release_resources(messenger)
             self._casd_process_manager = None
 
+    def get_default_remote(self):
+        return self._default_remote
+
     # contains_files():
     #
     # Check whether file digests exist in the local CAS cache
@@ -168,19 +179,27 @@ class CASCache:
     def contains_directory(self, digest, *, with_files):
         local_cas = self.get_local_cas()
 
+        # Without a remote cache, `FetchTree` simply checks the local cache.
         request = local_cas_pb2.FetchTreeRequest()
         request.root_digest.CopyFrom(digest)
-        request.fetch_file_blobs = with_files
+        # Always fetch Directory protos as they are needed to enumerate subdirectories and files.
+        # Don't implicitly fetch file blobs from the remote cache as we don't need them.
+        request.fetch_file_blobs = with_files and not self._remote_cache
 
         try:
             local_cas.FetchTree(request)
-            return True
+            if not self._remote_cache:
+                return True
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 return False
             if e.code() == grpc.StatusCode.UNIMPLEMENTED:
                 raise CASCacheError("Unsupported buildbox-casd version: FetchTree unimplemented") from e
             raise
+
+        # Check whether everything is available in the remote cache.
+        missing_blobs = self.missing_blobs_for_directory(digest, remote=self._default_remote)
+        return not missing_blobs
 
     # checkout():
     #
@@ -191,7 +210,17 @@ class CASCache:
     #     tree (Digest): The directory digest to extract
     #     can_link (bool): Whether we can create hard links in the destination
     #
-    def checkout(self, dest, tree, *, can_link=False):
+    def checkout(self, dest, tree, *, can_link=False, _fetch=True):
+        if _fetch and self._remote_cache:
+            # We need the files in the local cache
+            local_cas = self.get_local_cas()
+
+            request = local_cas_pb2.FetchTreeRequest()
+            request.root_digest.CopyFrom(tree)
+            request.fetch_file_blobs = True
+
+            local_cas.FetchTree(request)
+
         os.makedirs(dest, exist_ok=True)
 
         directory = remote_execution_pb2.Directory()
@@ -229,7 +258,7 @@ class CASCache:
 
         for dirnode in directory.directories:
             fullpath = os.path.join(dest, dirnode.name)
-            self.checkout(fullpath, dirnode.digest, can_link=can_link)
+            self.checkout(fullpath, dirnode.digest, can_link=can_link, _fetch=False)
 
         for symlinknode in directory.symlinks:
             # symlink
@@ -285,6 +314,11 @@ class CASCache:
             raise ValueError("Unsupported mode: `{}`".format(mode))
 
         objpath = self.objpath(digest)
+
+        if self._remote_cache and not os.path.exists(objpath):
+            batch = _CASBatchRead(self._default_remote)
+            batch.add(digest)
+            batch.send()
 
         return open(objpath, mode=mode)
 
@@ -399,7 +433,7 @@ class CASCache:
         if tree_response.status.code == code_pb2.RESOURCE_EXHAUSTED:
             raise CASCacheError("Cache too full", reason="cache-too-full")
         if tree_response.status.code != code_pb2.OK:
-            raise CASCacheError("Failed to capture tree {}: {}".format(path, tree_response.status.code))
+            raise CASCacheError("Failed to capture tree {}: {}".format(path, tree_response.status))
 
         treepath = self.objpath(tree_response.tree_digest)
         tree = remote_execution_pb2.Tree()
@@ -469,9 +503,19 @@ class CASCache:
     # Generator that returns the Digests of all blobs in the tree specified by
     # the Digest of the toplevel Directory object.
     #
-    def required_blobs_for_directory(self, directory_digest, *, excluded_subdirs=None):
+    def required_blobs_for_directory(self, directory_digest, *, excluded_subdirs=None, _fetch_tree=True):
         if not excluded_subdirs:
             excluded_subdirs = []
+
+        if self._remote_cache and _fetch_tree:
+            # Ensure we have the directory protos in the local cache
+            local_cas = self.get_local_cas()
+
+            request = local_cas_pb2.FetchTreeRequest()
+            request.root_digest.CopyFrom(directory_digest)
+            request.fetch_file_blobs = False
+
+            local_cas.FetchTree(request)
 
         # parse directory, and recursively add blobs
 
@@ -487,7 +531,7 @@ class CASCache:
 
         for dirnode in directory.directories:
             if dirnode.name not in excluded_subdirs:
-                yield from self.required_blobs_for_directory(dirnode.digest)
+                yield from self.required_blobs_for_directory(dirnode.digest, _fetch_tree=False)
 
     ################################################
     #             Local Private Methods            #
@@ -569,6 +613,10 @@ class CASCache:
     # Returns: The Digests of the blobs that were not available on the remote CAS
     #
     def fetch_blobs(self, remote, digests, *, allow_partial=False):
+        if self._remote_cache:
+            # Determine blobs missing in the remote cache and only fetch those
+            digests = self.missing_blobs(digests)
+
         missing_blobs = [] if allow_partial else None
 
         remote.init()
@@ -581,6 +629,15 @@ class CASCache:
 
         batch.send(missing_blobs=missing_blobs)
 
+        if self._remote_cache:
+            # Upload fetched blobs to the remote cache as we can't transfer
+            # blobs directly from another remote to the remote cache
+            batch = _CASBatchUpdate(self._default_remote)
+            for digest in digests:
+                if missing_blobs is None or digest not in missing_blobs:  # pylint: disable=unsupported-membership-test
+                    batch.add(digest)
+            batch.send()
+
         return missing_blobs
 
     # send_blobs():
@@ -592,6 +649,17 @@ class CASCache:
     #    digests (list): The Digests of Blobs to upload
     #
     def send_blobs(self, remote, digests):
+        if self._remote_cache:
+            # First fetch missing blobs from the remote cache as we can't
+            # transfer blobs directly from the remote cache to another remote.
+
+            remote_missing_blobs = self.missing_blobs(digests, remote=remote)
+
+            batch = _CASBatchRead(self._default_remote)
+            for digest in remote_missing_blobs:
+                batch.add(digest)
+            batch.send()
+
         batch = _CASBatchUpdate(remote)
 
         for digest in digests:

@@ -551,24 +551,13 @@ class Artifact:
     #     (bool): Whether artifact is in local cache
     #
     def query_cache(self):
-        context = self._context
-
         artifact = self._load_proto()
         if not artifact:
             self._cached = False
             return False
 
-        # Determine whether directories are required
-        require_directories = context.require_artifact_directories
-        # Determine whether file contents are required as well
-        require_files = context.require_artifact_files or self._element._artifact_files_required()
-
         # Check whether 'files' subdirectory is available, with or without file contents
-        if (
-            require_directories
-            and str(artifact.files)
-            and not self._cas.contains_directory(artifact.files, with_files=require_files)
-        ):
+        if str(artifact.files) and not self._cas.contains_directory(artifact.files, with_files=True):
             self._cached = False
             return False
 

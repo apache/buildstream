@@ -52,7 +52,10 @@ class BaseRemote:
         return False
 
     def __str__(self):
-        return self.spec.url
+        if self.spec:
+            return self.spec.url
+        else:
+            return "(default remote)"
 
     ####################################################
     #                   Remote API                     #
@@ -68,7 +71,9 @@ class BaseRemote:
             if self._initialized:
                 return
 
-            self.channel = self.spec.open_channel()
+            if self.spec:
+                self.channel = self.spec.open_channel()
+
             self._configure_protocols()
             self._initialized = True
 

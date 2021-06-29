@@ -457,6 +457,11 @@ class LogLine(Widget):
         starttime = datetime.datetime.now()
         text = ""
 
+        def format_spec(spec):
+            if spec.instance_name:
+                return "{} (instance: {})".format(spec.url, spec.instance_name)
+            return spec.url
+
         self._resolved_keys = {element: element._get_cache_key() for element in stream.session_elements}
 
         # Main invocation context
@@ -483,24 +488,23 @@ class LogLine(Widget):
         values["Maximum Build Tasks"] = context.sched_builders
         values["Maximum Push Tasks"] = context.sched_pushers
         values["Maximum Network Retries"] = context.sched_network_retries
+
+        if context.remote_cache_spec:
+            values["Cache Storage Service"] = format_spec(context.remote_cache_spec)
+
         text += self._format_values(values)
 
         if context.remote_execution_specs:
             specs = context.remote_execution_specs
 
-            def format_spec(spec):
-                if spec.instance_name:
-                    return "{} (instance: {})".format(spec.url, spec.instance_name)
-                return spec.url
-
             text += "\n"
             text += self.content_profile.fmt("Remote Execution Configuration\n", bold=True)
             values = OrderedDict()
             values["Execution Service"] = format_spec(specs.exec_spec)
-            values["Storage Service"] = format_spec(specs.storage_spec)
+            re_storage_spec = specs.storage_spec or context.remote_cache_spec
+            values["Storage Service"] = format_spec(re_storage_spec)
             if specs.action_spec:
                 values["Action Cache Service"] = format_spec(specs.action_spec)
-            values["Pull artifact files"] = context.pull_artifact_files
             text += self._format_values(values)
 
         # Print information about each loaded project
