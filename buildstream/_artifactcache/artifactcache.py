@@ -21,7 +21,8 @@ import multiprocessing
 import os
 import signal
 import string
-from collections import Mapping, namedtuple
+from collections import namedtuple
+from collections.abc import Mapping
 
 from ..types import _KeyStrength
 from .._exceptions import ArtifactError, CASError, LoadError, LoadErrorReason

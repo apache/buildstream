@@ -19,7 +19,8 @@
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
 import os
-from collections import Mapping, OrderedDict
+from collections import OrderedDict
+from collections.abc import Mapping
 from pluginbase import PluginBase
 from . import utils
 from . import _cachekey

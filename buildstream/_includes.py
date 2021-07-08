@@ -1,5 +1,5 @@
 import os
-from collections import Mapping
+from collections.abc import Mapping
 from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason
 

@@ -1,6 +1,6 @@
 import os
 import pytest
-from collections import Mapping
+from collections.abc import Mapping
 
 from buildstream import _yaml
 from buildstream._exceptions import LoadError, LoadErrorReason
