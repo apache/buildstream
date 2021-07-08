@@ -16,7 +16,7 @@
 #
 
 import os
-from collections import OrderedDict
+from collections.abc import OrderedDict
 
 from .runcli import Cli
 

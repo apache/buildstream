@@ -21,7 +21,7 @@
 
 import itertools
 
-from collections import OrderedDict
+from collections.abc import OrderedDict
 from operator import itemgetter
 from typing import List, Iterator
 from pyroaring import BitMap  # pylint: disable=no-name-in-module

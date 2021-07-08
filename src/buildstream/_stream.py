@@ -28,7 +28,7 @@ import shutil
 import tarfile
 import tempfile
 from contextlib import contextmanager, suppress
-from collections import deque
+from collections.abc import deque
 from typing import List, Tuple, Optional, Iterable, Callable
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement

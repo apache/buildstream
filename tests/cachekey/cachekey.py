@@ -39,7 +39,7 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
-from collections import OrderedDict
+from collections.abc import OrderedDict
 import os
 
 import pytest

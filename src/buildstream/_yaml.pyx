@@ -24,7 +24,7 @@
 import datetime
 import sys
 from contextlib import ExitStack
-from collections import OrderedDict
+from collections.abc import OrderedDict
 from collections.abc import Mapping
 
 from ruamel import yaml

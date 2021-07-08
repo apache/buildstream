@@ -9,7 +9,7 @@ import json
 import urllib.request
 import urllib.parse
 from jinja2 import Environment, FileSystemLoader
-from collections import OrderedDict
+from collections.abc import OrderedDict
 
 GIT_ERROR = 1
 MERGE_REQUEST = 'https://gitlab.com/api/v4/projects/1975139/merge_requests'

@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Optional, Dict, Union, List
 
 import os
 import sys
-from collections import OrderedDict
+from collections.abc import OrderedDict
 from pathlib import Path
 from pluginbase import PluginBase
 from . import utils

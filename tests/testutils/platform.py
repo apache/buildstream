@@ -17,7 +17,7 @@
 #  Authors:
 #        Angelos Evripiotis <jevripiotis@bloomberg.net>
 
-import collections
+import collections.abc
 from contextlib import contextmanager
 import platform
 
@@ -45,7 +45,7 @@ def override_platform_uname(*, system=None, machine=None):
         #  2. We need to create a new subclass because the constructor of
         #     `platform.uname_result` doesn't share the same interface between
         #     Python 3.8 and 3.9.
-        uname_result = collections.namedtuple("uname_result", "system node release version machine processor")
+        uname_result = collections.abc.namedtuple("uname_result", "system node release version machine processor")
         return uname_result(system, node, release, version, machine, processor)
 
     platform.uname = override_func

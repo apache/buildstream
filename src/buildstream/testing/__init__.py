@@ -20,7 +20,7 @@ This package contains various utilities which make it easier to test plugins.
 """
 
 import os
-from collections import OrderedDict
+from collections.abc import OrderedDict
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from ._yaml import generate_project, generate_element, load_yaml
 from .repo import Repo

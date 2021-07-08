@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 import datetime
 import os
-from collections import defaultdict, OrderedDict
+from collections.abc import defaultdict, OrderedDict
 from contextlib import ExitStack
 from mmap import mmap
 import re

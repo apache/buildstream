@@ -19,7 +19,7 @@
 import os
 import sys
 import curses
-from collections import OrderedDict
+from collections.abc import OrderedDict
 import click
 
 # Import a widget internal for formatting time codes

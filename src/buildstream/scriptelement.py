@@ -33,7 +33,7 @@ implementations.
 """
 
 import os
-from collections import OrderedDict
+from collections.abc import OrderedDict
 from typing import List, Optional, TYPE_CHECKING
 
 from .element import Element

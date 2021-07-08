@@ -2,7 +2,7 @@ import os
 import shutil
 import signal
 import sys
-from collections import namedtuple
+from collections.abc import namedtuple
 from contextlib import ExitStack, contextmanager
 from concurrent import futures
 from multiprocessing import Process, Queue
