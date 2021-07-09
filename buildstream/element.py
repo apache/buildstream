@@ -76,7 +76,8 @@ import os
 import re
 import stat
 import copy
-from collections import Mapping, OrderedDict
+from collections import OrderedDict
+from collections.abc import Mapping
 from contextlib import contextmanager
 from enum import Enum
 import tempfile

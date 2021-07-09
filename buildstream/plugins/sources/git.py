@@ -104,7 +104,7 @@ This plugin also utilises the following configurable :class:`core warnings <buil
 import os
 import errno
 import re
-from collections import Mapping
+from collections.abc import Mapping
 from io import StringIO
 
 from configparser import RawConfigParser

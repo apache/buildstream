@@ -126,7 +126,7 @@ the user to resolve possibly conflicting nested junctions by creating a junction
 with the same name in the top-level project, which then takes precedence.
 """
 
-from collections import Mapping
+from collections.abc import Mapping
 from buildstream import Element
 from buildstream._pipeline import PipelineError
 
