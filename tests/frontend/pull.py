@@ -84,7 +84,7 @@ def test_push_pull_all(cli, tmpdir, datafiles):
 #  * `bst build` pushes all build elements ONLY to configured 'push' cache
 #  * `bst pull` finds artifacts that are available only in the secondary cache
 #
-@pytest.mark.timeout(15, method="signal")
+@pytest.mark.timeout(15, method="thread")
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull_secondary_cache(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
