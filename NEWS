@@ -1,4 +1,16 @@
 =================
+buildstream 1.6.2
+=================
+
+  o Fix some issues with a previous fix for #532
+
+  o Ported to github CI infrastructure
+
+  o Ensure paths specified in user configuration are absolute
+
+  o Import some symbols from collections.abc, required for python 3.10
+
+=================
 buildstream 1.6.1
 =================
 
