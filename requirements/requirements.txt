@@ -1,5 +1,5 @@
 Click==7.0
-grpcio==1.23.0
+grpcio==1.30.0
 pluginbase==1.0.0
 protobuf==3.9.1
 psutil==5.6.3
