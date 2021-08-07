@@ -125,6 +125,11 @@ class CoreWarnings:
     characters in its name.
     """
 
+    UNALIASED_URL = "unaliased-url"
+    """
+    A URL used for fetching a sources was specified without specifying any
+    :ref:`alias <project_source_aliases>`
+    """
 
 class OverlapAction(FastEnum):
     """OverlapAction()
