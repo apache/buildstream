@@ -152,6 +152,7 @@ from contextlib import contextmanager
 
 from . import Plugin
 from . import _yaml, utils
+from .types import CoreWarnings
 from ._exceptions import BstError, ImplError, ErrorDomain
 from ._projectrefs import ProjectRefStorage
 
@@ -612,6 +613,15 @@ class Source(Plugin):
             #
             assert (url in self.__marked_urls or not _extract_alias(url)), \
                 "URL was not seen at configure time: {}".format(url)
+
+        alias = _extract_alias(url)
+
+        # Issue a (fatal-able) warning if the source used a URL without specifying an alias
+        if not alias:
+            self.warn(
+                "{}: Use of unaliased source download URL: {}".format(self, url),
+                warning_token=CoreWarnings.UNALIASED_URL,
+            )
 
     def get_project_directory(self):
         """Fetch the project base directory
