@@ -131,6 +131,7 @@ class CoreWarnings:
     :ref:`alias <project_source_aliases>`
     """
 
+
 class OverlapAction(FastEnum):
     """OverlapAction()
 
