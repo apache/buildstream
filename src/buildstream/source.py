@@ -663,6 +663,16 @@ class Source(Plugin):
                 warning_token=CoreWarnings.UNALIASED_URL,
             )
 
+        # If there is an alias in use, ensure that it exists in the project
+        if alias:
+            project = self._get_project()
+            alias_uri = project.get_alias_uri(alias, first_pass=self.__first_pass)
+            if alias_uri is None:
+                raise SourceError(
+                    "{}: Invalid alias '{}' specified in URL: {}".format(self, alias, url),
+                    reason="invalid-source-alias",
+                )
+
     def get_project_directory(self) -> str:
         """Fetch the project base directory
 
