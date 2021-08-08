@@ -567,3 +567,11 @@ def test_unaliased_url(cli, tmpdir, datafiles, fatal):
     else:
         result.assert_success()
         assert "WARNING [unaliased-url]" in result.stderr
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
+def test_invalid_alias(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    configure_project(project, {"aliases": {"pony": "https://pony.org/tarballs", "horsy": "http://horsy.tv/shows"}})
+    result = cli.run(project=project, silent=True, args=["show", "invalid-alias.bst"])
+    result.assert_main_error(ErrorDomain.SOURCE, "invalid-source-alias")
