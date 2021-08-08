@@ -305,8 +305,7 @@ class Cli():
         old_stdin = sys.stdin
         with open(os.devnull) as devnull:
             sys.stdin = devnull
-
-            capture = MultiCapture(out=True, err=True, in_=False, Capture=FDCapture)
+            capture = MultiCapture(out=FDCapture(1), err=FDCapture(2), in_=None)
             capture.start_capturing()
 
             try:
