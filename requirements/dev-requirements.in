@@ -1,9 +1,7 @@
 pep8
-pylint
+pylint == 2.8.3
 pytest >= 3.7
 pytest-datafiles
 pytest-env
-pytest-pep8
-pytest-pylint
 pytest-xdist
 pytest-timeout

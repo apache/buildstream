@@ -1,13 +1,13 @@
-Click==7.0
-grpcio==1.23.0
-pluginbase==1.0.0
-protobuf==3.9.1
-psutil==5.6.3
-ruamel.yaml==0.16.5
-setuptools==40.8.0
-ujson==1.35
+click==8.0.1
+grpcio==1.39.0
+Jinja2==3.0.1
+pluginbase==1.0.1
+protobuf==3.17.3
+psutil==5.8.0
+ruamel.yaml==0.17.10
+setuptools==44.1.1
+ujson==4.0.2
 ## The following requirements were added by pip freeze:
-Jinja2==2.10.1
-MarkupSafe==1.1.1
-ruamel.yaml.clib==0.1.2
-six==1.12.0
+MarkupSafe==2.0.1
+ruamel.yaml.clib==0.2.6
+six==1.16.0
