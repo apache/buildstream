@@ -9,6 +9,7 @@ import pytest
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
+from buildstream.types import CoreWarnings
 
 from tests.testutils import generate_junction
 
@@ -550,3 +551,27 @@ def test_strict_dependencies(cli, datafiles, target, expected_state):
     states = cli.get_element_states(project, ["base.bst", target])
     assert states["base.bst"] == "buildable"
     assert states[target] == expected_state
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
+@pytest.mark.parametrize("fatal", [True, False], ids=["fatal", "non-fatal"])
+def test_unaliased_url(cli, tmpdir, datafiles, fatal):
+    project = str(datafiles)
+    if fatal:
+        configure_project(project, {"fatal-warnings": [CoreWarnings.UNALIASED_URL]})
+
+    result = cli.run(project=project, silent=True, args=["show", "unaliased-tar.bst"])
+
+    if fatal:
+        result.assert_main_error(ErrorDomain.PLUGIN, CoreWarnings.UNALIASED_URL)
+    else:
+        result.assert_success()
+        assert "WARNING [unaliased-url]" in result.stderr
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
+def test_invalid_alias(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    configure_project(project, {"aliases": {"pony": "https://pony.org/tarballs", "horsy": "http://horsy.tv/shows"}})
+    result = cli.run(project=project, silent=True, args=["show", "invalid-alias.bst"])
+    result.assert_main_error(ErrorDomain.SOURCE, "invalid-source-alias")

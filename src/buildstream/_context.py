@@ -17,7 +17,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from typing import TYPE_CHECKING, List, Dict, Set, Tuple, Optional, Iterable
+from typing import TYPE_CHECKING, List, Dict, Set, Optional, Iterable
 
 import os
 import shutil

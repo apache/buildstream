@@ -164,7 +164,7 @@ from typing import Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
 from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
-from .types import SourceRef, Union
+from .types import SourceRef, Union, CoreWarnings
 from ._exceptions import BstError, ImplError, PluginError
 from .exceptions import ErrorDomain
 from ._loader.metasource import MetaSource
@@ -653,6 +653,25 @@ class Source(Plugin):
             assert url in self.__marked_urls or not _extract_alias(
                 url
             ), "URL was not seen at configure time: {}".format(url)
+
+        alias = _extract_alias(url)
+
+        # Issue a (fatal-able) warning if the source used a URL without specifying an alias
+        if not alias:
+            self.warn(
+                "{}: Use of unaliased source download URL: {}".format(self, url),
+                warning_token=CoreWarnings.UNALIASED_URL,
+            )
+
+        # If there is an alias in use, ensure that it exists in the project
+        if alias:
+            project = self._get_project()
+            alias_uri = project.get_alias_uri(alias, first_pass=self.__first_pass)
+            if alias_uri is None:
+                raise SourceError(
+                    "{}: Invalid alias '{}' specified in URL: {}".format(self, alias, url),
+                    reason="invalid-source-alias",
+                )
 
     def get_project_directory(self) -> str:
         """Fetch the project base directory
