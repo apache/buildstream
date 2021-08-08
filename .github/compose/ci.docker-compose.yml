@@ -1,0 +1,53 @@
+version: '3.4'
+
+x-tests-template: &tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${CI_IMAGE_VERSION:-latest}
+    command: tox -vvvvv -- --color=yes --integration -n 4
+    environment:
+      TOXENV: ${CI_TOXENV_ALL}
+
+    # Enable privileges to run the sandbox
+    #
+    privileged: true
+    devices:
+      - /dev/fuse:/dev/fuse
+
+    # Mount the local directory and set the working directory
+    # to run the tests from.
+    #
+    volumes:
+      - ../..:/home/testuser/buildstream
+    working_dir: /home/testuser/buildstream
+
+
+services:
+
+  fedora-32:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${CI_IMAGE_VERSION:-latest}
+
+  fedora-33:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:33-${CI_IMAGE_VERSION:-latest}
+
+  debian-10:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-${CI_IMAGE_VERSION:-latest}
+
+  ubuntu-18.04:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-${CI_IMAGE_VERSION:-latest}
+
+  centos-7.7.1908:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.7.1908-${CI_IMAGE_VERSION:-latest}
+
+  docs:
+    <<: *tests-template
+    command: tox -e docs
+    environment:
+      BST_FORCE_SESSION_REBUILD: 1
+
+  lint:
+    <<: *tests-template
+    command: tox -e lint

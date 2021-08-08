@@ -19,31 +19,24 @@ on:
       # forked PRs, once for the push and then once for opening the PR.
     - '**:**'
 
-env:
-  CI_IMAGE: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-master-132813612
-  PYTEST_ARGS: --color=yes --integration
-
 jobs:
   tests:
     runs-on: ubuntu-20.04
     continue-on-error: ${{ matrix.allow-failure || false }}
 
-    env:
-      CI_IMAGE_PREFIX: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite
-      CI_IMAGE_SUFFIX: master-132813612
-      TOXENV: py35,py36,py37,py38-nocover
-
     strategy:
       fail-fast: false
       matrix:
 
-        # Main test targets, the name defines the image that will be used as
-        # the base for running tests.
+        # The names here should map to a valid service defined in
+        # "../compose/ci.docker-compose.yml"
         test-name:
-          - debian:10
-          - fedora:30
-          - fedora:31
-          - ubuntu:18.04
+          - debian-10
+          - fedora-32
+          - fedora-33
+          - ubuntu-18.04
+          - centos-7.7.1908
+          - lint
 
     steps:
       - name: Check out repository
@@ -52,63 +45,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run tox inside a container
+      - name: Run tests with Docker Compose
         run: |
-
-          cat << EOF > runtox.sh
-          #!/bin/bash
-
-          # Create user
-          useradd -Um buildstream
-          chown -R buildstream:buildstream .
-
-          # Diagnostics
-          echo "Running diagnostics checks"
-          mount
-          df -h
-          tox --version
-
-          # Run tox as user, ensure we have a login shell
-          echo "Running tests"
-          su buildstream -c '/bin/bash --login -c "tox -vvvvv -- $PYTEST_ARGS"'
-          EOF
-
-          chmod +x runtox.sh
-
-          docker run \
-              --privileged \
-              --device /dev/fuse \
-              --env PYTEST_ARGS \
-              --env TOXENV=${{ matrix.toxenv || env.TOXENV }} \
-              --volume /home/runner/work:/__w \
-              --workdir /__w/buildstream/buildstream \
-              "$CI_IMAGE_PREFIX"-${{ matrix.image-name || matrix.test-name }}-"$CI_IMAGE_SUFFIX" \
-              ./runtox.sh
+          ${GITHUB_WORKSPACE}/.github/run-ci.sh ${{ matrix.test-name }}
 
   docs:
     runs-on: ubuntu-20.04
-    env:
-      BST_FORCE_SESSION_REBUILD: 1
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
         # BuildStream requires tags to be able to find its version.
         with:
           fetch-depth: 0
-      - name: Run tox inside a container
+
+      - name: Give `testuser` ownership of the source directory
+        run: sudo chown -R 1000:1000 ${GITHUB_WORKSPACE}
+
+      - name: Build documentation using Docker Compose
         run: |
-          docker run \
-              --privileged \
-              --device /dev/fuse \
-              --env BST_FORCE_SESSION_REBUILD \
-              --volume /home/runner/work:/__w \
-              --workdir /__w/buildstream/buildstream \
-              $CI_IMAGE \
-              tox -e docs
+          docker-compose \
+            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
+            --file ${GITHUB_WORKSPACE}/.github/compose/ci.docker-compose.yml \
+            run \
+            docs
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: docs
           path: doc/build/html
-
