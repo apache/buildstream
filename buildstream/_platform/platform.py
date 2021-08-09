@@ -36,6 +36,8 @@ class Platform():
 
     @classmethod
     def _create_instance(cls):
+        # pylint: disable=import-outside-toplevel
+
         if sys.platform.startswith('linux'):
             backend = 'linux'
         else:

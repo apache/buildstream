@@ -44,7 +44,10 @@ class Includes:
     #    only_local (bool): Whether to ignore junction files
     #    process_project_options (bool): Whether to process options from current project
     #
-    def _process(self, node, *, included=set(), current_loader=None, only_local=False, process_project_options=True):
+    def _process(self, node, *, included=None, current_loader=None, only_local=False, process_project_options=True):
+
+        if included is None:
+            included = set()
 
         if current_loader is None:
             current_loader = self._loader
@@ -73,8 +76,10 @@ class Includes:
     #    process_project_options (bool): Whether to process options from current project
     #
     def _process_node(
-        self, node, *, included=set(), current_loader=None, only_local=False, process_project_options=True
+        self, node, *, included=None, current_loader=None, only_local=False, process_project_options=True
     ):
+        if included is None:
+            included = set()
 
         if isinstance(node.get('(@)'), str):
             includes = [_yaml.node_get(node, str, '(@)')]
@@ -166,8 +171,11 @@ class Includes:
     #    process_project_options (bool): Whether to process options from current project
     #
     def _process_value(
-        self, value, *, included=set(), current_loader=None, only_local=False, process_project_options=True
+        self, value, *, included=None, current_loader=None, only_local=False, process_project_options=True
     ):
+        if included is None:
+            included = set()
+
         if isinstance(value, Mapping):
             self._process_node(
                 value,

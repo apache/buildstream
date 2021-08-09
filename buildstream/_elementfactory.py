@@ -32,8 +32,11 @@ from .element import Element
 class ElementFactory(PluginContext):
 
     def __init__(self, plugin_base, *,
-                 format_versions={},
+                 format_versions=None,
                  plugin_origins=None):
+
+        if format_versions is None:
+            format_versions = {}
 
         super().__init__(plugin_base, Element, [_site.element_plugins],
                          plugin_origins=plugin_origins,

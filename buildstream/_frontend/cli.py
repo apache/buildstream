@@ -185,7 +185,7 @@ def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
 
-    from .. import __version__
+    from .. import __version__  # pylint: disable=import-outside-toplevel
     click.echo(__version__)
     ctx.exit()
 
@@ -241,7 +241,7 @@ def cli(context, **kwargs):
     user preferences configuration file.
     """
 
-    from .app import App
+    from .app import App  # pylint: disable=import-outside-toplevel
 
     # Create the App, giving it the main arguments
     context.obj = App.create(dict(kwargs))
@@ -376,7 +376,7 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
         plan:  Only dependencies required for the build plan
         all:   All dependencies
     """
-    from .._pipeline import PipelineSelection
+    from .._pipeline import PipelineSelection  # pylint: disable=import-outside-toplevel
 
     if track_cross_junctions and not track_:
         click.echo("ERROR: The --track-cross-junctions option can only be used with --track", err=True)
@@ -607,6 +607,7 @@ def shell(app, element, sysroot, mount, isolate, build_, command):
     If no COMMAND is specified, the default is to attempt
     to run an interactive shell.
     """
+    # pylint: disable=import-outside-toplevel
     from ..element import Scope
     from .._project import HostMount
     from .._pipeline import PipelineSelection
@@ -682,7 +683,6 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
 @cli.group(short_help="Manipulate developer workspaces")
 def workspace():
     """Manipulate developer workspaces"""
-    pass
 
 
 ##################################################################

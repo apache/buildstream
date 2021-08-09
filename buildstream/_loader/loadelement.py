@@ -17,10 +17,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-# System imports
-from itertools import count
-
-
 # BuildStream toplevel imports
 from .. import _yaml
 

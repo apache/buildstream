@@ -507,7 +507,6 @@ class Source(Plugin):
 
         *Since: 1.4*
         """
-        pass
 
     #############################################################
     #                       Public Methods                      #
@@ -1014,8 +1013,6 @@ class Source(Plugin):
                 self.fetch(**kwargs)
                 return
 
-            context = self._get_context()
-            source_kind = type(self)
             for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
                 new_source = self.__clone_for_uri(uri)
                 try:
@@ -1045,7 +1042,7 @@ class Source(Plugin):
         for uri in reversed(project.get_alias_uris(alias, first_pass=self.__first_pass)):
             new_source = self.__clone_for_uri(uri)
             try:
-                ref = new_source.track(**kwargs)
+                ref = new_source.track(**kwargs)  # pylint: disable=assignment-from-none
             # FIXME: Need to consider temporary vs. permanent failures,
             #        and how this works with retries.
             except BstError as e:

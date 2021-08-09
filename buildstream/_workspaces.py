@@ -166,7 +166,7 @@ class Workspace():
                 stat = os.lstat(filename)
             except OSError as e:
                 raise LoadError(LoadErrorReason.MISSING_FILE,
-                                "Failed to stat file in workspace: {}".format(e))
+                                "Failed to stat file in workspace: {}".format(e)) from e
 
             # Use the mtime of any file with sub second precision
             return stat.st_mtime_ns

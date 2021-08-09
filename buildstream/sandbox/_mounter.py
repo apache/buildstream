@@ -25,7 +25,7 @@ from .. import utils, _signals
 
 
 # A class to wrap the `mount` and `umount` system commands
-class Mounter(object):
+class Mounter:
     @classmethod
     def _mount(cls, dest, src=None, mount_type=None,
                stdout=sys.stdout, stderr=sys.stderr, options=None,

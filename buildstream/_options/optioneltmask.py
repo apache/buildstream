@@ -33,7 +33,7 @@ class OptionEltMask(OptionFlags):
     def load(self, node):
         # Ask the parent constructor to disallow value definitions,
         # we define those automatically only.
-        super(OptionEltMask, self).load(node, allow_value_definitions=False)
+        super().load(node, allow_value_definitions=False)
 
     # Here we want all valid elements as possible values,
     # but we'll settle for just the relative filenames

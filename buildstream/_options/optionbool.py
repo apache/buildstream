@@ -32,7 +32,7 @@ class OptionBool(Option):
 
     def load(self, node):
 
-        super(OptionBool, self).load(node)
+        super().load(node)
         _yaml.node_validate(node, OPTION_SYMBOLS + ['default'])
         self.value = _yaml.node_get(node, bool, 'default')
 
@@ -43,9 +43,9 @@ class OptionBool(Option):
             self.value = _yaml.node_get(node, bool, self.name)
 
     def set_value(self, value):
-        if value == 'True' or value == 'true':
+        if value in ('True', 'true'):
             self.value = True
-        elif value == 'False' or value == 'false':
+        elif value in ('False', 'false'):
             self.value = False
         else:
             raise LoadError(LoadErrorReason.INVALID_DATA,

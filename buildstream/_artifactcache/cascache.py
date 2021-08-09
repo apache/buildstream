@@ -72,9 +72,9 @@ class _Attempt():
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 return not self.__last_attempt
             elif e.code() == grpc.StatusCode.ABORTED:
-                raise CASRemoteError("grpc aborted: {}".format(str(e)),
-                                     detail=e.details(),
-                                     temporary=True) from e
+                raise CASError("grpc aborted: {}".format(str(e)),
+                               detail=e.details(),
+                               temporary=True) from e
             else:
                 return False
         return False
@@ -288,8 +288,7 @@ class CASCache():
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.NOT_FOUND:
                 raise CASError("Failed to pull ref {}: {}".format(ref, e)) from e
-            else:
-                return False
+            return False
 
     # link_ref():
     #
@@ -1040,6 +1039,8 @@ class CASCache():
 # Represents a single remote CAS cache.
 #
 class CASRemote():
+    # pylint: disable=attribute-defined-outside-init
+
     def __init__(self, spec):
         self.spec = spec
         self._initialized = False

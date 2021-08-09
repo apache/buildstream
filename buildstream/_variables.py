@@ -22,7 +22,6 @@
 
 import re
 import sys
-import itertools
 
 from ._exceptions import LoadError, LoadErrorReason
 from . import _yaml
@@ -197,7 +196,7 @@ class Variables:
     def check(self):
 
         # Just resolve all variables.
-        for key in self._values.keys():
+        for key in self._values:
             self._expand_var(key)
 
     # get()

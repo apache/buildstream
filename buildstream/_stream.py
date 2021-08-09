@@ -1023,7 +1023,7 @@ class Stream():
 
         if status == SchedStatus.ERROR:
             raise StreamError()
-        elif status == SchedStatus.TERMINATED:
+        if status == SchedStatus.TERMINATED:
             raise StreamError(terminated=True)
 
     # _fetch()

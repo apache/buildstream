@@ -27,7 +27,7 @@
 
 import os
 
-import gi
+import gi  # pylint: disable=import-error
 from gi.repository.GLib import Variant, VariantDict
 
 from ._exceptions import BstError, ErrorDomain
@@ -230,8 +230,7 @@ def fetch(repo, remote="origin", ref=None, progress=None):
     except GLib.GError as e:
         if ref is not None:
             raise OSTreeError("Failed to fetch ref '{}' from '{}': {}".format(ref, remote, e.message)) from e
-        else:
-            raise OSTreeError("Failed to fetch from '{}': {}".format(remote, e.message)) from e
+        raise OSTreeError("Failed to fetch from '{}': {}".format(remote, e.message)) from e
 
 
 # configure_remote():

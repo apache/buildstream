@@ -393,7 +393,6 @@ class Context():
         assert self._message_handler
 
         self._message_handler(message, context=self)
-        return
 
     # silence()
     #

@@ -38,7 +38,7 @@ class OptionArch(OptionEnum):
     OPTION_TYPE = 'arch'
 
     def load(self, node):
-        super(OptionArch, self).load(node, allow_default_definition=False)
+        super().load(node, allow_default_definition=False)
 
     def load_default_value(self, node):
         _, _, _, _, machine_arch = os.uname()

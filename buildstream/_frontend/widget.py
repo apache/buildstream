@@ -85,7 +85,7 @@ class Space(Widget):
 class FixedText(Widget):
 
     def __init__(self, context, text, content_profile, format_profile):
-        super(FixedText, self).__init__(context, content_profile, format_profile)
+        super().__init__(context, content_profile, format_profile)
         self.text = text
 
     def render(self, message):
@@ -120,7 +120,7 @@ class Debug(Widget):
 class TimeCode(Widget):
     def __init__(self, context, content_profile, format_profile, microseconds=False):
         self._microseconds = microseconds
-        super(TimeCode, self).__init__(context, content_profile, format_profile)
+        super().__init__(context, content_profile, format_profile)
 
     def render(self, message):
         return self.render_time(message.elapsed)
@@ -176,7 +176,7 @@ class TypeName(Widget):
 class ElementName(Widget):
 
     def __init__(self, context, content_profile, format_profile):
-        super(ElementName, self).__init__(context, content_profile, format_profile)
+        super().__init__(context, content_profile, format_profile)
 
         # Pre initialization format string, before we know the length of
         # element names in the pipeline
@@ -211,7 +211,7 @@ class MessageText(Widget):
 class CacheKey(Widget):
 
     def __init__(self, context, content_profile, format_profile, err_profile):
-        super(CacheKey, self).__init__(context, content_profile, format_profile)
+        super().__init__(context, content_profile, format_profile)
 
         self._err_profile = err_profile
         self._key_length = context.log_key_length
@@ -240,7 +240,7 @@ class CacheKey(Widget):
 class LogFile(Widget):
 
     def __init__(self, context, content_profile, format_profile, err_profile):
-        super(LogFile, self).__init__(context, content_profile, format_profile)
+        super().__init__(context, content_profile, format_profile)
 
         self._err_profile = err_profile
         self._logdir = context.logdir
@@ -270,7 +270,7 @@ class LogFile(Widget):
 #
 class MessageOrLogFile(Widget):
     def __init__(self, context, content_profile, format_profile, err_profile):
-        super(MessageOrLogFile, self).__init__(context, content_profile, format_profile)
+        super().__init__(context, content_profile, format_profile)
         self._message_widget = MessageText(context, content_profile, format_profile)
         self._logfile_widget = LogFile(context, content_profile, format_profile, err_profile)
 
@@ -306,7 +306,7 @@ class LogLine(Widget):
                  err_profile,
                  detail_profile,
                  indent=4):
-        super(LogLine, self).__init__(context, content_profile, format_profile)
+        super().__init__(context, content_profile, format_profile)
 
         self._columns = []
         self._failure_messages = defaultdict(list)
