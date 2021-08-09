@@ -120,6 +120,11 @@ disable=#####################################
         # at some point
         raise-missing-from,
 
+	# We can probably enable this soon, it is a bit experimental
+	# for the moment and current releases of pylint (August 2021) raise
+	# a lot of false positives.
+	unused-private-member,
+
         ##################################################
         # Formatting-related messages, enforced by Black #
         ##################################################
