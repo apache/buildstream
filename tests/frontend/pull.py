@@ -142,7 +142,9 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
         cli.configure({"artifacts": {"servers": [{"url": bad_share.repo, "push": True},]}})
 
         # Now try `bst artifact push` to the good_share.
-        result = cli.run(project=project, args=["artifact", "push", "target.bst", "--artifact-remote", good_share.repo])
+        result = cli.run(
+            project=project, args=["artifact", "push", "target.bst", "--artifact-remote", good_share.repo]
+        )
         result.assert_success()
 
         # Assert that all the artifacts are in the share we pushed
@@ -158,7 +160,9 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
         artifactdir = os.path.join(cli.directory, "artifacts")
         shutil.rmtree(artifactdir)
 
-        result = cli.run(project=project, args=["artifact", "pull", "target.bst", "--artifact-remote", good_share.repo])
+        result = cli.run(
+            project=project, args=["artifact", "pull", "target.bst", "--artifact-remote", good_share.repo]
+        )
         result.assert_success()
 
         # And assert that it's again in the local cache, without having built
