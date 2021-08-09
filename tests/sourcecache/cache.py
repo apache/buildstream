@@ -127,7 +127,7 @@ def test_source_cache_key(cli, datafiles):
     assert len(os.listdir(elementsources_protos)) == 1
 
     # modify hello-patch file and check tracking updates refs
-    with open(os.path.join(file_path, "dev-files", "usr", "include", "pony.h"), "a") as f:
+    with open(os.path.join(file_path, "dev-files", "usr", "include", "pony.h"), "a", encoding="utf-8") as f:
         f.write("\nappending nonsense")
 
     res = cli.run(project=project_dir, args=["source", "track", element_name])

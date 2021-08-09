@@ -40,12 +40,12 @@ def test_non_regular_file_patch(cli, datafiles):
 def test_invalid_absolute_path(cli, datafiles):
     project = str(datafiles)
 
-    with open(os.path.join(project, "target.bst"), "r") as f:
+    with open(os.path.join(project, "target.bst"), "r", encoding="utf-8") as f:
         old_yaml = f.read()
     new_yaml = old_yaml.replace("file_1.patch", os.path.join(project, "file_1.patch"))
     assert old_yaml != new_yaml
 
-    with open(os.path.join(project, "target.bst"), "w") as f:
+    with open(os.path.join(project, "target.bst"), "w", encoding="utf-8") as f:
         f.write(new_yaml)
 
     result = cli.run(project=project, args=["show", "target.bst"])
@@ -72,7 +72,7 @@ def test_stage_and_patch(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Test the file.txt was patched and changed
-    with open(os.path.join(checkoutdir, "file.txt")) as f:
+    with open(os.path.join(checkoutdir, "file.txt"), encoding="utf-8") as f:
         assert f.read() == "This is text file with superpowers\n"
 
 
@@ -108,7 +108,7 @@ def test_stage_separate_patch_dir(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Test the file.txt was patched and changed
-    with open(os.path.join(checkoutdir, "test-dir", "file.txt")) as f:
+    with open(os.path.join(checkoutdir, "test-dir", "file.txt"), encoding="utf-8") as f:
         assert f.read() == "This is text file in a directory with superpowers\n"
 
 
@@ -124,7 +124,7 @@ def test_stage_multiple_patches(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Test the file.txt was patched and changed
-    with open(os.path.join(checkoutdir, "file.txt")) as f:
+    with open(os.path.join(checkoutdir, "file.txt"), encoding="utf-8") as f:
         assert f.read() == "This is text file with more superpowers\n"
 
 
@@ -140,5 +140,5 @@ def test_patch_strip_level(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Test the file.txt was patched and changed
-    with open(os.path.join(checkoutdir, "file.txt")) as f:
+    with open(os.path.join(checkoutdir, "file.txt"), encoding="utf-8") as f:
         assert f.read() == "This is text file with superpowers\n"

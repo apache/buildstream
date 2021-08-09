@@ -48,7 +48,7 @@ class FastEnum(metaclass=MetaFastEnum):
     """
 
     # A dict of all values mapping to the entries in the enum
-    _value_to_entry = dict()  # type: Dict[str, Any]
+    _value_to_entry = {}  # type: Dict[str, Any]
 
     @classmethod
     def values(cls):

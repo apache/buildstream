@@ -75,7 +75,7 @@ def generate_pip_package(tmpdir, pypi, name, version="0.1", dependencies=None):
     #
     setup_file = os.path.join(tmpdir, "setup.py")
     pkgdirname = re.sub("[^0-9a-zA-Z]+", "", name)
-    with open(setup_file, "w") as f:
+    with open(setup_file, "w", encoding="utf-8") as f:
         f.write(SETUP_TEMPLATE.format(name=name, version=version, pkgdirname=pkgdirname, pkgdeps=dependencies))
     os.chmod(setup_file, 0o755)
 
@@ -83,7 +83,7 @@ def generate_pip_package(tmpdir, pypi, name, version="0.1", dependencies=None):
     os.makedirs(package)
 
     main_file = os.path.join(package, "__init__.py")
-    with open(main_file, "w") as f:
+    with open(main_file, "w", encoding="utf-8") as f:
         f.write(INIT_TEMPLATE.format(name=name))
     os.chmod(main_file, 0o644)
 
@@ -102,7 +102,7 @@ def generate_pip_package(tmpdir, pypi, name, version="0.1", dependencies=None):
 
     # add an index html page
     index_html = os.path.join(pypi_package, "index.html")
-    with open(index_html, "w") as f:
+    with open(index_html, "w", encoding="utf-8") as f:
         f.write(HTML_TEMPLATE.format(name=name, version=version))
 
     # copy generated tarfile to pypi package

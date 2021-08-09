@@ -34,7 +34,7 @@ except ProgramNotFoundError:
     GIT = None
     HAVE_GIT = False
     HAVE_OLD_GIT = False
-    GIT_ENV = dict()
+    GIT_ENV = {}
 
 try:
     BZR = utils.get_host_tool("bzr")  # type: Optional[str]

@@ -27,10 +27,10 @@ def test_stack(cli, datafiles):
     cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
     assert res.exit_code == 0
 
-    with open(os.path.join(checkout, "hi")) as f:
+    with open(os.path.join(checkout, "hi"), encoding="utf-8") as f:
         hi = f.read()
 
-    with open(os.path.join(checkout, "another-hi")) as f:
+    with open(os.path.join(checkout, "another-hi"), encoding="utf-8") as f:
         another_hi = f.read()
 
     assert hi == "Hi\n"

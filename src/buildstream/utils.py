@@ -16,6 +16,12 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+
+# Disable this for the file, because pylint is not picking it up
+# when specifying it on the specific line.
+#
+# pylint: disable=subprocess-popen-preexec-fn
+#
 """
 Utilities
 =========
@@ -1378,10 +1384,9 @@ def _call(*popenargs, terminate=False, **kwargs):
             group_id = os.getpgid(process.pid)
             os.killpg(group_id, signal.SIGCONT)
 
-    with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
-        process = subprocess.Popen(  # pylint: disable=subprocess-popen-preexec-fn
-            *popenargs, preexec_fn=preexec_fn, universal_newlines=True, **kwargs
-        )
+    with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc), subprocess.Popen(
+        *popenargs, preexec_fn=preexec_fn, universal_newlines=True, **kwargs
+    ) as process:
         # Here, we don't use `process.communicate()` directly without a timeout
         # This is because, if we were to do that, and the process would never
         # output anything, the control would never be given back to the python

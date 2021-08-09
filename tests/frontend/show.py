@@ -422,7 +422,7 @@ def test_exceed_max_recursion_depth(cli, tmpdir, dependency_depth):
             _yaml.roundtrip_dump(element, os.path.join(element_path, "element{}.bst".format(str(i))))
 
             source = os.path.join(sourcefiles_path, "source{}".format(str(i)))
-            open(source, "x").close()
+            open(source, "x", encoding="utf-8").close()  # pylint: disable=consider-using-with
             assert os.path.exists(source)
 
     setup_test()
@@ -544,7 +544,7 @@ def test_strict_dependencies(cli, datafiles, target, expected_state):
     # Now modify the file, effectively causing the common base.bst
     # dependency to change it's cache key
     hello_path = os.path.join(project, "files", "hello.txt")
-    with open(hello_path, "w") as f:
+    with open(hello_path, "w", encoding="utf-8") as f:
         f.write("Goodbye")
 
     # Now assert that we have the states we expect as a result

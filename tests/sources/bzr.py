@@ -34,7 +34,7 @@ def test_fetch_checkout(cli, tmpdir, datafiles):
     assert result.exit_code == 0
 
     # Assert we checked out the file as it was commited
-    with open(os.path.join(checkoutdir, "test")) as f:
+    with open(os.path.join(checkoutdir, "test"), encoding="utf-8") as f:
         text = f.read()
 
     assert text == "test\n"

@@ -295,7 +295,7 @@ def test_workspace_visible(cli, datafiles):
     #
     workspace_hello_path = os.path.join(cli.directory, "workspace", "hello.c")
     assert os.path.exists(workspace_hello_path)
-    with open(workspace_hello_path, "r") as f:
+    with open(workspace_hello_path, "r", encoding="utf-8") as f:
         workspace_hello = f.read()
 
     # Cat the hello.c file from a bst shell command, and assert
@@ -332,7 +332,7 @@ def test_integration_external_workspace(cli, tmpdir_factory, datafiles, build_sh
         # Mutate the project.conf to use a default shell command
         project_file = os.path.join(project, "project.conf")
         config_text = "shell:\n  command: ['true']\n"
-        with open(project_file, "a") as f:
+        with open(project_file, "a", encoding="utf-8") as f:
             f.write(config_text)
 
     result = cli.run(project=project, args=["workspace", "open", "--directory", workspace_dir, element_name])
@@ -411,7 +411,7 @@ def test_build_shell_fetch(cli, datafiles):
     # Create a file with unique contents such that it cannot be in the cache already
     test_filepath = os.path.join(project, "files", "hello.txt")
     test_message = "Hello World! {}".format(uuid.uuid4())
-    with open(test_filepath, "w") as f:
+    with open(test_filepath, "w", encoding="utf-8") as f:
         f.write(test_message)
     checksum = utils.sha256sum(test_filepath)
 

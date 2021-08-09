@@ -287,7 +287,7 @@ class FileBasedDirectory(Directory):
             encoding = "utf-8"
 
         if "r" in mode:
-            return open(newpath, mode=mode, encoding=encoding)
+            return open(newpath, mode=mode, encoding=encoding)  # pylint: disable=consider-using-with
         else:
             if "x" in mode:
                 # This check is not atomic, however, we're operating with a

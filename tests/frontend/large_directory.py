@@ -58,7 +58,7 @@ def test_large_directory(cli, tmpdir, datafiles):
     large_directory_dir = os.path.join(project, "files", "large-directory")
     os.mkdir(large_directory_dir)
     for i in range(NUM_FILES):
-        with open(os.path.join(large_directory_dir, str(i)), "w") as f:
+        with open(os.path.join(large_directory_dir, str(i)), "w", encoding="utf-8") as f:
             # The files need to have different content as we want different digests.
             f.write(str(i))
 

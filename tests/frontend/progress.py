@@ -92,7 +92,7 @@ def test_junction_dep_tally(cli, tmpdir, datafiles):
 
     # Add dependencies to the junction (not allowed, but let's do it
     # anyway)
-    with open(junction_path, "a") as f:
+    with open(junction_path, "a", encoding="utf-8") as f:
         deps = {"depends": ["manual.bst"]}
         _yaml.roundtrip_dump(deps, f)
 

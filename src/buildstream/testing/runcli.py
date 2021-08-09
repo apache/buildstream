@@ -352,7 +352,7 @@ class Cli:
             try:
                 sys.__stdout__.fileno()
             except ValueError:
-                sys.__stdout__ = open("/dev/stdout", "w")
+                sys.__stdout__ = open("/dev/stdout", "w", encoding="utf-8")  # pylint: disable=consider-using-with
 
             result = self._invoke(bst_cli, bst_args, binary_capture=binary_capture)
 
@@ -378,7 +378,7 @@ class Cli:
         # Temporarily redirect sys.stdin to /dev/null to ensure that
         # Popen doesn't attempt to read pytest's dummy stdin.
         old_stdin = sys.stdin
-        with open(os.devnull) as devnull:
+        with open(os.devnull, "rb") as devnull:
             sys.stdin = devnull
             capture_kind = FDCaptureBinary if binary_capture else FDCapture
             capture = MultiCapture(out=capture_kind(1), err=capture_kind(2), in_=None)
@@ -527,7 +527,7 @@ class CliIntegration(Cli):
         else:
             project_load_filename = project_backup
 
-        with open(project_load_filename) as f:
+        with open(project_load_filename, encoding="utf-8") as f:
             config = f.read()
         config = config.format(project_dir=project_directory)
 
@@ -545,7 +545,7 @@ class CliIntegration(Cli):
             with tempfile.TemporaryDirectory(dir=project_directory) as scratchdir:
 
                 temp_project = os.path.join(scratchdir, "project.conf")
-                with open(temp_project, "w") as f:
+                with open(temp_project, "w", encoding="utf-8") as f:
                     yaml.safe_dump(project_config, f)
 
                 project_config = _yaml.load(temp_project, shortname="project.conf")
@@ -557,7 +557,7 @@ class CliIntegration(Cli):
         else:
 
             # Otherwise, just dump it as is
-            with open(project_filename, "w") as f:
+            with open(project_filename, "w", encoding="utf-8") as f:
                 f.write(config)
 
         return super().run(**kwargs)

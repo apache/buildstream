@@ -196,7 +196,7 @@ class DownloadableFileSource(Source):
     def _get_etag(self, ref):
         etagfilename = os.path.join(self._mirror_dir, "{}.etag".format(ref))
         if os.path.exists(etagfilename):
-            with open(etagfilename, "r") as etagfile:
+            with open(etagfilename, "r", encoding="utf-8") as etagfile:
                 return etagfile.read()
 
         return None
@@ -265,7 +265,7 @@ class DownloadableFileSource(Source):
     @classmethod
     def _reset_url_opener(cls):
         # Needed for tests, in order to cleanup the `netrc` configuration.
-        cls.__urlopener = None
+        cls.__urlopener = None  # pylint: disable=unused-private-member
 
     def __get_urlopener(self):
         if not DownloadableFileSource.__urlopener:

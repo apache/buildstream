@@ -204,7 +204,7 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
             assert cli.get_element_state(project, element_name) != "cached"
 
         # Add a file to force change in strict cache key of import-bin.bst
-        with open(os.path.join(str(project), "files", "bin-files", "usr", "bin", "world"), "w") as f:
+        with open(os.path.join(str(project), "files", "bin-files", "usr", "bin", "world"), "w", encoding="utf-8") as f:
             f.write("world")
 
         # Assert that the workspaced element requires a rebuild
@@ -452,7 +452,7 @@ def test_pull_access_rights(cli, tmpdir, datafiles):
     # We need a big file that does not go into a batch to test a different
     # code path
     os.makedirs(os.path.join(project, "files/dev-files/usr/share"), exist_ok=True)
-    with open(os.path.join(project, "files/dev-files/usr/share/big-file"), "w") as f:
+    with open(os.path.join(project, "files/dev-files/usr/share/big-file"), "w", encoding="utf-8") as f:
         buf = " " * 4096
         for _ in range(1024):
             f.write(buf)

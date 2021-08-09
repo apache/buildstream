@@ -161,7 +161,7 @@ def test_log_line_element_names(cli, datafiles):
     result = cli.run(project=project, args=["artifact", "log", "--out", logfiles, "logtest.bst"])
     result.assert_success()
 
-    with open(logfile, "r") as f:
+    with open(logfile, "r", encoding="utf-8") as f:
         task_log = f.read()
 
     #########################################################

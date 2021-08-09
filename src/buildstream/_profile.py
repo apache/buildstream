@@ -98,7 +98,7 @@ class _Profile:
             ]
         )
 
-        with open(self.log_filename, "a") as fp:
+        with open(self.log_filename, "a", encoding="utf-8") as fp:
             stats = pstats.Stats(self.profiler, *self._additional_pstats_files, stream=fp)
 
             # Create the log file

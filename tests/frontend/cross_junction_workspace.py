@@ -18,7 +18,7 @@ def prepare_junction_project(cli, tmpdir):
 
     import_dir = tmpdir.join("import")
     os.makedirs(str(import_dir))
-    with open(str(import_dir.join("hello.txt")), "w") as f:
+    with open(str(import_dir.join("hello.txt")), "w", encoding="utf-8") as f:
         f.write("hello!")
 
     import_repo_dir = tmpdir.join("import_repo")

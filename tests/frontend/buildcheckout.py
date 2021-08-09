@@ -642,7 +642,7 @@ def test_build_checkout_tarball_links(datafiles, cli):
     with tarfile.open(name=checkout, mode="r:") as tar:
         tar.extractall(extract)
 
-    with open(os.path.join(extract, "basicfolder", "basicsymlink")) as fp:
+    with open(os.path.join(extract, "basicfolder", "basicsymlink"), encoding="utf-8") as fp:
         data = fp.read()
     assert data == "file contents\n"
 
@@ -672,7 +672,7 @@ def test_build_checkout_links(datafiles, cli):
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
 
-    with open(os.path.join(checkout, "basicfolder", "basicsymlink")) as fp:
+    with open(os.path.join(checkout, "basicfolder", "basicsymlink"), encoding="utf-8") as fp:
         data = fp.read()
     assert data == "file contents\n"
 
@@ -695,7 +695,7 @@ def test_build_checkout_nonempty(datafiles, cli, hardlinks):
 
     # Create the checkout dir and add a file to it, should cause checkout to fail
     os.makedirs(checkout, exist_ok=True)
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         f.write("Hello")
 
     # Prepare checkout args
@@ -730,7 +730,7 @@ def test_build_checkout_force(datafiles, cli, hardlinks):
 
     # Create the checkout dir and add a file to it, should cause checkout to fail
     os.makedirs(checkout, exist_ok=True)
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         f.write("Hello")
 
     # Prepare checkout args
@@ -768,7 +768,7 @@ def test_build_checkout_force_tarball(datafiles, cli):
     assert os.path.isdir(builddir)
     assert not os.listdir(builddir)
 
-    with open(tarball, "w") as f:
+    with open(tarball, "w", encoding="utf-8") as f:
         f.write("Hello")
 
     checkout_args = ["artifact", "checkout", "--force", "--tar", tarball, "target.bst"]
@@ -889,7 +889,7 @@ def test_build_checkout_junction(cli, tmpdir, datafiles):
     # Assert the content of /etc/animal.conf
     filename = os.path.join(checkout, "etc", "animal.conf")
     assert os.path.exists(filename)
-    with open(filename, "r") as f:
+    with open(filename, "r", encoding="utf-8") as f:
         contents = f.read()
     assert contents == "animal=Pony\n"
 
@@ -919,12 +919,12 @@ def test_build_checkout_workspaced_junction(cli, tmpdir, datafiles):
 
     # Assert the content of /etc/animal.conf in the workspace
     assert os.path.exists(filename)
-    with open(filename, "r") as f:
+    with open(filename, "r", encoding="utf-8") as f:
         contents = f.read()
     assert contents == "animal=Pony\n"
 
     # Modify the content of the animal.conf in the workspace
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         f.write("animal=Horsy\n")
 
     # Now try to build it, this should automatically result in fetching
@@ -942,7 +942,7 @@ def test_build_checkout_workspaced_junction(cli, tmpdir, datafiles):
     # Assert the workspace modified content of /etc/animal.conf
     filename = os.path.join(checkout, "etc", "animal.conf")
     assert os.path.exists(filename)
-    with open(filename, "r") as f:
+    with open(filename, "r", encoding="utf-8") as f:
         contents = f.read()
     assert contents == "animal=Horsy\n"
 
@@ -999,7 +999,7 @@ def test_build_junction_short_notation(cli, tmpdir, datafiles):
     # Assert the content of /etc/animal.conf
     filename = os.path.join(checkout, "etc", "animal.conf")
     assert os.path.exists(filename)
-    with open(filename, "r") as f:
+    with open(filename, "r", encoding="utf-8") as f:
         contents = f.read()
     assert contents == "animal=Pony\n"
 
@@ -1035,7 +1035,7 @@ def test_build_junction_short_notation_filename(cli, tmpdir, datafiles):
     # Assert the content of /etc/animal.conf
     filename = os.path.join(checkout, "etc", "animal.conf")
     assert os.path.exists(filename)
-    with open(filename, "r") as f:
+    with open(filename, "r", encoding="utf-8") as f:
         contents = f.read()
     assert contents == "animal=Pony\n"
 

@@ -1829,7 +1829,7 @@ class Stream:
         # Stage all our sources in a temporary directory. The this
         # directory can be used to either construct a tarball or moved
         # to the final desired location.
-        temp_source_dir = tempfile.TemporaryDirectory(dir=self._context.tmpdir)
+        temp_source_dir = tempfile.TemporaryDirectory(dir=self._context.tmpdir)  # pylint: disable=consider-using-with
         try:
             self._write_element_sources(temp_source_dir.name, elements)
             if include_build_scripts:
@@ -1884,12 +1884,10 @@ class Stream:
             compression = ""
         mode = _handle_compression(compression)
         try:
-            with utils.save_file_atomic(tar_name, mode="wb") as f:
-                tarball = tarfile.open(fileobj=f, mode=mode)
+            with utils.save_file_atomic(tar_name, mode="wb") as f, tarfile.open(fileobj=f, mode=mode) as tarball:
                 for item in os.listdir(str(directory)):
                     file_to_add = os.path.join(directory, item)
                     tarball.add(file_to_add, arcname=item)
-                tarball.close()
         except OSError as e:
             raise StreamError("Failed to create tar archive: {}".format(e)) from e
 
@@ -1908,7 +1906,7 @@ class Stream:
 
         script_path = os.path.join(directory, "build.sh")
 
-        with open(_site.build_all_template, "r") as f:
+        with open(_site.build_all_template, "r", encoding="utf-8") as f:
             script_template = f.read()
 
         with utils.save_file_atomic(script_path, "w") as script:
@@ -2037,8 +2035,8 @@ class Stream:
                     globs[glob] = globs[glob] + 1
 
         # Issue warnings and errors
-        unmatched = [glob for glob in globs if globs[glob] == 0]
-        doubly_matched = [glob for glob in globs if globs[glob] > 1]
+        unmatched = [glob for glob, glob_count in globs.items() if glob_count == 0]
+        doubly_matched = [glob for glob, glob_count in globs.items() if glob_count > 1]
 
         # Warn the user if any of the provided globs did not match anything
         if unmatched:

@@ -404,7 +404,7 @@ def test_value_doesnt_match_expected(datafiles):
 @pytest.mark.parametrize("fromdisk", [(True), (False)])
 def test_roundtrip_dump(datafiles, fromdisk):
     filename = os.path.join(datafiles.dirname, datafiles.basename, "roundtrip-test.yaml")
-    with open(filename, "r") as fh:
+    with open(filename, "r", encoding="utf-8") as fh:
         rt_raw = fh.read()
     if fromdisk:
         rt_loaded = _yaml.roundtrip_load(filename)

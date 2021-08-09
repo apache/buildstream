@@ -104,8 +104,8 @@ def test_source_checkout_compressed_tar(datafiles, cli, compression):
         args=["source", "checkout", "--tar", tar, "--compression", compression, "--deps", "none", target],
     )
     result.assert_success()
-    tar = tarfile.open(name=tar, mode="r:" + compression)
-    assert os.path.join("checkout-deps", "etc", "buildstream", "config") in tar.getnames()
+    with tarfile.open(name=tar, mode="r:" + compression) as tar:
+        assert os.path.join("checkout-deps", "etc", "buildstream", "config") in tar.getnames()
 
 
 @pytest.mark.datafiles(DATA_DIR)

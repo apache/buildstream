@@ -227,18 +227,20 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
     def Read(self, request, context):
         self.logger.debug("Reading %s", request.resource_name)
         try:
-            return self.bytestream.Read(request)
+            ret = self.bytestream.Read(request)
         except grpc.RpcError as err:
             context.abort(err.code(), err.details())
+        return ret
 
     def Write(self, request_iterator, context):
         # Note that we can't easily give more information because the
         # data is stuck in an iterator that will be consumed if read.
         self.logger.debug("Writing data")
         try:
-            return self.bytestream.Write(request_iterator)
+            ret = self.bytestream.Write(request_iterator)
         except grpc.RpcError as err:
             context.abort(err.code(), err.details())
+        return ret
 
 
 class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddressableStorageServicer):
@@ -251,23 +253,26 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
     def FindMissingBlobs(self, request, context):
         self.logger.info("Finding '%s'", request.blob_digests)
         try:
-            return self.cas.FindMissingBlobs(request)
+            ret = self.cas.FindMissingBlobs(request)
         except grpc.RpcError as err:
             context.abort(err.code(), err.details())
+        return ret
 
     def BatchReadBlobs(self, request, context):
         self.logger.info("Reading '%s'", request.digests)
         try:
-            return self.cas.BatchReadBlobs(request)
+            ret = self.cas.BatchReadBlobs(request)
         except grpc.RpcError as err:
             context.abort(err.code(), err.details())
+        return ret
 
     def BatchUpdateBlobs(self, request, context):
         self.logger.info("Updating: '%s'", [request.digest for request in request.requests])
         try:
-            return self.cas.BatchUpdateBlobs(request)
+            ret = self.cas.BatchUpdateBlobs(request)
         except grpc.RpcError as err:
             context.abort(err.code(), err.details())
+        return ret
 
 
 class _CapabilitiesServicer(remote_execution_pb2_grpc.CapabilitiesServicer):
@@ -300,16 +305,18 @@ class _FetchServicer(remote_asset_pb2_grpc.FetchServicer):
     def FetchBlob(self, request, context):
         self.logger.debug("FetchBlob '%s'", request.uris)
         try:
-            return self.fetch.FetchBlob(request)
+            ret = self.fetch.FetchBlob(request)
         except grpc.RpcError as err:
             context.abort(err.code(), err.details())
+        return ret
 
     def FetchDirectory(self, request, context):
         self.logger.debug("FetchDirectory '%s'", request.uris)
         try:
-            return self.fetch.FetchDirectory(request)
+            ret = self.fetch.FetchDirectory(request)
         except grpc.RpcError as err:
             context.abort(err.code(), err.details())
+        return ret
 
 
 class _PushServicer(remote_asset_pb2_grpc.PushServicer):
@@ -321,16 +328,18 @@ class _PushServicer(remote_asset_pb2_grpc.PushServicer):
     def PushBlob(self, request, context):
         self.logger.debug("PushBlob '%s'", request.uris)
         try:
-            return self.push.PushBlob(request)
+            ret = self.push.PushBlob(request)
         except grpc.RpcError as err:
             context.abort(err.code(), err.details())
+        return ret
 
     def PushDirectory(self, request, context):
         self.logger.debug("PushDirectory '%s'", request.uris)
         try:
-            return self.push.PushDirectory(request)
+            ret = self.push.PushDirectory(request)
         except grpc.RpcError as err:
             context.abort(err.code(), err.details())
+        return ret
 
 
 class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):

@@ -180,7 +180,7 @@ def test_workspace_update_dependency_failed(cli, datafiles):
     _yaml.roundtrip_dump(dependency, os.path.join(element_path, dep_name))
 
     # And our build fails!
-    with open(os.path.join(workspace, "Makefile"), "a") as f:
+    with open(os.path.join(workspace, "Makefile"), "a", encoding="utf-8") as f:
         f.write("\texit 1")
 
     res = cli.run(project=project, args=["build", element_name])
@@ -195,9 +195,9 @@ def test_workspace_update_dependency_failed(cli, datafiles):
     _yaml.roundtrip_dump(dependency, os.path.join(element_path, dep_name))
 
     # And fix the source
-    with open(os.path.join(workspace, "Makefile"), "r") as f:
+    with open(os.path.join(workspace, "Makefile"), "r", encoding="utf-8") as f:
         makefile = f.readlines()
-    with open(os.path.join(workspace, "Makefile"), "w") as f:
+    with open(os.path.join(workspace, "Makefile"), "w", encoding="utf-8") as f:
         f.write("\n".join(makefile[:-1]))
 
     # Since buildstream thinks hello.txt did not change, we could end
@@ -299,7 +299,7 @@ def test_incremental_configure_commands_run_only_once(cli, datafiles):
     assert not "./prepared-again" in files
 
     # Add file to workspace to trigger an (incremental) build
-    with open(os.path.join(workspace, "newfile"), "w"):
+    with open(os.path.join(workspace, "newfile"), "w", encoding="utf-8"):
         pass
 
     # When we build again, the configure commands should not be
@@ -420,7 +420,7 @@ def test_incremental(cli, datafiles):
     wait_for_cache_granularity()
 
     # Replace source file contents with '2'
-    with open(os.path.join(workspace, "source"), "w") as f:
+    with open(os.path.join(workspace, "source"), "w", encoding="utf-8") as f:
         f.write("2")
 
     # Perform incremental build of the workspace
@@ -437,7 +437,7 @@ def test_incremental(cli, datafiles):
 
     # Replace source file contents with '3', however, set an old mtime such
     # that `make` will not pick up the change
-    with open(os.path.join(workspace, "source"), "w") as f:
+    with open(os.path.join(workspace, "source"), "w", encoding="utf-8") as f:
         f.write("3")
     os.utime(os.path.join(workspace, "source"), (BST_ARBITRARY_TIMESTAMP, BST_ARBITRARY_TIMESTAMP))
 
@@ -488,7 +488,7 @@ def test_incremental_partial(cli, datafiles):
 
     # Delete source1 and replace source2 file contents with '2'
     os.unlink(os.path.join(workspace, "source1"))
-    with open(os.path.join(workspace, "source2"), "w") as f:
+    with open(os.path.join(workspace, "source2"), "w", encoding="utf-8") as f:
         f.write("2")
 
     # Perform incremental build of the workspace
@@ -499,7 +499,7 @@ def test_incremental_partial(cli, datafiles):
     wait_for_cache_granularity()
 
     # Recreate source1 file
-    with open(os.path.join(workspace, "source1"), "w") as f:
+    with open(os.path.join(workspace, "source1"), "w", encoding="utf-8") as f:
         f.write("2")
 
     # Perform incremental build of the workspace

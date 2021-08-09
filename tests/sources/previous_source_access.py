@@ -42,6 +42,6 @@ def test_custom_transform_source(cli, datafiles):
     # the same content
     assert os.path.exists(os.path.join(destpath, "file"))
     assert os.path.exists(os.path.join(destpath, "filetransform"))
-    with open(os.path.join(destpath, "file")) as file1:
-        with open(os.path.join(destpath, "filetransform")) as file2:
+    with open(os.path.join(destpath, "file"), encoding="utf-8") as file1:
+        with open(os.path.join(destpath, "filetransform"), encoding="utf-8") as file2:
             assert file1.read() == file2.read()

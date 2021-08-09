@@ -10,21 +10,21 @@ def test_save_new_file(tmpdir):
         f.write("foo\n")
 
     assert os.listdir(str(tmpdir)) == ["savefile-success.test"]
-    with open(filename) as f:
+    with open(filename, encoding="utf-8") as f:
         assert f.read() == "foo\n"
 
 
 def test_save_over_existing_file(tmpdir):
     filename = os.path.join(str(tmpdir), "savefile-overwrite.test")
 
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         f.write("existing contents\n")
 
     with save_file_atomic(filename, "w") as f:
         f.write("overwritten contents\n")
 
     assert os.listdir(str(tmpdir)) == ["savefile-overwrite.test"]
-    with open(filename) as f:
+    with open(filename, encoding="utf-8") as f:
         assert f.read() == "overwritten contents\n"
 
 
@@ -42,7 +42,7 @@ def test_exception_new_file(tmpdir):
 def test_exception_existing_file(tmpdir):
     filename = os.path.join(str(tmpdir), "savefile-existing.test")
 
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         f.write("existing contents\n")
 
     with pytest.raises(RuntimeError):
@@ -51,7 +51,7 @@ def test_exception_existing_file(tmpdir):
             raise RuntimeError("Something goes wrong")
 
     assert os.listdir(str(tmpdir)) == ["savefile-existing.test"]
-    with open(filename) as f:
+    with open(filename, encoding="utf-8") as f:
         assert f.read() == "existing contents\n"
 
 

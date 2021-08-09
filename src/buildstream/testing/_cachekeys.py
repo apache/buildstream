@@ -102,7 +102,7 @@ def _load_expected_keys(project_dir, actual_keys, raise_error=True):
     for element_name in actual_keys:
         expected = _element_filename(project_dir, element_name, "expected")
         try:
-            with open(expected, "r") as f:
+            with open(expected, "r", encoding="utf-8") as f:
                 expected_key = f.read()
                 expected_key = expected_key.strip()
         except FileNotFoundError:

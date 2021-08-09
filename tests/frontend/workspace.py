@@ -281,7 +281,7 @@ def test_open_defaultlocation_exists(cli, tmpdir, datafiles):
     ((element_name, workspace_dir),) = workspace_object.create_workspace_elements(["git"], ["git"])
     os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
 
-    with open(workspace_dir, "w") as fl:
+    with open(workspace_dir, "w", encoding="utf-8") as fl:
         fl.write("foo")
 
     # Now open the workspace, this should have the effect of automatically
@@ -354,7 +354,7 @@ def test_open_force_open_no_checkout(cli, tmpdir, datafiles):
     assert os.path.exists(workspace)
 
     # Create a new file in the workspace
-    with open(hello_path, "w") as f:
+    with open(hello_path, "w", encoding="utf-8") as f:
         f.write("hello")
 
     # Now open the workspace again with --force and --no-checkout
@@ -365,7 +365,7 @@ def test_open_force_open_no_checkout(cli, tmpdir, datafiles):
 
     # Ensure that our files were not overwritten
     assert os.path.exists(hello_path)
-    with open(hello_path) as f:
+    with open(hello_path, encoding="utf-8") as f:
         assert f.read() == "hello"
 
 
@@ -528,7 +528,7 @@ def test_reset(cli, tmpdir, datafiles):
     # Modify workspace
     shutil.rmtree(os.path.join(workspace, "usr", "bin"))
     os.makedirs(os.path.join(workspace, "etc"))
-    with open(os.path.join(workspace, "etc", "pony.conf"), "w") as f:
+    with open(os.path.join(workspace, "etc", "pony.conf"), "w", encoding="utf-8") as f:
         f.write("PONY='pink'")
 
     # Now reset the open workspace, this should have the
@@ -569,7 +569,7 @@ def test_reset_soft(cli, tmpdir, datafiles):
     # Modify workspace
     shutil.rmtree(os.path.join(workspace, "usr", "bin"))
     os.makedirs(os.path.join(workspace, "etc"))
-    with open(os.path.join(workspace, "etc", "pony.conf"), "w") as f:
+    with open(os.path.join(workspace, "etc", "pony.conf"), "w", encoding="utf-8") as f:
         f.write("PONY='pink'")
 
     assert not os.path.exists(os.path.join(workspace, "usr", "bin"))
@@ -600,7 +600,7 @@ def test_reset_multiple(cli, tmpdir, datafiles):
     # Modify workspaces
     shutil.rmtree(os.path.join(workspace_alpha, "usr", "bin"))
     os.makedirs(os.path.join(workspace_beta, "etc"))
-    with open(os.path.join(workspace_beta, "etc", "pony.conf"), "w") as f:
+    with open(os.path.join(workspace_beta, "etc", "pony.conf"), "w", encoding="utf-8") as f:
         f.write("PONY='pink'")
 
     # Now reset the open workspaces, this should have the
@@ -622,7 +622,7 @@ def test_reset_all(cli, tmpdir, datafiles):
     # Modify workspaces
     shutil.rmtree(os.path.join(workspace_alpha, "usr", "bin"))
     os.makedirs(os.path.join(workspace_beta, "etc"))
-    with open(os.path.join(workspace_beta, "etc", "pony.conf"), "w") as f:
+    with open(os.path.join(workspace_beta, "etc", "pony.conf"), "w", encoding="utf-8") as f:
         f.write("PONY='pink'")
 
     # Now reset the open workspace, this should have the
@@ -668,7 +668,7 @@ def test_build(cli, tmpdir_factory, datafiles, kind, strict, from_workspace, gue
     # Modify workspace
     shutil.rmtree(os.path.join(workspace, "usr", "bin"))
     os.makedirs(os.path.join(workspace, "etc"))
-    with open(os.path.join(workspace, "etc", "pony.conf"), "w") as f:
+    with open(os.path.join(workspace, "etc", "pony.conf"), "w", encoding="utf-8") as f:
         f.write("PONY='pink'")
 
     # Configure strict mode
@@ -760,12 +760,12 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
     #
     if modification == "addfile":
         os.makedirs(os.path.join(workspace, "etc"))
-        with open(os.path.join(workspace, "etc", "pony.conf"), "w") as f:
+        with open(os.path.join(workspace, "etc", "pony.conf"), "w", encoding="utf-8") as f:
             f.write("PONY='pink'")
     elif modification == "removefile":
         os.remove(os.path.join(workspace, "usr", "bin", "hello"))
     elif modification == "modifyfile":
-        with open(os.path.join(workspace, "usr", "bin", "hello"), "w") as f:
+        with open(os.path.join(workspace, "usr", "bin", "hello"), "w", encoding="utf-8") as f:
             f.write("cookie")
     else:
         # This cannot be reached
@@ -802,7 +802,7 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
     elif modification == "removefile":
         assert not os.path.exists(os.path.join(checkout, "usr", "bin", "hello"))
     elif modification == "modifyfile":
-        with open(os.path.join(workspace, "usr", "bin", "hello"), "r") as f:
+        with open(os.path.join(workspace, "usr", "bin", "hello"), "r", encoding="utf-8") as f:
             data = f.read()
             assert data == "cookie"
     else:
@@ -930,7 +930,7 @@ def test_cache_key_workspace_in_dependencies(cli, tmpdir, datafiles, strict):
     # Modify workspace
     shutil.rmtree(os.path.join(workspace, "usr", "bin"))
     os.makedirs(os.path.join(workspace, "etc"))
-    with open(os.path.join(workspace, "etc", "pony.conf"), "w") as f:
+    with open(os.path.join(workspace, "etc", "pony.conf"), "w", encoding="utf-8") as f:
         f.write("PONY='pink'")
 
     # Configure strict mode

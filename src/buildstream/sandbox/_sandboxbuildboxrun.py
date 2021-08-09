@@ -173,7 +173,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 stack.enter_context(_signals.suspendable(suspend_proc, resume_proc))
                 stack.enter_context(_signals.terminator(kill_proc))
 
-            process = subprocess.Popen(
+            process = subprocess.Popen(  # pylint: disable=consider-using-with
                 argv, close_fds=True, stdin=stdin, stdout=stdout, stderr=stderr, start_new_session=new_session,
             )
 

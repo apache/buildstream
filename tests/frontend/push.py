@@ -605,7 +605,7 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles, use_remote, ignore_
     ) as shareproject, create_artifact_share(os.path.join(str(tmpdir), "artifactshare3")) as sharecli:
 
         # Add shareproject repo url to project.conf
-        with open(os.path.join(project, "project.conf"), "a") as projconf:
+        with open(os.path.join(project, "project.conf"), "a", encoding="utf-8") as projconf:
             projconf.write("artifacts:\n- url: {}\n  push: True".format(shareproject.repo))
 
         # Configure shareuser remote in user conf
@@ -671,7 +671,7 @@ def test_push_no_strict(caplog, cli, tmpdir, datafiles, buildtrees):
         # import-bin.bst element to change due to the local files it
         # imports changing.
         path = os.path.join(project, "files", "bin-files", "newfile")
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write("PONY !")
 
         # Now build again after having changed the dependencies
