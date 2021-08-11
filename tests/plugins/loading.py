@@ -679,29 +679,12 @@ def test_junction_full_path_not_found(cli, datafiles, plugin_type):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
     "plugin_type,provenance",
-    [("elements", "project.conf [line 10 column 2]"), ("sources", "project.conf [line 10 column 2]")],
+    [("elements", "project.conf [line 12 column 2]"), ("sources", "project.conf [line 12 column 2]")],
 )
 def test_junction_invalid_full_path(cli, datafiles, plugin_type, provenance):
     project = str(datafiles)
-    subproject = os.path.join(project, "subproject")
-    subsubproject = os.path.join(subproject, "subsubproject")
 
-    shutil.copytree(os.path.join(project, "plugins"), os.path.join(subsubproject, "plugins"))
-
-    # The toplevel says to search for the "notfound" plugin in the subproject
-    #
-    update_project(
-        project,
-        {
-            "plugins": [
-                {
-                    "origin": "junction",
-                    "junction": "subproject-junction.bst:pony-junction.bst",
-                    plugin_type: ["notfound"],
-                }
-            ]
-        },
-    )
+    shutil.copy(os.path.join(project, "not-found-{}.conf".format(plugin_type)), os.path.join(project, "project.conf"))
     setup_element(project, plugin_type, "notfound")
 
     result = cli.run(project=project, args=["show", "element.bst"])
