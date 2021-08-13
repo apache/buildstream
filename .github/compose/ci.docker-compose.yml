@@ -46,12 +46,6 @@ services:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:minimal-${CI_IMAGE_VERSION:-latest}
 
-  # Ensure that tests also pass without `--develop` flag
-  no-usedevelop:
-    <<: *tests-template
-    environment:
-      TOXENV: py36-nocover,py37-nocover,py38-nocover
-
   # Test the master version of external plugins
   plugins-master:
     <<: *tests-template
