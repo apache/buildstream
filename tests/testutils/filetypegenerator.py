@@ -57,6 +57,14 @@ def generate_file_types(path):
     clean()
 
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    s.bind(path)
-    yield
+
+    # On some platforms we get "AF_UNIX path too long" errors
+    #
+    try:
+        s.bind(path)
+    except OSError as e:
+        pass
+    else:
+        yield
+
     clean()
