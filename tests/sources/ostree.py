@@ -19,6 +19,7 @@
 
 import os
 import pytest
+import subprocess
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
@@ -62,6 +63,20 @@ def test_fetch_gpg_verify(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     gpg_homedir = os.path.join(DATA_DIR, "gpghome")
+
+    # Some older versions of gpg, like the gpg (GnuPG) 2.0.22 / libgcrypt 1.5.3
+    # combination present on centos 7, does not recognize the gpg key we use
+    # for this test.
+    #
+    # Just skip the test on these older platforms (techinically ostree should work
+    # so long as you are using a gpg key that is properly installed for your platform)
+    #
+    output = subprocess.check_output([
+        'gpg', '--homedir={}'.format(gpg_homedir), '--list-keys'
+    ])
+    output = output.decode('UTF-8').strip()
+    if not output:
+        pytest.skip("Our test GPG key is not supported on this platform")
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('ostree', str(tmpdir))
