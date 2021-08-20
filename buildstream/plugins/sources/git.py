@@ -194,6 +194,14 @@ class GitMirror(SourceFetcher):
         else:
             remote_name = "origin"
 
+        # In git < 1.9.0, we have to call `git fetch` twice, once for the tags
+        #
+        if self.source.git_fetch_tags_exclusive:
+            self.source.call([self.source.host_git, 'fetch', remote_name, '--prune', '--force'],
+                             fail="Failed to fetch from remote git repository: {}".format(url),
+                             fail_temporarily=True,
+                             cwd=self.mirror)
+
         self.source.call([self.source.host_git, 'fetch', remote_name, '--prune', '--force', '--tags'],
                          fail="Failed to fetch from remote git repository: {}".format(url),
                          fail_temporarily=True,
@@ -346,6 +354,14 @@ class GitMirror(SourceFetcher):
 class GitSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
+    #
+    # The --tags option before git 1.9.0 used to mean to fetch tags exclusively,
+    # since git 1.9.0 the --tags option means to additionally fetch tags.
+    #
+    #    https://github.com/git/git/blob/master/Documentation/RelNotes/1.9.0.txt
+    #
+    git_fetch_tags_exclusive = None
+
     def configure(self, node):
         ref = self.node_get_member(node, str, 'ref', None)
 
@@ -393,6 +409,9 @@ class GitSource(Source):
     def preflight(self):
         # Check if git is installed, get the binary at the same time
         self.host_git = utils.get_host_tool('git')
+
+        # Resolve what `--tags` means when calling `git fetch`
+        self.init_fetch_tags_mode()
 
     def get_unique_key(self):
         # Here we want to encode the local name of the repository and
@@ -611,6 +630,29 @@ class GitSource(Source):
             checkout = self.checkout_submodules
 
         return not checkout
+
+    # Resolve GitSource.git_fetch_tags_exclusive
+    def init_fetch_tags_mode(self):
+
+        if self.git_fetch_tags_exclusive is None:
+            _, version_output = self.check_output([self.host_git, '--version'])
+            version_output = version_output.strip()
+
+            # Extract the version from "git version {version}" string
+            git_version = version_output.rsplit(maxsplit=1)[-1]
+
+            # Parse out the minor and major versions
+            git_version_split = git_version.split(".")
+            if len(git_version_split) < 3:
+                raise SourceError("{}: Failed to parse git version: {}".format(self, version_output))
+            git_version_major = int(git_version_split[0])
+            git_version_minor = int(git_version_split[1])
+
+            # Resolve whether `git fetch --tags` means to fetch tags exclusively
+            if git_version_major == 1 and git_version_minor < 9:
+                type(self).git_fetch_tags_exclusive = True
+            else:
+                type(self).git_fetch_tags_exclusive = False
 
 
 # Plugin entry point
