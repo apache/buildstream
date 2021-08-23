@@ -334,7 +334,7 @@ def safe_remove(path):
         except OSError as e:
             if e.errno != errno.EISDIR:
                 raise UtilError("Failed to remove '{}': {}"
-                                .format(path, e))
+                                .format(path, e)) from e
 
             try:
                 os.rmdir(path)
@@ -343,7 +343,7 @@ def safe_remove(path):
                     return False
                 else:
                     raise UtilError("Failed to remove '{}': {}"
-                                    .format(path, e))
+                                    .format(path, e)) from e
 
     return True
 
@@ -381,7 +381,7 @@ def copy_files(src, dest, *, files=None, ignore_missing=False, report_written=Fa
                       report_written=report_written, presorted=presorted)
     except OSError as e:
         raise UtilError("Failed to copy '{} -> {}': {}"
-                        .format(src, dest, e))
+                        .format(src, dest, e)) from e
     return result
 
 
@@ -423,7 +423,7 @@ def link_files(src, dest, *, files=None, ignore_missing=False, report_written=Fa
                       report_written=report_written, presorted=presorted)
     except OSError as e:
         raise UtilError("Failed to link '{} -> {}': {}"
-                        .format(src, dest, e))
+                        .format(src, dest, e)) from e
 
     return result
 
@@ -475,7 +475,7 @@ def get_bst_version():
        (int): The minor version
     """
     # Import this only conditionally, it's not resolved at bash complete time
-    from . import __version__
+    from . import __version__  # pylint: disable=import-outside-toplevel
     versions = __version__.split('.')[:2]
 
     if versions[0] == '0+untagged':
@@ -484,14 +484,14 @@ def get_bst_version():
 
     try:
         return (int(versions[0]), int(versions[1]))
-    except IndexError:
+    except IndexError as e:
         raise UtilError("Cannot detect Major and Minor parts of the version\n"
                         "Version: {} not in XX.YY.whatever format"
-                        .format(__version__))
-    except ValueError:
+                        .format(__version__)) from e
+    except ValueError as e:
         raise UtilError("Cannot convert version to integer numbers\n"
                         "Version: {} not in Integer.Integer.whatever format"
-                        .format(__version__))
+                        .format(__version__)) from e
 
 
 @contextmanager
@@ -528,7 +528,7 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
     fd, tempname = tempfile.mkstemp(dir=tempdir)
     os.close(fd)
 
-    f = open(tempname, mode=mode, buffering=buffering, encoding=encoding,
+    f = open(tempname, mode=mode, buffering=buffering, encoding=encoding,  # pylint: disable=consider-using-with
              errors=errors, newline=newline, closefd=closefd, opener=opener)
 
     def cleanup_tempfile():
@@ -663,8 +663,7 @@ def _pretty_size(size, dec_places=0):
     for unit in ('B', 'K', 'M', 'G', 'T'):
         if psize < 1024:
             break
-        else:
-            psize /= 1024
+        psize /= 1024
     return "{size:g}{unit}".format(size=round(psize, dec_places), unit=unit)
 
 # A sentinel to be used as a default argument for functions that need
@@ -695,13 +694,13 @@ def _force_rmtree(rootpath, **kwargs):
                     os.chmod(path, 0o755)
                 except OSError as e:
                     raise UtilError("Failed to ensure write permission on file '{}': {}"
-                                    .format(path, e))
+                                    .format(path, e)) from e
 
     try:
         shutil.rmtree(rootpath, **kwargs)
     except OSError as e:
         raise UtilError("Failed to remove cache directory '{}': {}"
-                        .format(rootpath, e))
+                        .format(rootpath, e)) from e
 
 
 # Recursively make directories in target area
@@ -819,8 +818,7 @@ def _process_list(srcdir, destdir, filelist, actionfunc, result,
             # Skip this missing file
             if ignore_missing:
                 continue
-            else:
-                raise UtilError("Source file is missing: {}".format(srcpath)) from e
+            raise UtilError("Source file is missing: {}".format(srcpath)) from e
 
         if stat.S_ISDIR(mode):
             # Ensure directory exists in destination
@@ -1102,7 +1100,7 @@ def _call(*popenargs, terminate=False, **kwargs):
             os.killpg(group_id, signal.SIGCONT)
 
     with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
-        process = subprocess.Popen(*popenargs, preexec_fn=preexec_fn, **kwargs)
+        process = subprocess.Popen(*popenargs, preexec_fn=preexec_fn, **kwargs)  # pylint: disable=consider-using-with,subprocess-popen-preexec-fn
         output, _ = process.communicate()
         exit_code = process.poll()
 
@@ -1225,12 +1223,12 @@ def _parse_version(version):
     try:
         versions = version.split(".")
     except AttributeError as e:
-        raise UtilError("Malformed version string: {}".format(version),)
+        raise UtilError("Malformed version string: {}".format(version),) from e
 
     try:
         major = int(versions[0])
         minor = int(versions[1])
-    except (IndexError, ValueError):
-        raise UtilError("Malformed version string: {}".format(version),)
+    except (IndexError, ValueError) as e:
+        raise UtilError("Malformed version string: {}".format(version),) from e
 
     return major, minor

@@ -1,9 +1,5 @@
 name: Upload Release Asset
 
-env:
-  CI_IMAGE: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-master-132813612
-  BST_FORCE_SESSION_REBUILD: 1
-
 on:
   push:
     tags:
@@ -20,16 +16,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build documentation
+      - name: Give `testuser` ownership of the source directory
+        run: sudo chown -R 1000:1000 ${GITHUB_WORKSPACE}
+
+      - name: Build documentation using Docker Compose
         run: |
-          docker run \
-              --privileged \
-              --device /dev/fuse \
-              --env BST_FORCE_SESSION_REBUILD \
-              --volume /home/runner/work:/__w \
-              --workdir /__w/buildstream/buildstream \
-              $CI_IMAGE \
-              tox -e docs
+          docker-compose \
+            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
+            --file ${GITHUB_WORKSPACE}/.github/compose/ci.docker-compose.yml \
+            run \
+            docs
+
+          # Restore permissions to the current user
+          sudo chown -R ${USER} ${GITHUB_WORKSPACE}
+
           tar -C doc/build/html -zcf docs.tgz .
 
       - name: Upload release assets

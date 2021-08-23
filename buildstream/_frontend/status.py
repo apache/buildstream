@@ -18,8 +18,8 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 import os
 import sys
-import click
 import curses
+import click
 
 # Import a widget internal for formatting time codes
 from .widget import TimeCode

@@ -90,6 +90,14 @@ disable=#####################################
         too-many-return-statements,
         too-many-ancestors,
 
+	# Chained comparisons let us write confusing statements
+	# such as "version >= 1 <= CURRENT_VERSION" and pylint
+	# complains when we use more clear and easier to understand
+	# statements like "version >= 1 and version <= CURRENT_VERSION"
+	#
+	# Disable this nonsense.
+	chained-comparison,
+
         #######################################################
         # Messages that we would like to enable at some point #
         #######################################################
@@ -104,6 +112,11 @@ disable=#####################################
         invalid-name,
 
         unused-argument,
+
+	# We can probably enable this soon, it is a bit experimental
+	# for the moment and current releases of pylint (August 2021) raise
+	# a lot of false positives.
+	unused-private-member,
 
         ###########################################################
         # Messages that report warnings which should be addressed #

@@ -23,6 +23,7 @@
 import os
 import pytest
 import shutil
+import subprocess
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
@@ -651,6 +652,20 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
 @pytest.mark.parametrize("fail", ['warn', 'error'])
 def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
     project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # For some reason, old fashioned git from way back in centos 7 land
+    # doesnt behave quite the same, resulting in an inconsistent-submodule
+    # warning being issued by the git plugin here, instead of an invalid-submodule
+    # warning.
+    #
+    # Let's just overlook this minor issue and skip the test with ancient versions of git.
+    #
+    output = subprocess.check_output(['git', '--version'])
+    output = output.decode('UTF-8').strip()
+    git_version = output.rsplit(maxsplit=1)[-1]
+    git_version_major = git_version.split(".", maxsplit=1)[0]
+    if git_version_major == "1":
+        pytest.skip("Git behaves subtly differently in the ancient version {}".format(git_version))
 
     # Make the warning an error if we're testing errors
     if fail == 'error':

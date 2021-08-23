@@ -37,8 +37,8 @@ if sys.version_info[0] != REQUIRED_PYTHON_MAJOR or sys.version_info[1] < REQUIRE
     sys.exit(1)
 
 try:
-    from setuptools import setup, find_packages, Command
-    from setuptools.command.easy_install import ScriptWriter
+    from setuptools import setup, find_packages, Command  # pylint: disable=import-outside-toplevel
+    from setuptools.command.easy_install import ScriptWriter  # pylint: disable=import-outside-toplevel
 except ImportError:
     print("BuildStream requires setuptools in order to build. Install it using"
           " your package manager (usually python3-setuptools) or via pip (pip3"
@@ -188,11 +188,11 @@ class BuildGRPC(Command):
 
     def run(self):
         try:
-            import grpc_tools.command
+            import grpc_tools.command  # pylint: disable=import-outside-toplevel
         except ImportError:
             print("BuildStream requires grpc_tools in order to build gRPC modules.\n"
                   "Install it via pip (pip3 install grpcio-tools).")
-            exit(1)
+            sys.exit(1)
 
         protos_root = 'buildstream/_protos'
 

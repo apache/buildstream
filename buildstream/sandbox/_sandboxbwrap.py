@@ -61,15 +61,16 @@ class SandboxBwrap(Sandbox):
         # We can't do builds for another host or architecture except 32 bit on 64 bit
         if config.build_os != host_os:
             raise SandboxError("Configured and host OS don't match.")
-        elif config.build_arch != host_arch:
+
+        if config.build_arch != host_arch:
             if ((config.build_arch == "i686" and host_arch == "x86_64") or
                 (config.build_arch == "armv7l" and host_arch == "aarch64")):
                 # check whether linux32 is available
                 try:
                     utils.get_host_tool('linux32')
                     self._linux32 = True
-                except utils.ProgramNotFoundError:
-                    raise SandboxError("Configured and host architecture don't match.")
+                except utils.ProgramNotFoundError as e:
+                    raise SandboxError("Configured and host architecture don't match.") from e
             else:
                 raise SandboxError("Configured and host architecture don't match.")
 
@@ -344,7 +345,7 @@ class SandboxBwrap(Sandbox):
                 stack.enter_context(_signals.suspendable(suspend_bwrap, resume_bwrap))
                 stack.enter_context(_signals.terminator(terminate_bwrap))
 
-            process = subprocess.Popen(
+            process = subprocess.Popen(  # pylint: disable=consider-using-with
                 argv,
                 # The default is to share file descriptors from the parent process
                 # to the subprocess, which is rarely good for sandboxing.
@@ -423,17 +424,17 @@ class SandboxBwrap(Sandbox):
                         tries += 1
                         time.sleep(1 / 100)
                         continue
-                    else:
-                        # We've reached the upper limit of tries, bail out now
-                        # because something must have went wrong
-                        #
-                        raise
-                elif e.errno == errno.ENOENT:
+                    # We've reached the upper limit of tries, bail out now
+                    # because something must have went wrong
+                    #
+                    raise
+
+                if e.errno == errno.ENOENT:
                     # Bubblewrap cleaned it up for us, no problem if we cant remove it
                     break
-                else:
-                    # Something unexpected, reraise this error
-                    raise
+
+                # Something unexpected, reraise this error
+                raise
             else:
                 # Successfully removed the symlink
                 break

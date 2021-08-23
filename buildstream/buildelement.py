@@ -102,6 +102,7 @@ _command_steps = ['configure-commands',
 
 
 class BuildElement(Element):
+    # pylint: disable=attribute-defined-outside-init
 
     #############################################################
     #             Abstract Method Implementations               #

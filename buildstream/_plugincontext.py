@@ -44,7 +44,10 @@ class PluginContext():
 
     def __init__(self, plugin_base, base_type, site_plugin_path, *,
                  plugin_origins=None, dependencies=None,
-                 format_versions={}):
+                 format_versions=None):
+
+        if format_versions is None:
+            format_versions = {}
 
         # The plugin kinds which were loaded
         self.loaded_dependencies = []
@@ -91,7 +94,7 @@ class PluginContext():
     def _get_pip_plugin_source(self, package_name, kind):
         defaults = None
         if ('pip', package_name) not in self._alternate_sources:
-            import pkg_resources
+            import pkg_resources  # pylint: disable=import-outside-toplevel
             # key by a tuple to avoid collision
             try:
                 package = pkg_resources.get_entry_info(package_name,
@@ -235,7 +238,7 @@ class PluginContext():
         # Handle malformed version string specified by plugin
         #
         try:
-            major, minor = utils._parse_version(min_version)
+            major, _ = utils._parse_version(min_version)
         except UtilError as e:
             raise PluginError(
                 "Loaded plugin '{}' is not a BuildStream 1 plugin".format(kind),

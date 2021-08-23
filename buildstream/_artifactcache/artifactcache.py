@@ -334,7 +334,7 @@ class ArtifactCache():
         while self.get_cache_size() >= self._cache_lower_threshold:
             try:
                 to_remove = artifacts.pop(0)
-            except IndexError:
+            except IndexError as e:
                 # If too many artifacts are required, and we therefore
                 # can't remove them, we have to abort the build.
                 #
@@ -355,9 +355,8 @@ class ArtifactCache():
                 if self.has_quota_exceeded():
                     raise ArtifactError("Cache too full. Aborting.",
                                         detail=detail,
-                                        reason="cache-too-full")
-                else:
-                    break
+                                        reason="cache-too-full") from e
+                break
 
             key = to_remove.rpartition('/')[2]
             if key not in required_artifacts:
@@ -921,7 +920,7 @@ class ArtifactCache():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "Invalid cache quota ({}): ".format(utils._pretty_size(cache_quota)) +
                             "BuildStream requires a minimum cache quota of 2G.")
-        elif cache_quota > cache_size + available_space:  # Check maximum
+        if cache_quota > cache_size + available_space:  # Check maximum
             if '%' in self.context.config_cache_quota:
                 available = (available_space / total_size) * 100
                 available = '{}% of total disk space'.format(round(available, 1))

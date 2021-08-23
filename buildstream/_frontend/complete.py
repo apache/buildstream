@@ -150,7 +150,19 @@ def get_param_type_completion(param_type, incomplete):
     elif isinstance(param_type, click.File):
         return complete_path("File", incomplete)
     elif isinstance(param_type, click.Path):
-        return complete_path(param_type.path_type, incomplete)
+
+        # Workaround click 8.x API break:
+        #
+        #    https://github.com/pallets/click/issues/2037
+        #
+        if param_type.file_okay and not param_type.dir_okay:
+            path_type = "File"
+        elif param_type.dir_okay and not param_type.file_okay:
+            path_type = "Directory"
+        else:
+            path_type = "Path"
+
+        return complete_path(path_type, incomplete)
 
     return []
 
@@ -203,7 +215,7 @@ def is_incomplete_option(all_args, cmd_param):
         if start_of_option(arg_str):
             last_option = arg_str
 
-    return True if last_option and last_option in cmd_param.opts else False
+    return last_option and last_option in cmd_param.opts
 
 
 def is_incomplete_argument(current_params, cmd_param):

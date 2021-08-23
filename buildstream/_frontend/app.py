@@ -137,7 +137,7 @@ class App():
     def create(cls, *args, **kwargs):
         if sys.platform.startswith('linux'):
             # Use an App with linux specific features
-            from .linuxapp import LinuxApp
+            from .linuxapp import LinuxApp  # pylint: disable=import-outside-toplevel
             return LinuxApp(*args, **kwargs)
         else:
             # The base App() class is default
@@ -874,9 +874,10 @@ def _prefix_choice_value_proc(choices):
 
         if not remaining_candidate:
             raise UsageError("Expected one of {}, got {}".format(choices, user_input))
-        elif len(remaining_candidate) == 1:
+
+        if len(remaining_candidate) == 1:
             return remaining_candidate[0]
-        else:
-            raise UsageError("Ambiguous input. '{}' can refer to one of {}".format(user_input, remaining_candidate))
+
+        raise UsageError("Ambiguous input. '{}' can refer to one of {}".format(user_input, remaining_candidate))
 
     return value_proc

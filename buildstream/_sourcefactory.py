@@ -32,8 +32,11 @@ from .source import Source
 class SourceFactory(PluginContext):
 
     def __init__(self, plugin_base, *,
-                 format_versions={},
+                 format_versions=None,
                  plugin_origins=None):
+
+        if format_versions is None:
+            format_versions = {}
 
         super().__init__(plugin_base, Source, [_site.source_plugins],
                          format_versions=format_versions,

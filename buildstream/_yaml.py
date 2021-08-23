@@ -96,7 +96,7 @@ class DictProvenance(Provenance):
                 line = 1
                 col = 0
 
-        super(DictProvenance, self).__init__(filename, node, toplevel, line=line, col=col)
+        super().__init__(filename, node, toplevel, line=line, col=col)
 
         self.members = {}
 
@@ -122,8 +122,7 @@ class MemberProvenance(Provenance):
             line, col = parent_dict.lc.value(member_name)
             line += 1
 
-        super(MemberProvenance, self).__init__(
-            filename, node, toplevel, line=line, col=col)
+        super().__init__(filename, node, toplevel, line=line, col=col)
 
         # Only used if member is a list
         self.elements = []
@@ -146,8 +145,7 @@ class ElementProvenance(Provenance):
             line, col = parent_list.lc.item(index)
             line += 1
 
-        super(ElementProvenance, self).__init__(
-            filename, node, toplevel, line=line, col=col)
+        super().__init__(filename, node, toplevel, line=line, col=col)
 
         # Only used if element is a list
         self.elements = []
@@ -165,13 +163,13 @@ class ElementProvenance(Provenance):
 # public exceptions.py
 class CompositeError(Exception):
     def __init__(self, path, message):
-        super(CompositeError, self).__init__(message)
+        super().__init__(message)
         self.path = path
 
 
 class CompositeTypeError(CompositeError):
     def __init__(self, path, expected_type, actual_type):
-        super(CompositeTypeError, self).__init__(
+        super().__init__(
             path,
             "Error compositing dictionary key '{}', expected source type '{}' "
             "but received type '{}'"
@@ -241,7 +239,7 @@ def load_data(data, file=None, copy_tree=False):
 def dump(node, filename=None):
     with ExitStack() as stack:
         if filename:
-            from . import utils
+            from . import utils  # pylint: disable=import-outside-toplevel
             f = stack.enter_context(utils.save_file_atomic(filename, 'w'))
         else:
             f = sys.stdout
@@ -336,7 +334,7 @@ def node_get_provenance(node, key=None, indices=None):
 # values.
 #
 def _get_sentinel():
-    from .utils import _sentinel
+    from .utils import _sentinel   # pylint: disable=import-outside-toplevel
     return _sentinel
 
 
@@ -387,9 +385,9 @@ def node_get(node, expected_type, key, indices=None, default_value=_get_sentinel
         try:
             if (expected_type == bool and isinstance(value, str)):
                 # Dont coerce booleans to string, this makes "False" strings evaluate to True
-                if value == 'true' or value == 'True':
+                if value in ('true', 'True'):
                     value = True
-                elif value == 'false' or value == 'False':
+                elif value in ('false', 'False'):
                     value = False
                 else:
                     raise ValueError()
@@ -399,11 +397,11 @@ def node_get(node, expected_type, key, indices=None, default_value=_get_sentinel
                 value = expected_type(value)
             else:
                 raise ValueError()
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
             provenance = node_get_provenance(node, key=key, indices=indices)
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Value of '{}' is not of the expected type '{}'"
-                            .format(provenance, path, expected_type.__name__))
+                            .format(provenance, path, expected_type.__name__)) from e
 
     # Trim it at the bud, let all loaded strings from yaml be stripped of whitespace
     if isinstance(value, str):
@@ -466,10 +464,10 @@ def node_get_project_path(node, key, project_dir, *,
             full_resolved_path = (project_dir_path / path).resolve()
         else:
             full_resolved_path = (project_dir_path / path).resolve(strict=True)
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         raise LoadError(LoadErrorReason.MISSING_FILE,
                         "{}: Specified path '{}' does not exist"
-                        .format(provenance, path_str))
+                        .format(provenance, path_str)) from e
 
     is_inside = project_dir_path.resolve() in full_resolved_path.parents or (
         full_resolved_path == project_dir_path)

@@ -126,6 +126,8 @@ class SandboxChroot(Sandbox):
     #    (int): The exit code of the executed command
     #
     def chroot(self, rootfs, command, stdin, stdout, stderr, cwd, env, flags):
+        # pylint: disable=subprocess-popen-preexec-fn
+
         def kill_proc():
             if process:
                 # First attempt to gracefully terminate
@@ -147,7 +149,7 @@ class SandboxChroot(Sandbox):
 
         try:
             with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
-                process = subprocess.Popen(
+                process = subprocess.Popen(  # pylint: disable=consider-using-with
                     command,
                     close_fds=True,
                     cwd=os.path.join(rootfs, cwd.lstrip(os.sep)),
@@ -203,8 +205,7 @@ class SandboxChroot(Sandbox):
                 raise SandboxError('Could not chroot into {} or chdir into {}. '
                                    'Ensure you are root and that the relevant directory exists.'
                                    .format(rootfs, cwd)) from e
-            else:
-                raise SandboxError('Could not run command {}: {}'.format(command, e)) from e
+            raise SandboxError('Could not run command {}: {}'.format(command, e)) from e
 
         return code
 
@@ -233,12 +234,11 @@ class SandboxChroot(Sandbox):
                         os.remove(location)
 
                     devices.append(self.mknod(device, location))
-                except OSError as err:
-                    if err.errno == 1:
-                        raise SandboxError("Permission denied while creating device node: {}.".format(err) +
-                                           "BuildStream reqiures root permissions for these setttings.")
-                    else:
-                        raise
+                except OSError as e:
+                    if e.errno == 1:
+                        raise SandboxError("Permission denied while creating device node: {}.".format(e) +
+                                           "BuildStream reqiures root permissions for these setttings.") from e
+                    raise
 
         yield
 
@@ -327,7 +327,7 @@ class SandboxChroot(Sandbox):
             os.mknod(target, mode=stat.S_IFCHR | dev.st_mode, device=target_dev)
 
         except PermissionError as e:
-            raise SandboxError('Could not create device {}, ensure that you have root permissions: {}')
+            raise SandboxError('Could not create device {}, ensure that you have root permissions: {}') from e
 
         except OSError as e:
             raise SandboxError('Could not create device {}: {}'

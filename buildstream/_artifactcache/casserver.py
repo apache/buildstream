@@ -276,10 +276,9 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
             except OSError as e:
                 if e.errno != errno.ENOENT:
                     raise
-                else:
-                    d = response.missing_blob_digests.add()
-                    d.hash = digest.hash
-                    d.size_bytes = digest.size_bytes
+                d = response.missing_blob_digests.add()
+                d.hash = digest.hash
+                d.size_bytes = digest.size_bytes
 
         return response
 
@@ -508,13 +507,13 @@ class _CacheCleaner:
             while object_size - removed_size > target_disk_space:
                 try:
                     last_mtime, to_remove = LRP_objects.pop(0)  # The first element in the list is the LRP artifact
-                except IndexError:
+                except IndexError as e:
                     # This exception is caught if there are no more artifacts in the list
                     # LRP_artifacts. This means the the artifact is too large for the filesystem
                     # so we abort the process
                     raise ArtifactTooLargeException("Artifact of size {} is too large for "
                                                     "the filesystem which mounts the remote "
-                                                    "cache".format(object_size))
+                                                    "cache".format(object_size)) from e
 
                 try:
                     size = os.stat(to_remove).st_size

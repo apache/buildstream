@@ -55,7 +55,7 @@ class PullQueue(Queue):
     def done(self, _, element, result, status):
 
         if status == JobStatus.FAIL:
-            return False
+            return
 
         element._pull_done()
 

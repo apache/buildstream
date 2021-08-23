@@ -73,10 +73,10 @@ class OptionPool():
             opt_type_name = _yaml.node_get(option_definition, str, 'type')
             try:
                 opt_type = _OPTION_TYPES[opt_type_name]
-            except KeyError:
+            except KeyError as e:
                 p = _yaml.node_get_provenance(option_definition, 'type')
                 raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Invalid option type '{}'".format(p, opt_type_name))
+                                "{}: Invalid option type '{}'".format(p, opt_type_name)) from e
 
             option = opt_type(option_name, option_definition, self)
             self._options[option_name] = option
@@ -229,7 +229,7 @@ class OptionPool():
                                 "Failed to evaluate expression: {}".format(expression))
         except jinja2.exceptions.TemplateError as e:
             raise LoadError(LoadErrorReason.EXPRESSION_FAILED,
-                            "Failed to evaluate expression ({}): {}".format(expression, e))
+                            "Failed to evaluate expression ({}): {}".format(expression, e)) from e
 
     # Recursion assistent for lists, in case there
     # are lists of lists.

@@ -167,7 +167,7 @@ class ScriptElement(Element):
     def __validate_layout(self):
         if self.__layout:
             # Cannot proceeed if layout is used, but none are for "/"
-            root_defined = any([(entry['destination'] == '/') for entry in self.__layout])
+            root_defined = any(entry['destination'] == '/' for entry in self.__layout)
             if not root_defined:
                 raise ElementError("{}: Using layout, but none are staged as '/'"
                                    .format(self))

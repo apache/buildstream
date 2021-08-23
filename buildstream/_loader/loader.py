@@ -35,7 +35,6 @@ from .types import Symbol, Dependency
 from .loadelement import LoadElement
 from . import MetaElement
 from . import MetaSource
-from ..types import CoreWarnings
 
 
 # Loader():
@@ -112,8 +111,8 @@ class Loader():
 
         for target in targets:
             profile_start(Topics.LOAD_PROJECT, target)
-            junction, name, loader = self._parse_name(target, rewritable, ticker,
-                                                      fetch_subprojects=fetch_subprojects)
+            _, name, loader = self._parse_name(target, rewritable, ticker,
+                                               fetch_subprojects=fetch_subprojects)
             loader._load_file(name, rewritable, ticker, fetch_subprojects)
             deps.append(Dependency(target, provenance="[command line]"))
             profile_end(Topics.LOAD_PROJECT, target)
@@ -140,7 +139,7 @@ class Loader():
         #
         for target in targets:
             profile_start(Topics.SORT_DEPENDENCIES, target)
-            junction, name, loader = self._parse_name(target, rewritable, ticker,
+            _, name, loader = self._parse_name(target, rewritable, ticker,
                                                       fetch_subprojects=fetch_subprojects)
             loader._sort_dependencies(name)
             profile_end(Topics.SORT_DEPENDENCIES, target)
@@ -246,7 +245,7 @@ class Loader():
                 raise LoadError(LoadErrorReason.MISSING_FILE,
                                 message, detail=detail) from e
 
-            elif e.reason == LoadErrorReason.LOADING_DIRECTORY:
+            if e.reason == LoadErrorReason.LOADING_DIRECTORY:
                 # If a <directory>.bst file exists in the element path,
                 # let's suggest this as a plausible alternative.
                 message = str(e)
@@ -258,8 +257,9 @@ class Loader():
                     detail = "Did you mean '{}'?\n".format(element_name)
                 raise LoadError(LoadErrorReason.LOADING_DIRECTORY,
                                 message, detail=detail) from e
-            else:
-                raise
+            # Raise the unmodified LoadError
+            raise
+
         kind = _yaml.node_get(node, str, Symbol.KIND)
         if kind == "junction":
             self._first_pass_options.process_node(node)
@@ -522,11 +522,11 @@ class Loader():
             if level == 0:
                 # junction element not found in this or ancestor projects
                 raise
-            else:
-                # mark junction as not available to allow detection of
-                # conflicting junctions in subprojects
-                self._loaders[filename] = None
-                return None
+
+            # mark junction as not available to allow detection of
+            # conflicting junctions in subprojects
+            self._loaders[filename] = None
+            return None
 
         # meta junction element
         meta_element = self._collect_element(filename)
@@ -570,7 +570,7 @@ class Loader():
         # Load the project
         project_dir = os.path.join(basedir, element.path)
         try:
-            from .._project import Project
+            from .._project import Project  # pylint: disable=import-outside-toplevel
             project = Project(project_dir, self._context, junction=element,
                               parent_loader=self, tempdir=basedir)
         except LoadError as e:
@@ -579,8 +579,7 @@ class Loader():
                                 message="Could not find the project.conf file for {}. "
                                         "Expecting a project at path '{}'"
                                 .format(element, element.path or '.')) from e
-            else:
-                raise
+            raise
 
         loader = project.loader
         self._loaders[filename] = loader

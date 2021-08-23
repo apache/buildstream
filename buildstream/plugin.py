@@ -223,7 +223,7 @@ class Plugin():
 
         # Infer the kind identifier
         modulename = type(self).__module__
-        self.__kind = modulename.split('.')[-1]
+        self.__kind = modulename.rsplit('.', maxsplit=1)[-1]
         self.debug("Created: {}".format(self))
 
     def __del__(self):
@@ -803,8 +803,7 @@ class Plugin():
 
     def __note_command(self, output, *popenargs, **kwargs):
         workdir = os.getcwd()
-        if 'cwd' in kwargs:
-            workdir = kwargs['cwd']
+        workdir = kwargs.get('cwd', workdir)
         command = " ".join(popenargs[0])
         output.write('Running host command {}: {}\n'.format(workdir, command))
         output.flush()

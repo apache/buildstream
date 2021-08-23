@@ -326,7 +326,6 @@ class Element(Plugin):
 
         *Since: 1.2*
         """
-        pass
 
     def assemble(self, sandbox):
         """Assemble the output artifact
@@ -688,7 +687,6 @@ class Element(Plugin):
         files_written = {}
         old_dep_keys = {}
         workspace = self._get_workspace()
-        project = self._get_project()
         context = self._get_context()
 
         if self.__can_build_incrementally() and workspace.last_successful:
@@ -1606,7 +1604,7 @@ class Element(Plugin):
 
                 # Store workspaced.yaml
                 _yaml.dump(_yaml.node_sanitize({
-                    'workspaced': True if self._get_workspace() else False
+                    'workspaced': bool(self._get_workspace())
                 }), os.path.join(metadir, 'workspaced.yaml'))
 
                 # Store workspaced-dependencies.yaml
@@ -1821,7 +1819,7 @@ class Element(Plugin):
                         sandbox._set_mount_source(mount.path, mount.host_path)
 
             if command:
-                argv = [arg for arg in command]
+                argv = list(command)
             else:
                 argv = shell_command
 
@@ -2298,7 +2296,6 @@ class Element(Plugin):
         _yaml.node_final_assertions(element_public)
 
         # Also, resolve any variables in the public split rules directly
-        new_base_splits = {}
         for domain, splits in self.node_items(base_splits):
             new_splits = []
             for index, split in enumerate(splits):
@@ -2444,7 +2441,7 @@ class Element(Plugin):
         strong_key = meta['strong']
         weak_key = meta['weak']
 
-        assert key == strong_key or key == weak_key
+        assert key in (strong_key, weak_key)
 
         self.__metadata_keys[strong_key] = meta
         self.__metadata_keys[weak_key] = meta

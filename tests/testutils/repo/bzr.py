@@ -5,8 +5,15 @@ import pytest
 from .repo import Repo
 from ..site import HAVE_BZR
 
+
+# Use several variations, different environment variables can be
+# used depending on the platform, and depending on whether `breezy`
+# is being used as the bzr implementation.
+#
 BZR_ENV = {
-    "BZR_EMAIL": "Testy McTesterson <testy.mctesterson@example.com>"
+    "BZR_EMAIL": "Testy McTesterson <testy.mctesterson@example.com>",
+    "BRZ_EMAIL": "Testy McTesterson <testy.mctesterson@example.com>",
+    "EMAIL": "Testy McTesterson <testy.mctesterson@example.com>"
 }
 
 
