@@ -729,7 +729,7 @@ class Plugin():
     def _output_file(self):
         log = self.__context.get_log_handle()
         if log is None:
-            with open(os.devnull, "w") as output:
+            with open(os.devnull, "w", encoding="utf-8") as output:
                 yield output
         else:
             yield log

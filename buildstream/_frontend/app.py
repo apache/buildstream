@@ -358,7 +358,7 @@ class App():
             # us programatically insert comments or whitespace at
             # the toplevel.
             try:
-                with open(project_path, 'w') as f:
+                with open(project_path, 'w', encoding='utf-8') as f:
                     f.write("# Unique project name\n" +
                             "name: {}\n\n".format(project_name) +
                             "# Required BuildStream format version\n" +
@@ -620,7 +620,7 @@ class App():
                     except BstError as e:
                         click.echo("Error while attempting to create interactive shell: {}".format(e), err=True)
                 elif choice == 'log':
-                    with open(failure.logfile, 'r') as logfile:
+                    with open(failure.logfile, 'r', encoding='utf-8') as logfile:
                         content = logfile.read()
                         click.echo_via_pager(content)
 

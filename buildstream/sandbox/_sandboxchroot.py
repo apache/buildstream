@@ -96,7 +96,7 @@ class SandboxChroot(Sandbox):
             if flags & SandboxFlags.INTERACTIVE:
                 stdin = sys.stdin
             else:
-                stdin = stack.enter_context(open(os.devnull, 'r'))
+                stdin = stack.enter_context(open(os.devnull, 'r'))  # pylint: disable=unspecified-encoding
 
             # Ensure the cwd exists
             if cwd is not None:
@@ -264,10 +264,7 @@ class SandboxChroot(Sandbox):
         @contextmanager
         def mount_point(point, **kwargs):
             mount_source_overrides = self._get_mount_sources()
-            if point in mount_source_overrides:
-                mount_source = mount_source_overrides[point]
-            else:
-                mount_source = self.mount_map.get_mount_source(point)
+            mount_source = mount_source_overrides.get(point, self.mount_map.get_mount_source(point))
             mount_point = os.path.join(rootfs, point.lstrip(os.sep))
 
             with Mounter.bind_mount(mount_point, src=mount_source, stdout=stdout, stderr=stderr, **kwargs):

@@ -163,10 +163,7 @@ class SandboxBwrap(Sandbox):
         mount_source_overrides = self._get_mount_sources()
         for mark in marked_directories:
             mount_point = mark['directory']
-            if mount_point in mount_source_overrides:
-                mount_source = mount_source_overrides[mount_point]
-            else:
-                mount_source = mount_map.get_mount_source(mount_point)
+            mount_source = mount_source_overrides.get(mount_point, mount_map.get_mount_source(mount_point))
 
             # Use --dev-bind for all mounts, this is simply a bind mount which does
             # not restrictive about devices.
@@ -220,7 +217,7 @@ class SandboxBwrap(Sandbox):
             if flags & SandboxFlags.INTERACTIVE:
                 stdin = sys.stdin
             else:
-                stdin = stack.enter_context(open(os.devnull, "r"))
+                stdin = stack.enter_context(open(os.devnull, "r"))  # pylint: disable=unspecified-encoding
 
             # Run bubblewrap !
             exit_code = self.run_bwrap(bwrap_command, stdin, stdout, stderr,

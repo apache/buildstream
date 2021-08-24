@@ -73,7 +73,7 @@ class Mount():
                 parent_dir = os.path.dirname(self.mount_source.rstrip('/'))
                 os.makedirs(parent_dir, exist_ok=True)
                 if not os.path.exists(self.mount_source):
-                    with open(self.mount_source, 'w'):
+                    with open(self.mount_source, 'w', encoding='utf-8'):
                         pass
 
     @contextmanager

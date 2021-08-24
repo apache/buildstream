@@ -203,7 +203,7 @@ class BuildGRPC(Command):
             for filename in files:
                 if filename.endswith('.py'):
                     path = os.path.join(root, filename)
-                    with open(path, 'r') as f:
+                    with open(path, 'r', encoding='utf-8') as f:
                         code = f.read()
 
                     # All protos are in buildstream._protos
@@ -213,7 +213,7 @@ class BuildGRPC(Command):
                     code = re.sub(r'^from buildstream._protos.google.protobuf', r'from google.protobuf',
                                   code, flags=re.MULTILINE)
 
-                    with open(path, 'w') as f:
+                    with open(path, 'w', encoding='utf-8') as f:
                         f.write(code)
 
 
@@ -228,17 +228,17 @@ def get_cmdclass():
 #####################################################
 #               Gather requirements                 #
 #####################################################
-with open('requirements/dev-requirements.in') as dev_reqs:
+with open('requirements/dev-requirements.in', encoding='utf-8') as dev_reqs:
     dev_requires = dev_reqs.read().splitlines()
 
-with open('requirements/requirements.in') as install_reqs:
+with open('requirements/requirements.in', encoding='utf-8') as install_reqs:
     install_requires = install_reqs.read().splitlines()
 
 #####################################################
 #     Prepare package description from README       #
 #####################################################
 with open(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                       'README.rst')) as readme:
+                       'README.rst'), encoding='utf-8') as readme:
     long_description = readme.read()
 
 

@@ -30,8 +30,8 @@ from ruamel.yaml.constructor import RoundTripConstructor
 from ._exceptions import LoadError, LoadErrorReason
 
 # This overrides the ruamel constructor to treat everything as a string
-RoundTripConstructor.add_constructor(u'tag:yaml.org,2002:int', RoundTripConstructor.construct_yaml_str)
-RoundTripConstructor.add_constructor(u'tag:yaml.org,2002:float', RoundTripConstructor.construct_yaml_str)
+RoundTripConstructor.add_constructor('tag:yaml.org,2002:int', RoundTripConstructor.construct_yaml_str)
+RoundTripConstructor.add_constructor('tag:yaml.org,2002:float', RoundTripConstructor.construct_yaml_str)
 
 # We store information in the loaded yaml on a DictProvenance
 # stored in all dictionaries under this key
@@ -197,7 +197,7 @@ def load(filename, shortname=None, copy_tree=False, *, project=None):
     file = ProvenanceFile(filename, shortname, project)
 
     try:
-        with open(filename) as f:
+        with open(filename, encoding="utf-8") as f:
             return load_data(f, file, copy_tree=copy_tree)
     except FileNotFoundError as e:
         raise LoadError(LoadErrorReason.MISSING_FILE,

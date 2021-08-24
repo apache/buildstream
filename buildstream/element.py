@@ -1870,7 +1870,7 @@ class Element(Plugin):
     #
     # Writes a script to the given directory.
     def _write_script(self, directory):
-        with open(_site.build_module_template, "r") as f:
+        with open(_site.build_module_template, "r", encoding="utf-8") as f:
             script_template = f.read()
 
         variable_string = ""
