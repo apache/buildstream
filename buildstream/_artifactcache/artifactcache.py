@@ -495,8 +495,8 @@ class ArtifactCache():
     def initialize_remotes(self, *, on_failure=None):
         remote_specs = self.global_remote_specs
 
-        for project in self.project_remote_specs:
-            remote_specs += self.project_remote_specs[project]
+        for _, project_specs in self.project_remote_specs.items():
+            remote_specs += project_specs
 
         remote_specs = list(utils._deduplicate(remote_specs))
 
@@ -775,7 +775,7 @@ class ArtifactCache():
                     element.info("Remote ({}) does not have {} cached".format(
                         remote.spec.url, display_key
                     ))
-            except BlobNotFound as e:
+            except BlobNotFound:
                 element.info("Remote ({}) does not have {} cached".format(
                     remote.spec.url, display_key
                 ))
@@ -868,7 +868,7 @@ class ArtifactCache():
         if not os.path.exists(size_file_path):
             return None
 
-        with open(size_file_path, "r") as f:
+        with open(size_file_path, "r", encoding="utf-8") as f:
             size = f.read()
 
         try:

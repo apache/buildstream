@@ -442,7 +442,7 @@ class CASCache():
                 os.makedirs(os.path.dirname(objpath), exist_ok=True)
                 os.link(tmp.name, objpath)
 
-        except FileExistsError as e:
+        except FileExistsError:
             # We can ignore the failed link() if the object is already in the repo.
             pass
 
@@ -991,7 +991,7 @@ class CASCache():
     def _send_directory(self, remote, digest, u_uid=uuid.uuid4()):
         required_blobs = self._required_blobs(digest)
 
-        missing_blobs = dict()
+        missing_blobs = {}
         # Limit size of FindMissingBlobs request
         for required_blobs_group in _grouper(required_blobs, 512):
             request = remote_execution_pb2.FindMissingBlobsRequest()

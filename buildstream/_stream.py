@@ -701,7 +701,8 @@ class Stream():
         #
         # FIXME: A bit hackish
         try:
-            open(tar_location, mode="x")
+            with open(tar_location, mode="x") as _:  # pylint: disable=unspecified-encoding
+                pass
             os.remove(tar_location)
         except IOError as e:
             raise StreamError("Cannot write to {0}: {1}"
@@ -1132,7 +1133,7 @@ class Stream():
 
         script_path = os.path.join(directory, "build.sh")
 
-        with open(_site.build_all_template, "r") as f:
+        with open(_site.build_all_template, "r", encoding="utf-8") as f:
             script_template = f.read()
 
         with utils.save_file_atomic(script_path, "w") as script:

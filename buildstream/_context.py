@@ -494,7 +494,7 @@ class Context():
         directory = os.path.dirname(self._log_filename)
         os.makedirs(directory, exist_ok=True)
 
-        with open(self._log_filename, 'a') as logfile:
+        with open(self._log_filename, 'a', encoding='utf-8') as logfile:
 
             # Write one last line to the log and flush it to disk
             def flush_log():

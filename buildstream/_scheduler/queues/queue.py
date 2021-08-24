@@ -249,7 +249,7 @@ class Queue():
                     workspaces.save_config()
                 except BstError as e:
                     self._message(element, MessageType.ERROR, "Error saving workspaces", detail=str(e))
-                except Exception as e:   # pylint: disable=broad-except
+                except Exception:   # pylint: disable=broad-except
                     self._message(element, MessageType.BUG,
                                   "Unhandled exception while saving workspaces",
                                   detail=traceback.format_exc())
@@ -292,7 +292,7 @@ class Queue():
             #
             set_last_task_error(e.domain, e.reason)
 
-        except Exception as e:   # pylint: disable=broad-except
+        except Exception:   # pylint: disable=broad-except
 
             # Report unhandled exceptions and mark as failed
             #
