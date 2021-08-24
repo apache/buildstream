@@ -4,9 +4,9 @@ Jinja2==3.0.1
 pluginbase==1.0.1
 protobuf==3.17.3
 psutil==5.8.0
-ruamel.yaml==0.17.10
+ruamel.yaml==0.17.13
 setuptools==44.1.1
-ujson==4.0.2
+ujson==4.1.0
 ## The following requirements were added by pip freeze:
 MarkupSafe==2.0.1
 ruamel.yaml.clib==0.2.6
