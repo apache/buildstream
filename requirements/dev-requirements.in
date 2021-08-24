@@ -1,5 +1,5 @@
 pep8
-pylint == 2.8.3
+pylint >= 2.10.0
 pytest >= 3.7
 pytest-datafiles
 pytest-env
