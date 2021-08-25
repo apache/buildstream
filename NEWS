@@ -1,4 +1,19 @@
 =================
+buildstream 1.6.3
+=================
+
+  o Support for python 3.9 now being tested in CI
+
+  o CI overhaul to work more like it does in master
+
+  o Refresh all dependencies which are being tested in CI, addressing
+    a corner case crash that would occur when using bash completions
+    and bleeding edge versions of the click library
+
+  o Updated minimum required version of grpcio library to 1.30, as older
+    versions are not working properly with existing artifact cache services.
+
+=================
 buildstream 1.6.2
 =================
 
