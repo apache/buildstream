@@ -99,7 +99,7 @@ services:
 
   lint:
     <<: *tests-template
-    command: tox -e lint
+    command: tox -e lint,format-check
 
   mypy:
     <<: *tests-template
