@@ -58,7 +58,7 @@ def test_manual_element(cli, datafiles):
     res = cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
     assert res.exit_code == 0
 
-    with open(os.path.join(checkout, "test")) as f:
+    with open(os.path.join(checkout, "test"), encoding="utf-8") as f:
         text = f.read()
 
     assert (
@@ -89,7 +89,7 @@ def test_manual_element_environment(cli, datafiles):
     res = cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
     assert res.exit_code == 0
 
-    with open(os.path.join(checkout, "test")) as f:
+    with open(os.path.join(checkout, "test"), encoding="utf-8") as f:
         text = f.read()
 
     assert text == "2\n"
@@ -117,7 +117,7 @@ def test_manual_element_noparallel(cli, datafiles):
     res = cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
     assert res.exit_code == 0
 
-    with open(os.path.join(checkout, "test")) as f:
+    with open(os.path.join(checkout, "test"), encoding="utf-8") as f:
         text = f.read()
 
     assert (
@@ -179,7 +179,7 @@ def test_manual_command_subdir(cli, datafiles):
     result.assert_success()
     result = cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
     result.assert_success()
-    with open(os.path.join(checkout, "hello")) as f:
+    with open(os.path.join(checkout, "hello"), encoding="utf-8") as f:
         assert f.read() == "hello from root\n"
 
     # Now, change element configuration to have a different command-subdir.
@@ -202,7 +202,7 @@ def test_manual_command_subdir(cli, datafiles):
     shutil.rmtree(checkout)
     result = cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
     result.assert_success()
-    with open(os.path.join(checkout, "hello")) as f:
+    with open(os.path.join(checkout, "hello"), encoding="utf-8") as f:
         assert f.read() == "hello from subdir\n"
 
 
@@ -221,5 +221,5 @@ def test_manual_stage_custom(cli, datafiles):
     )
     result.assert_success()
 
-    with open(os.path.join(checkout, "test.txt")) as f:
+    with open(os.path.join(checkout, "test.txt"), encoding="utf-8") as f:
         assert f.read() == "This is another test\n"

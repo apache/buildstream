@@ -210,7 +210,7 @@ def test_workspace_build(cli, tmpdir, datafiles, modification):
     # add a file (asserting later that this is in the buildtree)
     newfile = "newfile.cfg"
     newfile_path = os.path.join(workspace, newfile)
-    with open(newfile_path, "w") as fdata:
+    with open(newfile_path, "w", encoding="utf-8") as fdata:
         fdata.write("somestring")
     input_files.append(os.sep + newfile)
 
@@ -252,7 +252,7 @@ def test_workspace_build(cli, tmpdir, datafiles, modification):
 
     # buildmark time should be the same
     assert build_timemark == rebuild_timemark
-    assert all([rebuild_times[fname] == build_times[fname] for fname in rebuild_times]), "{}\n{}".format(
+    assert all(rebuild_time == build_times[fname] for fname, rebuild_time in rebuild_times.items()), "{}\n{}".format(
         rebuild_times, build_times
     )
 
@@ -267,9 +267,9 @@ def test_workspace_build(cli, tmpdir, datafiles, modification):
 
     elif modification == "content":
         # change a source file (there's a race here but it's not serious)
-        with open(main_path, "r") as fdata:
+        with open(main_path, "r", encoding="utf-8") as fdata:
             data = fdata.readlines()
-        with open(main_path, "w") as fdata:
+        with open(main_path, "w", encoding="utf-8") as fdata:
             for line in data:
                 fdata.write(re.sub(r"Hello", "Goodbye", line))
         touched_time = int(os.stat(main_path).st_mtime)
@@ -294,7 +294,7 @@ def test_workspace_build(cli, tmpdir, datafiles, modification):
     del rebuild_times[os.sep + BLDMARK]
 
     # check the times of the unmodified files
-    assert all([rebuild_times[fname] == build_times[fname] for fname in rebuild_times]), "{}\n{}".format(
+    assert all(rebuild_time == build_times[fname] for fname, rebuild_time in rebuild_times.items()), "{}\n{}".format(
         rebuild_times, build_times
     )
 

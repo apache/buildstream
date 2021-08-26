@@ -791,7 +791,7 @@ class LogLine(Widget):
         with ExitStack() as stack:
             # mmap handles low-level memory details, allowing for
             # faster searches
-            f = stack.enter_context(open(logfile, "r+"))
+            f = stack.enter_context(open(logfile, "r+", encoding="utf-8"))
             log = stack.enter_context(mmap(f.fileno(), os.path.getsize(f.name)))
 
             count = 0

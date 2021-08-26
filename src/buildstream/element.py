@@ -1669,7 +1669,7 @@ class Element(Plugin):
         if self._cached_failure() and not self.__assemble_done:
             with self._output_file() as output_file:
                 for log_path in self.__artifact.get_logs():
-                    with open(log_path) as log_file:
+                    with open(log_path, encoding="utf-8") as log_file:
                         output_file.write(log_file.read())
 
             _, description, detail = self._get_build_result()
@@ -2089,7 +2089,7 @@ class Element(Plugin):
     #
     # Writes a script to the given directory.
     def _write_script(self, directory):
-        with open(_site.build_module_template, "r") as f:
+        with open(_site.build_module_template, "r", encoding="utf-8") as f:
             script_template = f.read()
 
         variable_string = ""

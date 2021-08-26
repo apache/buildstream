@@ -87,11 +87,13 @@ class CASDProcessManager:
         self._start_time = time.time()
         self._logfile = self._rotate_and_get_next_logfile()
 
-        with open(self._logfile, "w") as logfile_fp:
+        with open(self._logfile, "w", encoding="utf-8") as logfile_fp:
             # Block SIGINT on buildbox-casd, we don't need to stop it
             # The frontend will take care of it if needed
             with _signals.blocked([signal.SIGINT], ignore=False):
-                self.process = subprocess.Popen(casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT)
+                self.process = subprocess.Popen(  # pylint: disable=consider-using-with
+                    casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT
+                )
 
     # _make_socket_path()
     #

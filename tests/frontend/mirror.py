@@ -132,7 +132,7 @@ def test_mirror_fetch_multi(cli, tmpdir):
 
     result = cli.run(project=project_dir, args=["source", "fetch", element_name])
     result.assert_success()
-    with open(output_file) as f:
+    with open(output_file, encoding="utf-8") as f:
         contents = f.read()
         assert "Fetch foo:repo1 succeeded from FOO/repo1" in contents
         assert "Fetch bar:repo2 succeeded from RAB/repo2" in contents
@@ -156,7 +156,7 @@ def test_mirror_fetch_default_cmdline(cli, tmpdir):
 
     result = cli.run(project=project_dir, args=["--default-mirror", "arrakis", "source", "fetch", element_name])
     result.assert_success()
-    with open(output_file) as f:
+    with open(output_file, encoding="utf-8") as f:
         contents = f.read()
         print(contents)
         # Success if fetching from arrakis' mirror happened before middle-earth's
@@ -190,7 +190,7 @@ def test_mirror_fetch_default_userconfig(cli, tmpdir):
 
     result = cli.run(project=project_dir, args=["source", "fetch", element_name])
     result.assert_success()
-    with open(output_file) as f:
+    with open(output_file, encoding="utf-8") as f:
         contents = f.read()
         print(contents)
         # Success if fetching from Oz' mirror happened before middle-earth's
@@ -224,7 +224,7 @@ def test_mirror_fetch_default_cmdline_overrides_config(cli, tmpdir):
 
     result = cli.run(project=project_dir, args=["--default-mirror", "arrakis", "source", "fetch", element_name])
     result.assert_success()
-    with open(output_file) as f:
+    with open(output_file, encoding="utf-8") as f:
         contents = f.read()
         print(contents)
         # Success if fetching from arrakis' mirror happened before middle-earth's
@@ -330,7 +330,7 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
 
     main_files = os.path.join(str(tmpdir), "main-files")
     os.makedirs(main_files)
-    with open(os.path.join(main_files, "README"), "w") as f:
+    with open(os.path.join(main_files, "README"), "w", encoding="utf-8") as f:
         f.write("TEST\n")
     main_repodir = os.path.join(str(tmpdir), "main-upstream")
     main_repo = create_repo("git", main_repodir)
@@ -408,7 +408,7 @@ def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
 
     main_files = os.path.join(str(tmpdir), "main-files")
     os.makedirs(main_files)
-    with open(os.path.join(main_files, "README"), "w") as f:
+    with open(os.path.join(main_files, "README"), "w", encoding="utf-8") as f:
         f.write("TEST\n")
     upstream_main_repodir = os.path.join(str(tmpdir), "main-upstream")
     upstream_main_repo = create_repo("git", upstream_main_repodir)

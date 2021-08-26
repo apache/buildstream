@@ -461,7 +461,7 @@ class _GitMirror(SourceFetcher):
                         cwd=fullpath,
                     )
 
-            with open(os.path.join(fullpath, ".git", "shallow"), "w") as shallow_file:
+            with open(os.path.join(fullpath, ".git", "shallow"), "w", encoding="utf-8") as shallow_file:
                 for rev in shallow:
                     shallow_file.write("{}\n".format(rev))
 
@@ -490,7 +490,7 @@ class _GitMirror(SourceFetcher):
                         cwd=fullpath,
                     )
 
-            with open(os.path.join(fullpath, ".git", "HEAD"), "w") as head:
+            with open(os.path.join(fullpath, ".git", "HEAD"), "w", encoding="utf-8") as head:
                 self.source.call(
                     [self.source.host_git, "rev-parse", self.ref],
                     stdout=head,

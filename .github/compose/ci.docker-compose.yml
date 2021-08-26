@@ -2,7 +2,7 @@ version: '3.4'
 
 x-tests-template: &tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${CI_IMAGE_VERSION:-latest}
-    command: tox -vvvvv -- --color=yes --integration -n 4
+    command: tox -vvvvv -- --color=yes --integration
     environment:
       TOXENV: ${CI_TOXENV_ALL}
 
@@ -45,12 +45,6 @@ services:
   fedora-missing-deps:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:minimal-${CI_IMAGE_VERSION:-latest}
-
-  # Ensure that tests also pass without `--develop` flag
-  no-usedevelop:
-    <<: *tests-template
-    environment:
-      TOXENV: py36-nocover,py37-nocover,py38-nocover
 
   # Test the master version of external plugins
   plugins-master:
@@ -105,7 +99,7 @@ services:
 
   lint:
     <<: *tests-template
-    command: tox -e lint
+    command: tox -e lint,format-check
 
   mypy:
     <<: *tests-template

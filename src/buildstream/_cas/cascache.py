@@ -320,7 +320,7 @@ class CASCache:
             batch.add(digest)
             batch.send()
 
-        return open(objpath, mode=mode)
+        return open(objpath, mode=mode)  # pylint: disable=consider-using-with,unspecified-encoding
 
     # add_object():
     #
@@ -475,7 +475,7 @@ class CASCache:
         else:
             instance_name = ""
 
-        missing_blobs = dict()
+        missing_blobs = {}
         # Limit size of FindMissingBlobs request
         for required_blobs_group in _grouper(iter(blobs), 512):
             request = remote_execution_pb2.FindMissingBlobsRequest(instance_name=instance_name)

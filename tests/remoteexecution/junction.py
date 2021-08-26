@@ -57,10 +57,10 @@ def test_junction_build_remote(cli, tmpdir, datafiles):
 
     # ensure that the correct project directory is also listed in the junction
     subproject_conf = os.path.join(subproject_path, "project.conf")
-    with open(subproject_conf) as f:
+    with open(subproject_conf, encoding="utf-8") as f:
         config = f.read()
     config = config.format(project_dir=subproject_path)
-    with open(subproject_conf, "w") as f:
+    with open(subproject_conf, "w", encoding="utf-8") as f:
         f.write(config)
 
     # Create a trackable element to depend on the cross junction element,

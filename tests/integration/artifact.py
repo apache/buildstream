@@ -209,7 +209,7 @@ def test_preserve_environment(datafiles, cli):
     #
     filename = os.path.join(checkout, "etc", "test.conf")
     assert os.path.exists(filename)
-    with open(filename, "r") as f:
+    with open(filename, "r", encoding="utf-8") as f:
         data = f.read()
         data = data.strip()
         assert data == "pony"

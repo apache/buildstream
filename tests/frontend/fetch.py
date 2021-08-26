@@ -46,7 +46,7 @@ def test_fetch_deps(cli, datafiles, deps, expected_states):
 
     # Assert that none of the sources are cached
     states = cli.get_element_states(project, [target, build_dep, runtime_dep])
-    assert all([state == "fetch needed" for state in states.values()])
+    assert all(state == "fetch needed" for state in states.values())
 
     # Now fetch the specified sources
     result = cli.run(project=project, args=["source", "fetch", "--deps", deps, target])

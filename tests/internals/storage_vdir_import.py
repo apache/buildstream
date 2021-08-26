@@ -68,7 +68,7 @@ def generate_import_root(rootdir, filelist):
             (dirnames, filename) = os.path.split(path)
             os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
             fullpath = os.path.join(rootdir, dirnames, filename)
-            with open(fullpath, "wt") as f:
+            with open(fullpath, "wt", encoding="utf-8") as f:
                 f.write(content)
             # set file mtime to arbitrary
             _set_file_mtime(fullpath, _parse_timestamp(TIMESTAMP))
@@ -103,7 +103,7 @@ def generate_random_root(rootno, directory):
             os.makedirs(target)
             locations.append(os.path.join(location, thingname))
         elif thing == "file":
-            with open(target, "wt") as f:
+            with open(target, "wt", encoding="utf-8") as f:
                 f.write("This is node {}\n".format(i))
             _set_file_mtime(target, _parse_timestamp(TIMESTAMP))
         elif thing == "link":
@@ -121,7 +121,7 @@ def generate_random_root(rootno, directory):
 
 
 def file_contents(path):
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         result = f.read()
     return result
 
@@ -306,7 +306,7 @@ def test_descend(tmpdir):
         d.import_files(test_dir)
         digest = d.descend("a", "l").index["g"].get_digest()
 
-        with open(cas_cache.objpath(digest)) as fp:
+        with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
         assert Content_to_check == content
     finally:
@@ -363,7 +363,7 @@ def test_relative_symlink(tmpdir):
         d.import_files(test_dir)
 
         digest = d.descend("a", "l", follow_symlinks=True).index["file"].get_digest()
-        with open(cas_cache.objpath(digest)) as fp:
+        with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
         assert Content_to_check == content
     finally:
@@ -391,7 +391,7 @@ def test_abs_symlink(tmpdir):
 
         digest = d.descend("a", "l", follow_symlinks=True).index["file"].get_digest()
 
-        with open(cas_cache.objpath(digest)) as fp:
+        with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
         assert Content_to_check == content
     finally:

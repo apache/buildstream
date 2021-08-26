@@ -25,7 +25,7 @@ def test_rebuild(datafiles, cli, strict):
     result.assert_success()
 
     # Modify base import
-    with open(os.path.join(project, "files", "dev-files", "usr", "include", "new.h"), "w") as f:
+    with open(os.path.join(project, "files", "dev-files", "usr", "include", "new.h"), "w", encoding="utf-8") as f:
         f.write("#define NEW")
 
     # Rebuild base import and build top-level rebuild-target.bst
@@ -59,7 +59,7 @@ def test_modify_and_revert(datafiles, cli, strict):
 
     # Modify dependency
     new_header_path = os.path.join(project, "files", "dev-files", "usr", "include", "new.h")
-    with open(new_header_path, "w") as f:
+    with open(new_header_path, "w", encoding="utf-8") as f:
         f.write("#define NEW")
 
     # Trigger rebuild. This will also rebuild the unmodified target as this

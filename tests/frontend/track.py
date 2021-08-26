@@ -88,10 +88,10 @@ def test_track_optional(cli, tmpdir, datafiles, ref_storage):
     repo.add_commit()
 
     # Substitute the {repo} for the git repo we created
-    with open(element_path) as f:
+    with open(element_path, encoding="utf-8") as f:
         target_bst = f.read()
     target_bst = target_bst.format(repo=repo.repo)
-    with open(element_path, "w") as f:
+    with open(element_path, "w", encoding="utf-8") as f:
         f.write(target_bst)
 
     # First track for both options
@@ -151,7 +151,7 @@ def test_track_deps(cli, datafiles, deps, expected_states):
 
     # Assert that none of the sources have a reference
     states = cli.get_element_states(project, [target, build_dep, runtime_dep])
-    assert all([state == "no reference" for state in states.values()])
+    assert all(state == "no reference" for state in states.values())
 
     # Now track the specified sources
     result = cli.run(project=project, args=["source", "track", "--deps", deps, target])

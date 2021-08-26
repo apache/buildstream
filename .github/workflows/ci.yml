@@ -50,7 +50,6 @@ jobs:
           - ubuntu-18.04
           - centos-7.7.1908
           - fedora-missing-deps
-          - no-usedevelop
           - lint
           - mypy
 
@@ -65,16 +64,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Give `testuser` ownership of the source directory
-        run: sudo chown -R 1000:1000 ${GITHUB_WORKSPACE}
-
       - name: Run tests with Docker Compose
         run: |
-          docker-compose \
-            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.docker-compose.yml \
-            run \
-            ${{ matrix.test-name }}
+          ${GITHUB_WORKSPACE}/.github/run-ci.sh ${{ matrix.test-name }}
 
   # Matrix of tests which run against remote services which we bring up adjacently
   service-tests:
@@ -98,33 +90,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Give `testuser` ownership of the source directory
-        run: sudo chown -R 1000:1000 ${GITHUB_WORKSPACE}
-
       - name: Bring up the RE cluster
         run: |
-          docker-compose \
-            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.${{ matrix.test-name }}.yml \
-            up --detach --renew-anon-volumes --remove-orphans
-
-      - name: Run the remote execution tests
-        run: |
-          docker-compose \
-            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.docker-compose.yml run ${{ matrix.test-name }}
-
-      - name: Bring down the RE cluster
-        run: |
-          docker-compose \
-            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.${{ matrix.test-name }}.yml stop
-          docker-compose \
-            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.${{ matrix.test-name }}.yml logs
-          docker-compose \
-            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.${{ matrix.test-name }}.yml down
+          ${GITHUB_WORKSPACE}/.github/run-ci.sh --service ${{ matrix.test-name }}
 
   docs:
     runs-on: ubuntu-20.04

@@ -744,7 +744,7 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
     repofiles = os.path.join(str(tmpdir), "repofiles")
     os.makedirs(repofiles, exist_ok=True)
     file0 = os.path.join(repofiles, "file0")
-    with open(file0, "w") as f:
+    with open(file0, "w", encoding="utf-8") as f:
         f.write("test\n")
 
     repo = create_repo("git", str(tmpdir))
@@ -759,13 +759,13 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
     tag("uselesstag")
 
     file1 = os.path.join(str(tmpdir), "file1")
-    with open(file1, "w") as f:
+    with open(file1, "w", encoding="utf-8") as f:
         f.write("test\n")
     repo.add_file(file1)
     tag("tag1")
 
     file2 = os.path.join(str(tmpdir), "file2")
-    with open(file2, "w") as f:
+    with open(file2, "w", encoding="utf-8") as f:
         f.write("test\n")
     repo.branch("branch2")
     repo.add_file(file2)
@@ -773,7 +773,7 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
 
     repo.checkout("master")
     file3 = os.path.join(str(tmpdir), "file3")
-    with open(file3, "w") as f:
+    with open(file3, "w", encoding="utf-8") as f:
         f.write("test\n")
     repo.add_file(file3)
 
@@ -854,7 +854,7 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
     repofiles = os.path.join(str(tmpdir), "repofiles")
     os.makedirs(repofiles, exist_ok=True)
     file0 = os.path.join(repofiles, "file0")
-    with open(file0, "w") as f:
+    with open(file0, "w", encoding="utf-8") as f:
         f.write("test\n")
 
     repo = create_repo("git", str(tmpdir))
@@ -869,19 +869,19 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
     tag("uselesstag")
 
     file1 = os.path.join(str(tmpdir), "file1")
-    with open(file1, "w") as f:
+    with open(file1, "w", encoding="utf-8") as f:
         f.write("test\n")
     repo.add_file(file1)
 
     file2 = os.path.join(str(tmpdir), "file2")
-    with open(file2, "w") as f:
+    with open(file2, "w", encoding="utf-8") as f:
         f.write("test\n")
     repo.branch("branch2")
     repo.add_file(file2)
 
     repo.checkout("master")
     file3 = os.path.join(str(tmpdir), "file3")
-    with open(file3, "w") as f:
+    with open(file3, "w", encoding="utf-8") as f:
         f.write("test\n")
     repo.add_file(file3)
 
@@ -961,32 +961,32 @@ def test_git_describe_relevant_history(cli, tmpdir, datafiles):
     repofiles = os.path.join(str(tmpdir), "repofiles")
     os.makedirs(repofiles, exist_ok=True)
     file0 = os.path.join(repofiles, "file0")
-    with open(file0, "w") as f:
+    with open(file0, "w", encoding="utf-8") as f:
         f.write("test\n")
 
     repo = create_repo("git", str(tmpdir))
     repo.create(repofiles)
 
     file1 = os.path.join(str(tmpdir), "file1")
-    with open(file1, "w") as f:
+    with open(file1, "w", encoding="utf-8") as f:
         f.write("test\n")
     repo.add_file(file1)
     repo.branch("branch")
     repo.checkout("master")
 
     file2 = os.path.join(str(tmpdir), "file2")
-    with open(file2, "w") as f:
+    with open(file2, "w", encoding="utf-8") as f:
         f.write("test\n")
     repo.add_file(file2)
 
     file3 = os.path.join(str(tmpdir), "file3")
-    with open(file3, "w") as f:
+    with open(file3, "w", encoding="utf-8") as f:
         f.write("test\n")
     branch_boundary = repo.add_file(file3)
 
     repo.checkout("branch")
     file4 = os.path.join(str(tmpdir), "file4")
-    with open(file4, "w") as f:
+    with open(file4, "w", encoding="utf-8") as f:
         f.write("test\n")
     tagged_ref = repo.add_file(file4)
     repo.add_annotated_tag("tag1", "tag1")
@@ -1034,7 +1034,7 @@ def test_default_do_not_track_tags(cli, tmpdir, datafiles):
     repofiles = os.path.join(str(tmpdir), "repofiles")
     os.makedirs(repofiles, exist_ok=True)
     file0 = os.path.join(repofiles, "file0")
-    with open(file0, "w") as f:
+    with open(file0, "w", encoding="utf-8") as f:
         f.write("test\n")
 
     repo = create_repo("git", str(tmpdir))
@@ -1074,7 +1074,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
     repofiles = os.path.join(str(tmpdir), "repofiles")
     os.makedirs(repofiles, exist_ok=True)
     file0 = os.path.join(repofiles, "file0")
-    with open(file0, "w") as f:
+    with open(file0, "w", encoding="utf-8") as f:
         f.write("test\n")
 
     repo = create_repo("git", str(tmpdir))
@@ -1090,7 +1090,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
     repo.add_annotated_tag("tag", "tag")
 
     file1 = os.path.join(repofiles, "file1")
-    with open(file1, "w") as f:
+    with open(file1, "w", encoding="utf-8") as f:
         f.write("test\n")
 
     ref = repo.add_file(file1)
@@ -1112,7 +1112,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
     repo.checkout(top_commit)
 
     file2 = os.path.join(repofiles, "file2")
-    with open(file2, "w") as f:
+    with open(file2, "w", encoding="utf-8") as f:
         f.write("test\n")
 
     new_ref = repo.add_file(file2)

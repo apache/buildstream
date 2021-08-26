@@ -65,7 +65,7 @@ def test_no_project_name(cli, tmpdir):
 def test_project_exists(cli, tmpdir):
     project = str(tmpdir)
     project_path = os.path.join(project, "project.conf")
-    with open(project_path, "w") as f:
+    with open(project_path, "w", encoding="utf-8") as f:
         f.write("name: pony\n")
 
     result = cli.run(args=["init", "--project-name", "foo", project])
@@ -75,7 +75,7 @@ def test_project_exists(cli, tmpdir):
 def test_force_overwrite_project(cli, tmpdir):
     project = str(tmpdir)
     project_path = os.path.join(project, "project.conf")
-    with open(project_path, "w") as f:
+    with open(project_path, "w", encoding="utf-8") as f:
         f.write("name: pony\n")
 
     result = cli.run(args=["init", "--project-name", "foo", "--force", project])

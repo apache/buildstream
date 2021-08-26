@@ -38,7 +38,7 @@ from buildstream.testing.runcli import Cli
 
 def write_expected_key(project_dir, element_name, actual_key):
     expected_file = _element_filename(project_dir, element_name, "expected")
-    with open(expected_file, "w") as f:
+    with open(expected_file, "w", encoding="utf-8") as f:
         f.write(actual_key)
 
 

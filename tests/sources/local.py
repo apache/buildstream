@@ -44,13 +44,13 @@ def test_non_regular_file_or_directory(cli, datafiles):
 def test_invalid_absolute_path(cli, datafiles):
     project = str(datafiles)
 
-    with open(os.path.join(project, "target.bst"), "r") as f:
+    with open(os.path.join(project, "target.bst"), "r", encoding="utf-8") as f:
         old_yaml = f.read()
 
     new_yaml = old_yaml.replace("file.txt", os.path.join(project, "file.txt"))
     assert old_yaml != new_yaml
 
-    with open(os.path.join(project, "target.bst"), "w") as f:
+    with open(os.path.join(project, "target.bst"), "w", encoding="utf-8") as f:
         f.write(new_yaml)
 
     result = cli.run(project=project, args=["show", "target.bst"])
@@ -159,7 +159,7 @@ def test_deterministic_source_umask(cli, tmpdir, datafiles):
     def create_test_file(*path, mode=0o644, content="content\n"):
         path = os.path.join(*path)
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(content)
             os.fchmod(f.fileno(), mode)
 

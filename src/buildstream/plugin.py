@@ -176,7 +176,7 @@ def _background_job_wrapper(result_queue: multiprocessing.Queue, target: Callabl
             # Here we send the result again, just in case it was a PickleError
             # in which case the same exception would be thrown down
             result_queue.put((exc, result))
-        except pickle.PickleError as exc:
+        except pickle.PickleError:
             result_queue.put((traceback.format_exc(), None))
 
 
@@ -331,7 +331,7 @@ class Plugin:
 
         # Infer the kind identifier
         modulename = type(self).__module__
-        self.__kind = modulename.split(".")[-1]
+        self.__kind = modulename.rsplit(".", maxsplit=1)[-1]
         self.debug("Created: {}".format(self))
 
     def __del__(self):
@@ -800,7 +800,7 @@ class Plugin:
     def _output_file(self):
         log = self.__context.messenger.get_log_handle()
         if log is None:
-            with open(os.devnull, "w") as output:
+            with open(os.devnull, "w", encoding="utf-8") as output:
                 yield output
         else:
             yield log

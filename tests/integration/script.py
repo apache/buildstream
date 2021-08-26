@@ -52,7 +52,7 @@ def test_script(cli, datafiles):
     res = cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
     assert res.exit_code == 0
 
-    with open(os.path.join(checkout, "test")) as f:
+    with open(os.path.join(checkout, "test"), encoding="utf-8") as f:
         text = f.read()
 
     assert text == "Hi\n"
@@ -87,7 +87,7 @@ def test_script_root(cli, datafiles):
     res = cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
     assert res.exit_code == 0
 
-    with open(os.path.join(checkout, "test")) as f:
+    with open(os.path.join(checkout, "test"), encoding="utf-8") as f:
         text = f.read()
 
     assert text == "I can write to root\n"
@@ -140,7 +140,7 @@ def test_script_cwd(cli, datafiles):
     res = cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
     assert res.exit_code == 0
 
-    with open(os.path.join(checkout, "test")) as f:
+    with open(os.path.join(checkout, "test"), encoding="utf-8") as f:
         text = f.read()
 
     assert text == "test\n"
@@ -159,7 +159,7 @@ def test_script_layout(cli, datafiles):
     cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
     assert res.exit_code == 0
 
-    with open(os.path.join(checkout, "test")) as f:
+    with open(os.path.join(checkout, "test"), encoding="utf-8") as f:
         text = f.read()
 
     assert text == "Hi\n"
@@ -186,7 +186,7 @@ def test_regression_cache_corruption(cli, datafiles):
     )
     assert res.exit_code == 0
 
-    with open(os.path.join(checkout_original, "canary")) as f:
+    with open(os.path.join(checkout_original, "canary"), encoding="utf-8") as f:
         assert f.read() == "alive\n"
 
     res = cli.run(project=project, args=["build", element_name])
@@ -195,7 +195,7 @@ def test_regression_cache_corruption(cli, datafiles):
     res = cli.run(project=project, args=["artifact", "checkout", canary_element_name, "--directory", checkout_after])
     assert res.exit_code == 0
 
-    with open(os.path.join(checkout_after, "canary")) as f:
+    with open(os.path.join(checkout_after, "canary"), encoding="utf-8") as f:
         assert f.read() == "alive\n"
 
 
@@ -230,7 +230,7 @@ def test_regression_cache_corruption_2(cli, datafiles):
     )
     assert res.exit_code == 0
 
-    with open(os.path.join(checkout_original, "canary")) as f:
+    with open(os.path.join(checkout_original, "canary"), encoding="utf-8") as f:
         assert f.read() == "alive\n"
 
     res = cli.run(project=project, args=["build", element_name])
@@ -239,5 +239,5 @@ def test_regression_cache_corruption_2(cli, datafiles):
     res = cli.run(project=project, args=["artifact", "checkout", canary_element_name, "--directory", checkout_after])
     assert res.exit_code == 0
 
-    with open(os.path.join(checkout_after, "canary")) as f:
+    with open(os.path.join(checkout_after, "canary"), encoding="utf-8") as f:
         assert f.read() == "alive\n"

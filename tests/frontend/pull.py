@@ -142,7 +142,9 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
         cli.configure({"artifacts": {"servers": [{"url": bad_share.repo, "push": True},]}})
 
         # Now try `bst artifact push` to the good_share.
-        result = cli.run(project=project, args=["artifact", "push", "target.bst", "--artifact-remote", good_share.repo])
+        result = cli.run(
+            project=project, args=["artifact", "push", "target.bst", "--artifact-remote", good_share.repo]
+        )
         result.assert_success()
 
         # Assert that all the artifacts are in the share we pushed
@@ -158,7 +160,9 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
         artifactdir = os.path.join(cli.directory, "artifacts")
         shutil.rmtree(artifactdir)
 
-        result = cli.run(project=project, args=["artifact", "pull", "target.bst", "--artifact-remote", good_share.repo])
+        result = cli.run(
+            project=project, args=["artifact", "pull", "target.bst", "--artifact-remote", good_share.repo]
+        )
         result.assert_success()
 
         # And assert that it's again in the local cache, without having built
@@ -200,7 +204,7 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
             assert cli.get_element_state(project, element_name) != "cached"
 
         # Add a file to force change in strict cache key of import-bin.bst
-        with open(os.path.join(str(project), "files", "bin-files", "usr", "bin", "world"), "w") as f:
+        with open(os.path.join(str(project), "files", "bin-files", "usr", "bin", "world"), "w", encoding="utf-8") as f:
             f.write("world")
 
         # Assert that the workspaced element requires a rebuild
@@ -448,7 +452,7 @@ def test_pull_access_rights(cli, tmpdir, datafiles):
     # We need a big file that does not go into a batch to test a different
     # code path
     os.makedirs(os.path.join(project, "files/dev-files/usr/share"), exist_ok=True)
-    with open(os.path.join(project, "files/dev-files/usr/share/big-file"), "w") as f:
+    with open(os.path.join(project, "files/dev-files/usr/share/big-file"), "w", encoding="utf-8") as f:
         buf = " " * 4096
         for _ in range(1024):
             f.write(buf)

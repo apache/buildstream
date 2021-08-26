@@ -15,7 +15,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 def create_test_file(*path, mode=0o644, content="content\n"):
     path = os.path.join(*path)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(content)
         os.fchmod(f.fileno(), mode)
 
@@ -65,7 +65,7 @@ def test_deterministic_source_local(cli, tmpdir, datafiles):
             result = cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkoutdir])
             result.assert_success()
 
-            with open(os.path.join(checkoutdir, "ls-l"), "r") as f:
+            with open(os.path.join(checkoutdir, "ls-l"), "r", encoding="utf-8") as f:
                 for line in f.readlines():
                     test_values.append(line.split()[0] + " " + line.split()[-1])
                 return test_values

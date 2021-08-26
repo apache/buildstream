@@ -223,7 +223,7 @@ def test_element_path_project_path_contains_symlinks(cli, datafiles, tmpdir):
     linked_project = os.path.join(str(tmpdir), "linked")
     os.symlink(real_project, linked_project)
     os.makedirs(os.path.join(real_project, "elements"), exist_ok=True)
-    with open(os.path.join(real_project, "elements", "element.bst"), "w") as f:
+    with open(os.path.join(real_project, "elements", "element.bst"), "w", encoding="utf-8") as f:
         f.write("kind: manual\n")
     result = cli.run(project=linked_project, args=["show", "element.bst"])
     result.assert_success()

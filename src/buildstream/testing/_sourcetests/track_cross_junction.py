@@ -49,7 +49,7 @@ def generate_import_element(tmpdir, kind, project, name):
     files = str(tmpdir.join("imported_files_{}".format(name)))
     os.makedirs(files)
 
-    with open(os.path.join(files, "{}.txt".format(name)), "w") as f:
+    with open(os.path.join(files, "{}.txt".format(name)), "w", encoding="utf-8") as f:
         f.write(name)
 
     repo = create_repo(kind, str(tmpdir.join("element_{}_repo".format(name))))

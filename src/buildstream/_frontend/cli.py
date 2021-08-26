@@ -1542,7 +1542,7 @@ def artifact_log(app, artifacts, out):
         if not out:
             try:
                 for log in list(artifact_logs.values()):
-                    with open(log[0], "r") as f:
+                    with open(log[0], "r", encoding="utf-8") as f:
                         data = f.read()
                     click.echo_via_pager(data)
             except (OSError, FileNotFoundError):

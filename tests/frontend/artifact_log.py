@@ -94,11 +94,11 @@ def test_artifact_log_files(cli, datafiles):
 
     # Ensure the file contains the logs by checking for the LOG line
     pattern = r"\[..:..:..\] LOG     \[.*\] target.bst"
-    with open(target, "r") as f:
+    with open(target, "r", encoding="utf-8") as f:
         data = f.read()
         assert len(re.findall(pattern, data, re.MULTILINE)) > 0
 
     pattern = r"\[..:..:..\] LOG     \[.*\] import-bin.bst"
-    with open(import_bin, "r") as f:
+    with open(import_bin, "r", encoding="utf-8") as f:
         data = f.read()
         assert len(re.findall(pattern, data, re.MULTILINE)) > 0
