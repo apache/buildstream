@@ -4,6 +4,7 @@ import shutil
 import itertools
 import pytest
 from tests.testutils import cli, generate_junction
+from buildstream.types import CoreWarnings
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
@@ -423,3 +424,19 @@ def test_strict_dependencies(cli, datafiles, target, expected_state):
     states = cli.get_element_states(project, target)
     assert states['base.bst'] == 'buildable'
     assert states[target] == expected_state
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("fatal", [True, False], ids=["fatal", "non-fatal"])
+def test_unaliased_url(cli, tmpdir, datafiles, fatal):
+    project = str(datafiles)
+    if fatal:
+        configure_project(project, {"fatal-warnings": [CoreWarnings.UNALIASED_URL]})
+
+    result = cli.run(project=project, silent=True, args=["show", "unaliased-tar.bst"])
+
+    if fatal:
+        result.assert_main_error(ErrorDomain.PLUGIN, CoreWarnings.UNALIASED_URL)
+    else:
+        result.assert_success()
+        assert "WARNING [unaliased-url]" in result.stderr
