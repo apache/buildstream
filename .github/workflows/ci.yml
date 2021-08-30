@@ -1,10 +1,7 @@
 name: PR Checks
 
-# Run the CI if branches are pushed locally, allowing us to
-# run CI without the need of creating a pull request.
-#
-# Run the CI on pull requests only if they are from forked
-# repositories.
+# Pre-merge CI to run on branches except for our gh-pages publishing
+# branch and the master branch.
 #
 on:
   push:
@@ -12,14 +9,12 @@ on:
     - gh-pages
     - master
   pull_request:
-    types: [assigned, opened, synchronize, reopened]
-    branches:
-      # Branches from forks have the form 'user:branch-name' so we only run
-      # this job on pull_request events for branches that look like fork
-      # branches. Without this we would end up running this job twice for non
-      # forked PRs, once for the push and then once for opening the PR.
-    - '**:**'
 
+# Use the concurrency feature to ensure we don't run redundant workflows
+#
+concurrency:
+  group: ${{ github.repository }}-${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
 
 # Left to-do:
 # - coverage
