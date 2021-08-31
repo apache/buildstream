@@ -108,9 +108,3 @@ jobs:
             --file ${GITHUB_WORKSPACE}/.github/compose/ci.docker-compose.yml \
             run \
             docs
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: docs
-          path: doc/build/html
