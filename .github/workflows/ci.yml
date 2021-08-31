@@ -8,7 +8,12 @@ on:
     branches-ignore:
     - gh-pages
     - master
+    paths:
+      - '**'
   pull_request:
+    paths:
+      - '**'
+
 
 # Use the concurrency feature to ensure we don't run redundant workflows
 #
