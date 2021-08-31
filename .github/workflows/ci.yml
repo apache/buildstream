@@ -5,6 +5,9 @@ name: PR Checks
 #
 on:
   push:
+    branches-ignore:
+    - gh-pages
+    - master
   pull_request:
 
 # Use the concurrency feature to ensure we don't run redundant workflows
