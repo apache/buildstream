@@ -12,6 +12,5 @@ maintained and work as expected.
 .. toctree::
    :maxdepth: 1
 
-   examples/flatpak-autotools
    examples/tar-mirror
    examples/git-mirror
