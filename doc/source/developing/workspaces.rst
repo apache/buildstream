@@ -70,32 +70,40 @@ This gives us the new message we changed in hello.c.
 From this point we have several options. If the source is under version control
 we can commit our changes and push them to the remote repository.
 
-Making bigger changes
----------------------
 
-The first time you build with your workspace BuildStream behaves very similarly to
-normal. However for subsequent builds it does not run the configuration commands and
-only runs the build commands. This can result in significant speed ups as the configuration
-commands can be slow (maybe 20+ minutes for a moderate sized element)
+Incremental builds
+------------------
+Once you have opened up your workspace, the workspace build directory will be
+reused for subsequent builds, which should improve your edit/compile/test cycle
+time when working with an open workspace.
 
-Sometimes you do need to rerun the configuration command for a open workspace, this
-can be done by resetting the workspace, and then running a build. However this will
-cause all of your incremental work to be lost. In this case running a soft reset will
-reset the trigger to run the configuration commands but will not change any files in you
-workspace.
+In order to optimize incremental builds, BuildStream treats build configure steps
+separately from the main build steps, and will only call the
+:func:`Element.prepare() <buildstream.element.Element.prepare>` method on
+an element plugin the first time it gets built. This avoids needlessly rebuilding
+objects due to header files and such being unconditionally recreated by configuration
+scripts (such as the typical ``./configure`` script which is called for ``autotools``
+elements for instance).
 
-Reasons to soft reset a workspace include:
-  * changing the configuration command of a element.
-  * adding a new source that the configure command will spot and enable more code.
+A caveat of this optimization however is that changes you might make to the
+configuration scripts will not be taken into account by default on the next
+incremental build. A forced reconfiguration can also be required in some cases
+where build scripts automatically detect sources in it's configuration phase,
+so newly added sources you add might be ignored.
 
-The soft reset can be performed by:
+In order to force the configuration step to be called again on the next build,
+you can use :ref:`bst workspace reset --soft <invoking_workspace_reset>`, like so:
+
+In these cases, you can perform a hard reset on the workspace using
+:ref:`bst workspace reset <invoking_workspace_reset>`, like so:
 
 .. raw:: html
    :file: ../sessions/developing-soft-reset.html
 
-Then the next build will include the configuration commands. You must reset the workspace
-every time you wish to trigger the configuration commands as only the first build
-after the reset will run them.
+This will ensure that the next time you run the build, BuildStream will forcefully
+rerun the :func:`Element.prepare() <buildstream.element.Element.prepare>` method
+and cause the configuration step to occur again.
+
 
 Closing your workspace
 ----------------------
