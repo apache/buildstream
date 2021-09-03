@@ -19,6 +19,8 @@
 import os
 import sys
 import curses
+import shutil
+
 import click
 
 # Import a widget internal for formatting time codes
@@ -72,7 +74,7 @@ class Status():
                                      success_profile, error_profile,
                                      stream)
 
-        self._term_width, _ = click.get_terminal_size()
+        self._term_width, _ = shutil.get_terminal_size()
         self._alloc_lines = 0
         self._alloc_columns = None
         self._line_length = 0
