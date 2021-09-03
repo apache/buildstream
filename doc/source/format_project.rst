@@ -600,10 +600,8 @@ dictionary.
        description: Whether to enable debugging
        default: False
 
-Users can configure those options when invoking BuildStream with the
-``--option`` argument::
-
-    $ bst --option debug True ...
+Project options can be specified on the command line using
+:ref:`bst --option ... <invoking_bst>`
 
 .. note::
 
