@@ -246,7 +246,7 @@ class Status():
         return term_caps
 
     def _check_term_width(self):
-        term_width, _ = click.get_terminal_size()
+        term_width, _ = shutil.get_terminal_size()
         if self._term_width != term_width:
             self._term_width = term_width
             self._need_alloc = True
