@@ -424,7 +424,7 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement set_ref()".format(self.get_kind()))
 
-    def track(self, **kwargs) -> SourceRef:
+    def track(self, *, previous_sources_dir: str = None) -> SourceRef:
         """Resolve a new ref from the plugin's track option
 
         Args:
@@ -452,7 +452,7 @@ class Source(Plugin):
         # Allow a non implementation
         return None
 
-    def fetch(self, **kwargs) -> None:
+    def fetch(self, *, previous_sources_dir: str = None) -> None:
         """Fetch remote sources and mirror them locally, ensuring at least
         that the specific reference is cached locally.
 
