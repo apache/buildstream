@@ -830,8 +830,8 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
 )
 def test_list_unsupported_workspace(cli, datafiles, workspace_cfg):
     project = str(datafiles)
-    os.makedirs(os.path.join(project, ".bst"))
-    workspace_config_path = os.path.join(project, ".bst", "workspaces.yml")
+    os.makedirs(os.path.join(project, ".bst2"))
+    workspace_config_path = os.path.join(project, ".bst2", "workspaces.yml")
 
     _yaml.roundtrip_dump(workspace_cfg, workspace_config_path)
 

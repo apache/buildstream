@@ -317,7 +317,7 @@ class Workspaces:
 
         # A project without a directory can happen
         if toplevel_project.directory:
-            self._bst_directory = os.path.join(toplevel_project.directory, ".bst")
+            self._bst_directory = os.path.join(toplevel_project.directory, ".bst2")
             self._workspaces = self._load_config()
         else:
             self._bst_directory = None
