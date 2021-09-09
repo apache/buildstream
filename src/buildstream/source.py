@@ -414,13 +414,29 @@ class Source(Plugin):
            node: The same dictionary which was previously passed
                 to :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
 
-        See :func:`Source.get_ref() <buildstream.source.Source.get_ref>`
-        for a discussion on the *ref* parameter.
+        The implementor must update the *node* parameter to reflect the new *ref*,
+        and it should store the passed *ref* so that it will be returned in any
+        later calls to :func:`Source.get_ref() <buildstream.source.Source.get_ref>`.
 
-        .. note::
+        The passed *ref* parameter is guaranteed to either be a value which has
+        been previously retrieved by the :func:`Source.get_ref() <buildstream.source.Source.get_ref>`
+        method on the same plugin, or ``None``.
 
-           Implementors must support the special ``None`` value here to
-           allow clearing any existing ref.
+        **Example:**
+
+        .. code:: python
+
+           # Implementation of Source.set_ref()
+           #
+           def set_ref(self, ref, node):
+
+               # Update internal state of the ref
+               self.ref = ref
+
+               # Update the passed node so that we will read the new ref
+               # next time this source plugin is configured with this node.
+               #
+               node["ref"] = self.ref
         """
         raise ImplError("Source plugin '{}' does not implement set_ref()".format(self.get_kind()))
 
