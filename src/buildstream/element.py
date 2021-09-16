@@ -824,7 +824,7 @@ class Element(Plugin):
         """ Configure command batching across prepare() and assemble()
 
         Args:
-           flags: The sandbox flags for the command batch
+           flags: The :class:`.SandboxFlags` for the command batch
            collect: An optional directory containing partial install contents
                     on command failure.
 
