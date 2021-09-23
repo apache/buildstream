@@ -83,7 +83,7 @@ from contextlib import contextmanager, suppress
 from functools import partial
 from itertools import chain
 import string
-from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Set, Sequence
+from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, Iterable, List, Optional, Set, Sequence
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 from ruamel import yaml
@@ -328,7 +328,7 @@ class Element(Plugin):
     #############################################################
     #                      Abstract Methods                     #
     #############################################################
-    def configure_dependencies(self, dependencies: List[DependencyConfiguration]) -> None:
+    def configure_dependencies(self, dependencies: Iterable[DependencyConfiguration]) -> None:
         """Configure the Element with regards to it's build dependencies
 
         Elements can use this method to parse custom configuration which define their
@@ -824,7 +824,7 @@ class Element(Plugin):
         """ Configure command batching across prepare() and assemble()
 
         Args:
-           flags: The sandbox flags for the command batch
+           flags: The :class:`.SandboxFlags` for the command batch
            collect: An optional directory containing partial install contents
                     on command failure.
 
