@@ -5,7 +5,6 @@ import os
 import pytest
 
 from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import generate_project
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 
@@ -37,9 +36,6 @@ DATA_DIR = os.path.join(TOP_DIR, "project")
 )
 def test_fetch_deps(cli, datafiles, deps, expected_states):
     project = str(datafiles)
-    generate_project(project)
-    generate_project(project, {"aliases": {"project-root": "file:///" + project}})
-
     target = "bananas.bst"
     build_dep = "apples.bst"
     runtime_dep = "oranges.bst"
