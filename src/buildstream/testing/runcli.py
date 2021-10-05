@@ -463,7 +463,7 @@ class Cli:
     # Fetch the elements that would be in the pipeline with the given
     # arguments.
     #
-    def get_pipeline(self, project, elements, except_=None, scope="plan"):
+    def get_pipeline(self, project, elements, except_=None, scope="all"):
         if except_ is None:
             except_ = []
 

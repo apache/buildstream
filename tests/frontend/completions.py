@@ -156,8 +156,8 @@ def test_options(cli, cmd, word_idx, expected):
     [
         ("bst --on-error ", 2, ["continue ", "quit ", "terminate "]),
         ("bst --cache-buildtrees ", 2, ["always ", "auto ", "never "]),
-        ("bst show --deps ", 3, ["all ", "build ", "none ", "plan ", "run "]),
-        ("bst show --deps=", 2, ["all ", "build ", "none ", "plan ", "run "]),
+        ("bst show --deps ", 3, ["all ", "build ", "none ", "run "]),
+        ("bst show --deps=", 2, ["all ", "build ", "none ", "run "]),
         ("bst show --deps b", 3, ["build "]),
         ("bst show --deps=b", 2, ["build "]),
         ("bst show --deps r", 3, ["run "]),

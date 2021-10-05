@@ -423,10 +423,10 @@ class Context:
         self.build_max_jobs = build.get_int("max-jobs")
 
         dependencies = build.get_str("dependencies")
-        if dependencies not in ["plan", "all"]:
+        if dependencies not in ["none", "all"]:
             provenance = build.get_scalar("dependencies").get_provenance()
             raise LoadError(
-                "{}: Invalid value for 'dependencies'. Choose 'plan' or 'all'.".format(provenance),
+                "{}: Invalid value for 'dependencies'. Choose 'none' or 'all'.".format(provenance),
                 LoadErrorReason.INVALID_DATA,
             )
         self.build_dependencies = _PipelineSelection(dependencies)

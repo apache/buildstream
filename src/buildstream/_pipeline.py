@@ -71,11 +71,14 @@ def dependencies(targets: List[Element], scope: int, *, recurse: bool = True) ->
 #    targets: The target Elements
 #    mode: A value from PipelineSelection enumeration
 #    silent: Whether to silence messages
+#    depth_sort: Whether to sort the elements by depth (for an optimal build plan)
 #
 # Returns:
 #    A list of Elements appropriate for the specified selection mode
 #
-def get_selection(context: Context, targets: List[Element], mode: str, *, silent: bool = True) -> List[Element]:
+def get_selection(
+    context: Context, targets: List[Element], mode: str, *, silent: bool = True, depth_sort: bool = False
+) -> List[Element]:
     def redirect_and_log() -> List[Element]:
         # Redirect and log if permitted
         elements: List[Element] = []
@@ -87,22 +90,37 @@ def get_selection(context: Context, targets: List[Element], mode: str, *, silent
                 elements.append(new_elm)
         return elements
 
-    def plan() -> List[Element]:
+    def plan_all() -> List[Element]:
         return _Planner().plan(targets)
 
-    # Work around python not having a switch statement; this is
-    # much clearer than the if/elif/else block we used to have.
-    #
-    # Note that the lambda is necessary so that we don't evaluate
-    # all possible values at run time; that would be slow.
-    return {
-        _PipelineSelection.NONE: lambda: targets,
+    def plan_build() -> List[Element]:
+        build_targets = list(dependencies(targets, _Scope.BUILD, recurse=False))
+        return _Planner().plan(build_targets)
+
+    selection_table = {
         _PipelineSelection.REDIRECT: redirect_and_log,
-        _PipelineSelection.PLAN: plan,
-        _PipelineSelection.ALL: lambda: list(dependencies(targets, _Scope.ALL)),
-        _PipelineSelection.BUILD: lambda: list(dependencies(targets, _Scope.BUILD)),
-        _PipelineSelection.RUN: lambda: list(dependencies(targets, _Scope.RUN)),
-    }[mode]()
+    }
+    if depth_sort:
+        #
+        # Depth sorting is used with `bst build` and assumes a dynamic build planning
+        # mode (Stream() will only mark the toplevel elements as "required", and all
+        # elements will be built on demand).
+        #
+        # In this case, the `none` and `run` selection modes can potentially include
+        # dependencies, and which ones will be dynamically resolved at build time, so
+        # it is essentially equivalent to the `all` selection.
+        #
+        selection_table[_PipelineSelection.NONE] = plan_all
+        selection_table[_PipelineSelection.ALL] = plan_all
+        selection_table[_PipelineSelection.RUN] = plan_all
+        selection_table[_PipelineSelection.BUILD] = plan_build
+    else:
+        selection_table[_PipelineSelection.NONE] = lambda: targets
+        selection_table[_PipelineSelection.ALL] = lambda: list(dependencies(targets, _Scope.ALL))
+        selection_table[_PipelineSelection.RUN] = lambda: list(dependencies(targets, _Scope.RUN))
+        selection_table[_PipelineSelection.BUILD] = lambda: list(dependencies(targets, _Scope.BUILD))
+
+    return selection_table[mode]()
 
 
 # except_elements():

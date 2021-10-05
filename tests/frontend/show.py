@@ -217,12 +217,12 @@ def test_target_is_dependency(cli, datafiles):
     project = str(datafiles)
     elements = ["multiple_targets/dependency/zebry.bst", "multiple_targets/dependency/horsey.bst"]
 
-    args = ["show", "-d", "plan", "-f", "%{name}", *elements]
+    args = ["show", "-d", "all", "-f", "%{name}", *elements]
     result = cli.run(project=project, args=args)
 
     result.assert_success()
 
-    # Get the planned order
+    # Get the order
     names = result.output.splitlines()
     names = [name[len("multiple_targets/dependency/") :] for name in names]
 

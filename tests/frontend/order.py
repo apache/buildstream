@@ -48,12 +48,13 @@ def create_element(project, name, dependencies):
 #
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 @pytest.mark.parametrize(
-    "target,template,expected",
+    "target,template,expected_stage_order,expected_build_order",
     [
         # First simple test
         (
             "3.bst",
             {"0.bst": ["1.bst"], "1.bst": [], "2.bst": ["0.bst"], "3.bst": ["0.bst", "1.bst", "2.bst"]},
+            ["1.bst", "0.bst", "2.bst", "3.bst"],
             ["1.bst", "0.bst", "2.bst", "3.bst"],
         ),
         # A more complicated test with build of build dependencies
@@ -67,12 +68,14 @@ def create_element(project, name, dependencies):
                 "app.bst": [{"filename": "middleware.bst", "type": "build"}],
                 "target.bst": ["a.bst", "base.bst", "middleware.bst", "app.bst", "timezones.bst"],
             },
+            ["a.bst", "base.bst", "middleware.bst", "app.bst", "timezones.bst", "target.bst"],
             ["base.bst", "middleware.bst", "a.bst", "app.bst", "timezones.bst", "target.bst"],
         ),
     ],
+    ids=["simple", "complex"],
 )
 @pytest.mark.parametrize("operation", [("show"), ("fetch"), ("build")])
-def test_order(cli, datafiles, operation, target, template, expected):
+def test_order(cli, datafiles, operation, target, template, expected_stage_order, expected_build_order):
     project = str(datafiles)
 
     # Configure to only allow one fetcher at a time, make it easy to
@@ -87,16 +90,23 @@ def test_order(cli, datafiles, operation, target, template, expected):
 
     # Run test and collect results
     if operation == "show":
-        result = cli.run(args=["show", "--deps", "plan", "--format", "%{name}", target], project=project, silent=True)
+        result = cli.run(args=["show", "--deps", "all", "--format", "%{name}", target], project=project, silent=True)
         result.assert_success()
         results = result.output.splitlines()
     else:
         if operation == "fetch":
-            result = cli.run(args=["source", "fetch", target], project=project, silent=True)
+            result = cli.run(args=["source", "fetch", "--deps", "all", target], project=project, silent=True)
         else:
-            result = cli.run(args=[operation, target], project=project, silent=True)
+            result = cli.run(args=["build", target], project=project, silent=True)
         result.assert_success()
         results = result.get_start_order(operation)
+
+    # When running `bst build`, the elements are depth sorted for optimal processing
+    if operation == "build":
+        expected = expected_build_order
+    else:
+        # Otherwise, we get the usual deterministic staging order
+        expected = expected_stage_order
 
     # Assert the order
     print("Expected order: {}".format(expected))

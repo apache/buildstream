@@ -281,9 +281,6 @@ class _PipelineSelection(FastEnum):
     # As NONE, but redirect elements that are capable of it
     REDIRECT = "redirect"
 
-    # Select elements which must be built for the associated targets to be built
-    PLAN = "plan"
-
     # All dependencies of all targets, including the targets
     ALL = "all"
 

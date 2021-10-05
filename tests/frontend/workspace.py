@@ -1011,7 +1011,7 @@ def test_external_fetch(cli, datafiles, tmpdir_factory, subdir, guess_element):
     assert cli.get_element_state(str(datafiles), depend_element) == "fetch needed"
 
     # Fetch the workspaced element
-    result = cli.run(project=project, args=["-C", call_dir, "source", "fetch", *arg_elm])
+    result = cli.run(project=project, args=["-C", call_dir, "source", "fetch", "--deps", "all", *arg_elm])
     result.assert_success()
 
     # Assert that the depended element has now been fetched
