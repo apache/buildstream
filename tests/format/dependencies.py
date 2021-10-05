@@ -214,27 +214,6 @@ def test_scope_build_of_child(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_no_recurse(cli, datafiles):
-    project = os.path.join(str(datafiles), "dependencies2")
-    elements = ["target.bst"]
-
-    # We abuse the 'plan' scope here to ensure that we call
-    # element.dependencies() with recurse=False - currently, no `bst
-    # show` option does this directly.
-    element_list = cli.get_pipeline(project, elements, scope="plan")
-
-    assert element_list == [
-        "build-build.bst",
-        "run-build.bst",
-        "build.bst",
-        "dep-one.bst",
-        "run.bst",
-        "dep-two.bst",
-        "target.bst",
-    ]
-
-
-@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
     "target", ["merge-separate-lists.bst", "merge-single-list.bst",], ids=["separate-lists", "single-list"],
 )
