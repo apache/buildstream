@@ -75,6 +75,7 @@ class Queue:
         self._ready_queue = []  # Ready elements
         self._done_queue = deque()  # Processed / Skipped elements
         self._max_retries = 0
+        self._queued_elements = 0  # Number of elements queued
 
         self._required_element_check = False  # Whether we should check that elements are required before enqueuing
 
@@ -217,6 +218,10 @@ class Queue:
     # Spawn as many jobs from the ready queue for which resources
     # can be reserved.
     #
+    # Priority is first given to elements which have been assigned a lower
+    # depth (see Element._set_depth()), and then to elements which have
+    # been enqueued earlier.
+    #
     # Returns:
     #     ([Job]): A list of jobs which can be run now
     #
@@ -228,7 +233,7 @@ class Queue:
             if not reserved:
                 break
 
-            _, element = heapq.heappop(self._ready_queue)
+            _, _, element = heapq.heappop(self._ready_queue)
             ready.append(element)
 
         return [
@@ -378,13 +383,15 @@ class Queue:
     #
     def _enqueue_element(self, element):
         status = self.status(element)
+
         if status == QueueStatus.SKIP:
             # Place skipped elements into the done queue immediately
             self._task_group.add_skipped_task()
             self._done_queue.append(element)  # Elements to proceed to the next queue
         elif status == QueueStatus.READY:
             # Push elements which are ready to be processed immediately into the queue
-            heapq.heappush(self._ready_queue, (element._depth, element))
+            heapq.heappush(self._ready_queue, (element._depth, self._queued_elements, element))
+            self._queued_elements += 1
         else:
             # Register a queue specific callback for pending elements
             self.register_pending_element(element)

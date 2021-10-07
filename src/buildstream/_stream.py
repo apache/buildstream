@@ -366,7 +366,7 @@ class Stream:
         self,
         targets: Iterable[str],
         *,
-        selection: str = _PipelineSelection.PLAN,
+        selection: str = _PipelineSelection.NONE,
         ignore_junction_targets: bool = False,
         artifact_remotes: Iterable[RemoteSpec] = (),
         source_remotes: Iterable[RemoteSpec] = (),
@@ -432,7 +432,7 @@ class Stream:
         self,
         targets: Iterable[str],
         *,
-        selection: str = _PipelineSelection.PLAN,
+        selection: str = _PipelineSelection.NONE,
         except_targets: Iterable[str] = (),
         source_remotes: Iterable[RemoteSpec] = (),
         ignore_project_source_remotes: bool = False,
@@ -1471,9 +1471,6 @@ class Stream:
     #    (list of Element): The tracking element selection
     #
     def _load_tracking(self, targets, *, selection=_PipelineSelection.NONE, except_targets=(), cross_junctions=False):
-        # We never want to use a PLAN selection when tracking elements
-        assert selection != _PipelineSelection.PLAN
-
         elements, except_elements, artifacts = self._load_elements_from_targets(
             targets, except_targets, rewritable=True
         )
@@ -1663,18 +1660,31 @@ class Stream:
 
         # Now move on to loading primary selection.
         #
-        selected = _pipeline.get_selection(self._context, self.targets, selection, silent=False)
+        selected = _pipeline.get_selection(
+            self._context, self.targets, selection, silent=False, depth_sort=dynamic_plan
+        )
         selected = _pipeline.except_elements(self.targets, selected, except_elements)
 
-        if selection == _PipelineSelection.PLAN and dynamic_plan:
-            # We use a dynamic build plan, only request artifacts of top-level targets,
-            # others are requested dynamically as needed.
-            # This avoids pulling, fetching, or building unneeded build-only dependencies.
-            for element in elements:
-                element._set_required()
-        else:
-            for element in selected:
-                element._set_required()
+        # Mark the appropriate required elements
+        #
+        required_elements: List[Element] = []
+        if dynamic_plan:
+            #
+            # In a dynamic build plan, we only require the top-level targets and
+            # rely on state changes during processing to determine which elements
+            # must be processed.
+            #
+            if selection == _PipelineSelection.NONE:
+                required_elements = elements
+            elif selection == _PipelineSelection.BUILD:
+                required_elements = list(_pipeline.dependencies(elements, _Scope.BUILD, recurse=False))
+
+        # Without a dynamic build plan, or if `all` selection was made, then everything is required
+        if not required_elements:
+            required_elements = selected
+
+        for element in required_elements:
+            element._set_required()
 
         return selected
 

@@ -4,7 +4,6 @@
 import os
 import sys
 import shutil
-import itertools
 import pytest
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
@@ -213,48 +212,17 @@ def test_show_except(cli, datafiles, targets, exceptions, expected):
         raise AssertionError("Expected elements:\n{}\nInstead received elements:\n{}".format(expected, results))
 
 
-###############################################################
-#                   Testing multiple targets                  #
-###############################################################
-@pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
-def test_parallel_order(cli, datafiles):
-    project = str(datafiles)
-    elements = ["multiple_targets/order/0.bst", "multiple_targets/order/1.bst"]
-
-    args = ["show", "-d", "plan", "-f", "%{name}", *elements]
-    result = cli.run(project=project, args=args)
-
-    result.assert_success()
-
-    # Get the planned order
-    names = result.output.splitlines()
-    names = [name[len("multiple_targets/order/") :] for name in names]
-
-    # Create all possible 'correct' topological orderings
-    orderings = itertools.product(
-        [("5.bst", "6.bst")],
-        itertools.permutations(["4.bst", "7.bst"]),
-        itertools.permutations(["3.bst", "8.bst"]),
-        itertools.permutations(["2.bst", "9.bst"]),
-        itertools.permutations(["0.bst", "1.bst", "run.bst"]),
-    )
-    orderings = [list(itertools.chain.from_iterable(perm)) for perm in orderings]
-
-    # Ensure that our order is among the correct orderings
-    assert names in orderings, "We got: {}".format(", ".join(names))
-
-
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
 def test_target_is_dependency(cli, datafiles):
     project = str(datafiles)
     elements = ["multiple_targets/dependency/zebry.bst", "multiple_targets/dependency/horsey.bst"]
 
-    args = ["show", "-d", "plan", "-f", "%{name}", *elements]
+    args = ["show", "-d", "all", "-f", "%{name}", *elements]
     result = cli.run(project=project, args=args)
 
     result.assert_success()
 
-    # Get the planned order
+    # Get the order
     names = result.output.splitlines()
     names = [name[len("multiple_targets/dependency/") :] for name in names]
 

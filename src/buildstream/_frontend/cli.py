@@ -427,7 +427,7 @@ def init(app, project_name, min_version, element_path, force, target_directory):
     "-d",
     default=None,
     type=FastEnumType(
-        _PipelineSelection, [_PipelineSelection.BUILD, _PipelineSelection.PLAN, _PipelineSelection.ALL],
+        _PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.BUILD, _PipelineSelection.ALL],
     ),
     help="The dependencies to build",
 )
@@ -473,12 +473,15 @@ def build(
     When this command is executed from a workspace directory, the default
     is to build the workspace element.
 
-    Specify `--deps` to control which dependencies to build:
+    Specify `--deps` to control which dependencies must be built:
 
     \b
-        plan:  Only dependencies required for the build plan
+        none:  No dependencies, just the element itself
         build: Build time dependencies, excluding the element itself
         all:   All dependencies
+
+    Dependencies that are consequently required to build the requested
+    elements will be built on demand.
     """
     with app.initialized(session_name="Build"):
         ignore_junction_targets = False
@@ -516,13 +519,7 @@ def build(
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
-        [
-            _PipelineSelection.NONE,
-            _PipelineSelection.PLAN,
-            _PipelineSelection.RUN,
-            _PipelineSelection.BUILD,
-            _PipelineSelection.ALL,
-        ],
+        [_PipelineSelection.NONE, _PipelineSelection.RUN, _PipelineSelection.BUILD, _PipelineSelection.ALL,],
     ),
     help="The dependencies to show",
 )
@@ -561,7 +558,6 @@ def show(app, elements, deps, except_, order, format_):
 
     \b
         none:  No dependencies, just the element itself
-        plan:  Dependencies required for a build plan
         run:   Runtime dependencies, including the element itself
         build: Build time dependencies, excluding the element itself
         all:   All dependencies
@@ -762,17 +758,11 @@ def source():
 @click.option(
     "--deps",
     "-d",
-    default=_PipelineSelection.PLAN,
+    default=_PipelineSelection.NONE,
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
-        [
-            _PipelineSelection.PLAN,
-            _PipelineSelection.NONE,
-            _PipelineSelection.BUILD,
-            _PipelineSelection.RUN,
-            _PipelineSelection.ALL,
-        ],
+        [_PipelineSelection.NONE, _PipelineSelection.BUILD, _PipelineSelection.RUN, _PipelineSelection.ALL,],
     ),
     help="The dependencies to fetch",
 )
@@ -798,16 +788,13 @@ def source_fetch(app, elements, deps, except_, source_remotes, ignore_project_so
     When this command is executed from a workspace directory, the default
     is to fetch the workspace element.
 
-    By default this will only try to fetch sources which are
-    required for the build plan of the specified target element,
-    omitting sources for any elements which are already built
-    and available in the artifact cache.
+    By default this will only try to fetch sources for the specified
+    elements.
 
     Specify `--deps` to control which sources to fetch:
 
     \b
         none:  No dependencies, just the element itself
-        plan:  Only dependencies required for the build plan
         run:   Runtime dependencies, including the element itself
         build: Build time dependencies, excluding the element itself
         all:   All dependencies
@@ -843,13 +830,7 @@ def source_fetch(app, elements, deps, except_, source_remotes, ignore_project_so
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
-        [
-            _PipelineSelection.NONE,
-            _PipelineSelection.PLAN,
-            _PipelineSelection.BUILD,
-            _PipelineSelection.RUN,
-            _PipelineSelection.ALL,
-        ],
+        [_PipelineSelection.NONE, _PipelineSelection.BUILD, _PipelineSelection.RUN, _PipelineSelection.ALL,],
     ),
     help="The dependencies to push",
 )
@@ -875,11 +856,13 @@ def source_push(app, elements, deps, except_, source_remotes, ignore_project_sou
     When this command is executed from a workspace directory, the default
     is to push the sources of the workspace element.
 
+    By default this will only try to push sources for the specified
+    elements.
+
     Specify `--deps` to control which sources to fetch:
 
     \b
         none:  No dependencies, just the element itself
-        plan:  Only dependencies required for the build plan
         run:   Runtime dependencies, including the element itself
         build: Build time dependencies, excluding the element itself
         all:   All dependencies
