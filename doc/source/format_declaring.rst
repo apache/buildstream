@@ -652,6 +652,61 @@ read-only variables are also dynamically declared by BuildStream:
 
   The name of project where BuildStream is being used.
 
+* ``project-root`` & ``project-root-uri``
+
+  The directory where the project is located on the host.
+
+  This variable is only available when declaring
+  :ref:`source alias values <project_source_aliases>` or
+  :ref:`source mirror values <project_essentials_mirrors>` and allows
+  access to files in a project on the build host.
+
+  * The ``project-root`` variable is a regular absolute path
+  * The ``project-root-uri`` variable is a properly quoted ``file://`` URI
+
+  .. tip::
+
+     Use this variable to declare :ref:`source alias values <project_source_aliases>`
+     to refer to files which you store as a part of your project, e.g. tarballs
+     which you have committed to you BuildStream project.
+
+  .. attention::
+
+     This feature has been provided for convenience when putting together a
+     project without the use of proper infrastructure.
+
+     A better long term solution for accessing internal binaries and source
+     code is to setup internal infrastructure in your organization and use
+     the regular ways to access these sources from a well known internal URI.
+
+* ``toplevel-root`` & ``toplevel-root-uri``
+
+  The directory where the toplevel project is located on the host.
+
+  This variable is only available when declaring
+  :ref:`source alias values <project_source_aliases>` or
+  :ref:`source mirror values <project_essentials_mirrors>` and allows
+  access to files in a project on the build host.
+
+  * The ``toplevel-root`` variable is a regular absolute path
+  * The ``toplevel-root-uri`` variable is a properly quoted ``file://`` URI
+
+  .. tip::
+
+     Use this variable to declare :ref:`source alias values <project_source_aliases>`
+     to refer to files which you do not store as a part of your project, e.g.
+     tarballs or git repositories which must be placed in a directory within
+     the toplevel project before running the build.
+
+  .. attention::
+
+     This feature has been provided for convenience when putting together a
+     project without the use of proper infrastructure.
+
+     A better long term solution for accessing internal binaries and source
+     code is to setup internal infrastructure in your organization and use
+     the regular ways to access these sources from a well known internal URI.
+
 * ``max-jobs``
 
   Maximum number of parallel build processes within a given

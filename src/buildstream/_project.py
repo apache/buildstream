@@ -22,12 +22,14 @@ from typing import TYPE_CHECKING, Optional, Dict, Union, List
 
 import os
 import sys
+import urllib.parse
 from collections import OrderedDict
 from pathlib import Path
 from pluginbase import PluginBase
 from . import utils
 from . import _site
 from . import _yaml
+from ._variables import Variables
 from .utils import UtilError
 from ._profile import Topics, PROFILER
 from ._exceptions import LoadError
@@ -973,10 +975,30 @@ class Project:
         # Export options into variables, if that was requested
         output.options.export_variables(output.base_variables)
 
+        # Prepare a Variables instance for substitution of source alias and
+        # source mirror values.
+        #
+        # This allows substitution of any project-level variables, plus the special
+        # variables which allow resolving project relative directories on the host.
+        #
+        toplevel_project = self._context.get_toplevel_project()
+        variables_node = output.base_variables.clone()
+        variables_node["project-root"] = str(self._absolute_directory_path)
+        variables_node["toplevel-root"] = str(toplevel_project._absolute_directory_path)
+        variables_node["project-root-uri"] = "file://" + urllib.parse.quote(str(self._absolute_directory_path))
+        variables_node["toplevel-root-uri"] = "file://" + urllib.parse.quote(
+            str(toplevel_project._absolute_directory_path)
+        )
+        variables = Variables(variables_node)
+
         # Override default_mirror if not set by command-line
         output.default_mirror = self._default_mirror or overrides.get_str("default-mirror", default=None)
 
         mirrors = config.get_sequence("mirrors", default=[])
+
+        # Perform variable substitutions in source mirror definitions
+        variables.expand(mirrors)
+
         for mirror in mirrors:
             allowed_mirror_fields = ["name", "aliases"]
             mirror.validate_keys(allowed_mirror_fields)
@@ -991,6 +1013,9 @@ class Project:
 
         # Source url aliases
         output._aliases = config.get_mapping("aliases", default={})
+
+        # Perform variable substitutions in source aliases
+        variables.expand(output._aliases)
 
     # _find_project_dir()
     #
