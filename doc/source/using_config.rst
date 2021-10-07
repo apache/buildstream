@@ -324,7 +324,7 @@ Attributes
   This instructs what dependencies of the target elements should be built, valid
   values for this attribute are:
 
-  * ``plan``: Only build elements required to generate the expected target artifacts
+  * ``none``: Only build elements required to generate the expected target artifacts
   * ``all``: Build elements even if they are build dependencies of artifacts which are already cached
 
 
