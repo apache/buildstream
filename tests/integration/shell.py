@@ -391,12 +391,14 @@ def test_integration_partial_artifact(cli, datafiles, tmpdir, integration_cache)
         objpath = os.path.join(cachedir, "cas", "objects", digest[:2], digest[2:])
         os.unlink(objpath)
 
-        # check shell doesn't work
+        # check shell doesn't work when it cannot pull the missing bits
+        cli.configure({"artifacts": {}})
         result = cli.run(project=project, args=["shell", element_name, "--", "hello"])
         result.assert_main_error(ErrorDomain.APP, "shell-missing-deps")
 
-        # check the artifact gets completed with '--pull' specified
-        result = cli.run(project=project, args=["shell", "--pull", element_name, "--", "hello"])
+        # check the artifact gets completed with access to the remote
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
+        result = cli.run(project=project, args=["shell", element_name, "--", "hello"])
         result.assert_success()
         assert "autotools/amhello.bst" in result.get_pulled_elements()
 

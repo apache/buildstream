@@ -633,12 +633,10 @@ def show(app, elements, deps, except_, order, format_):
     "cli_buildtree",
     is_flag=True,
     help=(
-        "Stage a buildtree. Will fail if a buildtree is not available."
-        " --pull and pull-buildtrees configuration is needed "
-        "if trying to query for remotely cached buildtrees."
+        "Stage a buildtree. Will fail if a buildtree is not available. "
+        "pull-buildtrees configuration is needed if the buildtree is not available locally."
     ),
 )
-@click.option("--pull", "pull_", is_flag=True, help="Attempt to pull missing or incomplete artifacts")
 @click.option(
     "--artifact-remote",
     "artifact_remotes",
@@ -672,7 +670,6 @@ def shell(
     isolate,
     build_,
     cli_buildtree,
-    pull_,
     artifact_remotes,
     source_remotes,
     ignore_project_artifact_remotes,
@@ -723,7 +720,6 @@ def shell(
                 isolate=isolate,
                 command=command,
                 usebuildtree=cli_buildtree,
-                pull_=pull_,
                 artifact_remotes=artifact_remotes,
                 source_remotes=source_remotes,
                 ignore_project_artifact_remotes=ignore_project_artifact_remotes,

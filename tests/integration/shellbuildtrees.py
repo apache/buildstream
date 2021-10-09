@@ -247,6 +247,11 @@ def test_shell_use_cached_buildtree(share_with_buildtrees, datafiles, cli, pull_
     # Optionally pull the buildtree along with `bst artifact pull`
     maybe_pull_deps(cli, project, element_name, pull_deps, pull_buildtree)
 
+    # Disable access to the artifact server after pulling, so that `bst shell` cannot automatically
+    # pull the missing bits, this should be equivalent to the missing bits being missing in a
+    # remote server
+    cli.configure({"artifacts": {}})
+
     # Run the shell without asking it to pull any buildtree, just asking to use a buildtree
     result = cli.run(project=project, args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", "test"])
 
@@ -258,9 +263,10 @@ def test_shell_use_cached_buildtree(share_with_buildtrees, datafiles, cli, pull_
 
 
 #
-# Test behavior of launching a shell and requesting to use a buildtree, while
-# also requesting to download any missing bits from the artifact server on the fly,
-# again with various states of local cache (ranging from nothing cached to everything cached)
+# Test behavior of launching a shell and requesting to use a buildtree, while allowing
+# BuildStream to download any missing bits from the artifact server on the fly (which
+# it will do by default) again with various states of local cache (ranging from nothing
+# cached to everything cached)
 #
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
@@ -290,17 +296,7 @@ def test_shell_pull_cached_buildtree(share_with_buildtrees, datafiles, cli, pull
     # Run the shell and request that required artifacts and buildtrees should be pulled
     result = cli.run(
         project=project,
-        args=[
-            "--pull-buildtrees",
-            "shell",
-            "--build",
-            element_name,
-            "--pull",
-            "--use-buildtree",
-            "--",
-            "cat",
-            "test",
-        ],
+        args=["--pull-buildtrees", "shell", "--build", element_name, "--use-buildtree", "--", "cat", "test",],
     )
 
     # In this case, we should succeed every time, regardless of what was
@@ -328,39 +324,6 @@ def test_shell_use_uncached_buildtree(share_without_buildtrees, datafiles, cli):
 
     # Run the shell without asking it to pull any buildtree, just asking to use a buildtree
     result = cli.run(project=project, args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", "test"])
-
-    # Sorry, a buildtree was never cached for this element
-    result.assert_main_error(ErrorDomain.APP, "missing-buildtree-artifact-created-without-buildtree")
-
-
-#
-# Test behavior of launching a shell and requesting to use a buildtree.
-#
-# In this case we download everything we need first, but the buildtree was never cached at build time
-#
-@pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
-def test_shell_pull_uncached_buildtree(share_without_buildtrees, datafiles, cli):
-    project = str(datafiles)
-    element_name = "build-shell/buildtree.bst"
-
-    cli.configure({"artifacts": {"servers": [{"url": share_without_buildtrees.repo}]}})
-
-    # Run the shell and request that required artifacts and buildtrees should be pulled
-    result = cli.run(
-        project=project,
-        args=[
-            "--pull-buildtrees",
-            "shell",
-            "--build",
-            element_name,
-            "--pull",
-            "--use-buildtree",
-            "--",
-            "cat",
-            "test",
-        ],
-    )
 
     # Sorry, a buildtree was never cached for this element
     result.assert_main_error(ErrorDomain.APP, "missing-buildtree-artifact-created-without-buildtree")
