@@ -146,3 +146,15 @@ class LoadErrorReason(Enum):
 
     CIRCULAR_REFERENCE = 26
     """A circular element reference was detected"""
+
+    BAD_ELEMENT_SUFFIX = 27
+    """
+    This warning will be produced when an element whose name does not end in .bst
+    is referenced either on the command line or by another element
+    """
+
+    BAD_CHARACTERS_IN_NAME = 28
+    """
+    This warning will be produced when a filename for a target contains invalid
+    characters in its name.
+    """

@@ -10,7 +10,7 @@ import pytest
 
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
-from buildstream.testing._utils.site import IS_WINDOWS, CASD_SEPARATE_USER
+from buildstream.testing._utils.site import CASD_SEPARATE_USER
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream import utils
@@ -167,60 +167,6 @@ def test_non_strict_checkout_uncached(datafiles, cli, tmpdir):
             project=project, args=["--no-strict", "artifact", "checkout", element_name, "--directory", checkout]
         )
         result.assert_main_error(ErrorDomain.STREAM, "uncached-checkout-attempt")
-
-
-@pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("strict,hardlinks", [("non-strict", "hardlinks"),])
-def test_build_invalid_suffix(datafiles, cli, strict, hardlinks):
-    project = str(datafiles)
-
-    result = cli.run(project=project, args=strict_args(["build", "target.foo"], strict))
-    result.assert_main_error(ErrorDomain.LOAD, "bad-element-suffix")
-
-
-@pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("strict,hardlinks", [("non-strict", "hardlinks"),])
-def test_build_invalid_suffix_dep(datafiles, cli, strict, hardlinks):
-    project = str(datafiles)
-
-    # target2.bst depends on an element called target.foo
-    result = cli.run(project=project, args=strict_args(["build", "target2.bst"], strict))
-    result.assert_main_error(ErrorDomain.LOAD, "bad-element-suffix")
-
-
-@pytest.mark.skipif(IS_WINDOWS, reason="Not available on Windows")
-@pytest.mark.datafiles(DATA_DIR)
-def test_build_invalid_filename_chars(datafiles, cli):
-    project = str(datafiles)
-    element_name = "invalid-chars|<>-in-name.bst"
-
-    # The name of this file contains characters that are not allowed by
-    # BuildStream, using it should raise a warning.
-    element = {
-        "kind": "stack",
-    }
-    _yaml.roundtrip_dump(element, os.path.join(project, "elements", element_name))
-
-    result = cli.run(project=project, args=strict_args(["build", element_name], "non-strict"))
-    result.assert_main_error(ErrorDomain.LOAD, "bad-characters-in-name")
-
-
-@pytest.mark.skipif(IS_WINDOWS, reason="Not available on Windows")
-@pytest.mark.datafiles(DATA_DIR)
-def test_build_invalid_filename_chars_dep(datafiles, cli):
-    project = str(datafiles)
-    element_name = "invalid-chars|<>-in-name.bst"
-
-    # The name of this file contains characters that are not allowed by
-    # BuildStream, and is listed as a dependency of 'invalid-chars-in-dep.bst'.
-    # This should also raise a warning.
-    element = {
-        "kind": "stack",
-    }
-    _yaml.roundtrip_dump(element, os.path.join(project, "elements", element_name))
-
-    result = cli.run(project=project, args=strict_args(["build", "invalid-chars-in-dep.bst"], "non-strict"))
-    result.assert_main_error(ErrorDomain.LOAD, "bad-characters-in-name")
 
 
 @pytest.mark.datafiles(DATA_DIR)
