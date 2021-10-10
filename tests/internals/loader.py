@@ -90,7 +90,8 @@ def test_invalid_key(datafiles):
 def test_invalid_directory_load(datafiles):
 
     basedir = str(datafiles)
+    os.makedirs(os.path.join(basedir, "element.bst"))
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
-        loader.load(["elements/"])
+        loader.load(["element.bst"])
 
     assert exc.value.reason == LoadErrorReason.LOADING_DIRECTORY

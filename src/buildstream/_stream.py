@@ -1040,7 +1040,11 @@ class Stream:
                 if todo_elements:
                     # This output should make creating the remaining workspaces as easy as possible.
                     todo_elements = "\nDid not try to create workspaces for " + todo_elements
-                raise StreamError("Failed to create workspace directory: {}".format(e) + todo_elements) from e
+                raise StreamError(
+                    "Failed to create workspace directory: {}".format(e),
+                    reason="workspace-directory-failure",
+                    detail=todo_elements,
+                ) from e
 
             workspaces.create_workspace(target, directory, checkout=not no_checkout)
             self._context.messenger.info("Created a workspace for element: {}".format(target._get_full_name()))
@@ -1999,80 +2003,94 @@ class Stream:
     def _expand_and_classify_targets(
         self, targets: Iterable[str], valid_artifact_names: bool = False
     ) -> Tuple[List[str], List[str]]:
-        initial_targets = []
-        element_targets = []
-        artifact_names = []
-        globs = {}  # Count whether a glob matched elements and artifacts
+        #
+        # We use dicts here instead of sets, in order to deduplicate any possibly duplicate
+        # entries, while also retaining the original order of element specification/discovery,
+        # (which we cannot do with sets).
+        #
+        element_names = {}
+        artifact_names = {}
+        element_globs = {}
+        artifact_globs = {}
 
-        # First extract the globs
+        # First sort out globs and targets
         for target in targets:
             if any(c in "*?[" for c in target):
-                globs[target] = 0
-            else:
-                initial_targets.append(target)
-
-        # Filter out any targets which are found to be artifact names
-        if valid_artifact_names:
-            for target in initial_targets:
-                try:
-                    verify_artifact_ref(target)
-                except ArtifactElementError:
-                    element_targets.append(target)
+                if target.endswith(".bst"):
+                    element_globs[target] = True
                 else:
-                    artifact_names.append(target)
-        else:
-            element_targets = initial_targets
+                    artifact_globs[target] = True
+            elif target.endswith(".bst"):
+                element_names[target] = True
+            else:
+                artifact_names[target] = True
+
+        # Bail out in commands which don't support artifacts if any of the targets
+        # or globs did not end with the expected '.bst' suffix.
+        #
+        if (artifact_names or artifact_globs) and not valid_artifact_names:
+            raise StreamError(
+                "Invalid element names or element glob patterns were specified: {}".format(
+                    ", ".join(list(artifact_names) + list(artifact_globs))
+                ),
+                reason="invalid-element-names",
+                detail="Element names and element glob expressions must end in '.bst'",
+            )
+
+        # Verify targets which were not classified as elements
+        for artifact_name in artifact_names:
+            try:
+                verify_artifact_ref(artifact_name)
+            except ArtifactElementError as e:
+                raise StreamError(
+                    "Specified target does not appear to be an artifact or element name: {}".format(artifact_name),
+                    reason="unrecognized-target-format",
+                    detail="Element names and element glob expressions must end in '.bst'",
+                ) from e
 
         # Expand globs for elements
-        if self._project:
+        if element_globs:
+
+            # Bail out if an element glob is specified without providing a project directory
+            if not self._project:
+                raise StreamError(
+                    "Element glob expressions were specified without any project directory: {}".format(
+                        ", ".join(element_globs)
+                    ),
+                    reason="glob-elements-without-project",
+                )
+
+            # Collect a list of `all_elements` in the project, stripping out the leading
+            # project directory and element path prefix, to produce only element names.
+            #
             all_elements = []
             element_path_length = len(self._project.element_path) + 1
             for dirpath, _, filenames in os.walk(self._project.element_path):
                 for filename in filenames:
                     if filename.endswith(".bst"):
-                        element_path = os.path.join(dirpath, filename)
-                        element_path = element_path[element_path_length:]  # Strip out the element_path
-                        all_elements.append(element_path)
+                        element_name = os.path.join(dirpath, filename)
+                        element_name = element_name[element_path_length:]
+                        all_elements.append(element_name)
 
-            for glob in globs:
-                matched = False
-                for element_path in utils.glob(all_elements, glob):
-                    element_targets.append(element_path)
-                    matched = True
-                if matched:
-                    globs[glob] = globs[glob] + 1
+            # Glob the elements and add the results to the set
+            #
+            for glob in element_globs:
+                glob_results = list(utils.glob(all_elements, glob))
+                for element_name in glob_results:
+                    element_names[element_name] = True
+                if not glob_results:
+                    self._context.messenger.warn("No elements matched the glob expression: {}".format(glob))
 
-        # Expand globs for artifact names
-        if valid_artifact_names:
-            for glob in globs:
-                matches = self._artifacts.list_artifacts(glob=glob)
-                if matches:
-                    artifact_names.extend(matches)
-                    globs[glob] = globs[glob] + 1
+        # Glob the artifact names and add the results to the set
+        #
+        for glob in artifact_globs:
+            glob_results = self._artifacts.list_artifacts(glob=glob)
+            for artifact_name in glob_results:
+                artifact_names[artifact_name] = True
+            if not glob_results:
+                self._context.messenger.warn("No artifact names matched the glob expression: {}".format(glob))
 
-        # Issue warnings and errors
-        unmatched = [glob for glob, glob_count in globs.items() if glob_count == 0]
-        doubly_matched = [glob for glob, glob_count in globs.items() if glob_count > 1]
-
-        # Warn the user if any of the provided globs did not match anything
-        if unmatched:
-            if valid_artifact_names:
-                message = "No elements or artifacts matched the following glob expression(s): {}".format(
-                    ", ".join(unmatched)
-                )
-            else:
-                message = "No elements matched the following glob expression(s): {}".format(", ".join(unmatched))
-            self._context.messenger.warn(message)
-
-        if doubly_matched:
-            raise StreamError(
-                "The provided glob expression(s) matched both element names and artifact names: {}".format(
-                    ", ".join(doubly_matched)
-                ),
-                reason="glob-elements-and-artifacts",
-            )
-
-        return element_targets, artifact_names
+        return list(element_names), list(artifact_names)
 
 
 # _handle_compression()

@@ -55,9 +55,6 @@ def test_show_fail(cli, datafiles):
 @pytest.mark.parametrize(
     "pattern,expected_elements",
     [
-        # Use catch all glob. This should report all elements.
-        #
-        ("**", ["import-bin.bst", "import-dev.bst", "compose-all.bst", "target.bst", "subdir/target.bst"]),
         # Only bst files, same as "**" for `bst show`
         #
         ("**.bst", ["import-bin.bst", "import-dev.bst", "compose-all.bst", "target.bst", "subdir/target.bst"]),
@@ -67,18 +64,15 @@ def test_show_fail(cli, datafiles):
         ("*.bst", ["import-bin.bst", "import-dev.bst", "compose-all.bst", "target.bst"]),
         # Report only targets in the subdirectory
         #
-        ("subdir/*", ["subdir/target.bst"]),
+        ("subdir/*.bst", ["subdir/target.bst"]),
         # Report both targets which end in "target.bst"
         #
         ("**target.bst", ["target.bst", "subdir/target.bst"]),
         # All elements starting with the prefix "import"
         #
-        ("import*", ["import-bin.bst", "import-dev.bst"]),
-        # Glob would match artifact refs, but `bst show` does not accept these as input.
-        #
-        ("test/**", []),
+        ("import*.bst", ["import-bin.bst", "import-dev.bst"]),
     ],
-    ids=["**", "**.bst", "*.bst", "subdir/*", "**target.bst", "import*", "test/**"],
+    ids=["**.bst", "*.bst", "subdir/*", "**target.bst", "import*"],
 )
 def test_show_glob(cli, tmpdir, datafiles, pattern, expected_elements):
     project = str(datafiles)
