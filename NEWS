@@ -12,6 +12,9 @@ CLI
 ---
   o BREAKING CHANGE: Removed `--deps plan` from all commands
 
+  o The `--pull` option is removed from the `bst shell` and `bst artifact checkout`
+    commands, which will now unconditionally try to pull required artifacts.
+
 
 ==================
 buildstream 1.93.6
