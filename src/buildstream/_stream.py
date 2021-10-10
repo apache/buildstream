@@ -647,8 +647,6 @@ class Stream:
     #         will be placed at the given location. If true and
     #         location is '-', the tarball will be dumped on the
     #         standard output.
-    #    pull: If true will attempt to pull any missing or incomplete
-    #          artifacts.
     #    artifact_remotes: Artifact cache remotes specified on the commmand line
     #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
     #
@@ -662,7 +660,6 @@ class Stream:
         integrate: bool = True,
         hardlinks: bool = False,
         compression: str = "",
-        pull: bool = False,
         tar: bool = False,
         artifact_remotes: Iterable[RemoteSpec] = (),
         ignore_project_artifact_remotes: bool = False,
@@ -673,7 +670,7 @@ class Stream:
             selection=selection,
             load_artifacts=True,
             attempt_artifact_metadata=True,
-            connect_artifact_cache=pull,
+            connect_artifact_cache=True,
             artifact_remotes=artifact_remotes,
             ignore_project_artifact_remotes=ignore_project_artifact_remotes,
         )

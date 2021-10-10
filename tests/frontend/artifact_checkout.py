@@ -63,8 +63,7 @@ def test_checkout(cli, tmpdir, datafiles, deps, expect_exist, expect_noexist, wi
 
         # Now checkout the artifact
         result = cli.run(
-            project=project,
-            args=["artifact", "checkout", "--directory", checkout, "--pull", "--deps", deps, artifact_name],
+            project=project, args=["artifact", "checkout", "--directory", checkout, "--deps", deps, artifact_name],
         )
 
         if deps in ["all", "run"]:

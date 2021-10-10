@@ -1269,7 +1269,6 @@ def artifact_show(app, deps, artifacts):
     type=click.Choice(["gz", "xz", "bz2"]),
     help="The compression option of the tarball created.",
 )
-@click.option("--pull", "pull_", is_flag=True, help="Pull the artifact if it's missing or incomplete.")
 @click.option(
     "--directory", default=None, type=click.Path(file_okay=False), help="The directory to checkout the artifact to"
 )
@@ -1295,7 +1294,6 @@ def artifact_checkout(
     hardlinks,
     tar,
     compression,
-    pull_,
     directory,
     artifact_remotes,
     ignore_project_artifact_remotes,
@@ -1357,7 +1355,6 @@ def artifact_checkout(
             selection=deps,
             integrate=True if integrate is None else integrate,
             hardlinks=hardlinks,
-            pull=pull_,
             compression=compression,
             tar=bool(tar),
             artifact_remotes=artifact_remotes,
