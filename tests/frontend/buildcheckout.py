@@ -1070,13 +1070,13 @@ def test_partial_artifact_checkout_fetch(cli, datafiles, tmpdir):
         os.unlink(objpath)
 
         # Verify that the build-only dependency is not (complete) in the local cache
+        cli.configure({"artifacts": {}})
         result = cli.run(project=project, args=["artifact", "checkout", input_name, "--directory", checkout_dir])
         result.assert_main_error(ErrorDomain.STREAM, "uncached-checkout-attempt")
 
         # Verify that the pull method fetches relevant artifacts in order to stage
-        result = cli.run(
-            project=project, args=["artifact", "checkout", "--pull", input_name, "--directory", checkout_dir]
-        )
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
+        result = cli.run(project=project, args=["artifact", "checkout", input_name, "--directory", checkout_dir])
         result.assert_success()
 
         # should have pulled whatever was deleted previous
@@ -1093,7 +1093,7 @@ def test_partial_checkout_fail(tmpdir, datafiles, cli):
 
         cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
-        res = cli.run(project=project, args=["artifact", "checkout", "--pull", build_elt, "--directory", checkout_dir])
+        res = cli.run(project=project, args=["artifact", "checkout", build_elt, "--directory", checkout_dir])
         res.assert_main_error(ErrorDomain.STREAM, "uncached-checkout-attempt")
         assert re.findall(r"Remote \((\S+)\) does not have artifact (\S+) cached", res.stderr)
 

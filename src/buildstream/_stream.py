@@ -246,7 +246,6 @@ class Stream:
     #    isolate (bool): Whether to isolate the environment like we do in builds
     #    command (list): An argv to launch in the sandbox, or None
     #    usebuildtree (bool): Whether to use a buildtree as the source, given cli option
-    #    pull_ (bool): Whether to attempt to pull missing or incomplete artifacts
     #    artifact_remotes: Artifact cache remotes specified on the commmand line
     #    source_remotes: Source cache remotes specified on the commmand line
     #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
@@ -266,7 +265,6 @@ class Stream:
         isolate: bool = False,
         command: Optional[List[str]] = None,
         usebuildtree: bool = False,
-        pull_: bool = False,
         artifact_remotes: Iterable[RemoteSpec] = (),
         source_remotes: Iterable[RemoteSpec] = (),
         ignore_project_artifact_remotes: bool = False,
@@ -283,7 +281,7 @@ class Stream:
             elements = self.load_selection(
                 (target,),
                 selection=selection,
-                connect_artifact_cache=pull_,
+                connect_artifact_cache=True,
                 connect_source_cache=True,
                 artifact_remotes=artifact_remotes,
                 source_remotes=source_remotes,
@@ -297,17 +295,12 @@ class Stream:
             element = self.targets[0]
             element._set_required(scope)
 
-            self.query_cache([element] + elements)
-
-            if pull_:
-                self._reset()
-                self._add_queue(PullQueue(self._scheduler))
-
-                # Pull the toplevel element regardless of whether it is in scope
-                plan = elements if element in elements else [element] + elements
-
-                self._enqueue_plan(plan)
-                self._run()
+            # Check whether the required elements are cached, and then
+            # try to pull them if they are not already cached.
+            #
+            pull_elements = [element] + elements
+            self.query_cache(pull_elements)
+            self._pull_missing_artifacts(pull_elements)
 
         missing_deps = [dep for dep in _pipeline.dependencies([element], scope) if not dep._cached()]
         if missing_deps:
@@ -320,12 +313,11 @@ class Stream:
         # Check if we require a pull queue attempt, with given artifact state and context
         if usebuildtree:
             if not element._cached_buildtree():
-                remotes_message = " or in available remotes" if pull_ else ""
                 if not element._cached():
-                    message = "Artifact not cached locally" + remotes_message
+                    message = "Artifact not cached locally or in available remotes"
                     reason = "missing-buildtree-artifact-not-cached"
                 elif element._buildtree_exists():
-                    message = "Buildtree is not cached locally" + remotes_message
+                    message = "Buildtree is not cached locally or in available remotes"
                     reason = "missing-buildtree-artifact-buildtree-not-cached"
                 else:
                     message = "Artifact was created without buildtree"
@@ -655,8 +647,6 @@ class Stream:
     #         will be placed at the given location. If true and
     #         location is '-', the tarball will be dumped on the
     #         standard output.
-    #    pull: If true will attempt to pull any missing or incomplete
-    #          artifacts.
     #    artifact_remotes: Artifact cache remotes specified on the commmand line
     #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
     #
@@ -670,7 +660,6 @@ class Stream:
         integrate: bool = True,
         hardlinks: bool = False,
         compression: str = "",
-        pull: bool = False,
         tar: bool = False,
         artifact_remotes: Iterable[RemoteSpec] = (),
         ignore_project_artifact_remotes: bool = False,
@@ -681,7 +670,7 @@ class Stream:
             selection=selection,
             load_artifacts=True,
             attempt_artifact_metadata=True,
-            connect_artifact_cache=pull,
+            connect_artifact_cache=True,
             artifact_remotes=artifact_remotes,
             ignore_project_artifact_remotes=ignore_project_artifact_remotes,
         )
@@ -694,15 +683,11 @@ class Stream:
 
         self._check_location_writable(location, force=force, tar=tar)
 
+        # Check whether the required elements are cached, and then
+        # try to pull them if they are not already cached.
+        #
         self.query_cache(elements)
-
-        uncached_elts = [elt for elt in elements if elt._pull_pending()]
-        if uncached_elts and pull:
-            self._context.messenger.info("Attempting to fetch missing or incomplete artifact")
-            self._reset()
-            self._add_queue(PullQueue(self._scheduler))
-            self._enqueue_plan(uncached_elts)
-            self._run(announce_session=True)
+        self._pull_missing_artifacts(elements)
 
         try:
             scope = {
@@ -1452,6 +1437,27 @@ class Stream:
             for element in targets:
                 element._cached_remotely()
                 task.add_current_progress()
+
+    # _pull_missing_artifacts()
+    #
+    # Pull missing artifacts from available remotes, this runs the scheduler
+    # just to pull the artifacts if any of the artifacts are missing locally,
+    # and is used in commands which need to use the artifacts.
+    #
+    # This function requires Stream.query_cache() to be called in advance
+    # in order to determine which artifacts to try and pull.
+    #
+    # Args:
+    #    elements (list [Element]): The selected list of required elements
+    #
+    def _pull_missing_artifacts(self, elements):
+        uncached_elts = [elt for elt in elements if elt._pull_pending()]
+        if uncached_elts:
+            self._context.messenger.info("Attempting to fetch missing or incomplete artifact(s)")
+            self._reset()
+            self._add_queue(PullQueue(self._scheduler))
+            self._enqueue_plan(uncached_elts)
+            self._run(announce_session=True)
 
     # _load_tracking()
     #
