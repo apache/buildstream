@@ -28,7 +28,7 @@ from ..node import Node
 from .._profile import Topics, PROFILER
 from .._includes import Includes
 from .._utils import valid_chars_name
-from ..types import CoreWarnings, _KeyStrength
+from ..types import _KeyStrength
 
 from .types import Symbol
 from . import loadelement
@@ -124,8 +124,6 @@ class Loader:
                     "path to the base project directory: {}".format(filename, self._basedir),
                     LoadErrorReason.INVALID_DATA,
                 )
-
-        self._warn_invalid_elements(targets)
 
         # First pass, recursively load files and populate our table of LoadElements
         #
@@ -267,6 +265,9 @@ class Loader:
     #    (LoadElement): A partially-loaded LoadElement
     #
     def _load_file_no_deps(self, filename, provenance_node=None):
+
+        self._assert_element_name(filename, provenance_node)
+
         # Load the data and process any conditional statements therein
         fullpath = os.path.join(self._basedir, filename)
         try:
@@ -530,9 +531,6 @@ class Loader:
                 dep.set_element(dep_element)
                 current_element[0].dependencies.append(dep)  # pylint: disable=no-member
             else:
-                # We do not have any more dependencies to load for this
-                # element on the queue, report any invalid dep names
-                self._warn_invalid_elements(loader_queue[-1][2])
                 # And pop the element off the queue
                 loader_queue.pop()
 
@@ -1000,6 +998,8 @@ class Loader:
             loader = self.get_loader(junction_path[-2], provenance_node, load_subprojects=load_subprojects)
             return junction_path[-2], junction_path[-1], loader
 
+    # _warn():
+    #
     # Print a warning message, checks warning_token against project configuration
     #
     # Args:
@@ -1017,47 +1017,34 @@ class Loader:
 
         self.load_context.context.messenger.warn(brief)
 
-    # Print warning messages if any of the specified elements have invalid names.
+    # _assert_element_name():
+    #
+    # Raises an error if any of the specified elements have invalid names.
     #
     # Valid filenames should end with ".bst" extension.
     #
     # Args:
-    #    elements (list): List of element names
+    #    filename (str): The element name
+    #    provenance_node (Node): The provenance node, or None
     #
     # Raises:
-    #     (:class:`.LoadError`): When warning_token is considered fatal by the project configuration
+    #     (:class:`.LoadError`): If the element name is invalid
     #
-    def _warn_invalid_elements(self, elements):
+    def _assert_element_name(self, filename, provenance_node):
+        error_message = None
+        error_reason = None
 
-        # invalid_elements
-        #
-        # A dict that maps warning types to the matching elements.
-        invalid_elements = {
-            CoreWarnings.BAD_ELEMENT_SUFFIX: [],
-            CoreWarnings.BAD_CHARACTERS_IN_NAME: [],
-        }
+        if not filename.endswith(".bst"):
+            error_message = "Element '{}' does not have expected file extension `.bst`".format(filename)
+            error_reason = LoadErrorReason.BAD_ELEMENT_SUFFIX
+        elif not valid_chars_name(filename):
+            error_message = "Element '{}' has invalid characters.".format(filename)
+            error_reason = LoadErrorReason.BAD_CHARACTERS_IN_NAME
 
-        for filename in elements:
-            if not filename.endswith(".bst"):
-                invalid_elements[CoreWarnings.BAD_ELEMENT_SUFFIX].append(filename)
-            if not valid_chars_name(filename):
-                invalid_elements[CoreWarnings.BAD_CHARACTERS_IN_NAME].append(filename)
-
-        if invalid_elements[CoreWarnings.BAD_ELEMENT_SUFFIX]:
-            self._warn(
-                "Target elements '{}' do not have expected file extension `.bst` "
-                "Improperly named elements will not be discoverable by commands".format(
-                    invalid_elements[CoreWarnings.BAD_ELEMENT_SUFFIX]
-                ),
-                warning_token=CoreWarnings.BAD_ELEMENT_SUFFIX,
-            )
-        if invalid_elements[CoreWarnings.BAD_CHARACTERS_IN_NAME]:
-            self._warn(
-                "Target elements '{}' have invalid characerts in their name.".format(
-                    invalid_elements[CoreWarnings.BAD_CHARACTERS_IN_NAME]
-                ),
-                warning_token=CoreWarnings.BAD_CHARACTERS_IN_NAME,
-            )
+        if error_message:
+            if provenance_node is not None:
+                error_message = "{}: {}".format(provenance_node.get_provenance(), error_message)
+            raise LoadError(error_message, error_reason)
 
     # _clean_caches()
     #

@@ -113,18 +113,6 @@ class CoreWarnings:
     which is found to be invalid based on the configured track
     """
 
-    BAD_ELEMENT_SUFFIX = "bad-element-suffix"
-    """
-    This warning will be produced when an element whose name does not end in .bst
-    is referenced either on the command line or by another element
-    """
-
-    BAD_CHARACTERS_IN_NAME = "bad-characters-in-name"
-    """
-    This warning will be produced when a filename for a target contains invalid
-    characters in its name.
-    """
-
     UNALIASED_URL = "unaliased-url"
     """
     A URL used for fetching a sources was specified without specifying any
