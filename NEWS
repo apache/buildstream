@@ -15,6 +15,10 @@ CLI
   o The `--pull` option is removed from the `bst shell` and `bst artifact checkout`
     commands, which will now unconditionally try to pull required artifacts.
 
+  o BREAKING CHANGE: Now the artifact commands only accept element names if specified
+    with a `.bst` suffix (including wildcard expressions), and otherwise assumes the
+    command means to specify an artifact name.
+
 
 ==================
 buildstream 1.93.6
