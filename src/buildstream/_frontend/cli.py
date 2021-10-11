@@ -1190,20 +1190,28 @@ def artifact():
 
     \b
     - artifact refs: triples of the form <project name>/<element name>/<cache key>
-    - element paths
+    - element names
 
-    When elements are given, the artifact corresponding to the element is used.
+    When elements are given, the artifact is looked up by observing the element
+    and it's current cache key.
 
     The commands also support shell-style wildcard expansion: `?` matches a
-    single character, and `*` matches zero or more. The patterns are matched
-    against artifact refs by default. If the pattern ends with `.bst` then
-    it matches element paths instead. Some example arguments are:
+    single character, `*` matches zero or more characters but does not match the `/`
+    path separator, and `**` matches zero or more characters including `/` path separators.
+
+    If the wildcard expression ends with `.bst`, then it will be used to search
+    element names found in the project, otherwise, it will be used to search artifacts
+    that are present in the local artifact cache.
+
+    Some example arguments are:
 
     \b
     - `myproject/hello/8276376b077eda104c812e6ec2f488c7c9eea211ce572c83d734c10bf241209f`
     - `myproject/he*/827637*`
-    - `*.bst` (all elements)
-    - `myproject/*` (all artifacts from myproject)
+    - `core/*.bst` (all elements in the core directory)
+    - `**.bst` (all elements)
+    - `myproject/**` (all artifacts from myproject)
+    - `myproject/myelement/*` (all cached artifacts for a specific element)
     """
     # Note that the backticks in the above docstring are important for the
     # generated docs. When sphinx is generating rst output from the help output
