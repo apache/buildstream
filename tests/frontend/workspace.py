@@ -215,7 +215,7 @@ def test_open_multi_unwritable(cli, tmpdir, datafiles):
         # Using this finally to make sure we always put thing back how they should be.
         os.chmod(workspace_object.workspace_cmd, cwdstat.st_mode)
 
-    result.assert_main_error(ErrorDomain.STREAM, None)
+    result.assert_main_error(ErrorDomain.STREAM, "workspace-directory-failure")
     # Normally we avoid checking stderr in favour of using the mechine readable result.assert_main_error
     # But Tristan was very keen that the names of the elements left needing workspaces were present in the out put
     assert " ".join([element_name for element_name, workspace_dir_suffix in element_tuples[1:]]) in result.stderr

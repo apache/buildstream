@@ -150,30 +150,6 @@ def test_artifact_show_glob(cli, tmpdir, datafiles, pattern, expected_prefixes):
         assert found, "Expected result {} not found".format(expected_prefix)
 
 
-# Test artifact show glob behaviors
-@pytest.mark.datafiles(SIMPLE_DIR)
-@pytest.mark.parametrize(
-    "pattern",
-    [
-        # Catch all glob will match everything, that is an error since the glob matches
-        # both elements and artifacts
-        #
-        "**",
-        # This glob is more selective but will also match both artifacts and elements
-        #
-        "**import-bin**",
-    ],
-)
-def test_artifact_show_doubly_matched_glob_error(cli, tmpdir, datafiles, pattern):
-    project = str(datafiles)
-
-    result = cli.run(project=project, args=["build", "target.bst"])
-    result.assert_success()
-
-    result = cli.run(project=project, args=["artifact", "show", pattern])
-    result.assert_main_error(ErrorDomain.STREAM, "glob-elements-and-artifacts")
-
-
 # Test artifact show artifact in remote
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_show_element_available_remotely(cli, tmpdir, datafiles):

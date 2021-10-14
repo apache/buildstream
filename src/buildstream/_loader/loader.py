@@ -298,18 +298,6 @@ class Loader:
 
                 raise LoadError(message, LoadErrorReason.MISSING_FILE, detail=detail) from e
 
-            if e.reason == LoadErrorReason.LOADING_DIRECTORY:
-                # If a <directory>.bst file exists in the element path,
-                # let's suggest this as a plausible alternative.
-                message = str(e)
-                if provenance_node:
-                    message = "{}: {}".format(provenance_node.get_provenance(), message)
-                detail = None
-                if os.path.exists(os.path.join(self._basedir, filename + ".bst")):
-                    element_name = filename + ".bst"
-                    detail = "Did you mean '{}'?\n".format(element_name)
-                raise LoadError(message, LoadErrorReason.LOADING_DIRECTORY, detail=detail) from e
-
             # Otherwise, we don't know the reason, so just raise
             raise
 
