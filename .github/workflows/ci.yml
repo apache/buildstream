@@ -71,7 +71,6 @@ jobs:
         # and they also map to corresponding filenames of services which are expected
         # to be run in the background
         test-name:
-          - bst-artifact-server
           - buildbarn
           - buildgrid
 

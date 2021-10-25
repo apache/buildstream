@@ -103,21 +103,6 @@ def list_testing_datafiles():
 
 
 #####################################################
-#                Conditional Checks                 #
-#####################################################
-#
-# Because setuptools... there is no way to pass an option to
-# the setup.py explicitly at install time.
-#
-# So screw it, lets just use an env var.
-bst_install_entry_points = {
-    "console_scripts": ["bst-artifact-server = buildstream._cas.casserver:server_main"],
-}
-
-if not os.environ.get("BST_ARTIFACTS_ONLY", ""):
-    bst_install_entry_points["console_scripts"] += ["bst = buildstream._frontend:cli"]
-
-#####################################################
 #    Monkey-patching setuptools for performance     #
 #####################################################
 #
@@ -384,7 +369,7 @@ setup(
         ("share/bash-completion/completions", [os.path.join("src", "buildstream", "data", "bst")]),
     ],
     install_requires=install_requires,
-    entry_points=bst_install_entry_points,
+    entry_points={"console_scripts": ["bst = buildstream._frontend:cli"]},
     ext_modules=cythonize(
         BUILD_EXTENSIONS,
         compiler_directives={

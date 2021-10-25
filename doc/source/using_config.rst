@@ -605,9 +605,6 @@ All remote service configuration blocks come with an optional ``auth``
 configuration block which allows one to specify the certificates
 and keys required for encrypted traffic.
 
-See the :ref:`server configuration documentation <server_authentication>` for
-details on how the keys can be generated and managed on the server side.
-
 The ``auth`` configuration block looks like this:
 
 .. code:: yaml

@@ -108,7 +108,6 @@ if [ -z "${test_names}" ]; then
     runTest "ubuntu-18.04"
     runTest "centos-7.7.1908"
     runTest "fedora-missing-deps"
-    runServiceTest "bst-artifact-server"
     runServiceTest "buildbarn"
     runServiceTest "buildgrid"
 else
