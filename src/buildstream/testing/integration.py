@@ -88,7 +88,7 @@ class IntegrationCache:
             raise AssertionError("Unable to create test directory !") from e
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def integration_cache(request):
     # Set the cache dir to the INTEGRATION_CACHE variable, or the
     # default if that is not set.
