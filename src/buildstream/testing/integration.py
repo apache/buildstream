@@ -88,7 +88,7 @@ class IntegrationCache:
             raise AssertionError("Unable to create test directory !") from e
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def integration_cache(request):
     # Set the cache dir to the INTEGRATION_CACHE variable, or the
     # default if that is not set.
@@ -103,11 +103,5 @@ def integration_cache(request):
 
     # Clean up the artifacts after each test session - we only want to
     # cache sources between tests
-    try:
-        shutil.rmtree(cache.cachedir)
-    except FileNotFoundError:
-        pass
-    try:
-        shutil.rmtree(os.path.join(cache.root, "cas"))
-    except FileNotFoundError:
-        pass
+    shutil.rmtree(cache.cachedir, ignore_errors=True)
+    shutil.rmtree(os.path.join(cache.root, "cas"), ignore_errors=True)
