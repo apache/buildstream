@@ -72,7 +72,8 @@ class ReadableTarInfo(tarfile.TarInfo):
            so that the owner-read bit is always set.
     """
 
-    @property
+    # https://github.com/python/mypy/issues/4125
+    @property  # type: ignore
     def mode(self):
         # Respect umask instead of the file mode stored in the archive.
         # The only bit used from the embedded mode is the executable bit for files.
