@@ -93,10 +93,10 @@ class WorkspaceSource(Source):
     # init_workspace()
     #
     # Raises AssertionError: existing workspaces should not be reinitialized
-    def init_workspace(self, directory: Directory) -> None:
+    def init_workspace(self, directory: str) -> None:
         raise AssertionError("Attempting to re-open an existing workspace")
 
-    def fetch(self) -> None:  # pylint: disable=arguments-differ
+    def fetch(self, *, previous_sources_dir=None) -> None:  # pylint: disable=arguments-differ
         pass  # pragma: nocover
 
     def stage(self, directory):
@@ -133,5 +133,5 @@ class WorkspaceSource(Source):
 
 
 # Plugin entry point
-def setup() -> WorkspaceSource:
+def setup():
     return WorkspaceSource

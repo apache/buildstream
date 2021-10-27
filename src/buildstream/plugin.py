@@ -213,7 +213,7 @@ class Plugin:
         which are included in the buildstream namespace.
     """
 
-    BST_MIN_VERSION = None
+    BST_MIN_VERSION: Optional[str] = None
     """The minimum required version of BuildStream required by this plugin.
 
     The version must be expressed as the string *"<major>.<minor>"*, where the
@@ -278,7 +278,7 @@ class Plugin:
     __TABLE = WeakValueDictionary()  # type: WeakValueDictionary[int, Plugin]
 
     try:
-        __multiprocessing_context = multiprocessing.get_context("forkserver")
+        __multiprocessing_context: multiprocessing.context.BaseContext = multiprocessing.get_context("forkserver")
     except ValueError:
         # We are on a system without `forkserver` support. Let's default to
         # spawn. This seems to be hanging however in some rare cases.
