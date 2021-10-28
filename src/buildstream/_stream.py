@@ -295,10 +295,14 @@ class Stream:
             element = self.targets[0]
             element._set_required(scope)
 
+            if scope == _Scope.BUILD:
+                pull_elements = [element] + elements
+            else:
+                pull_elements = elements
+
             # Check whether the required elements are cached, and then
             # try to pull them if they are not already cached.
             #
-            pull_elements = [element] + elements
             self.query_cache(pull_elements)
             self._pull_missing_artifacts(pull_elements)
 
