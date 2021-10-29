@@ -92,8 +92,7 @@ class WorkspaceCreator:
         if suffixs is None:
             suffixs = ["",] * len(kinds)
         else:
-            if len(suffixs) != len(kinds):
-                raise "terable error"
+            assert len(suffixs) == len(kinds)
 
         for suffix, kind in zip(suffixs, kinds):
             element_name, _, workspace_dir = self.create_workspace_element(

@@ -206,9 +206,9 @@ def override_completions(orig_args, cmd, cmd_param, args, incomplete):
     # modifying click itself, so just do some weak special casing
     # right here and select which parameters we want to handle specially.
     if isinstance(cmd_param.type, click.Path):
-        if cmd_param.name == "elements" or cmd_param.name == "element" or cmd_param.name == "except_":
+        if cmd_param.name in ("elements", "element", "except_"):
             return complete_target(args, incomplete)
-        if cmd_param.name == "artifacts" or cmd_param.name == "target":
+        if cmd_param.name in ("artifacts", "target"):
             return complete_artifact(orig_args, args, incomplete)
 
     raise CompleteUnhandled()
