@@ -84,6 +84,7 @@ disable=#####################################
         # Messages that are of no use to us #
         #####################################
         ,
+	consider-using-f-string,
         fixme,
         missing-docstring,
         no-self-use,

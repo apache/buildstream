@@ -98,7 +98,7 @@ def terminator_handler(signal_, frame):
 #
 @contextmanager
 def terminator(terminate_func):
-    global terminator_stack  # pylint: disable=global-statement
+    global terminator_stack  # pylint: disable=global-statement,global-variable-not-assigned
 
     outermost = bool(not terminator_stack)
 
@@ -174,7 +174,7 @@ def suspend_handler(sig, frame):
 #
 @contextmanager
 def suspendable(suspend_callback, resume_callback):
-    global suspendable_stack  # pylint: disable=global-statement
+    global suspendable_stack  # pylint: disable=global-statement,global-variable-not-assigned
 
     outermost = bool(not suspendable_stack)
     assert threading.current_thread() == threading.main_thread() or not outermost

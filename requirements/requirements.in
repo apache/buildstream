@@ -1,5 +1,8 @@
 Click >= 7.0
-grpcio >= 1.34
+#
+# We are experiencing crashes with grpcio >= 1.39
+#
+grpcio >= 1.34, < 1.39
 Jinja2 >= 2.10
 pluginbase
 protobuf >= 3.6
