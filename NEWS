@@ -2,6 +2,10 @@
 (unreleased)
 ============
 
+Core
+----
+  o BuildStream now also supports Python 3.10.
+
 Format
 ------
   o BREAKING CHANGE: Element names must now bare the `.bst` suffix and not
