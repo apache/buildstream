@@ -44,6 +44,7 @@ class ScriptElement(Element):
     __root_read_only = False
     __commands = None
     __layout = []
+    __create_dev_shm = False
 
     # The compose element's output is it's dependencies, so
     # we must rebuild if the dependencies change even when
@@ -103,6 +104,14 @@ class ScriptElement(Element):
           read-only.
         """
         self.__root_read_only = root_read_only
+
+    def set_create_dev_shm(self, create_dev_shm=False):
+        """Sets whether to use shared memory device in the sandbox
+
+        Args:
+          work_dir (bool): Whether to enable creation of the shared memory device
+        """
+        self.__create_dev_shm = create_dev_shm
 
     def layout_add(self, element, destination):
         """Adds an element-destination pair to the layout.
@@ -271,6 +280,11 @@ class ScriptElement(Element):
                     exist_ok=True)
 
     def assemble(self, sandbox):
+        flags = 0
+        if self.__root_read_only:
+            flags = flags | SandboxFlags.ROOT_READ_ONLY
+        if self.__create_dev_shm:
+            flags = flags | SandboxFlags.CREATE_DEV_SHM
 
         for groupname, commands in self.__commands.items():
             with self.timed_activity("Running '{}'".format(groupname)):
@@ -278,8 +292,7 @@ class ScriptElement(Element):
                     self.status("Running command", detail=cmd)
                     # Note the -e switch to 'sh' means to exit with an error
                     # if any untested command fails.
-                    exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
-                                           SandboxFlags.ROOT_READ_ONLY if self.__root_read_only else 0)
+                    exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'], flags)
                     if exitcode != 0:
                         raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
 
