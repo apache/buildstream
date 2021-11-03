@@ -71,6 +71,7 @@ found in the element configuration.
 
 Commands are run in the following order:
 
+* ``configure-commands``: Commands to configure the element before building
 * ``build-commands``: Commands to build the element
 * ``install-commands``: Commands to install the results into ``%{install-root}``
 * ``strip-commands``: Commands to strip debugging symbols installed binaries
@@ -78,6 +79,21 @@ Commands are run in the following order:
 The result of the build is expected to end up in ``%{install-root}``, and
 as such; Element.assemble() method will return the ``%{install-root}`` for
 artifact collection purposes.
+
+In addition to the command lists specified above, build elements support
+specifying the ``create-dev-shm`` boolean parameter. If configured, this
+parameter causes the sandbox to mount a tmpfs filesystem at ``/dev/shm``.
+
+**Example of create-dev-shm**:
+
+.. code:: yaml
+
+   kind: manual
+
+   config:
+     # Enable /dev/shm
+     create-dev-shm: true
+
 """
 
 import os
@@ -110,11 +126,14 @@ class BuildElement(Element):
     def configure(self, node):
 
         self.__commands = {}
+        self.__create_dev_shm = False
 
         # FIXME: Currently this forcefully validates configurations
         #        for all BuildElement subclasses so they are unable to
         #        extend the configuration
-        self.node_validate(node, _command_steps)
+        self.node_validate(node, _command_steps + ["create-dev-shm"])
+
+        self.__create_dev_shm = self.node_get_member(node, bool, "create-dev-shm", False)
 
         for command_name in _legacy_command_steps:
             if command_name in _command_steps:
@@ -236,10 +255,14 @@ class BuildElement(Element):
     def __run_command(self, sandbox, cmd, cmd_name):
         self.status("Running {}".format(cmd_name), detail=cmd)
 
+        if self.__create_dev_shm:
+            flags = SandboxFlags.ROOT_READ_ONLY | SandboxFlags.CREATE_DEV_SHM
+        else:
+            flags = SandboxFlags.ROOT_READ_ONLY
+
         # Note the -e switch to 'sh' means to exit with an error
         # if any untested command fails.
         #
-        exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'],
-                               SandboxFlags.ROOT_READ_ONLY)
+        exitcode = sandbox.run(['sh', '-c', '-e', cmd + '\n'], flags)
         if exitcode != 0:
             raise ElementError("Command '{}' failed with exitcode {}".format(cmd, exitcode))
