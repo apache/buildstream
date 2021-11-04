@@ -10,6 +10,10 @@ config:
   # It is recommended to set root as read-only wherever possible.
   root-read-only: False
 
+  # Defines whether we should mount a tmpfs filesystem at /dev/shm
+  #
+  create-dev-shm: False
+
   # Defines where to stage elements which are direct or indirect dependencies.
   # By default, all direct dependencies are staged to '/'.
   # This is also commonly used to take one element as an environment

@@ -49,7 +49,7 @@ class ScriptElement(buildstream.ScriptElement):
             self.layout_add(elm, dst)
 
         self.node_validate(node, [
-            'commands', 'root-read-only', 'layout'
+            'commands', 'root-read-only', 'layout', 'create-dev-shm'
         ])
 
         cmds = self.node_subst_list(node, "commands")
@@ -59,6 +59,8 @@ class ScriptElement(buildstream.ScriptElement):
         self.set_install_root()
         self.set_root_read_only(self.node_get_member(node, bool,
                                                      'root-read-only', False))
+        self.set_create_dev_shm(self.node_get_member(node, bool,
+                                                     'create-dev-shm', False))
 
 
 # Plugin entry point
