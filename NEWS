@@ -1,4 +1,12 @@
 =================
+buildstream 1.6.4
+=================
+
+  o BuildElement classes now support `create-dev-shm`
+
+  o script element plugin now supports `create-dev-shm`
+
+=================
 buildstream 1.6.3
 =================
 
