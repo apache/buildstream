@@ -4,8 +4,8 @@ name: PR Checks
 # redundant, we avoid concurrency with the below configuration.
 #
 on:
-  push:
   pull_request:
+  workflow_dispatch:
 
 # Use the concurrency feature to ensure we don't run redundant workflows
 #
