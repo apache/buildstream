@@ -5,6 +5,7 @@ import os
 import pytest
 
 from buildstream import _yaml
+from buildstream.exceptions import ErrorDomain
 from buildstream.testing import create_repo
 from buildstream.testing import cli  # pylint: disable=unused-import
 
@@ -38,19 +39,39 @@ def generate_element(output_file):
     return element
 
 
-def generate_project():
+SUCCESS_MIRROR_LIST = [
+    {"name": "middle-earth", "aliases": {"foo": ["OOF/"], "bar": ["RAB/"],},},
+    {"name": "arrakis", "aliases": {"foo": ["OFO/"], "bar": ["RBA/"],},},
+    {"name": "oz", "aliases": {"foo": ["ooF/"], "bar": ["raB/"],}},
+]
+
+
+FAIL_MIRROR_LIST = [
+    {"name": "middle-earth", "aliases": {"foo": ["pony/"], "bar": ["horzy/"],},},
+    {"name": "arrakis", "aliases": {"foo": ["donkey/"], "bar": ["rabbit/"],},},
+    {"name": "oz", "aliases": {"foo": ["bear/"], "bar": ["buffalo/"],}},
+]
+
+
+class MirrorConfig:
+    NO_MIRRORS = 0
+    SUCCESS_MIRRORS = 1
+    FAIL_MIRRORS = 2
+
+
+def generate_project(mirror_config=MirrorConfig.SUCCESS_MIRRORS):
     project = {
         "name": "test",
         "min-version": "2.0",
         "element-path": "elements",
         "aliases": {"foo": "FOO/", "bar": "BAR/",},
-        "mirrors": [
-            {"name": "middle-earth", "aliases": {"foo": ["OOF/"], "bar": ["RAB/"],},},
-            {"name": "arrakis", "aliases": {"foo": ["OFO/"], "bar": ["RBA/"],},},
-            {"name": "oz", "aliases": {"foo": ["ooF/"], "bar": ["raB/"],}},
-        ],
         "plugins": [{"origin": "local", "path": "sources", "sources": ["fetch_source"]}],
     }
+    if mirror_config == MirrorConfig.SUCCESS_MIRRORS:
+        project["mirrors"] = SUCCESS_MIRROR_LIST
+    elif mirror_config == MirrorConfig.FAIL_MIRRORS:
+        project["mirrors"] = FAIL_MIRROR_LIST
+
     return project
 
 
@@ -116,7 +137,23 @@ def test_mirror_fetch_ref_storage(cli, tmpdir, datafiles, ref_storage, mirror):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.usefixtures("datafiles")
-def test_mirror_fetch_multi(cli, tmpdir):
+@pytest.mark.parametrize(
+    "project_config,user_config,expect_success",
+    [
+        # User defined mirror configuration
+        (MirrorConfig.NO_MIRRORS, MirrorConfig.SUCCESS_MIRRORS, True),
+        # Project defined mirror configuration
+        (MirrorConfig.SUCCESS_MIRRORS, MirrorConfig.NO_MIRRORS, True),
+        # Both configurations active with success
+        (MirrorConfig.FAIL_MIRRORS, MirrorConfig.SUCCESS_MIRRORS, True),
+        # Both configurations active with failure, this ensures that
+        # the user configuration does not regress to extending project defined
+        # mirrors but properly overrides project defined mirrors.
+        (MirrorConfig.SUCCESS_MIRRORS, MirrorConfig.FAIL_MIRRORS, False),
+    ],
+    ids=["user-config", "project-config", "override-success", "override-fail"],
+)
+def test_mirror_fetch_multi(cli, tmpdir, project_config, user_config, expect_success):
     output_file = os.path.join(str(tmpdir), "output.txt")
     project_dir = str(tmpdir)
     element_dir = os.path.join(project_dir, "elements")
@@ -127,15 +164,25 @@ def test_mirror_fetch_multi(cli, tmpdir):
     _yaml.roundtrip_dump(element, element_path)
 
     project_file = os.path.join(project_dir, "project.conf")
-    project = generate_project()
+    project = generate_project(project_config)
     _yaml.roundtrip_dump(project, project_file)
 
+    if user_config == MirrorConfig.SUCCESS_MIRRORS:
+        cli.configure({"projects": {"test": {"mirrors": SUCCESS_MIRROR_LIST}}})
+    elif user_config == MirrorConfig.FAIL_MIRRORS:
+        cli.configure({"projects": {"test": {"mirrors": FAIL_MIRROR_LIST}}})
+
     result = cli.run(project=project_dir, args=["source", "fetch", element_name])
-    result.assert_success()
-    with open(output_file, encoding="utf-8") as f:
-        contents = f.read()
-        assert "Fetch foo:repo1 succeeded from FOO/repo1" in contents
-        assert "Fetch bar:repo2 succeeded from RAB/repo2" in contents
+
+    if expect_success:
+        result.assert_success()
+        with open(output_file, encoding="utf-8") as f:
+            contents = f.read()
+            assert "Fetch foo:repo1 succeeded from FOO/repo1" in contents
+            assert "Fetch bar:repo2 succeeded from RAB/repo2" in contents
+    else:
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.SOURCE, None)
 
 
 @pytest.mark.datafiles(DATA_DIR)
