@@ -27,6 +27,7 @@ Foundation types
 from typing import Any, Dict, List, Union, Optional
 import os
 
+from .node import MappingNode, SequenceNode
 from ._types import MetaFastEnum
 
 
@@ -318,6 +319,48 @@ class _HostMount:
         self.path: str = path  # Path inside the sandbox
         self.host_path: str = host_path  # Path on the host
         self.optional: bool = optional  # Optional mounts do not incur warnings or errors
+
+
+# _SourceMirror()
+#
+# A simple object describing a source mirror
+#
+# Args:
+#    name: The mirror name
+#    aliases: A dictionary of URI lists, keyed by alias names
+#
+class _SourceMirror:
+    def __init__(self, name: str, aliases: Dict[str, List[str]]):
+        self.name: str = name
+        self.aliases: Dict[str, List[str]] = aliases
+
+    # new_from_node():
+    #
+    # Creates a _SourceMirror() from a YAML loaded node.
+    #
+    # Args:
+    #    node: The configuration node describing the spec.
+    #
+    # Returns:
+    #    The described _SourceMirror instance.
+    #
+    # Raises:
+    #    LoadError: If the node is malformed.
+    #
+    @classmethod
+    def new_from_node(cls, node: MappingNode) -> "_SourceMirror":
+        node.validate_keys(["name", "aliases"])
+
+        name: str = node.get_str("name")
+        aliases: Dict[str, List[str]] = {}
+
+        alias_node: MappingNode = node.get_mapping("aliases")
+
+        for alias, uris in alias_node.items():
+            assert type(uris) is SequenceNode  # pylint: disable=unidiomatic-typecheck
+            aliases[alias] = uris.as_str_list()
+
+        return cls(name, aliases)
 
 
 ########################################
