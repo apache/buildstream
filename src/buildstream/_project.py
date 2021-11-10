@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Optional, Dict, Union, List
 import os
 import sys
 import urllib.parse
-from collections import OrderedDict
 from pathlib import Path
 from pluginbase import PluginBase
 from . import utils
@@ -34,9 +33,9 @@ from ._profile import Topics, PROFILER
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
 from ._options import OptionPool
-from .node import ScalarNode, SequenceNode, MappingNode, ProvenanceInformation, _assert_symbol_name
+from .node import ScalarNode, MappingNode, ProvenanceInformation, _assert_symbol_name
 from ._pluginfactory import ElementFactory, SourceFactory, load_plugin_origin
-from .types import CoreWarnings, _HostMount
+from .types import CoreWarnings, _HostMount, _SourceMirror
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._loader import Loader, LoadContext
 from .element import Element
@@ -60,7 +59,7 @@ class ProjectConfig:
         self.base_variables = {}  # The base set of variables
         self.element_overrides = {}  # Element specific configurations
         self.source_overrides = {}  # Source specific configurations
-        self.mirrors = OrderedDict()  # contains dicts of alias-mappings to URIs.
+        self.mirrors = {}  # Dictionary of _SourceAlias objects
         self.default_mirror = None  # The name of the preferred mirror.
         self._aliases = None  # Aliases dictionary
 
@@ -404,12 +403,13 @@ class Project:
             return [None]
 
         mirror_list = []
-        for key, alias_mapping in config.mirrors.items():
-            if alias in alias_mapping:
-                if key == config.default_mirror:
-                    mirror_list = alias_mapping[alias] + mirror_list
+        for mirror_name, mirror in config.mirrors.items():
+            if alias in mirror.aliases:
+                if mirror_name == config.default_mirror:
+                    mirror_list = mirror.aliases[alias] + mirror_list
                 else:
-                    mirror_list += alias_mapping[alias]
+                    mirror_list += mirror.aliases[alias]
+
         mirror_list.append(config._aliases.get_str(alias))
         return mirror_list
 
@@ -992,22 +992,17 @@ class Project:
         # Override default_mirror if not set by command-line
         output.default_mirror = self._default_mirror or overrides.get_str("default-mirror", default=None)
 
-        mirrors = config.get_sequence("mirrors", default=[])
+        mirrors_node = config.get_sequence("mirrors", default=[])
 
         # Perform variable substitutions in source mirror definitions
-        variables.expand(mirrors)
+        variables.expand(mirrors_node)
 
-        for mirror in mirrors:
-            allowed_mirror_fields = ["name", "aliases"]
-            mirror.validate_keys(allowed_mirror_fields)
-            mirror_name = mirror.get_str("name")
-            alias_mappings = {}
-            for alias_mapping, uris in mirror.get_mapping("aliases").items():
-                assert type(uris) is SequenceNode  # pylint: disable=unidiomatic-typecheck
-                alias_mappings[alias_mapping] = uris.as_str_list()
-            output.mirrors[mirror_name] = alias_mappings
+        # Collect _SourceMirror objects
+        for mirror_node in mirrors_node:
+            mirror = _SourceMirror.new_from_node(mirror_node)
+            output.mirrors[mirror.name] = mirror
             if not output.default_mirror:
-                output.default_mirror = mirror_name
+                output.default_mirror = mirror.name
 
         # Source url aliases
         output._aliases = config.get_mapping("aliases", default={})
