@@ -1060,13 +1060,45 @@ modifying some low level component.
    the ``--strict`` and ``--no-strict`` command line options.
 
 
+.. _config_mirrors:
+
+Mirrors
+~~~~~~~
+Project defined :ref:`mirrors <project_essentials_mirrors>`, can be overridden
+with user configuration. This is helpful when you need to mirror all of the source
+code used by subprojects and ensure that your project can be built in perpetuity.
+
+**Example**
+
+.. code:: yaml
+
+   projects:
+     project-name:
+       mirrors:
+       - name: middle-earth
+         aliases:
+           foo:
+           - http://www.middle-earth.com/foo/1
+           - http://www.middle-earth.com/foo/2
+           bar:
+           - http://www.middle-earth.com/bar/1
+           - http://www.middle-earth.com/bar/2
+       - name: oz
+         aliases:
+           foo:
+           - http://www.oz.com/foo
+           bar:
+           - http://www.oz.com/bar
+
+
 .. _config_default_mirror:
 
 Default mirror
 ~~~~~~~~~~~~~~
-When using :ref:`mirrors <project_essentials_mirrors>`, a default mirror can
-be defined to be fetched first.
-The default mirror is defined by its name, e.g.
+When using :ref:`mirrors <project_essentials_mirrors>`, one can specify which
+mirror should be used first.
+
+**Example**
 
 .. code:: yaml
 
