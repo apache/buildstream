@@ -992,9 +992,16 @@ class Project:
         # Override default_mirror if not set by command-line
         output.default_mirror = self._default_mirror or overrides.get_str("default-mirror", default=None)
 
-        mirrors_node = config.get_sequence("mirrors", default=[])
+        # First try mirrors specified in user configuration, user configuration
+        # is allowed to completely disable mirrors by specifying an empty list,
+        # so we check for a None value here too.
+        #
+        mirrors_node = overrides.get_sequence("mirrors", default=None)
+        if mirrors_node is None:
+            mirrors_node = config.get_sequence("mirrors", default=[])
 
-        # Perform variable substitutions in source mirror definitions
+        # Perform variable substitutions in source mirror definitions,
+        # even if the mirrors are specified in user configuration.
         variables.expand(mirrors_node)
 
         # Collect _SourceMirror objects
