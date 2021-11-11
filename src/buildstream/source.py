@@ -681,8 +681,7 @@ class Source(Plugin):
         # If there is an alias in use, ensure that it exists in the project
         if alias:
             project = self._get_project()
-            alias_uri = project.get_alias_uri(alias, first_pass=self.__first_pass)
-            if alias_uri is None:
+            if not project.alias_exists(alias, first_pass=self.__first_pass):
                 raise SourceError(
                     "{}: Invalid alias '{}' specified in URL: {}".format(self, alias, url),
                     reason="invalid-source-alias",
@@ -1116,7 +1115,7 @@ class Source(Plugin):
     def _get_alias(self):
         alias = self.__expected_alias
         project = self._get_project()
-        if project.get_alias_uri(alias, first_pass=self.__first_pass):
+        if project.alias_exists(alias, first_pass=self.__first_pass):
             # The alias must already be defined in the project's aliases
             # otherwise http://foo gets treated like it contains an alias
             return alias

@@ -367,7 +367,7 @@ class Project:
     def create_source(self, meta, variables):
         return self.source_factory.create(self._context, self, meta, variables)
 
-    # get_alias_uri()
+    # alias_exists()
     #
     # Returns the URI for a given alias, if it exists
     #
@@ -376,15 +376,15 @@ class Project:
     #    first_pass (bool): Whether to use first pass configuration (for junctions)
     #
     # Returns:
-    #    str: The URI for the given alias; or None: if there is no URI for
-    #         that alias.
-    def get_alias_uri(self, alias, *, first_pass=False):
+    #    bool: Whether the alias is declared in the scope of this project
+    #
+    def alias_exists(self, alias, *, first_pass=False):
         if first_pass:
             config = self.first_pass_config
         else:
             config = self.config
 
-        return config._aliases.get_str(alias, default=None)
+        return config._aliases.get_str(alias, default=None) is not None
 
     # get_alias_uris()
     #
