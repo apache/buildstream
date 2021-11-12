@@ -1255,7 +1255,7 @@ class Source(Plugin):
                         break
 
                 alias = fetcher._get_alias()
-                for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
+                for uri in project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=False):
                     try:
                         fetcher.fetch(uri)
                     # FIXME: Need to consider temporary vs. permanent failures,
@@ -1283,7 +1283,7 @@ class Source(Plugin):
                 self.fetch(**kwargs)
                 return
 
-            for uri in project.get_alias_uris(alias, first_pass=self.__first_pass):
+            for uri in project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=False):
                 new_source = self.__clone_for_uri(uri)
                 try:
                     new_source.fetch(**kwargs)
@@ -1313,7 +1313,7 @@ class Source(Plugin):
 
         # NOTE: We are assuming here that tracking only requires substituting the
         #       first alias used
-        for uri in reversed(project.get_alias_uris(alias, first_pass=self.__first_pass)):
+        for uri in reversed(project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=True)):
             new_source = self.__clone_for_uri(uri)
             try:
                 ref = new_source.track(**kwargs)  # pylint: disable=assignment-from-none

@@ -72,6 +72,28 @@ build:
 
 
 #
+# Source fetch related configuration
+#
+fetch:
+
+  #
+  # Which URIs are allowed to be accessed
+  #
+  source: all
+
+
+#
+# Source track related configuration
+#
+track:
+
+  #
+  # Which URIs are allowed to be accessed
+  #
+  source: aliases
+
+
+#
 #    Logging
 #
 logging:

@@ -276,6 +276,9 @@ def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
     mirror_ref = upstream_ref
     upstream_ref = upstream_repo.create(dev_files_path)
 
+    # Configure to allow tracking mirrors as well as upstream
+    cli.configure({"track": {"source": "all"}})
+
     element = {"kind": "import", "sources": [upstream_repo.source_config(ref=upstream_ref)]}
 
     element_name = "test.bst"

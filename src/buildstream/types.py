@@ -254,6 +254,29 @@ class _CacheBuildTrees(FastEnum):
     NEVER = "never"
 
 
+# _SourceUriPolicy()
+#
+# A policy for which URIs to access when fetching and tracking
+#
+class _SourceUriPolicy(FastEnum):
+
+    # Use all URIs from default aliases and mirrors
+    ALL = "all"
+
+    # Use only the base source aliases defined in project configuration
+    #
+    ALIASES = "aliases"
+
+    # Use only URIs from source mirrors (whether they are found
+    # in project configuration or user configuration)
+    MIRRORS = "mirrors"
+
+    # Use only URIs from user configuration, intentionally causing
+    # a failure if we try to access a source for which the user
+    # configuration has not provided a mirror
+    USER = "user"
+
+
 # _PipelineSelection()
 #
 # Defines the kind of pipeline selection to make when the pipeline

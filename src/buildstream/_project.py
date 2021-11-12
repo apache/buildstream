@@ -35,7 +35,7 @@ from .exceptions import LoadErrorReason
 from ._options import OptionPool
 from .node import ScalarNode, MappingNode, ProvenanceInformation, _assert_symbol_name
 from ._pluginfactory import ElementFactory, SourceFactory, load_plugin_origin
-from .types import CoreWarnings, _HostMount, _SourceMirror
+from .types import CoreWarnings, _HostMount, _SourceMirror, _SourceUriPolicy
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._loader import Loader, LoadContext
 from .element import Element
@@ -139,6 +139,7 @@ class Project:
         self._shell_command: List[str] = []  # The default interactive shell command
         self._shell_environment: Dict[str, str] = {}  # Statically set environment vars
         self._shell_host_files: List[_HostMount] = []  # A list of HostMount objects
+        self._mirror_override: bool = False  # Whether mirrors have been declared in user configuration
 
         # This is a lookup table of lists indexed by project,
         # the child dictionaries are lists of ScalarNodes indicating
@@ -391,9 +392,10 @@ class Project:
     # Args:
     #    alias (str): The alias.
     #    first_pass (bool): Whether to use first pass configuration (for junctions)
+    #    tracking (bool): Whether we want the aliases for tracking (otherwise assume fetching)
     #
     # Returns a list of every URI to replace an alias with
-    def get_alias_uris(self, alias, *, first_pass=False):
+    def get_alias_uris(self, alias, *, first_pass=False, tracking=False):
         if first_pass:
             config = self.first_pass_config
         else:
@@ -402,16 +404,23 @@ class Project:
         if not alias or alias not in config._aliases:  # pylint: disable=unsupported-membership-test
             return [None]
 
-        mirror_list = []
-        for mirror_name, mirror in config.mirrors.items():
-            if alias in mirror.aliases:
-                if mirror_name == config.default_mirror:
-                    mirror_list = mirror.aliases[alias] + mirror_list
-                else:
-                    mirror_list += mirror.aliases[alias]
+        uri_list = []
+        policy = self._context.track_source if tracking else self._context.fetch_source
 
-        mirror_list.append(config._aliases.get_str(alias))
-        return mirror_list
+        if policy in (_SourceUriPolicy.ALL, _SourceUriPolicy.MIRRORS) or (
+            policy == _SourceUriPolicy.USER and self._mirror_override
+        ):
+            for mirror_name, mirror in config.mirrors.items():
+                if alias in mirror.aliases:
+                    if mirror_name == config.default_mirror:
+                        uri_list = mirror.aliases[alias] + uri_list
+                    else:
+                        uri_list += mirror.aliases[alias]
+
+        if policy in (_SourceUriPolicy.ALL, _SourceUriPolicy.ALIASES):
+            uri_list.append(config._aliases.get_str(alias))
+
+        return uri_list
 
     # load_elements()
     #
@@ -999,6 +1008,8 @@ class Project:
         mirrors_node = overrides.get_sequence("mirrors", default=None)
         if mirrors_node is None:
             mirrors_node = config.get_sequence("mirrors", default=[])
+        else:
+            self._mirror_override = True
 
         # Perform variable substitutions in source mirror definitions,
         # even if the mirrors are specified in user configuration.
