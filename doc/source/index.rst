@@ -26,7 +26,7 @@ Later sections provide detailed information on BuildStream internals.
 
 Resources
 ---------
-* GitLab repository: https://gitlab.com/BuildStream/buildstream
-* Bug Tracking: https://gitlab.com/BuildStream/buildstream/issues
+* Github repository: https://github.com/apache/buildstream
+* Bug Tracking: https://github.com/apache/buildstream/issues
 * Mailing list: https://lists.apache.org/list.html?dev@buildstream.apache.org
 * IRC Channel: irc://irc.gnome.org/#buildstream
