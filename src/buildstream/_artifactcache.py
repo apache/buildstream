@@ -183,7 +183,9 @@ class ArtifactCache(AssetCache):
 
         if errors and not artifact_digest:
             raise ArtifactError(
-                "Failed to pull artifact {}".format(display_key), detail="\n".join(str(e) for e in errors)
+                "Failed to pull artifact {}".format(display_key),
+                detail="\n".join(str(e) for e in errors),
+                temporary=True,
             )
 
         # If we don't have an artifact, we can't exactly pull our
@@ -213,7 +215,9 @@ class ArtifactCache(AssetCache):
 
         if errors:
             raise ArtifactError(
-                "Failed to pull artifact {}".format(display_key), detail="\n".join(str(e) for e in errors)
+                "Failed to pull artifact {}".format(display_key),
+                detail="\n".join(str(e) for e in errors),
+                temporary=True,
             )
 
         return False
@@ -403,7 +407,7 @@ class ArtifactCache(AssetCache):
 
         except CASRemoteError as cas_error:
             if cas_error.reason != "cache-too-full":
-                raise ArtifactError("Failed to push artifact blobs: {}".format(cas_error))
+                raise ArtifactError("Failed to push artifact blobs: {}".format(cas_error), temporary=True)
             return False
 
         return True
@@ -438,7 +442,7 @@ class ArtifactCache(AssetCache):
             if response and response.blob_digest == artifact_digest:
                 return False
         except AssetCacheError as e:
-            raise ArtifactError("{}".format(e)) from e
+            raise ArtifactError("{}".format(e), temporary=True) from e
 
         referenced_directories = []
         if artifact_proto.files:
@@ -460,7 +464,7 @@ class ArtifactCache(AssetCache):
                 references_directories=referenced_directories,
             )
         except AssetCacheError as e:
-            raise ArtifactError("{}".format(e)) from e
+            raise ArtifactError("{}".format(e), temporary=True) from e
 
         return True
 
@@ -514,7 +518,7 @@ class ArtifactCache(AssetCache):
         except BlobNotFound:
             return False
         except CASRemoteError as e:
-            raise ArtifactError("{}".format(e)) from e
+            raise ArtifactError("{}".format(e), temporary=True) from e
 
         return True
 
@@ -534,4 +538,4 @@ class ArtifactCache(AssetCache):
             response = remote.fetch_blob([uri])
             return bool(response)
         except AssetCacheError as e:
-            raise ArtifactError("{}".format(e)) from e
+            raise ArtifactError("{}".format(e), temporary=True) from e
