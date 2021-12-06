@@ -2946,7 +2946,7 @@ class Element(Plugin):
         else:
             environment = project.base_environment.clone()
 
-        default_env._composite(environment)
+        default_env.clone()._composite(environment)
         element_env._composite(environment)
         environment._assert_fully_composited()
 
