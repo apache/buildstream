@@ -1743,11 +1743,7 @@ class Stream:
     #
     def _enqueue_plan(self, plan, *, queue=None):
         queue = queue or self.queues[0]
-
-        with self._context.messenger.simple_task("Preparing work plan") as task:
-            task.set_maximum_progress(len(plan))
-            queue.enqueue(plan, task)
-
+        queue.enqueue(plan)
         self.session_elements += plan
 
     # _run()
