@@ -35,10 +35,6 @@ from .._protos.build.bazel.remote.execution.v2 import (
     remote_execution_pb2_grpc,
 )
 from .._protos.google.bytestream import bytestream_pb2_grpc
-from .._protos.buildstream.v2 import (
-    buildstream_pb2,
-    buildstream_pb2_grpc,
-)
 
 # Note: We'd ideally like to avoid imports from the core codebase as
 # much as possible, since we're expecting to eventually split this
@@ -47,7 +43,6 @@ from .._protos.buildstream.v2 import (
 # Not enough that we'd like to duplicate code, but enough that we want
 # to make it very obvious what we're using, so in this case we import
 # the specific methods we'll be using.
-from ..utils import save_file_atomic, _remove_path_with_parents
 from .casdprocessmanager import CASDProcessManager
 
 
@@ -113,8 +108,6 @@ def create_server(repo, *, enable_push, quota, index_only, log_level=LogLevel.Le
     casd_channel = casd_manager.create_channel()
 
     try:
-        root = os.path.abspath(repo)
-
         # Use max_workers default from Python 3.5+
         max_workers = (os.cpu_count() or 1) * 5
         server = grpc.server(futures.ThreadPoolExecutor(max_workers))
@@ -134,11 +127,6 @@ def create_server(repo, *, enable_push, quota, index_only, log_level=LogLevel.Le
         remote_asset_pb2_grpc.add_FetchServicer_to_server(_FetchServicer(casd_channel), server)
         if enable_push:
             remote_asset_pb2_grpc.add_PushServicer_to_server(_PushServicer(casd_channel), server)
-
-        # BuildStream protocols
-        buildstream_pb2_grpc.add_ReferenceStorageServicer_to_server(
-            _ReferenceStorageServicer(casd_channel, root, enable_push=enable_push), server
-        )
 
         # Ensure we have the signal handler set for SIGTERM
         # This allows threads from GRPC to call our methods that do register
@@ -340,103 +328,3 @@ class _PushServicer(remote_asset_pb2_grpc.PushServicer):
         except grpc.RpcError as err:
             context.abort(err.code(), err.details())
         return ret
-
-
-class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
-    def __init__(self, casd, cas_root, *, enable_push):
-        super().__init__()
-        self.cas = casd.get_cas()
-        self.root = cas_root
-        self.enable_push = enable_push
-        self.logger = logging.getLogger("buildstream._cas.casserver")
-        self.tmpdir = os.path.join(self.root, "tmp")
-        self.casdir = os.path.join(self.root, "cas")
-        self.refdir = os.path.join(self.casdir, "refs", "heads")
-        os.makedirs(self.tmpdir, exist_ok=True)
-
-    # ref_path():
-    #
-    # Get the path to a digest's file.
-    #
-    # Args:
-    #     ref - The ref of the digest.
-    #
-    # Returns:
-    #     str - The path to the digest's file.
-    #
-    def ref_path(self, ref: str) -> str:
-        return os.path.join(self.refdir, ref)
-
-    # set_ref():
-    #
-    # Create or update a ref with a new digest.
-    #
-    # Args:
-    #     ref - The ref of the digest.
-    #     tree - The digest to write.
-    #
-    def set_ref(self, ref: str, tree):
-        ref_path = self.ref_path(ref)
-
-        os.makedirs(os.path.dirname(ref_path), exist_ok=True)
-        with save_file_atomic(ref_path, "wb", tempdir=self.tmpdir) as f:
-            f.write(tree.SerializeToString())
-
-    # resolve_ref():
-    #
-    # Resolve a ref to a digest.
-    #
-    # Args:
-    #     ref (str): The name of the ref
-    #
-    # Returns:
-    #     (Digest): The digest stored in the ref
-    #
-    def resolve_ref(self, ref):
-        ref_path = self.ref_path(ref)
-
-        with open(ref_path, "rb") as f:
-            os.utime(ref_path)
-
-            digest = remote_execution_pb2.Digest()
-            digest.ParseFromString(f.read())
-            return digest
-
-    def GetReference(self, request, context):
-        self.logger.debug("'%s'", request.key)
-        response = buildstream_pb2.GetReferenceResponse()
-
-        try:
-            digest = self.resolve_ref(request.key)
-        except FileNotFoundError:
-            with contextlib.suppress(FileNotFoundError):
-                _remove_path_with_parents(self.refdir, request.key)
-
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-            return response
-
-        response.digest.hash = digest.hash
-        response.digest.size_bytes = digest.size_bytes
-
-        return response
-
-    def UpdateReference(self, request, context):
-        self.logger.debug("%s -> %s", request.keys, request.digest)
-        response = buildstream_pb2.UpdateReferenceResponse()
-
-        if not self.enable_push:
-            context.set_code(grpc.StatusCode.PERMISSION_DENIED)
-            return response
-
-        for key in request.keys:
-            self.set_ref(key, request.digest)
-
-        return response
-
-    def Status(self, request, context):
-        self.logger.debug("Retrieving status")
-        response = buildstream_pb2.StatusResponse()
-
-        response.allow_updates = self.enable_push
-
-        return response
