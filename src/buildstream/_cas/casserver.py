@@ -22,7 +22,6 @@ from enum import Enum
 import contextlib
 import logging
 import os
-import signal
 import sys
 
 import grpc
@@ -35,14 +34,6 @@ from .._protos.build.bazel.remote.execution.v2 import (
     remote_execution_pb2_grpc,
 )
 from .._protos.google.bytestream import bytestream_pb2_grpc
-
-# Note: We'd ideally like to avoid imports from the core codebase as
-# much as possible, since we're expecting to eventually split this
-# module off into its own project.
-#
-# Not enough that we'd like to duplicate code, but enough that we want
-# to make it very obvious what we're using, so in this case we import
-# the specific methods we'll be using.
 from .casdprocessmanager import CASDProcessManager
 
 
@@ -138,71 +129,6 @@ def create_server(repo, *, enable_push, quota, index_only, log_level=LogLevel.Le
         casd_channel.request_shutdown()
         casd_channel.close()
         casd_manager.release_resources()
-
-
-@click.command(short_help="CAS Artifact Server")
-@click.option("--port", "-p", type=click.INT, required=True, help="Port number")
-@click.option("--server-key", help="Private server key for TLS (PEM-encoded)")
-@click.option("--server-cert", help="Public server certificate for TLS (PEM-encoded)")
-@click.option("--client-certs", help="Public client certificates for TLS (PEM-encoded)")
-@click.option("--enable-push", is_flag=True, help="Allow clients to upload blobs and update artifact cache")
-@click.option("--quota", type=click.INT, default=10e9, show_default=True, help="Maximum disk usage in bytes")
-@click.option(
-    "--index-only",
-    is_flag=True,
-    help='Only provide the BuildStream artifact and source services ("index"), not the CAS ("storage")',
-)
-@click.option("--log-level", type=LogLevel(), help="The log level to launch with", default="warning")
-@click.argument("repo")
-def server_main(repo, port, server_key, server_cert, client_certs, enable_push, quota, index_only, log_level):
-    # Handle SIGTERM by calling sys.exit(0), which will raise a SystemExit exception,
-    # properly executing cleanup code in `finally` clauses and context managers.
-    # This is required to terminate buildbox-casd on SIGTERM.
-    signal.signal(signal.SIGTERM, lambda signalnum, frame: sys.exit(0))
-
-    with create_server(
-        repo, quota=quota, enable_push=enable_push, index_only=index_only, log_level=log_level
-    ) as server:
-
-        use_tls = bool(server_key)
-
-        if bool(server_cert) != use_tls:
-            click.echo("ERROR: --server-key and --server-cert are both required for TLS", err=True)
-            sys.exit(-1)
-
-        if client_certs and not use_tls:
-            click.echo("ERROR: --client-certs can only be used with --server-key", err=True)
-            sys.exit(-1)
-
-        if use_tls:
-            # Read public/private key pair
-            with open(server_key, "rb") as f:
-                server_key_bytes = f.read()
-            with open(server_cert, "rb") as f:
-                server_cert_bytes = f.read()
-
-            if client_certs:
-                with open(client_certs, "rb") as f:
-                    client_certs_bytes = f.read()
-            else:
-                client_certs_bytes = None
-
-            credentials = grpc.ssl_server_credentials(
-                [(server_key_bytes, server_cert_bytes)],
-                root_certificates=client_certs_bytes,
-                require_client_auth=bool(client_certs),
-            )
-            server.add_secure_port("[::]:{}".format(port), credentials)
-        else:
-            server.add_insecure_port("[::]:{}".format(port))
-
-        # Run artifact server
-        server.start()
-        try:
-            while True:
-                signal.pause()
-        finally:
-            server.stop(0)
 
 
 class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
