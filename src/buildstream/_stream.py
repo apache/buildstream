@@ -202,7 +202,7 @@ class Stream:
         # It doesn't make sense to combine these flags
         assert not sources_of_cached_elements or not only_sources
 
-        with self._context.messenger.timed_activity("Query cache", silent_nested=True):
+        with self._context.messenger.simple_task("Query cache", silent_nested=True) as task:
             # Enqueue complete build plan as this is required to determine `buildable` status.
             plan = list(_pipeline.dependencies(elements, _Scope.ALL))
 
@@ -213,6 +213,7 @@ class Stream:
                 self._enqueue_plan(plan)
                 self._run()
             else:
+                task.set_maximum_progress(len(plan))
                 for element in plan:
                     if element._can_query_cache():
                         # Cache status already available.
@@ -231,6 +232,8 @@ class Stream:
                             element._load_artifact_done()
                     elif element._has_all_sources_resolved():
                         element._query_source_cache()
+
+                    task.add_current_progress()
 
     # shell()
     #
