@@ -19,6 +19,7 @@ import os
 import sys
 import curses
 from collections import OrderedDict
+import shutil
 import click
 
 # Import a widget internal for formatting time codes
@@ -63,7 +64,7 @@ class Status:
             context, state, content_profile, format_profile, success_profile, error_profile, stream
         )
 
-        self._term_width, _ = click.get_terminal_size()
+        self._term_width, _ = shutil.get_terminal_size()
         self._alloc_lines = 0
         self._alloc_columns = None
         self._need_alloc = True
@@ -215,7 +216,7 @@ class Status:
         return term_caps
 
     def _check_term_width(self):
-        term_width, _ = click.get_terminal_size()
+        term_width, _ = shutil.get_terminal_size()
         if self._term_width != term_width:
             self._term_width = term_width
             self._need_alloc = True
