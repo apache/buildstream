@@ -400,21 +400,13 @@ def test_value_doesnt_match_expected(datafiles):
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
 
-# This test has been broken by upstream ruamel.yaml, filed an issue here:
-#
-#    https://sourceforge.net/p/ruamel-yaml/tickets/390/
-#
-@pytest.mark.xfail(reason="recent versions of ruamel.yaml have broken roundtripping perfection")
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
-@pytest.mark.parametrize("fromdisk", [(True), (False)])
-def test_roundtrip_dump(datafiles, fromdisk):
+def test_roundtrip_dump(datafiles):
     filename = os.path.join(datafiles.dirname, datafiles.basename, "roundtrip-test.yaml")
     with open(filename, "r", encoding="utf-8") as fh:
         rt_raw = fh.read()
-    if fromdisk:
-        rt_loaded = _yaml.roundtrip_load(filename)
-    else:
-        rt_loaded = _yaml.roundtrip_load_data(rt_raw, filename=filename)
+
+    rt_loaded = _yaml.roundtrip_load(filename)
 
     # Now walk the loaded data structure, checking for ints etc.
     def walk_node(node):
