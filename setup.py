@@ -253,12 +253,15 @@ def cythonize(extensions, **kwargs):
         missing_c_sources = []
 
         for extension in extensions:
+            c_sources = []
             for source in extension.sources:
-                if source.endswith(".pyx"):
-                    c_file = source.replace(".pyx", ".c")
+                if source.endswith(".pyx") or source.endswith(".py"):
+                    c_file = source.replace(".pyx", ".c").replace(".py", ".c")
+                    c_sources.append(c_file)
 
                     if not os.path.exists(c_file):
                         missing_c_sources.append((extension, c_file))
+            extension.sources = c_sources
 
         if missing_c_sources:
             for extension, source in missing_c_sources:
@@ -273,29 +276,29 @@ def cythonize(extensions, **kwargs):
 def register_cython_module(module_name, dependencies=None):
     def files_from_module(modname):
         basename = "src/{}".format(modname.replace(".", "/"))
+        if os.path.exists("{}.py".format(basename)):
+            return ("{}.py".format(basename),)
         return "{}.pyx".format(basename), "{}.pxd".format(basename)
 
     if dependencies is None:
         dependencies = []
 
-    implementation_file, definition_file = files_from_module(module_name)
+    cython_files = files_from_module(module_name)
 
-    assert os.path.exists(implementation_file)
+    assert os.path.exists(cython_files[0])
 
     depends = []
-    if os.path.exists(definition_file):
-        depends.append(definition_file)
+    if len(cython_files) == 2 and os.path.exists(cython_files[1]):
+        depends.append(cython_files[1])
 
     for module in dependencies:
-        imp_file, def_file = files_from_module(module)
-        assert os.path.exists(imp_file), "Dependency file not found: {}".format(imp_file)
-        assert os.path.exists(def_file), "Dependency declaration file not found: {}".format(def_file)
+        files = files_from_module(module)
+        assert all(os.path.exists(f) for f in files), "Missing file for module: {}".format(module)
 
-        depends.append(imp_file)
-        depends.append(def_file)
+        depends.extend(files)
 
     BUILD_EXTENSIONS.append(
-        Extension(name=module_name, sources=[implementation_file], depends=depends, define_macros=extension_macros,)
+        Extension(name=module_name, sources=[cython_files[0]], depends=depends, define_macros=extension_macros,)
     )
 
 
