@@ -22,12 +22,13 @@
 This module contains utilities that have been optimized in Cython
 """
 
-from cpython.pystate cimport PyThreadState_SetAsyncExc
-from cpython.ref cimport PyObject
+import cython  # pylint: disable=import-error
+from cython.cimports.cpython.pystate import PyThreadState_SetAsyncExc  # pylint: disable=import-error
+from cython.cimports.cpython.ref import PyObject  # pylint: disable=import-error
 from ._signals import TerminateException
 
 
-def url_directory_name(str url):
+def url_directory_name(url: str):
     """Normalizes a url into a directory name
 
     Args:
@@ -36,8 +37,7 @@ def url_directory_name(str url):
     Returns:
        A string which can be used as a directory name
     """
-    return ''.join([_transl(x) for x in url])
-
+    return "".join([_transl(x) for x in url])
 
 
 # terminate_thread()
@@ -47,8 +47,8 @@ def url_directory_name(str url):
 # Args:
 #   thread_id (int): the thread id in which to throw the exception
 #
-def terminate_thread(long thread_id):
-    res = PyThreadState_SetAsyncExc(thread_id, <PyObject*> TerminateException)
+def terminate_thread(thread_id: cython.long):
+    res = PyThreadState_SetAsyncExc(thread_id, cython.cast(cython.pointer(PyObject), TerminateException))
     assert res == 1
 
 
@@ -60,9 +60,9 @@ def terminate_thread(long thread_id):
 # Returns:
 #    (bool): True if all characters are valid, False otherwise.
 #
-def valid_chars_name(str name):
-    cdef int char_value
-    cdef int forbidden_char
+def valid_chars_name(name: str):
+    char_value: cython.int
+    forbidden_char: cython.int
 
     for char_value in name:
         # 0-31 are control chars, 127 is DEL, and >127 means non-ASCII
@@ -96,7 +96,8 @@ def valid_chars_name(str name):
 #
 # This transforms the value to "_" if is it not a ascii letter, a digit or "%" or "_"
 #
-cdef Py_UNICODE _transl(Py_UNICODE x):
+@cython.cfunc
+def _transl(x: cython.Py_UNICODE) -> cython.Py_UNICODE:
     if ("a" <= x <= "z") or ("A" <= x <= "Z") or ("0" <= x <= "9") or x == "%":
         return x
     return "_"
