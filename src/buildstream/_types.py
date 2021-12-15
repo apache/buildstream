@@ -58,8 +58,9 @@ class MetaFastEnum(type):
         value_to_entry = {}
 
         assert len(set(data.values())) == len(data.values()), "Values for {} are not unique".format(kls)
-        assert len(set(type(value) for value in data.values())) <= 1, \
-            "Values of {} are of heterogeneous types".format(kls)
+        assert len(set(type(value) for value in data.values())) <= 1, "Values of {} are of heterogeneous types".format(
+            kls
+        )
 
         for key, value in data.items():
             new_value = object.__new__(kls)
@@ -72,11 +73,11 @@ class MetaFastEnum(type):
 
         type.__setattr__(kls, "_value_to_entry", value_to_entry)
 
-    def __repr__(self):
-        return "<fastenum '{}'>".format(self.__name__)
+    def __repr__(cls):
+        return "<fastenum '{}'>".format(cls.__name__)
 
-    def __setattr__(self, key, value):
+    def __setattr__(cls, key, value):
         raise AttributeError("Adding new values dynamically is not supported")
 
-    def __iter__(self):
-        return iter(self._value_to_entry.values())
+    def __iter__(cls):
+        return iter(cls._value_to_entry.values())
