@@ -3,10 +3,13 @@ import pytest
 import tarfile
 import tempfile
 import subprocess
+import urllib.parse
+from shutil import copyfile, rmtree
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from tests.testutils import cli
+from tests.testutils.file_server import create_file_server
 from tests.testutils.site import HAVE_LZIP
 from . import list_dir_contents
 
@@ -44,6 +47,16 @@ def generate_project(project_dir, tmpdir):
         'name': 'foo',
         'aliases': {
             'tmpdir': "file:///" + str(tmpdir)
+        }
+    }, project_file)
+
+
+def generate_project_file_server(base_url, project_dir):
+    project_file = os.path.join(project_dir, "project.conf")
+    _yaml.dump({
+        'name': 'foo',
+        'aliases': {
+            'tmpdir': base_url
         }
     }, project_file)
 
@@ -257,3 +270,93 @@ def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
     assert(checkout_contents == original_contents)
+
+
+@pytest.mark.parametrize('server_type', ('FTP', 'HTTP'))
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+def test_use_netrc(cli, datafiles, server_type, tmpdir):
+    file_server_files = os.path.join(str(tmpdir), 'file_server')
+    fake_home = os.path.join(str(tmpdir), 'fake_home')
+    os.makedirs(file_server_files, exist_ok=True)
+    os.makedirs(fake_home, exist_ok=True)
+    project = str(datafiles)
+    checkoutdir = os.path.join(str(tmpdir), 'checkout')
+
+    os.environ['HOME'] = fake_home
+    with open(os.path.join(fake_home, '.netrc'), 'wb') as f:
+        os.fchmod(f.fileno(), 0o700)
+        f.write(b'machine 127.0.0.1\n')
+        f.write(b'login testuser\n')
+        f.write(b'password 12345\n')
+
+    with create_file_server(server_type) as server:
+        server.add_user('testuser', '12345', file_server_files)
+        generate_project_file_server(server.base_url(), project)
+
+        src_tar = os.path.join(file_server_files, 'a.tar.gz')
+        _assemble_tar(os.path.join(str(datafiles), 'content'), 'a', src_tar)
+
+        server.start()
+
+        result = cli.run(project=project, args=['track', 'target.bst'])
+        result.assert_success()
+        result = cli.run(project=project, args=['fetch', 'target.bst'])
+        result.assert_success()
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
+        result = cli.run(project=project, args=['checkout', 'target.bst', checkoutdir])
+        result.assert_success()
+
+        original_dir = os.path.join(str(datafiles), 'content', 'a')
+        original_contents = list_dir_contents(original_dir)
+        checkout_contents = list_dir_contents(checkoutdir)
+        assert(checkout_contents == original_contents)
+
+
+@pytest.mark.parametrize('server_type', ('FTP', 'HTTP'))
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+def test_netrc_already_specified_user(cli, datafiles, server_type, tmpdir):
+    file_server_files = os.path.join(str(tmpdir), 'file_server')
+    fake_home = os.path.join(str(tmpdir), 'fake_home')
+    os.makedirs(file_server_files, exist_ok=True)
+    os.makedirs(fake_home, exist_ok=True)
+    project = str(datafiles)
+    checkoutdir = os.path.join(str(tmpdir), 'checkout')
+
+    os.environ['HOME'] = fake_home
+    with open(os.path.join(fake_home, '.netrc'), 'wb') as f:
+        os.fchmod(f.fileno(), 0o700)
+        f.write(b'machine 127.0.0.1\n')
+        f.write(b'login testuser\n')
+        f.write(b'password 12345\n')
+
+    with create_file_server(server_type) as server:
+        server.add_user('otheruser', '12345', file_server_files)
+        parts = urllib.parse.urlsplit(server.base_url())
+        base_url = urllib.parse.urlunsplit([parts[0]] + ['otheruser@{}'.format(parts[1])] + list(parts[2:]))
+        generate_project_file_server(base_url, project)
+
+        src_tar = os.path.join(file_server_files, 'a.tar.gz')
+        _assemble_tar(os.path.join(str(datafiles), 'content'), 'a', src_tar)
+
+        server.start()
+
+        result = cli.run(project=project, args=['track', 'target.bst'])
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.SOURCE, None)
+
+
+# Test that BuildStream doesnt crash if HOME is unset while
+# the netrc module is trying to find it's ~/.netrc file.
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+def test_homeless_environment(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    generate_project(project, tmpdir)
+
+    # Create a local tar
+    src_tar = os.path.join(str(tmpdir), "a.tar.gz")
+    _assemble_tar(os.path.join(str(datafiles), "content"), "a", src_tar)
+
+    # Use a track, make sure the plugin tries to find a ~/.netrc
+    result = cli.run(project=project, args=['track', 'target.bst'], env={'HOME': None})
+    result.assert_success()

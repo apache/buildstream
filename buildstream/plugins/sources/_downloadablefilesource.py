@@ -5,15 +5,76 @@ import urllib.request
 import urllib.error
 import contextlib
 import shutil
+import netrc
 
 from buildstream import Source, SourceError, Consistency
 from buildstream import utils
+
+
+class _NetrcFTPOpener(urllib.request.FTPHandler):
+
+    def __init__(self, netrc_config):
+        self.netrc = netrc_config
+
+    def _split(self, netloc):
+        userpass, hostport = urllib.parse.splituser(netloc)
+        host, port = urllib.parse.splitport(hostport)
+        if userpass:
+            user, passwd = urllib.parse.splitpasswd(userpass)
+        else:
+            user = None
+            passwd = None
+        return host, port, user, passwd
+
+    def _unsplit(self, host, port, user, passwd):
+        if port:
+            host = '{}:{}'.format(host, port)
+        if user:
+            if passwd:
+                user = '{}:{}'.format(user, passwd)
+            host = '{}@{}'.format(user, host)
+
+        return host
+
+    def ftp_open(self, req):
+        host, port, user, passwd = self._split(req.host)
+
+        if user is None and self.netrc:
+            entry = self.netrc.authenticators(host)
+            if entry:
+                user, _, passwd = entry
+
+        req.host = self._unsplit(host, port, user, passwd)
+
+        return super().ftp_open(req)
+
+
+class _NetrcPasswordManager:
+
+    def __init__(self, netrc_config):
+        self.netrc = netrc_config
+
+    def add_password(self, realm, uri, user, passwd):
+        pass
+
+    def find_user_password(self, realm, authuri):
+        if not self.netrc:
+            return None, None
+        parts = urllib.parse.urlsplit(authuri)
+        entry = self.netrc.authenticators(parts.hostname)
+        if not entry:
+            return None, None
+        else:
+            login, _, password = entry
+            return login, password
 
 
 class DownloadableFileSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
     COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ['url', 'ref', 'etag']
+
+    __urlopener = None
 
     def configure(self, node):
         self.original_url = self.node_get_member(node, str, 'url')
@@ -119,7 +180,8 @@ class DownloadableFileSource(Source):
                     if etag and self.get_consistency() == Consistency.CACHED:
                         request.add_header('If-None-Match', etag)
 
-                with contextlib.closing(urllib.request.urlopen(request)) as response:
+                opener = self.__get_urlopener()
+                with contextlib.closing(opener.open(request)) as response:
                     info = response.info()
 
                     # some servers don't honor the 'If-None-Match' header
@@ -167,3 +229,25 @@ class DownloadableFileSource(Source):
 
     def _get_mirror_file(self, sha=None):
         return os.path.join(self._get_mirror_dir(), sha or self.ref)
+
+    def __get_urlopener(self):
+        if not DownloadableFileSource.__urlopener:
+            try:
+                netrc_config = netrc.netrc()
+            except OSError:
+                # If the .netrc file was not found, FileNotFoundError will be
+                # raised, but OSError will be raised directly by the netrc package
+                # in the case that $HOME is not set.
+                #
+                # This will catch both cases.
+                #
+                DownloadableFileSource.__urlopener = urllib.request.build_opener()
+            except netrc.NetrcParseError as e:
+                self.warn('{}: While reading .netrc: {}'.format(self, e))
+                return urllib.request.build_opener()
+            else:
+                netrc_pw_mgr = _NetrcPasswordManager(netrc_config)
+                http_auth = urllib.request.HTTPBasicAuthHandler(netrc_pw_mgr)
+                ftp_handler = _NetrcFTPOpener(netrc_config)
+                DownloadableFileSource.__urlopener = urllib.request.build_opener(http_auth, ftp_handler)
+        return DownloadableFileSource.__urlopener
