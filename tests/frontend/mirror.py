@@ -39,9 +39,16 @@ def generate_element(output_file):
     return element
 
 
-SUCCESS_MIRROR_LIST = [
+DEFAULT_MIRROR_LIST = [
     {"name": "middle-earth", "aliases": {"foo": ["OOF/"], "bar": ["RAB/"],},},
     {"name": "arrakis", "aliases": {"foo": ["OFO/"], "bar": ["RBA/"],},},
+    {"name": "oz", "aliases": {"foo": ["ooF/"], "bar": ["raB/"],}},
+]
+
+
+SUCCESS_MIRROR_LIST = [
+    {"name": "middle-earth", "aliases": {"foo": ["OOF/"], "bar": ["RAB/"],},},
+    {"name": "arrakis", "aliases": {"foo": ["FOO/"], "bar": ["RBA/"],},},
     {"name": "oz", "aliases": {"foo": ["ooF/"], "bar": ["raB/"],}},
 ]
 
@@ -57,20 +64,30 @@ class MirrorConfig:
     NO_MIRRORS = 0
     SUCCESS_MIRRORS = 1
     FAIL_MIRRORS = 2
+    DEFAULT_MIRRORS = 3
 
 
-def generate_project(mirror_config=MirrorConfig.SUCCESS_MIRRORS):
+def generate_project(mirror_config=MirrorConfig.DEFAULT_MIRRORS, base_alias_succeed=False):
+    aliases = {
+        "foo": "FOO/",
+        "bar": "BAR/",
+    }
+    if base_alias_succeed:
+        aliases["bar"] = "RAB/"
+
     project = {
         "name": "test",
         "min-version": "2.0",
         "element-path": "elements",
-        "aliases": {"foo": "FOO/", "bar": "BAR/",},
+        "aliases": aliases,
         "plugins": [{"origin": "local", "path": "sources", "sources": ["fetch_source"]}],
     }
     if mirror_config == MirrorConfig.SUCCESS_MIRRORS:
         project["mirrors"] = SUCCESS_MIRROR_LIST
     elif mirror_config == MirrorConfig.FAIL_MIRRORS:
         project["mirrors"] = FAIL_MIRROR_LIST
+    elif mirror_config == MirrorConfig.DEFAULT_MIRRORS:
+        project["mirrors"] = DEFAULT_MIRROR_LIST
 
     return project
 
@@ -166,6 +183,85 @@ def test_mirror_fetch_multi(cli, tmpdir, project_config, user_config, expect_suc
     project_file = os.path.join(project_dir, "project.conf")
     project = generate_project(project_config)
     _yaml.roundtrip_dump(project, project_file)
+
+    if user_config == MirrorConfig.SUCCESS_MIRRORS:
+        cli.configure({"projects": {"test": {"mirrors": SUCCESS_MIRROR_LIST}}})
+    elif user_config == MirrorConfig.FAIL_MIRRORS:
+        cli.configure({"projects": {"test": {"mirrors": FAIL_MIRROR_LIST}}})
+
+    result = cli.run(project=project_dir, args=["source", "fetch", element_name])
+
+    if expect_success:
+        result.assert_success()
+        with open(output_file, encoding="utf-8") as f:
+            contents = f.read()
+            assert "Fetch foo:repo1 succeeded from FOO/repo1" in contents
+            assert "Fetch bar:repo2 succeeded from RAB/repo2" in contents
+    else:
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.SOURCE, None)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.usefixtures("datafiles")
+@pytest.mark.parametrize(
+    "project_config,user_config,alias_success,expect_success,source",
+    [
+        #
+        # Test "alias" fetch source policy (aliases only)
+        #
+        # Test that we fail to fetch from the primary alias even if the user config defines a mirror
+        (MirrorConfig.NO_MIRRORS, MirrorConfig.SUCCESS_MIRRORS, False, False, "aliases"),
+        # Test that we fail to fetch from the primary alias even if the project config defines a mirror
+        (MirrorConfig.SUCCESS_MIRRORS, MirrorConfig.NO_MIRRORS, False, False, "aliases"),
+        # Test that we succeed to fetch from the primary alias even if the user config defines a failing mirror
+        (MirrorConfig.FAIL_MIRRORS, MirrorConfig.FAIL_MIRRORS, True, True, "aliases"),
+        #
+        # Test "mirrors" fetch source policy (mirrors only, no base aliases)
+        #
+        # Test that we fail to fetch from primary alias even if it is the only one configured to succeed
+        (MirrorConfig.FAIL_MIRRORS, MirrorConfig.FAIL_MIRRORS, True, False, "mirrors"),
+        # Test that we succeed to fetch from mirrors when primary alias is set to succeed
+        # (doesn't prove that primary alias is not consulted, but tests that we indeed consult
+        # mirrors when configued in mirror mode)
+        (MirrorConfig.SUCCESS_MIRRORS, MirrorConfig.NO_MIRRORS, True, True, "mirrors"),
+        (MirrorConfig.FAIL_MIRRORS, MirrorConfig.SUCCESS_MIRRORS, True, True, "mirrors"),
+        #
+        # Test "user" fetch source policy (only mirrors defined in user configuration)
+        #
+        # Test that we fail to fetch even if the alias is good and the project defined mirrors are good
+        (MirrorConfig.SUCCESS_MIRRORS, MirrorConfig.FAIL_MIRRORS, True, False, "user"),
+        # Test that we succeed to fetch when alias is bad and project mirrors are bad
+        # (this doesn't prove that project aliases and mirrors are not consulted, but here for completeness)
+        (MirrorConfig.FAIL_MIRRORS, MirrorConfig.SUCCESS_MIRRORS, False, True, "user"),
+    ],
+    ids=[
+        "aliases-fail-user-config",
+        "aliases-fail-project-config",
+        "aliases-success-bad-mirrors",
+        "mirrors-fail-bad-mirrors",
+        "mirrors-success-project-config",
+        "mirrors-success-user-config",
+        "user-fail",
+        "user-succees",
+    ],
+)
+def test_mirror_fetch_source(cli, tmpdir, project_config, user_config, alias_success, expect_success, source):
+    output_file = os.path.join(str(tmpdir), "output.txt")
+    project_dir = str(tmpdir)
+    element_dir = os.path.join(project_dir, "elements")
+    os.makedirs(element_dir, exist_ok=True)
+    element_name = "test.bst"
+    element_path = os.path.join(element_dir, element_name)
+    element = generate_element(output_file)
+    _yaml.roundtrip_dump(element, element_path)
+
+    project_file = os.path.join(project_dir, "project.conf")
+    project = generate_project(project_config, alias_success)
+    _yaml.roundtrip_dump(project, project_file)
+
+    # Configure the fetch source
+    cli.configure({"fetch": {"source": source}})
 
     if user_config == MirrorConfig.SUCCESS_MIRRORS:
         cli.configure({"projects": {"test": {"mirrors": SUCCESS_MIRROR_LIST}}})
