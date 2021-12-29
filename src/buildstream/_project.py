@@ -638,7 +638,6 @@ class Project:
                 "ref-storage",
                 "sandbox",
                 "mirrors",
-                "remote-execution",
                 "sources",
                 "source-caches",
                 "junctions",
