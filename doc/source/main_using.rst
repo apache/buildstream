@@ -18,4 +18,5 @@ guides and information on user preferences and configuration.
    using_config
    using_commands
    using_configuring_cache_server
+   using_configuring_remote_execution
    using_examples
