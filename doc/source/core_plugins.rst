@@ -62,8 +62,11 @@ information.
 
 External plugins
 ----------------
-External plugins need to be installed separately, here is
-a list of BuildStream plugin projects known to us at this time:
+External plugins need to be :ref:`loading through junctions <project_plugins_junction>`,
+or alternatively installed separately in the python environment where you are
+running BuildStream and loaded using the :ref:`pip method <project_plugins_pip>`.
+
+Here is a list of BuildStream plugin projects known to us at this time:
 
 * `bst-plugins-experimental <http://buildstream.gitlab.io/bst-plugins-experimental/>`_
 * `bst-plugins-container <https://pypi.org/project/bst-plugins-container/>`_
