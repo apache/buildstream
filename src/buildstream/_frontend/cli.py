@@ -958,7 +958,7 @@ def source_track(app, elements, deps, except_, cross_junctions):
     default=None,
     metavar="LOCATION",
     type=click.Path(),
-    help="Create a tarball containing the sources instead " "of a file tree.",
+    help="Create a tarball containing the sources instead of a file tree.",
 )
 @click.option(
     "--compression",

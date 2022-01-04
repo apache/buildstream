@@ -20,6 +20,7 @@ Later sections provide detailed information on BuildStream internals.
    main_install
    main_using
    main_core
+   main_porting.rst
    CONTRIBUTING
    main_architecture
    main_glossary

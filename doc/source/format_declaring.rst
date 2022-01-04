@@ -97,7 +97,7 @@ Element naming rules
 ''''''''''''''''''''
 When naming the elements, use the following rules:
 
-* The name of the file must have ``.bst`` extension.
+* The name of the file must have the ``.bst`` extension.
 
 * All characters in the name must be printable 7-bit ASCII characters.
 

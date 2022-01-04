@@ -389,8 +389,8 @@ When loading plugins from the ``pip`` plugin origin, it is possible to
 specify constraints on the versions of packages you want to load
 your plugins from.
 
-The syntax for specifying constraints are `explained here <https://python-poetry.org/docs/versions/>`_,
-and they are the same format supported by the ``pip`` package manager.
+The syntax for specifying versioning constraints is the same format supported by
+the ``pip`` package manager.
 
 .. note::
 
