@@ -7,7 +7,6 @@ import stat
 import pytest
 from buildstream import utils, _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
 from tests.testutils import (
     create_artifact_share,
     create_split_share,
@@ -15,6 +14,7 @@ from tests.testutils import (
     assert_shared,
     assert_not_shared,
 )
+from tests.testutils.repo.git import Git
 
 
 # Project directory
@@ -326,7 +326,7 @@ def test_pull_missing_blob_split_share(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull_missing_local_blob(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(str(datafiles), "files"))
     element_dir = os.path.join(str(tmpdir), "elements")
     project = str(tmpdir)

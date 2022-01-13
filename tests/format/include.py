@@ -3,12 +3,15 @@
 
 import os
 import textwrap
+
 import pytest
+
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
+
 from tests.testutils import generate_junction
+from tests.testutils.repo.git import Git
 
 
 # Project directory
@@ -109,7 +112,7 @@ def test_junction_element_partial_project_project(cli, tmpdir, datafiles):
     subproject_path = os.path.join(project, "subproject")
     junction_path = os.path.join(project, "junction.bst")
 
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
 
     ref = repo.create(subproject_path)
 
@@ -133,7 +136,7 @@ def test_junction_element_not_partial_project_file(cli, tmpdir, datafiles):
     subproject_path = os.path.join(project, "subproject")
     junction_path = os.path.join(project, "junction.bst")
 
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
 
     ref = repo.create(subproject_path)
 

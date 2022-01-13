@@ -8,11 +8,13 @@ import pytest
 
 from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
 from buildstream.testing import generate_element
 from buildstream.testing._utils.site import HAVE_BZR
 
+from tests.testutils.repo.bzr import Bzr
+
 pytestmark = pytest.mark.skipif(HAVE_BZR is False, reason="bzr is not available")
+
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "bzr")
 
 
@@ -21,7 +23,7 @@ def test_fetch_checkout(cli, tmpdir, datafiles):
     project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
-    repo = create_repo("bzr", str(tmpdir))
+    repo = Bzr(str(tmpdir))
     ref = repo.create(os.path.join(project, "basic"))
 
     # Write out our test target
@@ -46,7 +48,7 @@ def test_fetch_checkout(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_bzr_customize(cli, tmpdir, datafiles):
     project = str(datafiles)
-    repo = create_repo("bzr", str(tmpdir))
+    repo = Bzr(str(tmpdir))
     ref = repo.create(os.path.join(project, "basic"))
 
     element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}

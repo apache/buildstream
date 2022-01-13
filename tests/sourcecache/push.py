@@ -28,8 +28,9 @@ from buildstream.exceptions import ErrorDomain
 from buildstream._project import Project
 from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
+
 from tests.testutils import create_artifact_share, dummy_context
+from tests.testutils.repo.git import Git
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
@@ -72,7 +73,7 @@ def test_source_push_split(cli, tmpdir, datafiles):
         _yaml.roundtrip_dump(user_config, file=user_config_file)
         cli.configure(user_config)
 
-        repo = create_repo("git", str(tmpdir))
+        repo = Git(str(tmpdir))
         ref = repo.create(os.path.join(project_dir, "files"))
         element_path = os.path.join(project_dir, "elements")
         element_name = "push.bst"
@@ -122,7 +123,7 @@ def test_source_push(cli, tmpdir, datafiles):
         _yaml.roundtrip_dump(user_config, file=user_config_file)
         cli.configure(user_config)
 
-        repo = create_repo("git", str(tmpdir))
+        repo = Git(str(tmpdir))
         ref = repo.create(os.path.join(project_dir, "files"))
         element_path = os.path.join(project_dir, "elements")
         element_name = "push.bst"
@@ -173,7 +174,7 @@ def test_push_pull(cli, datafiles, tmpdir):
         cli.configure(user_config)
 
         # create repo to pull from
-        repo = create_repo("git", str(tmpdir))
+        repo = Git(str(tmpdir))
         ref = repo.create(os.path.join(project_dir, "files"))
         element_path = os.path.join(project_dir, "elements")
         element_name = "push.bst"
@@ -211,7 +212,7 @@ def test_push_fail(cli, tmpdir, datafiles):
         cli.configure(user_config)
 
     # create repo to pull from
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(os.path.join(project_dir, "files"))
     element_path = os.path.join(project_dir, "elements")
     element_name = "push.bst"
@@ -240,7 +241,7 @@ def test_source_push_build_fail(cli, tmpdir, datafiles):
         }
         cli.configure(user_config)
 
-        repo = create_repo("git", str(tmpdir))
+        repo = Git(str(tmpdir))
         ref = repo.create(os.path.join(project_dir, "files"))
         element_path = os.path.join(project_dir, "elements")
 

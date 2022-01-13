@@ -5,9 +5,10 @@ import os
 import pytest
 
 from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
 from buildstream.testing import generate_element
 from buildstream.testing._utils.site import HAVE_GIT
+
+from tests.testutils.repo.git import Git
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "no-fetch-cached")
 
@@ -22,7 +23,7 @@ def test_no_fetch_cached(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     # Create the repo from 'files' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(os.path.join(project, "files"))
 
     # Write out test target with a cached and a non-cached source

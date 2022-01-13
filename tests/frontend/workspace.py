@@ -40,6 +40,7 @@ from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream._workspaces import BST_WORKSPACE_FORMAT_VERSION
 
 from tests.testutils import create_artifact_share, create_element_size, wait_for_cache_granularity
+from tests.testutils.repo.git import Git
 
 
 # Project directory
@@ -699,7 +700,7 @@ def test_buildable_no_ref(cli, tmpdir, datafiles):
     element_path = os.path.join(project, "elements")
 
     # Write out our test target without any source ref
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     element = {"kind": "import", "sources": [repo.source_config()]}
     _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
@@ -876,7 +877,7 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
     # Create our repo object of the given source type with
     # the bin files, and then collect the initial ref.
     #
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(bin_files_path)
 
     # Write out our test target

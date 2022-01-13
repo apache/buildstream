@@ -2,7 +2,8 @@ import os
 
 from buildstream import _yaml
 from buildstream import utils
-from buildstream.testing import create_repo
+
+from tests.testutils.repo.git import Git
 
 
 # create_element_size()
@@ -29,7 +30,7 @@ def create_element_size(name, project_dir, elements_path, dependencies, size):
 
     # Create a git repo
     repodir = os.path.join(project_dir, "repos")
-    repo = create_repo("git", repodir, subdir=name)
+    repo = Git(repodir, subdir=name)
 
     with utils._tempdir(dir=project_dir) as tmp:
 

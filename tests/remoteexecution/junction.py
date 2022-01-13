@@ -18,11 +18,14 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
+
 from buildstream.testing import cli_remote_execution as cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
 from buildstream import _yaml
+
 from tests.testutils import generate_junction
+from tests.testutils.repo.git import Git
 
 pytestmark = pytest.mark.remoteexecution
 
@@ -51,7 +54,7 @@ def test_junction_build_remote(cli, tmpdir, datafiles):
     junction_path = os.path.join(element_path, "junction.bst")
 
     # We need a repo for real trackable elements
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(amhello_files_path)
 
     # ensure that the correct project directory is also listed in the junction

@@ -6,11 +6,11 @@ import re
 
 import pytest
 
-from buildstream.testing import create_repo
-
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain
 from buildstream.testing import cli  # pylint: disable=unused-import
+
+from tests.testutils.repo.git import Git
 
 # Project directory
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -26,7 +26,7 @@ def test_default_logging(cli, tmpdir, datafiles):
     # Create our repo object of the given source type with
     # the bin files, and then collect the initial ref.
     #
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(bin_files_path)
 
     # Write out our test target
@@ -55,7 +55,7 @@ def test_custom_logging(cli, tmpdir, datafiles):
     # Create our repo object of the given source type with
     # the bin files, and then collect the initial ref.
     #
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(bin_files_path)
 
     # Write out our test target

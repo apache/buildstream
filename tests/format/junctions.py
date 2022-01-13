@@ -8,7 +8,8 @@ import pytest
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
+
+from tests.testutils.repo.tar import Tar
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "junctions",)
@@ -260,7 +261,7 @@ def test_tar_show(cli, tmpdir, datafiles):
     project = os.path.join(str(datafiles), "use-repo")
 
     # Create the repo from 'baserepo' subdir
-    repo = create_repo("tar", str(tmpdir))
+    repo = Tar(str(tmpdir))
     ref = repo.create(os.path.join(project, "baserepo"))
 
     # Write out junction element with tar source
@@ -279,7 +280,7 @@ def test_tar_build(cli, tmpdir, datafiles):
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the repo from 'baserepo' subdir
-    repo = create_repo("tar", str(tmpdir))
+    repo = Tar(str(tmpdir))
     ref = repo.create(os.path.join(project, "baserepo"))
 
     # Write out junction element with tar source
@@ -304,7 +305,7 @@ def test_tar_missing_project_conf(cli, tmpdir, datafiles):
     os.remove(datafiles / "use-repo" / "baserepo" / "project.conf")
 
     # Create the repo from 'base' subdir
-    repo = create_repo("tar", str(tmpdir))
+    repo = Tar(str(tmpdir))
     ref = repo.create(os.path.join(project, "baserepo"))
 
     # Write out junction element with tar source
@@ -324,7 +325,7 @@ def test_build_tar_cross_junction_names(cli, tmpdir, datafiles):
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the repo from 'base' subdir
-    repo = create_repo("tar", str(tmpdir))
+    repo = Tar(str(tmpdir))
     ref = repo.create(os.path.join(project, "baserepo"))
 
     # Write out junction element with tar source

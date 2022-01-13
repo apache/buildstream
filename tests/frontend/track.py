@@ -6,12 +6,14 @@ import os
 import re
 import pytest
 
-from buildstream.testing import create_repo, generate_project
+from buildstream.testing import generate_project
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing._utils.site import have_subsecond_mtime
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
 from tests.testutils import generate_junction
+from tests.testutils.repo.git import Git
+from tests.testutils.repo.tar import Tar
 from . import configure_project
 
 # Project directory
@@ -38,7 +40,7 @@ def test_track_single(cli, tmpdir, datafiles):
     # Create our repo object of the given source type with
     # the dev files, and then collect the initial ref.
     #
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(dev_files_path)
 
     # Write out our test targets
@@ -78,7 +80,7 @@ def test_track_optional(cli, tmpdir, datafiles, ref_storage):
     # Create our repo object of the given source type with
     # the dev files, and then collect the initial ref.
     #
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(dev_files_path)
 
     # Now create an optional test branch and add a commit to that,
@@ -175,7 +177,7 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
     # Create our repo object of the given source type with
     # the dev files, and then collect the initial ref.
     #
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(dev_files_path)
 
     # Generate two elements using the git source, one in
@@ -344,7 +346,7 @@ def test_track_error_cannot_write_file(cli, tmpdir, datafiles):
 
     configure_project(project, {"ref-storage": "inline"})
 
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(dev_files_path)
 
     element_full_path = os.path.join(element_path, element_name)
@@ -377,7 +379,7 @@ def test_no_needless_overwrite(cli, tmpdir, datafiles):
     # Create our repo object of the given source type with
     # the dev files, and then collect the initial ref.
     #
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(dev_files_path)
 
     # Write out our test target and assert it exists
@@ -464,7 +466,7 @@ def test_track_skip(cli, tmpdir, datafiles):
 
     # Generate a regular import element which will have a workspace open
     #
-    repo = create_repo("tar", str(tmpdir))
+    repo = Tar(str(tmpdir))
     repo.create(dev_files_path)
     generate_element(repo, os.path.join(element_path, element_workspace_name))
 

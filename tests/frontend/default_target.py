@@ -6,8 +6,10 @@ import os
 import pytest
 
 from buildstream import _yaml
-from buildstream.testing import cli, create_repo  # pylint: disable=unused-import
+from buildstream.testing import cli  # pylint: disable=unused-import
+
 from tests.testutils import create_artifact_share
+from tests.testutils.repo.git import Git
 
 # project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "default-target",)
@@ -99,7 +101,7 @@ def test_default_target_track(cli, tmpdir, datafiles):
     target = "track-fetch-test.bst"
 
     # First, create an element with trackable sources
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(project)
     element_conf = {"kind": "import", "sources": [repo.source_config()]}
     _yaml.roundtrip_dump(element_conf, os.path.join(project, "elements", target))
@@ -129,7 +131,7 @@ def test_default_target_fetch(cli, tmpdir, datafiles):
     target = "track-fetch-test.bst"
 
     # First, create an element with trackable sources
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(project)
     element_conf = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
     _yaml.roundtrip_dump(element_conf, os.path.join(project, "elements", target))

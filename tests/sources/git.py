@@ -33,8 +33,9 @@ from buildstream.exceptions import ErrorDomain
 from buildstream.plugin import CoreWarnings
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import generate_project, generate_element, load_yaml
-from buildstream.testing import create_repo
 from buildstream.testing._utils.site import HAVE_GIT, HAVE_OLD_GIT
+
+from tests.testutils.repo.git import Git
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "git",)
 
@@ -45,7 +46,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
 
     # Write out our test target with a bad ref
@@ -66,7 +67,7 @@ def test_fetch_shallow(cli, tmpdir, datafiles):
     workspacedir = os.path.join(str(tmpdir), "workspace")
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
     first_commit = repo.latest_commit()
     repo.add_commit()
@@ -93,11 +94,11 @@ def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
-    subrepo = create_repo("git", str(tmpdir), "subrepo")
+    subrepo = Git(str(tmpdir), "subrepo")
     subrepo.create(os.path.join(project, "subrepofiles"))
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
 
     # Add a submodule pointing to the one we created
@@ -127,15 +128,15 @@ def test_recursive_submodule_fetch_checkout(cli, tmpdir, datafiles):
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create a submodule from the 'othersubrepofiles' subdir
-    subsubrepo = create_repo("git", str(tmpdir), "subsubrepo")
+    subsubrepo = Git(str(tmpdir), "subsubrepo")
     subsubrepo.create(os.path.join(project, "othersubrepofiles"))
 
     # Create another submodule from the 'subrepofiles' subdir
-    subrepo = create_repo("git", str(tmpdir), "subrepo")
+    subrepo = Git(str(tmpdir), "subrepo")
     subrepo.create(os.path.join(project, "subrepofiles"))
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
 
     # Configure submodules
@@ -167,11 +168,11 @@ def test_submodule_fetch_source_enable_explicit(cli, tmpdir, datafiles):
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
-    subrepo = create_repo("git", str(tmpdir), "subrepo")
+    subrepo = Git(str(tmpdir), "subrepo")
     subrepo.create(os.path.join(project, "subrepofiles"))
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
 
     # Add a submodule pointing to the one we created
@@ -201,11 +202,11 @@ def test_submodule_fetch_source_disable(cli, tmpdir, datafiles):
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
-    subrepo = create_repo("git", str(tmpdir), "subrepo")
+    subrepo = Git(str(tmpdir), "subrepo")
     subrepo.create(os.path.join(project, "subrepofiles"))
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
 
     # Add a submodule pointing to the one we created
@@ -235,11 +236,11 @@ def test_submodule_fetch_submodule_does_override(cli, tmpdir, datafiles):
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
-    subrepo = create_repo("git", str(tmpdir), "subrepo")
+    subrepo = Git(str(tmpdir), "subrepo")
     subrepo.create(os.path.join(project, "subrepofiles"))
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
 
     # Add a submodule pointing to the one we created
@@ -269,15 +270,15 @@ def test_submodule_fetch_submodule_individual_checkout(cli, tmpdir, datafiles):
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
-    subrepo = create_repo("git", str(tmpdir), "subrepo")
+    subrepo = Git(str(tmpdir), "subrepo")
     subrepo.create(os.path.join(project, "subrepofiles"))
 
     # Create another submodule from the 'othersubrepofiles' subdir
-    other_subrepo = create_repo("git", str(tmpdir), "othersubrepo")
+    other_subrepo = Git(str(tmpdir), "othersubrepo")
     other_subrepo.create(os.path.join(project, "othersubrepofiles"))
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
 
     # Add a submodule pointing to the one we created
@@ -309,15 +310,15 @@ def test_submodule_fetch_submodule_individual_checkout_explicit(cli, tmpdir, dat
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
-    subrepo = create_repo("git", str(tmpdir), "subrepo")
+    subrepo = Git(str(tmpdir), "subrepo")
     subrepo.create(os.path.join(project, "subrepofiles"))
 
     # Create another submodule from the 'othersubrepofiles' subdir
-    other_subrepo = create_repo("git", str(tmpdir), "othersubrepo")
+    other_subrepo = Git(str(tmpdir), "othersubrepo")
     other_subrepo.create(os.path.join(project, "othersubrepofiles"))
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
 
     # Add a submodule pointing to the one we created
@@ -349,11 +350,11 @@ def test_submodule_fetch_project_override(cli, tmpdir, datafiles):
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
-    subrepo = create_repo("git", str(tmpdir), "subrepo")
+    subrepo = Git(str(tmpdir), "subrepo")
     subrepo.create(os.path.join(project, "subrepofiles"))
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
 
     # Add a submodule pointing to the one we created
@@ -382,7 +383,7 @@ def test_submodule_track_ignore_inconsistent(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(os.path.join(project, "repofiles"))
 
     # Write out our test target
@@ -418,7 +419,7 @@ def test_submodule_track_no_ref_or_track(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
 
     # Write out our test target
@@ -444,7 +445,7 @@ def test_ref_not_in_track(cli, tmpdir, datafiles, fail):
         generate_project(project, config={"fatal-warnings": [CoreWarnings.REF_NOT_IN_TRACK]})
 
     # Create the repo from 'repofiles', create a branch without latest commit
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(os.path.join(project, "repofiles"))
 
     gitsource = repo.source_config(ref=ref)
@@ -478,11 +479,11 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
         generate_project(project, config={"fatal-warnings": ["git:unlisted-submodule"]})
 
     # Create the submodule first from the 'subrepofiles' subdir
-    subrepo = create_repo("git", str(tmpdir), "subrepo")
+    subrepo = Git(str(tmpdir), "subrepo")
     subrepo.create(os.path.join(project, "subrepofiles"))
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
 
     # Add a submodule pointing to the one we created
@@ -536,11 +537,11 @@ def test_track_unlisted_submodule(cli, tmpdir, datafiles, fail):
         generate_project(project, config={"fatal-warnings": ["git:unlisted-submodule"]})
 
     # Create the submodule first from the 'subrepofiles' subdir
-    subrepo = create_repo("git", str(tmpdir), "subrepo")
+    subrepo = Git(str(tmpdir), "subrepo")
     subrepo.create(os.path.join(project, "subrepofiles"))
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(os.path.join(project, "repofiles"))
 
     # Add a submodule pointing to the one we created, but use
@@ -590,7 +591,7 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
         generate_project(project, config={"fatal-warnings": ["git:invalid-submodule"]})
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(os.path.join(project, "repofiles"))
 
     # Create the source without any submodules, and add
@@ -643,11 +644,11 @@ def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
         generate_project(project, config={"fatal-warnings": ["git:invalid-submodule"]})
 
     # Create the submodule first from the 'subrepofiles' subdir
-    subrepo = create_repo("git", str(tmpdir), "subrepo")
+    subrepo = Git(str(tmpdir), "subrepo")
     subrepo.create(os.path.join(project, "subrepofiles"))
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
 
     # Add a submodule pointing to the one we created
@@ -694,7 +695,7 @@ def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
     project = str(datafiles)
 
     # Create the repo from 'repofiles' subdir
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(project, "repofiles"))
     if tag:
         repo.add_tag("tag")
@@ -746,7 +747,7 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
     with open(file0, "w", encoding="utf-8") as f:
         f.write("test\n")
 
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
 
     def tag(name):
         if tag_type == "annotated":
@@ -856,7 +857,7 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
     with open(file0, "w", encoding="utf-8") as f:
         f.write("test\n")
 
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
 
     def tag(name):
         if tag_type == "annotated":
@@ -963,7 +964,7 @@ def test_git_describe_relevant_history(cli, tmpdir, datafiles):
     with open(file0, "w", encoding="utf-8") as f:
         f.write("test\n")
 
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(repofiles)
 
     file1 = os.path.join(str(tmpdir), "file1")
@@ -1036,7 +1037,7 @@ def test_default_do_not_track_tags(cli, tmpdir, datafiles):
     with open(file0, "w", encoding="utf-8") as f:
         f.write("test\n")
 
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
 
     repo.create(repofiles)
     repo.add_tag("tag")
@@ -1076,7 +1077,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
     with open(file0, "w", encoding="utf-8") as f:
         f.write("test\n")
 
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
 
     top_commit = repo.create(repofiles)
 
@@ -1122,7 +1123,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
 
     otherpath = os.path.join(str(tmpdir), "other_path")
     shutil.copytree(repo.repo, os.path.join(otherpath, "repo"))
-    create_repo("git", otherpath)
+    Git(otherpath)
 
     repodir, reponame = os.path.split(repo.repo)
 
