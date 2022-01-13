@@ -7,7 +7,7 @@ from buildstream.testing._utils.site import BZR, BZR_ENV, HAVE_BZR
 
 
 class Bzr(Repo):
-    def __init__(self, directory, subdir):
+    def __init__(self, directory, subdir="repo"):
         if not HAVE_BZR:
             pytest.skip("bzr is not available")
         super().__init__(directory, subdir)
