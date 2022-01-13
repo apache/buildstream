@@ -1,7 +1,6 @@
 import os
 import shutil
 import signal
-import sys
 from collections import namedtuple
 from contextlib import ExitStack, contextmanager
 from concurrent import futures
@@ -42,20 +41,11 @@ class BaseArtifactShare:
     # Run the artifact server.
     #
     def run(self, q):
+        # Block SIGTERM and SIGINT to allow graceful shutdown and cleanup after initialization
+        signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGTERM, signal.SIGINT])
+
         with ExitStack() as stack:
             try:
-                # Handle SIGTERM by calling sys.exit(0), which will raise a SystemExit exception,
-                # properly executing cleanup code in `finally` clauses and context managers.
-                # This is required to terminate buildbox-casd on SIGTERM.
-                signal.signal(signal.SIGTERM, lambda signalnum, frame: sys.exit(0))
-
-                try:
-                    from pytest_cov.embed import cleanup_on_sigterm
-                except ImportError:
-                    pass
-                else:
-                    cleanup_on_sigterm()
-
                 server = stack.enter_context(self._create_server())
                 port = server.add_insecure_port("localhost:0")
                 server.start()
@@ -67,7 +57,17 @@ class BaseArtifactShare:
             q.put(port)
 
             # Sleep until termination by signal
-            signal.pause()
+            signal.sigwait([signal.SIGTERM, signal.SIGINT])
+
+            server.stop(0)
+
+        # Save collected coverage data
+        try:
+            from pytest_cov.embed import cleanup
+        except ImportError:
+            pass
+        else:
+            cleanup()
 
     # _create_server()
     #
@@ -83,6 +83,7 @@ class BaseArtifactShare:
     def close(self):
         self.process.terminate()
         self.process.join()
+        assert self.process.exitcode == 0
 
 
 # DummyArtifactShare()
