@@ -147,6 +147,7 @@ def create_server(repo, *, enable_push, quota, index_only, log_level=LogLevel.Le
             yield server
 
     finally:
+        casd_channel.request_shutdown()
         casd_channel.close()
         casd_manager.release_resources()
 
