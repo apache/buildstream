@@ -56,8 +56,8 @@ environment:
   HOME: /tmp
   TZ: UTC
 
-  # For reproducible builds we use 2011-11-11 UTC as a constant
-  SOURCE_DATE_EPOCH: 1320969600
+  # For reproducible builds we use 2011-11-11 11:11:11 UTC as a constant
+  SOURCE_DATE_EPOCH: 1321009871
 
 # List of environment variables which should not be taken into
 # account when calculating a cache key for a given element.
