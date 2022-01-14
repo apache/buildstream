@@ -72,14 +72,14 @@ class SafeHardlinkOps(Operations):
             real_path = os.path.realpath(full_path)
             file_stat = os.stat(real_path)
 
-            # Dont bother with files that cannot be hardlinked, oddly it
-            # directories actually usually have st_nlink > 1 so just avoid
-            # that.
+            # Skip the file if it's not a hardlink
+            if file_stat.st_nlink <= 1:
+                return
+
+            # For some reason directories may have st_nlink > 1, but they
+            # cannot be hardlinked, so just ignore those.
             #
-            # We already wont get symlinks here, and stat will throw
-            # the FileNotFoundError below if a followed symlink did not exist.
-            #
-            if not stat.S_ISDIR(file_stat.st_mode) and file_stat.st_nlink > 1:
+            if not stat.S_ISDIR(file_stat.st_mode):
                 with tempfile.TemporaryDirectory(dir=self.tmp) as tempdir:
                     basename = os.path.basename(real_path)
                     temp_path = os.path.join(tempdir, basename)
