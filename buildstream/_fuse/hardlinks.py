@@ -117,8 +117,8 @@ class SafeHardlinkOps(Operations):
         full_path = self._full_path(path)
 
         # Ensure copies on chown
-        self._ensure_copy(full_path)
-        return os.chown(full_path, uid, gid)
+        self._ensure_copy(full_path, follow_symlinks=False)
+        return os.chown(full_path, uid, gid, follow_symlinks=False)
 
     def getattr(self, path, fh=None):
         full_path = self._full_path(path)
