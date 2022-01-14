@@ -45,8 +45,10 @@ def update_keys():
     project_dir = os.getcwd()
 
     with tempfile.TemporaryDirectory(dir=project_dir) as cache_dir:
+        directory = os.path.join(str(cache_dir), "cache")
+
         # Run bst show
-        cli = Cli(cache_dir, verbose=True)
+        cli = Cli(directory, verbose=True)
         result = cli.run(
             project=project_dir, silent=True, args=["--no-colors", "show", "--format", "%{name}::%{full-key}"],
         )
