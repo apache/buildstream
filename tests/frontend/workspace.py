@@ -29,7 +29,6 @@
 import os
 import stat
 import shutil
-import subprocess
 
 import pytest
 
@@ -154,23 +153,6 @@ def open_workspace(
     assert len(workspaces) == 1
     element_name, workspace = workspaces[0]
     return element_name, workspace_object.project_path, workspace
-
-
-@pytest.mark.datafiles(DATA_DIR)
-def test_open_bzr_customize(cli, tmpdir, datafiles):
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "bzr")
-
-    # Check that the .bzr dir exists
-    bzrdir = os.path.join(workspace, ".bzr")
-    assert os.path.isdir(bzrdir)
-
-    # Check that the correct origin branch is set
-    element_config = _yaml.load(os.path.join(project, "elements", element_name), shortname=None)
-    source_config = element_config.get_sequence("sources").mapping_at(0)
-    output = subprocess.check_output(["bzr", "info"], cwd=workspace)
-    stripped_url = source_config.get_str("url").lstrip("file:///")
-    expected_output_str = "checkout of branch: /{}/{}".format(stripped_url, source_config.get_str("track"))
-    assert expected_output_str in str(output)
 
 
 @pytest.mark.datafiles(DATA_DIR)
