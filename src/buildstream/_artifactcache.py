@@ -18,7 +18,6 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
-import grpc
 
 from ._assetcache import AssetCache
 from ._cas.casremote import BlobNotFound
@@ -184,7 +183,9 @@ class ArtifactCache(AssetCache):
 
         if errors and not artifact_digest:
             raise ArtifactError(
-                "Failed to pull artifact {}".format(display_key), detail="\n".join(str(e) for e in errors)
+                "Failed to pull artifact {}".format(display_key),
+                detail="\n".join(str(e) for e in errors),
+                temporary=True,
             )
 
         # If we don't have an artifact, we can't exactly pull our
@@ -214,7 +215,9 @@ class ArtifactCache(AssetCache):
 
         if errors:
             raise ArtifactError(
-                "Failed to pull artifact {}".format(display_key), detail="\n".join(str(e) for e in errors)
+                "Failed to pull artifact {}".format(display_key),
+                detail="\n".join(str(e) for e in errors),
+                temporary=True,
             )
 
         return False
@@ -404,13 +407,7 @@ class ArtifactCache(AssetCache):
 
         except CASRemoteError as cas_error:
             if cas_error.reason != "cache-too-full":
-                raise ArtifactError("Failed to push artifact blobs: {}".format(cas_error))
-            return False
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
-                raise ArtifactError(
-                    "Failed to push artifact blobs with status {}: {}".format(e.code().name, e.details())
-                )
+                raise ArtifactError("Failed to push artifact blobs: {}".format(cas_error), temporary=True)
             return False
 
         return True
@@ -444,11 +441,8 @@ class ArtifactCache(AssetCache):
             # Skip push if artifact is already on the server
             if response and response.blob_digest == artifact_digest:
                 return False
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise ArtifactError(
-                    "Error checking artifact cache with status {}: {}".format(e.code().name, e.details())
-                )
+        except AssetCacheError as e:
+            raise ArtifactError("{}".format(e), temporary=True) from e
 
         referenced_directories = []
         if artifact_proto.files:
@@ -469,8 +463,8 @@ class ArtifactCache(AssetCache):
                 references_blobs=referenced_blobs,
                 references_directories=referenced_directories,
             )
-        except grpc.RpcError as e:
-            raise ArtifactError("Failed to push artifact with status {}: {}".format(e.code().name, e.details()))
+        except AssetCacheError as e:
+            raise ArtifactError("{}".format(e), temporary=True) from e
 
         return True
 
@@ -521,10 +515,10 @@ class ArtifactCache(AssetCache):
                 digests.append(log_digest.digest)
 
             self.cas.fetch_blobs(remote, digests)
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise ArtifactError("Failed to pull artifact with status {}: {}".format(e.code().name, e.details()))
+        except BlobNotFound:
             return False
+        except CASRemoteError as e:
+            raise ArtifactError("{}".format(e), temporary=True) from e
 
         return True
 
@@ -543,7 +537,5 @@ class ArtifactCache(AssetCache):
         try:
             response = remote.fetch_blob([uri])
             return bool(response)
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise ArtifactError("Error when querying with status {}: {}".format(e.code().name, e.details()))
-            return False
+        except AssetCacheError as e:
+            raise ArtifactError("{}".format(e), temporary=True) from e
