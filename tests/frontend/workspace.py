@@ -29,6 +29,7 @@
 import os
 import stat
 import shutil
+import tempfile
 
 import pytest
 
@@ -73,8 +74,19 @@ class WorkspaceCreator:
 
         # Create our repo object of the given source type with
         # the bin files, and then collect the initial ref.
-        repo = create_repo(kind, str(self.tmpdir))
-        ref = repo.create(self.bin_files_path)
+        # And ensure we store it in a suffix-specific directory, to avoid clashes
+        # if using multiple times the same kind element here.
+        repo = create_repo(kind, str(self.tmpdir), "repo-for-{}".format(element_name))
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            dst_repo = os.path.join(tempdir, "repo")
+            shutil.copytree(self.bin_files_path, dst_repo)
+            # Touch a file with the element name in, to allow validating that this
+            # is the correct repo
+            # pylint: disable=consider-using-with
+            open(os.path.join(dst_repo, element_name), "a", encoding="utf-8").close()
+
+            ref = repo.create(os.path.join(tempdir, "repo"))
 
         # Write out our test target
         element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
@@ -157,20 +169,13 @@ def open_workspace(
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_multi(cli, tmpdir, datafiles):
-
     workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
     workspaces = workspace_object.open_workspaces(repo_kinds)
 
     for (elname, workspace), kind in zip(workspaces, repo_kinds):
         assert kind in elname
         workspace_lsdir = os.listdir(workspace)
-        if kind == "git":
-            assert ".git" in workspace_lsdir
-        elif kind == "bzr":
-            assert ".bzr" in workspace_lsdir
-        else:
-            assert ".git" not in workspace_lsdir
-            assert ".bzr" not in workspace_lsdir
+        assert elname in workspace_lsdir
 
 
 @pytest.mark.skipif(os.geteuid() == 0, reason="root may have CAP_DAC_OVERRIDE and ignore permissions")
