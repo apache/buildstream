@@ -126,11 +126,11 @@ class SafeHardlinkOps(Operations):
     def readdir(self, path, fh):
         full_path = self._full_path(path)
 
-        dirents = ['.', '..']
+        dir_entries = ['.', '..']
         if os.path.isdir(full_path):
-            dirents.extend(os.listdir(full_path))
-        for r in dirents:
-            yield r
+            dir_entries.extend(os.listdir(full_path))
+        for entry in dir_entries:
+            yield entry
 
     def readlink(self, path):
         pathname = os.readlink(self._full_path(path))
