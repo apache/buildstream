@@ -107,11 +107,10 @@ class DummyArtifactShare(BaseArtifactShare):
 # Args:
 #    directory (str): The base temp directory for the test
 #    cache_quota (int): Maximum amount of disk space to use
-#    casd (bool): Allow write access via casd
 #    enable_push (bool): Whether the share should allow pushes
 #
 class ArtifactShare(BaseArtifactShare):
-    def __init__(self, directory, *, quota=None, casd=False, index_only=False):
+    def __init__(self, directory, *, quota=None, index_only=False):
 
         # The working directory for the artifact share (in case it
         # needs to do something outside of its backend's storage folder).
@@ -126,9 +125,7 @@ class ArtifactShare(BaseArtifactShare):
         self.repodir = os.path.join(self.directory, "repo")
         os.makedirs(self.repodir)
 
-        logdir = os.path.join(self.directory, "logs") if casd else None
-
-        self.cas = CASCache(self.repodir, casd=casd, log_directory=logdir)
+        self.cas = CASCache(self.repodir, casd=False)
 
         self.quota = quota
         self.index_only = index_only
@@ -268,8 +265,6 @@ class ArtifactShare(BaseArtifactShare):
     def close(self):
         super().close()
 
-        self.cas.release_resources()
-
         shutil.rmtree(self.directory)
 
     def _reachable_refs_dir(self, reachable, tree):
@@ -297,8 +292,8 @@ class ArtifactShare(BaseArtifactShare):
 # Create an ArtifactShare for use in a test case
 #
 @contextmanager
-def create_artifact_share(directory, *, quota=None, casd=False):
-    share = ArtifactShare(directory, quota=quota, casd=casd)
+def create_artifact_share(directory, *, quota=None):
+    share = ArtifactShare(directory, quota=quota)
     try:
         yield share
     finally:
@@ -306,9 +301,9 @@ def create_artifact_share(directory, *, quota=None, casd=False):
 
 
 @contextmanager
-def create_split_share(directory1, directory2, *, quota=None, casd=False):
-    index = ArtifactShare(directory1, quota=quota, casd=casd, index_only=True)
-    storage = ArtifactShare(directory2, quota=quota, casd=casd)
+def create_split_share(directory1, directory2, *, quota=None):
+    index = ArtifactShare(directory1, quota=quota, index_only=True)
+    storage = ArtifactShare(directory2, quota=quota)
 
     try:
         yield index, storage
