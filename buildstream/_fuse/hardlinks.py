@@ -70,7 +70,7 @@ class SafeHardlinkOps(Operations):
         try:
             # Follow symbolic links manually here
             real_path = os.path.realpath(full_path)
-            file_stat = os.stat(real_path)
+            file_stat = os.stat(real_path, follow_symlinks=False)
 
             # Skip the file if it's not a hardlink
             if file_stat.st_nlink <= 1:
@@ -85,7 +85,7 @@ class SafeHardlinkOps(Operations):
                     temp_path = os.path.join(tempdir, basename)
 
                     # First copy, then unlink origin and rename
-                    shutil.copy2(real_path, temp_path)
+                    shutil.copy2(real_path, temp_path, follow_symlinks=False)
                     os.unlink(real_path)
                     os.rename(temp_path, real_path)
 
