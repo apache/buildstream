@@ -33,7 +33,7 @@ from ._elementsourcescache import ElementSourcesCache
 from ._remotespec import RemoteSpec, RemoteExecutionSpec
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASLogLevel
-from .types import _CacheBuildTrees, _PipelineSelection, _SchedulerErrorAction
+from .types import _CacheBuildTrees, _PipelineSelection, _SchedulerErrorAction, _SourceUriPolicy
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .node import Node, MappingNode
 
@@ -168,6 +168,12 @@ class Context:
         # Control which dependencies to build
         self.build_dependencies: Optional[_PipelineSelection] = None
 
+        # Control which URIs can be accessed when fetching sources
+        self.fetch_source: Optional[str] = None
+
+        # Control which URIs can be accessed when tracking sources
+        self.track_source: Optional[str] = None
+
         # Size of the artifact cache in bytes
         self.config_cache_quota: Optional[int] = None
 
@@ -297,6 +303,8 @@ class Context:
                 "logdir",
                 "scheduler",
                 "build",
+                "fetch",
+                "track",
                 "artifacts",
                 "source-caches",
                 "logging",
@@ -430,6 +438,16 @@ class Context:
             )
         self.build_dependencies = _PipelineSelection(dependencies)
 
+        # Load fetch config
+        fetch = defaults.get_mapping("fetch")
+        fetch.validate_keys(["source"])
+        self.fetch_source = fetch.get_enum("source", _SourceUriPolicy)
+
+        # Load track config
+        track = defaults.get_mapping("track")
+        track.validate_keys(["source"])
+        self.track_source = track.get_enum("source", _SourceUriPolicy)
+
         # Load per-projects overrides
         self._project_overrides = defaults.get_mapping("projects", default={})
 
@@ -438,7 +456,7 @@ class Context:
         for overrides_project in self._project_overrides.keys():
             overrides = self._project_overrides.get_mapping(overrides_project)
             overrides.validate_keys(
-                ["artifacts", "source-caches", "options", "strict", "default-mirror", "remote-execution"]
+                ["artifacts", "source-caches", "options", "strict", "default-mirror", "remote-execution", "mirrors"]
             )
 
     @property

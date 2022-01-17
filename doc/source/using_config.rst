@@ -328,6 +328,76 @@ Attributes
   * ``all``: Build elements even if they are build dependencies of artifacts which are already cached
 
 
+Fetch controls
+--------------
+Some aspects about how sources get fetched can be controlled by attributes of the ``fetch``
+dictionary at the toplevel, like so:
+
+.. code:: yaml
+
+   #
+   # Fetch controls
+   #
+   fetch:
+
+     #
+     # Don't allow fetching from project defined alias or mirror URIs
+     #
+     source: user
+
+
+Attributes
+~~~~~~~~~~
+
+* ``source``
+
+  This controls what URIs are allowed to be accessed when fetching sources,
+  valid values for this attribute are:
+
+  * ``all``: Fetch from mirrors defined in :ref:`user configuration <config_mirrors>` and
+    :ref:`project configuration <project_essentials_mirrors>`, and also project defined
+    :ref:`default alias URIs <project_source_aliases>`.
+  * ``aliases``: Only allow fetching from project defined :ref:`default alias URIs <project_source_aliases>`.
+  * ``mirrors``: Only allow fetching from mirrors defined in :ref:`user configuration <config_mirrors>` and
+    :ref:`project configuration <project_essentials_mirrors>`
+  * ``user``: Only allow fetching from mirrors defined in :ref:`user configuration <config_mirrors>`
+
+
+Track controls
+--------------
+Some aspects about how sources get tracked can be controlled by attributes of the ``track``
+dictionary at the toplevel, like so:
+
+.. code:: yaml
+
+   #
+   # Track controls
+   #
+   track:
+
+     #
+     # Only track sources for new refs from project defined default alias URIs
+     #
+     source: aliases
+
+
+Attributes
+~~~~~~~~~~
+
+* ``source``
+
+  This controls what URIs are allowed to be accessed when tracking sources
+  for new refs, valid values for this attribute are:
+
+  * ``all``: Track from mirrors defined in :ref:`user configuration <config_mirrors>` and
+    :ref:`project configuration <project_essentials_mirrors>`, and also project defined
+    :ref:`default alias URIs <project_source_aliases>`.
+  * ``aliases``: Only allow tracking from project defined :ref:`default alias URIs <project_source_aliases>`.
+  * ``mirrors``: Only allow tracking from mirrors defined in :ref:`user configuration <config_mirrors>` and
+    :ref:`project configuration <project_essentials_mirrors>`
+  * ``user``: Only allow tracking from mirrors defined in :ref:`user configuration <config_mirrors>`
+
+
 Logging controls
 ----------------
 Various aspects of how BuildStream presents output and UI can be controlled with
@@ -1060,13 +1130,45 @@ modifying some low level component.
    the ``--strict`` and ``--no-strict`` command line options.
 
 
+.. _config_mirrors:
+
+Mirrors
+~~~~~~~
+Project defined :ref:`mirrors <project_essentials_mirrors>`, can be overridden
+with user configuration. This is helpful when you need to mirror all of the source
+code used by subprojects and ensure that your project can be built in perpetuity.
+
+**Example**
+
+.. code:: yaml
+
+   projects:
+     project-name:
+       mirrors:
+       - name: middle-earth
+         aliases:
+           foo:
+           - http://www.middle-earth.com/foo/1
+           - http://www.middle-earth.com/foo/2
+           bar:
+           - http://www.middle-earth.com/bar/1
+           - http://www.middle-earth.com/bar/2
+       - name: oz
+         aliases:
+           foo:
+           - http://www.oz.com/foo
+           bar:
+           - http://www.oz.com/bar
+
+
 .. _config_default_mirror:
 
 Default mirror
 ~~~~~~~~~~~~~~
-When using :ref:`mirrors <project_essentials_mirrors>`, a default mirror can
-be defined to be fetched first.
-The default mirror is defined by its name, e.g.
+When using :ref:`mirrors <project_essentials_mirrors>`, one can specify which
+mirror should be used first.
+
+**Example**
 
 .. code:: yaml
 

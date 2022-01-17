@@ -12,6 +12,12 @@ Format
     contain invalid characters, as was already documented. Now the warning
     is replaced by an unconditional error.
 
+  o User configuration now has the ability to override source mirrors defined
+    by project configuration.
+
+  o User configuration now has fetch source and track source configurations to
+    control what mirrors/URIs can be accessed to obtain sources.
+
 CLI
 ---
   o BREAKING CHANGE: Removed `--deps plan` from all commands

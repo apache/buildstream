@@ -287,9 +287,10 @@ list of URIs, e.g.
 The order that the mirrors (and the URIs therein) are consulted is in the order
 they are defined when fetching, and in reverse-order when tracking.
 
-A default mirror to consult first can be defined via
-:ref:`user config <config_default_mirror>`, or the command-line argument
-:ref:`--default-mirror <invoking_bst>`.
+The mirrors can be overridden on a per project basis using
+:ref:`user configuration <config_mirrors>`. One can also specify which mirror should
+be used first in the :ref:`user configuration <config_default_mirror>`, or using
+the  :ref:`--default-mirror <invoking_bst>` command-line argument.
 
 
 .. _project_plugins:
