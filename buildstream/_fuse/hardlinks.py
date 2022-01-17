@@ -121,7 +121,8 @@ class SafeHardlinkOps(Operations):
         st = os.lstat(full_path)
         return dict((key, getattr(st, key)) for key in (
             'st_atime', 'st_ctime', 'st_gid', 'st_mode',
-            'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
+            'st_mtime', 'st_nlink', 'st_size', 'st_uid',
+            'st_ino'))
 
     def readdir(self, path, fh):
         full_path = self._full_path(path)
@@ -130,7 +131,13 @@ class SafeHardlinkOps(Operations):
         if os.path.isdir(full_path):
             dir_entries.extend(os.listdir(full_path))
         for entry in dir_entries:
-            yield entry
+            entry_full_path = os.path.join(full_path, entry)
+            st = os.stat(entry_full_path, follow_symlinks=False)
+
+            attrs = dict((key, getattr(st, key)) for key in (
+                'st_ino', 'st_mode'))
+
+            yield entry, attrs, 0
 
     def readlink(self, path):
         pathname = os.readlink(self._full_path(path))
