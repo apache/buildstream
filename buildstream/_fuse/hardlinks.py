@@ -66,10 +66,14 @@ class SafeHardlinkOps(Operations):
         path = os.path.join(self.root, partial)
         return path
 
-    def _ensure_copy(self, full_path):
+    def _ensure_copy(self, full_path, follow_symlinks=True):
         try:
-            # Follow symbolic links manually here
-            real_path = os.path.realpath(full_path)
+            if follow_symlinks:
+                # Follow symbolic links manually here
+                real_path = os.path.realpath(full_path)
+            else:
+                real_path = full_path
+
             file_stat = os.stat(real_path, follow_symlinks=False)
 
             # Skip the file if it's not a hardlink
