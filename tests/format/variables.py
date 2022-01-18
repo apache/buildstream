@@ -243,3 +243,54 @@ def test_partial_context_junctions(cli, datafiles):
     result.assert_success()
     result_vars = _yaml.load_data(result.output)
     assert result_vars.get_str("eltvar") == "/bar/foo/baz"
+
+
+# The notparallel tests use a custom plugin which recreates a situation where
+# a plugin substitutes an environment variable with the protected %{max-jobs}
+# variable, which is set depending on whether the plugin declared notparallel.
+#
+# These are a regression test against issue #1360, where we found variable
+# substitution at the plugin default YAML was buggy when multiple instances
+# were not getting the correct results.
+#
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "notparallel"))
+def test_notparallel(cli, datafiles):
+    project = str(datafiles)
+
+    # Test the vars
+    result = cli.run(project=project, args=["show", "--format", "%{vars}%{env}", "notparallel.bst"])
+    result.assert_success()
+    result_vars = _yaml.load_data(result.output)
+    assert result_vars.get_str("element-name") == "notparallel.bst"
+    assert result_vars.get_str("max-jobs") == "1"
+    assert result_vars.get_str("MAKEFLAGS") == "-j1"
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "notparallel"))
+def test_notparallel_twice(cli, datafiles):
+    project = str(datafiles)
+
+    #
+    # Explicitly configure default max-jobs using user configuration
+    #
+    cli.configure({"build": {"max-jobs": 2}})
+
+    # Fetch the variables and environment of both elements, where parallel.bst depends on notparallel.bst
+    result = cli.run(project=project, args=["show", "--format", "%{vars}%{env}", "parallel.bst"])
+    result.assert_success()
+
+    # Split on the empty line, which separates elements in bst show output
+    groups = result.output.split("\n\n")
+    assert len(groups) >= 2
+    notparallel_vars = _yaml.load_data(groups[0])
+    parallel_vars = _yaml.load_data(groups[1])
+
+    # Test the first group for the expected notparallel state
+    assert notparallel_vars.get_str("element-name") == "notparallel.bst"
+    assert notparallel_vars.get_str("max-jobs") == "1"
+    assert notparallel_vars.get_str("MAKEFLAGS") == "-j1"
+
+    # Test the second group for the expected !notparallel state
+    assert parallel_vars.get_str("element-name") == "parallel.bst"
+    assert parallel_vars.get_str("max-jobs") == "2"
+    assert parallel_vars.get_str("MAKEFLAGS") == "-j2"

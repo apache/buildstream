@@ -1,0 +1,10 @@
+#
+# This element tests an odd corner case we've discovered with
+# elements which use the `%{max-jobs}` to substitute a nocache
+# environment variable.
+#
+environment:
+  MAKEFLAGS: -j%{max-jobs}
+
+environment-nocache:
+- MAKEFLAGS
