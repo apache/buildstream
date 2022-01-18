@@ -33,7 +33,7 @@ import tempfile
 
 import pytest
 
-from buildstream.testing import create_repo, ALL_REPO_KINDS
+from buildstream.testing import create_repo
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
@@ -41,7 +41,6 @@ from buildstream._workspaces import BST_WORKSPACE_FORMAT_VERSION
 
 from tests.testutils import create_artifact_share, create_element_size, wait_for_cache_granularity
 
-repo_kinds = ALL_REPO_KINDS
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
@@ -170,10 +169,13 @@ def open_workspace(
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_multi(cli, tmpdir, datafiles):
     workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
-    workspaces = workspace_object.open_workspaces(repo_kinds)
+    kinds = ["tar"] * 2
+    suffixs = range(2)
 
-    for (elname, workspace), kind in zip(workspaces, repo_kinds):
-        assert kind in elname
+    workspaces = workspace_object.open_workspaces(kinds, suffixs)
+
+    for (elname, workspace), kind, suffix in zip(workspaces, kinds, suffixs):
+        assert "{}{}".format(kind, suffix) in elname
         workspace_lsdir = os.listdir(workspace)
         assert elname in workspace_lsdir
 
@@ -182,8 +184,10 @@ def test_open_multi(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_multi_unwritable(cli, tmpdir, datafiles):
     workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
+    kinds = ["tar"] * 2
+    suffixs = range(2)
 
-    element_tuples = workspace_object.create_workspace_elements(repo_kinds, repo_kinds)
+    element_tuples = workspace_object.create_workspace_elements(kinds, suffixs)
     os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
 
     # Now open the workspace, this should have the effect of automatically
@@ -209,8 +213,10 @@ def test_open_multi_unwritable(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_multi_with_directory(cli, tmpdir, datafiles):
     workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
+    kinds = ["tar"] * 2
+    suffixs = range(2)
 
-    element_tuples = workspace_object.create_workspace_elements(repo_kinds, repo_kinds)
+    element_tuples = workspace_object.create_workspace_elements(kinds, suffixs)
     os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
 
     # Now open the workspace, this should have the effect of automatically
@@ -636,16 +642,15 @@ def test_list(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", repo_kinds)
 @pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
 @pytest.mark.parametrize(
     "from_workspace,guess_element",
     [(False, False), (True, True), (True, False)],
     ids=["project-no-guess", "workspace-guess", "workspace-no-guess"],
 )
-def test_build(cli, tmpdir_factory, datafiles, kind, strict, from_workspace, guess_element):
+def test_build(cli, tmpdir_factory, datafiles, strict, from_workspace, guess_element):
     tmpdir = tmpdir_factory.mktemp(BASE_FILENAME)
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "tar", False)
     checkout = os.path.join(str(tmpdir), "checkout")
     args_dir = ["-C", workspace] if from_workspace else []
     args_elm = [element_name] if not guess_element else []
