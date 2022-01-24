@@ -20,7 +20,6 @@ import threading
 import os
 import random
 import shutil
-import signal
 import stat
 import subprocess
 import tempfile
@@ -34,7 +33,7 @@ from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2_grpc
 from .._protos.build.buildgrid import local_cas_pb2_grpc
 from .._protos.google.bytestream import bytestream_pb2_grpc
 
-from .. import _signals, utils
+from .. import utils
 from .._exceptions import CASCacheError
 
 _CASD_MAX_LOGFILES = 10
@@ -87,12 +86,11 @@ class CASDProcessManager:
         self._logfile = self._rotate_and_get_next_logfile()
 
         with open(self._logfile, "w", encoding="utf-8") as logfile_fp:
-            # Block SIGINT on buildbox-casd, we don't need to stop it
-            # The frontend will take care of it if needed
-            with _signals.blocked([signal.SIGINT], ignore=False):
-                self.process = subprocess.Popen(  # pylint: disable=consider-using-with
-                    casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT
-                )
+            # The frontend will take care of terminating buildbox-casd.
+            # Create a new process group for it such that SIGINT won't reach it.
+            self.process = subprocess.Popen(  # pylint: disable=consider-using-with, subprocess-popen-preexec-fn
+                casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT, preexec_fn=os.setpgrp
+            )
 
     # _make_socket_path()
     #
