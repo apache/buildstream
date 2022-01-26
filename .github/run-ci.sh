@@ -103,7 +103,6 @@ if [ -z "${test_names}" ]; then
     runTest "lint"
     runTest "mypy"
     runTest "debian-10"
-    runTest "fedora-33"
     runTest "fedora-34"
     runTest "fedora-35"
     runTest "ubuntu-18.04"
