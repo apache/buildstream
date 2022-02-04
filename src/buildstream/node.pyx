@@ -446,7 +446,7 @@ cdef class ScalarNode(Node):
                                        self.get_provenance(),
                                        target_value.get_provenance()))
 
-        target.value[key] = self
+        target.value[key] = self.clone()
 
     cdef bint _is_composite_list(self) except *:
         return False
@@ -973,7 +973,7 @@ cdef class MappingNode(Node):
         if self._is_composite_list():
             if key not in target.value:
                 # Composite list clobbers empty space
-                target.value[key] = self
+                target.value[key] = self.clone()
             else:
                 target_value = target.value[key]
 
@@ -1420,7 +1420,7 @@ cdef class SequenceNode(Node):
             (<SequenceNode> target.value[key]).value.extend(self.value)
         else:
             # Looks good, clobber it
-            target.value[key] = self
+            target.value[key] = self.clone()
 
     cdef bint _is_composite_list(self) except *:
         return False
