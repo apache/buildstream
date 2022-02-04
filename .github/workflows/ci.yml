@@ -28,6 +28,7 @@ jobs:
   tests:
     runs-on: ubuntu-20.04
     continue-on-error: ${{ matrix.allow-failure || false }}
+    timeout-minutes: 240
 
     strategy:
       fail-fast: false
@@ -63,6 +64,7 @@ jobs:
   # Matrix of tests which run against remote services which we bring up adjacently
   service-tests:
     runs-on: ubuntu-20.04
+    timeout-minutes: 240
 
     strategy:
       matrix:
@@ -87,6 +89,7 @@ jobs:
 
   docs:
     runs-on: ubuntu-20.04
+    timeout-minutes: 240
     steps:
       - name: Check out repository
         uses: actions/checkout@v2

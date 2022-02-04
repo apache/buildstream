@@ -9,6 +9,7 @@ jobs:
   build:
     name: Build documentation
     runs-on: ubuntu-20.04
+    timeout-minutes: 240
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -45,6 +46,7 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-20.04
+    timeout-minutes: 240
     steps:
 
     - name: Download artifact
