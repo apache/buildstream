@@ -44,7 +44,6 @@ BuildStream requires the following base system requirements:
 * libostree >= v2017.8 with introspection data
 * bubblewrap >= 0.1.2
 * fuse2
-* PyGObject introspection bindings
 * psutil python library (so you don't have to install GCC and python-devel to build it yourself)
 
 BuildStream also depends on the host tools for the :mod:`Source <buildstream.source>` plugins.
