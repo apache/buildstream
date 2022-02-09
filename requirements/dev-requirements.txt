@@ -22,5 +22,5 @@ pyparsing==3.0.7
 pytest-forked==1.4.0
 toml==0.10.2
 tomli==2.0.1
-typing_extensions==4.0.1
+typing-extensions==4.0.1
 wrapt==1.13.3

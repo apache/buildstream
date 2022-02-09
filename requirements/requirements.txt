@@ -5,7 +5,7 @@ pluginbase==1.0.1
 protobuf==3.19.4
 psutil==5.9.0
 ruamel.yaml==0.17.20
-setuptools==59.6.0
+setuptools==44.0.0
 ujson==5.1.0
 ## The following requirements were added by pip freeze:
 MarkupSafe==2.0.1

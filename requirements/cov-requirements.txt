@@ -1,5 +1,5 @@
 coverage==4.5.4
-pytest-cov==2.10.1
+pytest-cov==3.0.0
 ## The following requirements were added by pip freeze:
 attrs==21.4.0
 iniconfig==1.1.1
