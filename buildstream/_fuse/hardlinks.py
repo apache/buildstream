@@ -66,26 +66,30 @@ class SafeHardlinkOps(Operations):
         path = os.path.join(self.root, partial)
         return path
 
-    def _ensure_copy(self, full_path):
+    def _ensure_copy(self, full_path, follow_symlinks=True):
         try:
-            # Follow symbolic links manually here
-            real_path = os.path.realpath(full_path)
-            file_stat = os.stat(real_path)
+            if follow_symlinks:
+                # Follow symbolic links manually here
+                real_path = os.path.realpath(full_path)
+            else:
+                real_path = full_path
 
-            # Dont bother with files that cannot be hardlinked, oddly it
-            # directories actually usually have st_nlink > 1 so just avoid
-            # that.
+            file_stat = os.stat(real_path, follow_symlinks=False)
+
+            # Skip the file if it's not a hardlink
+            if file_stat.st_nlink <= 1:
+                return
+
+            # For some reason directories may have st_nlink > 1, but they
+            # cannot be hardlinked, so just ignore those.
             #
-            # We already wont get symlinks here, and stat will throw
-            # the FileNotFoundError below if a followed symlink did not exist.
-            #
-            if not stat.S_ISDIR(file_stat.st_mode) and file_stat.st_nlink > 1:
+            if not stat.S_ISDIR(file_stat.st_mode):
                 with tempfile.TemporaryDirectory(dir=self.tmp) as tempdir:
                     basename = os.path.basename(real_path)
                     temp_path = os.path.join(tempdir, basename)
 
                     # First copy, then unlink origin and rename
-                    shutil.copy2(real_path, temp_path)
+                    shutil.copy2(real_path, temp_path, follow_symlinks=False)
                     os.unlink(real_path)
                     os.rename(temp_path, real_path)
 
@@ -113,8 +117,8 @@ class SafeHardlinkOps(Operations):
         full_path = self._full_path(path)
 
         # Ensure copies on chown
-        self._ensure_copy(full_path)
-        return os.chown(full_path, uid, gid)
+        self._ensure_copy(full_path, follow_symlinks=False)
+        return os.chown(full_path, uid, gid, follow_symlinks=False)
 
     def getattr(self, path, fh=None):
         full_path = self._full_path(path)
