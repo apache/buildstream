@@ -201,7 +201,7 @@ class SandboxBwrap(Sandbox):
         # there just in case so that we can safely cleanup the debris.
         #
         existing_basedirs = {
-            directory: os.path.exists(os.path.join(root_directory, directory))
+            directory: os.path.lexists(os.path.join(root_directory, directory))
             for directory in ['dev/shm', 'tmp', 'dev', 'proc']
         }
 
