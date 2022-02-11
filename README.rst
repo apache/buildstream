@@ -7,17 +7,12 @@ About
 .. image:: https://docs.buildstream.build/master/_static/snapshot.svg
    :target: https://docs.buildstream.build/master/_static/snapshot.html
 
-.. image:: https://gitlab.com/BuildStream/buildstream/badges/master/pipeline.svg
-   :target: https://gitlab.com/BuildStream/buildstream/commits/master
-
-.. image:: https://gitlab.com/BuildStream/buildstream/badges/master/coverage.svg?job=coverage
-   :target: https://gitlab.com/BuildStream/buildstream/commits/master
+.. image:: https://img.shields.io/github/workflow/status/apache/buildstream/Merge%20actions
+   :alt: GitHub Workflow Status
+   :target: https://github.com/apache/buildstream/actions/workflows/merge.yml
 
 .. image:: https://img.shields.io/pypi/v/BuildStream.svg
    :target: https://pypi.org/project/BuildStream
-
-.. image:: https://app.fossa.io/api/projects/git%2Bgitlab.com%2FBuildStream%2Fbuildstream.svg?type=shield
-   :target: https://app.fossa.io/projects/git%2Bgitlab.com%2FBuildStream%2Fbuildstream?ref=badge_shield
 
 
 What is BuildStream?
