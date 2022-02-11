@@ -1,5 +1,5 @@
-coverage==4.4
-pytest-cov==2.10.1
+coverage==6.3.1
+pytest-cov==3.0.0
 pytest==7.0.1
 Cython==0.29.27
 ## The following requirements were added by pip freeze:
