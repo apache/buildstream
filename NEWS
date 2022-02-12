@@ -6,6 +6,9 @@ buildstream 1.6.4
 
   o script element plugin now supports `create-dev-shm`
 
+  o Python 3.6 is no longer tested in CI but support is maintained on
+    best effort level.
+
 =================
 buildstream 1.6.3
 =================
