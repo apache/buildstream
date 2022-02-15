@@ -69,8 +69,6 @@ if [ -z "${test_names}" ]; then
     runTest "debian-10"
     runTest "fedora-34"
     runTest "fedora-35"
-    runTest "ubuntu-18.04"
-    runTest "centos-7.7.1908"
 else
     for test_name in "${test_names}"; do
 	runTest "${test_name}"
