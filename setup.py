@@ -46,10 +46,10 @@ if version.startswith("0+untagged"):
 # Python requirements
 ##################################################################
 REQUIRED_PYTHON_MAJOR = 3
-REQUIRED_PYTHON_MINOR = 6
+REQUIRED_PYTHON_MINOR = 7
 
 if sys.version_info[0] != REQUIRED_PYTHON_MAJOR or sys.version_info[1] < REQUIRED_PYTHON_MINOR:
-    print("BuildStream requires Python >= 3.6")
+    print("BuildStream requires Python >= 3.7")
     sys.exit(1)
 
 try:
@@ -322,7 +322,6 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: POSIX",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

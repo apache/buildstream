@@ -23,7 +23,7 @@ for installing these dependencies.
 
 BuildStream requires the following base system requirements:
 
-- python3 >= 3.6
+- python3 >= 3.7
 - pip
 - :ref:`buildbox-casd<install-buildbox>`
 
