@@ -814,7 +814,7 @@ class Element(Plugin):
         # containing element that have been visited for the `_Scope.BUILD` case
         # and the second one relating to the `_Scope.RUN` case.
         if not recurse:
-            result: Set[Element] = set()
+            result: Set["Element"] = set()
             if scope in (_Scope.BUILD, _Scope.ALL):
                 for dep in self.__build_dependencies:
                     if dep not in result:
