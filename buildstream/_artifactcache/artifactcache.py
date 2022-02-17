@@ -448,6 +448,10 @@ class ArtifactCache():
                 self._cache_size = stored_size
             else:
                 self.compute_cache_size()
+                # Computing cache doesn't actually write the value.
+                # Write cache size explicitly here since otherwise
+                # in some cases it's not stored on disk.
+                self.set_cache_size(self._cache_size)
 
         return self._cache_size
 
@@ -865,19 +869,21 @@ class ArtifactCache():
     def _read_cache_size(self):
         size_file_path = os.path.join(self.context.artifactdir, CACHE_SIZE_FILE)
 
-        if not os.path.exists(size_file_path):
+        try:
+            with open(size_file_path, "r", encoding="utf-8") as f:
+                size = f.read()
+        except FileNotFoundError:
             return None
-
-        with open(size_file_path, "r", encoding="utf-8") as f:
-            size = f.read()
 
         try:
             num_size = int(size)
-        except ValueError as e:
-            raise ArtifactError("Size '{}' parsed from '{}' was not an integer".format(
-                size, size_file_path)) from e
-
-        return num_size
+        except ValueError:
+            self._message(MessageType.WARN, "Failure resolving cache size",
+                          detail="Size '{}' parsed from '{}' was not an integer"
+                          .format(size, size_file_path))
+            return None
+        else:
+            return num_size
 
     # _calculate_cache_quota()
     #
