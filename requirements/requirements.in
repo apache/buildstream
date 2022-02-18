@@ -4,6 +4,6 @@ jinja2 >= 2.10
 pluginbase
 protobuf >= 3.6
 psutil
-ruamel.yaml >= 0.16
+ruamel.yaml < 0.17
 setuptools
 ujson
