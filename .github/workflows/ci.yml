@@ -39,13 +39,7 @@ jobs:
           - debian-10
           - fedora-34
           - fedora-35
-          - fedora-missing-deps
           - lint
-          - mypy
-
-        include:
-          - test-name: plugins-master
-            allow-failure: true
 
     steps:
       - name: Check out repository
