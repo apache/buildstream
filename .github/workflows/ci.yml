@@ -31,6 +31,7 @@ jobs:
 
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
 
         # The names here should map to a valid service defined in
@@ -54,6 +55,7 @@ jobs:
 
   docs:
     runs-on: ubuntu-20.04
+    needs: tests
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
