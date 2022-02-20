@@ -58,31 +58,6 @@ jobs:
         run: |
           ${GITHUB_WORKSPACE}/.github/run-ci.sh ${{ matrix.test-name }}
 
-  # Matrix of tests which run against remote services which we bring up adjacently
-  service-tests:
-    runs-on: ubuntu-20.04
-
-    strategy:
-      matrix:
-
-        # The names here map to valid services defined in "../compose/ci.docker-compose.yml",
-        # and they also map to corresponding filenames of services which are expected
-        # to be run in the background
-        test-name:
-          - buildbarn
-          - buildgrid
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v2
-        # BuildStream requires tags to be able to find its version.
-        with:
-          fetch-depth: 0
-
-      - name: Bring up the RE cluster
-        run: |
-          ${GITHUB_WORKSPACE}/.github/run-ci.sh --service ${{ matrix.test-name }}
-
   docs:
     runs-on: ubuntu-20.04
     steps:
