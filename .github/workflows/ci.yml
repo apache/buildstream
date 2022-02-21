@@ -37,9 +37,9 @@ jobs:
         # The names here should map to a valid service defined in
         # "../compose/ci.docker-compose.yml"
         test-name:
-          - debian-10
-          - fedora-34
           - fedora-35
+          - fedora-34
+          - debian-10
           - lint
 
     steps:
