@@ -2200,13 +2200,15 @@ class Element(Plugin):
     # Args:
     #    dependencies (List[List[str]]): list of dependencies with project name,
     #                                    element name and optional cache key
+    #    weak_cache_key (Optional[str]): the weak cache key, required for calculating the
+    #                                    strict and strong cache keys
     #
     # Returns:
     #    (str): A hex digest cache key for this Element, or None
     #
     # None is returned if information for the cache key is missing.
     #
-    def _calculate_cache_key(self, dependencies):
+    def _calculate_cache_key(self, dependencies, weak_cache_key=None):
         # No cache keys for dependencies which have no cache keys
         if any(not all(dep) for dep in dependencies):
             return None
@@ -2235,6 +2237,8 @@ class Element(Plugin):
 
         cache_key_dict = self.__cache_key_dict.copy()
         cache_key_dict["dependencies"] = dependencies
+        if weak_cache_key is not None:
+            cache_key_dict["weak-cache-key"] = weak_cache_key
 
         return _cachekey.generate_key(cache_key_dict)
 
@@ -3219,36 +3223,39 @@ class Element(Plugin):
             # Tracking may still be pending
             return
 
+        # Calculate weak cache key first, as it is required for generating the other keys.
+        #
+        # This code can be run multiple times until the strict key can be calculated,
+        # so let's ensure we only ever calculate the weak key once, even though we need
+        # to resolve it before we can resolve the strict key.
+        if self.__weak_cache_key is None:
+            # Weak cache key includes names of direct build dependencies
+            # so as to only trigger rebuilds when the shape of the
+            # dependencies change.
+            #
+            # Some conditions cause dependencies to be strict, such
+            # that this element will be rebuilt anyway if the dependency
+            # changes even in non strict mode, for these cases we just
+            # encode the dependency's weak cache key instead of it's name.
+            #
+            dependencies = [
+                [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
+                if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
+                else [e.project_name, e.name]
+                for e in self._dependencies(_Scope.BUILD)
+            ]
+            self.__weak_cache_key = self._calculate_cache_key(dependencies)
+
         context = self._get_context()
 
         # Calculate the strict cache key
         dependencies = [[e.project_name, e.name, e.__strict_cache_key] for e in self._dependencies(_Scope.BUILD)]
-        self.__strict_cache_key = self._calculate_cache_key(dependencies)
+        self.__strict_cache_key = self._calculate_cache_key(dependencies, self.__weak_cache_key)
 
         if self.__strict_cache_key is None:
             # Cache keys cannot be calculated yet as a build dependency doesn't
             # have a cache key yet.
             return
-
-        # Calculate weak cache key
-        #
-        # Weak cache key includes names of direct build dependencies
-        # so as to only trigger rebuilds when the shape of the
-        # dependencies change.
-        #
-        # Some conditions cause dependencies to be strict, such
-        # that this element will be rebuilt anyway if the dependency
-        # changes even in non strict mode, for these cases we just
-        # encode the dependency's weak cache key instead of it's name.
-        #
-        dependencies = [
-            [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
-            if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
-            else [e.project_name, e.name]
-            for e in self._dependencies(_Scope.BUILD)
-        ]
-
-        self.__weak_cache_key = self._calculate_cache_key(dependencies)
 
         # As the strict cache key has already been calculated, it should always
         # be possible to calculate the weak cache key as well.
@@ -3287,9 +3294,11 @@ class Element(Plugin):
                 strong_key, _, _ = self.__artifact.get_metadata_keys()
                 self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
+                assert self.__weak_cache_key is not None
+
                 # Artifact will or has been built, not downloaded
                 dependencies = [[e.project_name, e.name, e._get_cache_key()] for e in self._dependencies(_Scope.BUILD)]
-                self.__cache_key = self._calculate_cache_key(dependencies)
+                self.__cache_key = self._calculate_cache_key(dependencies, self.__weak_cache_key)
 
             if self.__cache_key is None:
                 # Strong cache key could not be calculated yet
