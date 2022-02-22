@@ -197,7 +197,7 @@ class Sandbox:
         else:
             flags = _SandboxFlags.NONE
 
-        self._run_with_flags(command, flags=flags, cwd=cwd, env=env, label=label)
+        return self._run_with_flags(command, flags=flags, cwd=cwd, env=env, label=label)
 
     @contextmanager
     def batch(
