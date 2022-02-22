@@ -71,7 +71,6 @@ class Sandbox:
     """
 
     # Minimal set of devices for the sandbox
-    DEVICES = ["/dev/urandom", "/dev/random", "/dev/zero", "/dev/null"]
     _dummy_reasons = []  # type: List[str]
 
     def __init__(self, context: "Context", project: "Project", directory: str, **kwargs):
