@@ -22,7 +22,7 @@ from contextlib import ExitStack
 import psutil
 
 from .. import utils, _signals
-from . import SandboxFlags
+from . import _SandboxFlags
 from .._exceptions import SandboxError
 from .._platform import Platform
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
@@ -121,7 +121,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
             # If we're interactive, we want to inherit our stdin,
             # otherwise redirect to /dev/null, ensuring process
             # disconnected from terminal.
-            if flags & SandboxFlags.INTERACTIVE:
+            if flags & _SandboxFlags.INTERACTIVE:
                 stdin = sys.stdin
 
                 if "bind-mount" in self._capabilities:
@@ -132,7 +132,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 stdin = subprocess.DEVNULL
 
             self._run_buildbox(
-                buildbox_command, stdin, stdout, stderr, interactive=(flags & SandboxFlags.INTERACTIVE),
+                buildbox_command, stdin, stdout, stderr, interactive=(flags & _SandboxFlags.INTERACTIVE),
             )
 
             return remote_execution_pb2.ActionResult().FromString(result_file.read())

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2022 Codethink Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ from collections import OrderedDict
 from typing import List, Optional, TYPE_CHECKING
 
 from .element import Element
-from .sandbox import SandboxFlags
 
 if TYPE_CHECKING:
     from typing import Dict, Tuple
@@ -221,7 +220,7 @@ class ScriptElement(Element):
             with self.timed_activity("Staging dependencies", silent_nested=True):
                 self.stage_dependency_artifacts(sandbox)
 
-            with sandbox.batch(SandboxFlags.NONE, label="Integrating sandbox"):
+            with sandbox.batch(label="Integrating sandbox"):
                 for dep in self.dependencies():
                     dep.integrate(sandbox)
 
@@ -240,7 +239,7 @@ class ScriptElement(Element):
             root_list = self.__layout.get("/", None)
             if root_list:
                 element_list = [element for element, _ in root_list]
-                with sandbox.batch(SandboxFlags.NONE), self.timed_activity("Integrating sandbox", silent_nested=True):
+                with sandbox.batch(), self.timed_activity("Integrating sandbox", silent_nested=True):
                     for dep in self.dependencies(element_list):
                         dep.integrate(sandbox)
 
@@ -250,18 +249,13 @@ class ScriptElement(Element):
         sandbox.get_virtual_directory().descend(*install_root_path_components, create=True)
 
     def assemble(self, sandbox):
-
-        flags = SandboxFlags.NONE
-        if self.__root_read_only:
-            flags |= SandboxFlags.ROOT_READ_ONLY
-
-        with sandbox.batch(flags, collect=self.__install_root):
+        with sandbox.batch(root_read_only=self.__root_read_only, collect=self.__install_root):
             for groupname, commands in self.__commands.items():
-                with sandbox.batch(flags, label="Running '{}'".format(groupname)):
+                with sandbox.batch(root_read_only=self.__root_read_only, label="Running '{}'".format(groupname)):
                     for cmd in commands:
                         # Note the -e switch to 'sh' means to exit with an error
                         # if any untested command fails.
-                        sandbox.run(["sh", "-c", "-e", cmd + "\n"], flags, label=cmd)
+                        sandbox.run(["sh", "-c", "-e", cmd + "\n"], root_read_only=self.__root_read_only, label=cmd)
 
         # Return where the result can be collected from
         return self.__install_root

@@ -30,7 +30,7 @@ See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
 details on common configuration options for build elements.
 """
 
-from buildstream import BuildElement, SandboxFlags
+from buildstream import BuildElement
 
 
 # Element implementation for the 'manual' kind.
@@ -42,7 +42,7 @@ class ManualElement(BuildElement):
     # Enable command batching across prepare() and assemble()
     def configure_sandbox(self, sandbox):
         super().configure_sandbox(sandbox)
-        self.batch_prepare_assemble(SandboxFlags.ROOT_READ_ONLY, collect=self.get_variable("install-root"))
+        self.batch_prepare_assemble(root_read_only=True, collect=self.get_variable("install-root"))
 
 
 # Plugin entry point
