@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2022 Codethink Limited
 #  Copyright (C) 2018 Bloomberg Finance LP
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -171,7 +171,6 @@ artifact collection purposes.
 import os
 
 from .element import Element
-from .sandbox import SandboxFlags
 
 
 _command_steps = ["configure-commands", "build-commands", "install-commands", "strip-commands"]
@@ -287,7 +286,7 @@ class BuildElement(Element):
         root_list = self.__layout.get("/", None)
         if root_list:
             element_list = [element for element, _ in root_list]
-            with self.timed_activity("Integrating sandbox", silent_nested=True), sandbox.batch(SandboxFlags.NONE):
+            with self.timed_activity("Integrating sandbox", silent_nested=True), sandbox.batch():
                 for dep in self.dependencies(element_list):
                     dep.integrate(sandbox)
 
@@ -301,7 +300,7 @@ class BuildElement(Element):
             if not commands or command_name == "configure-commands":
                 continue
 
-            with sandbox.batch(SandboxFlags.ROOT_READ_ONLY, label="Running {}".format(command_name)):
+            with sandbox.batch(root_read_only=True, label="Running {}".format(command_name)):
                 for cmd in commands:
                     self.__run_command(sandbox, cmd)
 
@@ -347,7 +346,7 @@ class BuildElement(Element):
                 # Already prepared
                 return
 
-        with sandbox.batch(SandboxFlags.ROOT_READ_ONLY, label="Running configure-commands"):
+        with sandbox.batch(root_read_only=True, label="Running configure-commands"):
             for cmd in commands:
                 self.__run_command(sandbox, cmd)
 
@@ -371,4 +370,4 @@ class BuildElement(Element):
         # Note the -e switch to 'sh' means to exit with an error
         # if any untested command fails.
         #
-        sandbox.run(["sh", "-c", "-e", cmd + "\n"], SandboxFlags.ROOT_READ_ONLY, label=cmd)
+        sandbox.run(["sh", "-c", "-e", cmd + "\n"], root_read_only=True, label=cmd)

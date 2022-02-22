@@ -24,7 +24,7 @@ class SandboxDummy(Sandbox):
         super().__init__(*args, **kwargs)
         self._reason = kwargs.get("dummy_reason", "no reason given")
 
-    def _run(self, command, flags, *, cwd, env):
+    def _run(self, command, *, flags, cwd, env):
 
         if not self._has_command(command[0], env):
             raise SandboxCommandError(

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2020 Codethink Limited
+#  Copyright (C) 2016-2022 Codethink Limited
 #  Copyright (C) 2017-2020 Bloomberg Finance LP
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -98,7 +98,7 @@ from . import _cachekey
 from . import _site
 from .node import Node
 from .plugin import Plugin
-from .sandbox import SandboxFlags, SandboxCommandError
+from .sandbox import _SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
 from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey
@@ -302,7 +302,9 @@ class Element(Plugin):
         self.__sandbox_config = None  # type: Optional[SandboxConfig]
 
         self.__batch_prepare_assemble = False  # Whether batching across prepare()/assemble() is configured
-        self.__batch_prepare_assemble_flags = 0  # Sandbox flags for batching across prepare()/assemble()
+        self.__batch_prepare_assemble_rro = (
+            False  # Whether the root is readonly when batching across prepare()/assemble()
+        )
         # Collect dir for batching across prepare()/assemble()
         self.__batch_prepare_assemble_collect = None  # type: Optional[str]
 
@@ -739,9 +741,9 @@ class Element(Plugin):
         environment = self.get_environment()
 
         if bstdata is not None:
-            with sandbox.batch(SandboxFlags.NONE):
+            with sandbox.batch():
                 for command in bstdata.get_str_list("integration-commands", []):
-                    sandbox.run(["sh", "-e", "-c", command], 0, env=environment, cwd="/", label=command)
+                    sandbox.run(["sh", "-e", "-c", command], env=environment, cwd="/", label=command)
 
     def stage_sources(self, sandbox: "Sandbox", directory: str) -> None:
         """Stage this element's sources to a directory in the sandbox
@@ -819,11 +821,11 @@ class Element(Plugin):
         assert self.__variables
         return self.__variables.get(varname)
 
-    def batch_prepare_assemble(self, flags: int, *, collect: Optional[str] = None) -> None:
+    def batch_prepare_assemble(self, *, root_read_only: bool = False, collect: Optional[str] = None) -> None:
         """ Configure command batching across prepare() and assemble()
 
         Args:
-           flags: The :class:`.SandboxFlags` for the command batch
+           root_read_only: Whether the filesystem root should be read only
            collect: An optional directory containing partial install contents
                     on command failure.
 
@@ -834,7 +836,7 @@ class Element(Plugin):
             raise ElementError("{}: Command batching for prepare/assemble is already configured".format(self))
 
         self.__batch_prepare_assemble = True
-        self.__batch_prepare_assemble_flags = flags
+        self.__batch_prepare_assemble_rro = root_read_only
         self.__batch_prepare_assemble_collect = collect
 
     #############################################################
@@ -1446,7 +1448,7 @@ class Element(Plugin):
                 # Run any integration commands provided by the dependencies
                 # once they are all staged and ready
                 if integrate:
-                    with self.timed_activity("Integrating sandbox"), sandbox.batch(SandboxFlags.NONE):
+                    with self.timed_activity("Integrating sandbox"), sandbox.batch():
                         for dep in self._dependencies(scope):
                             dep.integrate(sandbox)
 
@@ -1725,7 +1727,8 @@ class Element(Plugin):
                 try:
                     if self.__batch_prepare_assemble:
                         cm = sandbox.batch(
-                            self.__batch_prepare_assemble_flags, collect=self.__batch_prepare_assemble_collect
+                            root_read_only=self.__batch_prepare_assemble_rro,
+                            collect=self.__batch_prepare_assemble_collect,
                         )
                     else:
                         cm = contextlib.suppress()
@@ -2002,7 +2005,7 @@ class Element(Plugin):
         with self._prepare_sandbox(scope, shell=True, usebuildtree=usebuildtree) as sandbox:
             environment = self.get_environment()
             environment = copy.copy(environment)
-            flags = SandboxFlags.INTERACTIVE | SandboxFlags.ROOT_READ_ONLY
+            flags = _SandboxFlags.INTERACTIVE | _SandboxFlags.ROOT_READ_ONLY
 
             # Fetch the main toplevel project, in case this is a junctioned
             # subproject, we want to use the rules defined by the main one.
@@ -2018,7 +2021,7 @@ class Element(Plugin):
 
                 # Open the network, and reuse calling uid/gid
                 #
-                flags |= SandboxFlags.NETWORK_ENABLED | SandboxFlags.INHERIT_UID
+                flags |= _SandboxFlags.NETWORK_ENABLED | _SandboxFlags.INHERIT_UID
 
                 # Apply project defined environment vars to set for a shell
                 for key, value in shell_environment.items():
@@ -2044,7 +2047,7 @@ class Element(Plugin):
             self.status("Running command", detail=" ".join(argv))
 
             # Run shells with network enabled and readonly root.
-            return sandbox.run(argv, flags, env=environment)
+            return sandbox._run_with_flags(argv, flags=flags, env=environment)
 
     # _open_workspace():
     #

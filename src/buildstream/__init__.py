@@ -28,7 +28,7 @@ if "_BST_COMPLETION" not in os.environ:
     del get_versions
 
     from .utils import UtilError, ProgramNotFoundError
-    from .sandbox import Sandbox, SandboxFlags, SandboxCommandError
+    from .sandbox import Sandbox, SandboxCommandError
     from .storage import Directory
     from .types import CoreWarnings, OverlapAction
     from .node import MappingNode, Node, ProvenanceInformation, ScalarNode, SequenceNode

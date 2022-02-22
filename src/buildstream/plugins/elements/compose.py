@@ -114,7 +114,7 @@ class ComposeElement(Element):
                     snapshot = set(vbasedir.list_relative_paths())
                     vbasedir.mark_unmodified()
 
-                with sandbox.batch(0):
+                with sandbox.batch():
                     for dep in self.dependencies():
                         dep.integrate(sandbox)
 

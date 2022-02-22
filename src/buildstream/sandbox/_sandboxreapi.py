@@ -16,7 +16,7 @@
 import os
 import shlex
 
-from .sandbox import Sandbox, SandboxFlags, SandboxCommandError, _SandboxBatch
+from .sandbox import Sandbox, _SandboxFlags, SandboxCommandError, _SandboxBatch
 from .. import utils
 from .._exceptions import ImplError, SandboxError
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
@@ -33,7 +33,7 @@ class SandboxREAPI(Sandbox):
 
         self._output_node_properties = kwargs.get("output_node_properties")
 
-    def _run(self, command, flags, *, cwd, env):
+    def _run(self, command, *, flags, cwd, env):
         context = self._get_context()
         cascache = context.get_cascache()
 
@@ -53,7 +53,7 @@ class SandboxREAPI(Sandbox):
         # Ensure directories required for sandboxed execution exist
         for directory in ["dev", "proc", "tmp"]:
             vsubdir = vdir.descend(directory, create=True)
-            if flags & SandboxFlags.ROOT_READ_ONLY:
+            if flags & _SandboxFlags.ROOT_READ_ONLY:
                 vsubdir._set_subtree_read_only(False)
 
         # Create directories for all marked directories. This emulates
@@ -83,10 +83,10 @@ class SandboxREAPI(Sandbox):
                 # Read-write directory
                 marked_vdir = vdir.descend(*directory.split(os.path.sep), create=True)
                 read_write_directories.append(directory)
-                if flags & SandboxFlags.ROOT_READ_ONLY:
+                if flags & _SandboxFlags.ROOT_READ_ONLY:
                     marked_vdir._set_subtree_read_only(False)
 
-        if flags & SandboxFlags.ROOT_READ_ONLY:
+        if flags & _SandboxFlags.ROOT_READ_ONLY:
             vdir._set_subtree_read_only(True)
         else:
             # The whole sandbox is writable
@@ -125,7 +125,7 @@ class SandboxREAPI(Sandbox):
         platform_dict["OSFamily"] = config.build_os
         platform_dict["ISA"] = config.build_arch
 
-        if flags & SandboxFlags.INHERIT_UID:
+        if flags & _SandboxFlags.INHERIT_UID:
             uid = os.geteuid()
             gid = os.getegid()
         else:
@@ -136,7 +136,7 @@ class SandboxREAPI(Sandbox):
         if gid is not None:
             platform_dict["unixGID"] = str(gid)
 
-        if flags & SandboxFlags.NETWORK_ENABLED:
+        if flags & _SandboxFlags.NETWORK_ENABLED:
             platform_dict["network"] = "on"
 
         # Remove unsupported platform properties from the dict
@@ -228,7 +228,12 @@ class _SandboxREAPIBatch(_SandboxBatch):
                 detail=self.main_group.combined_label(),
                 element_name=self.sandbox._get_element_name(),
             ):
-                if self.sandbox.run(["sh", "-c", "-e", self.script], self.flags, cwd=first.cwd, env=first.env) != 0:
+                if (
+                    self.sandbox._run_with_flags(
+                        ["sh", "-c", "-e", self.script], flags=self.flags, cwd=first.cwd, env=first.env
+                    )
+                    != 0
+                ):
                     raise SandboxCommandError("Command failed", collect=self.collect)
 
     def execute_group(self, group):
