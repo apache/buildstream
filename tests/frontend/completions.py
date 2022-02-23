@@ -359,11 +359,17 @@ def test_argument_artifact(cli, datafiles):
             words = result.output.splitlines()  # This leaves an extra space on each e.g. ['foo.bst ']
             words = [word.strip() for word in words]
 
+            # We should now be able to see the artifacts, but the order in which artifacts
+            # are displayed in the completion list is not guaranteed to be ordered, so we
+            # test for both orders.
             if i == 0:
-                expected = PROJECT_ELEMENTS + artifacts  # We should now be able to see the artifacts
+                expected1 = PROJECT_ELEMENTS + artifacts
+                expected2 = PROJECT_ELEMENTS + list(reversed(artifacts))
             elif i == 1:
-                expected = ["target.bst"] + artifacts
+                expected1 = ["target.bst"] + artifacts
+                expected2 = ["target.bst"] + list(reversed(artifacts))
             elif i == 2:
-                expected = artifacts
+                expected1 = artifacts
+                expected2 = list(reversed(artifacts))
 
-            assert expected == words
+            assert words in (expected1, expected2)
