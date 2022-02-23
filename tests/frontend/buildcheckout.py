@@ -5,6 +5,7 @@ import os
 import tarfile
 import hashlib
 import re
+import shutil
 
 import pytest
 
@@ -1108,3 +1109,69 @@ def test_fail_no_args(datafiles, cli):
     result = cli.run(project=project, args=["artifact", "checkout"])
     result.assert_main_error(ErrorDomain.APP, None)
     assert "Missing argument" in result.stderr
+
+
+# This test reproduces a scenario where BuildStream can get confused
+# if the strictness of a dependency is not taken into account in the
+# strong artifact cache key, as reported in issue #1270.
+#
+# While we were unable to reproduce the exact experience, we can test
+# the expected behavior.
+#
+STRICT_DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "strict-scenario",)
+
+
+@pytest.mark.datafiles(STRICT_DATA_DIR)
+def test_changing_strict_dependency_scenario(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, "checkout")
+    target_path = os.path.join(project, "elements", "target.bst")
+
+    # Function to (re)write the target element so that it depends
+    # on the base.bst element strictly or non-strictly
+    #
+    def configure_target(strict):
+        dependency = {"filename": "base.bst"}
+        if strict:
+            dependency["strict"] = True
+        config = {
+            "kind": "import",
+            "depends": [dependency],
+            "sources": [{"kind": "local", "path": "files/target.txt"}],
+        }
+        _yaml.roundtrip_dump(config, target_path)
+
+    # First build where the target normally depends on the base element
+    configure_target(False)
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+
+    # Now configure the target to *strictly* depend on the base, try to check it out
+    #
+    # This will fail in both strict more or non-strict mode, as the strictness of the
+    # dependency will affect both keys.
+    configure_target(True)
+    result = cli.run(project=project, args=["artifact", "checkout", "--directory", checkout, "target.bst"])
+    result.assert_main_error(ErrorDomain.STREAM, "uncached-checkout-attempt")
+    shutil.rmtree(checkout)
+
+    result = cli.run(
+        project=project, args=["--no-strict", "artifact", "checkout", "--directory", checkout, "target.bst"]
+    )
+    result.assert_main_error(ErrorDomain.STREAM, "uncached-checkout-attempt")
+    shutil.rmtree(checkout)
+
+    # Now perform a build on the newly strict dependency, which should cause it to be
+    # available under both strict and non-strict checkout scenarios
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+
+    result = cli.run(project=project, args=["artifact", "checkout", "--directory", checkout, "target.bst"])
+    result.assert_success()
+    shutil.rmtree(checkout)
+
+    result = cli.run(
+        project=project, args=["--no-strict", "artifact", "checkout", "--directory", checkout, "target.bst"]
+    )
+    result.assert_success()
+    shutil.rmtree(checkout)
