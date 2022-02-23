@@ -11,8 +11,8 @@ from buildstream.utils import _deduplicate
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 
-from buildstream.testing import runcli
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+from buildstream._testing import runcli
+from buildstream._testing.runcli import cli  # pylint: disable=unused-import
 
 from tests.testutils import dummy_context
 

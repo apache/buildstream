@@ -4,8 +4,8 @@ import subprocess
 
 import pytest
 
-from buildstream.testing import Repo
-from buildstream.testing._utils.site import GIT, GIT_ENV, HAVE_GIT
+from buildstream._testing import Repo
+from buildstream._testing._utils.site import GIT, GIT_ENV, HAVE_GIT
 
 
 class Git(Repo):

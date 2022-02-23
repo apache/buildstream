@@ -5,8 +5,8 @@ import os
 import pytest
 
 from buildstream import _yaml
-from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_SANDBOX, CASD_SEPARATE_USER
+from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream._testing._utils.site import HAVE_SANDBOX, CASD_SEPARATE_USER
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")

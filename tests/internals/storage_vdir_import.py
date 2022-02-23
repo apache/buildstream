@@ -23,7 +23,7 @@ from buildstream.storage._filebaseddirectory import FileBasedDirectory
 from buildstream._cas import CASCache
 from buildstream.storage.directory import VirtualDirectoryError
 from buildstream.utils import _set_file_mtime, _parse_timestamp
-from buildstream.testing._utils.site import have_subsecond_mtime
+from buildstream._testing._utils.site import have_subsecond_mtime
 
 
 # These are comparitive tests that check that FileBasedDirectory and

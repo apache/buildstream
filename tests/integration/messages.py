@@ -24,8 +24,8 @@ import pytest
 
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream._testing._utils.site import HAVE_SANDBOX
 
 
 pytestmark = pytest.mark.integration

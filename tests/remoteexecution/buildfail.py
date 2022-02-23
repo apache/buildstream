@@ -22,7 +22,7 @@ import pytest
 
 from buildstream.exceptions import ErrorDomain
 from buildstream import _yaml
-from buildstream.testing import cli_remote_execution as cli  # pylint: disable=unused-import
+from buildstream._testing import cli_remote_execution as cli  # pylint: disable=unused-import
 
 pytestmark = pytest.mark.remoteexecution
 

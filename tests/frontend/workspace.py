@@ -33,8 +33,8 @@ import tempfile
 
 import pytest
 
-from buildstream.testing import create_repo, ALL_REPO_KINDS
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo, ALL_REPO_KINDS
+from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream._workspaces import BST_WORKSPACE_FORMAT_VERSION

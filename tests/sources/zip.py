@@ -7,8 +7,8 @@ import zipfile
 import pytest
 
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing import generate_project
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import generate_project
+from buildstream._testing import cli  # pylint: disable=unused-import
 from tests.testutils.file_server import create_file_server
 from . import list_dir_contents
 

@@ -23,12 +23,12 @@ import os
 import pkg_resources
 import pytest
 
-from buildstream.testing import register_repo_kind, sourcetests_collection_hook
-from buildstream.testing._fixtures import (  # pylint: disable=unused-import
+from buildstream._testing import register_repo_kind, sourcetests_collection_hook
+from buildstream._testing._fixtures import (  # pylint: disable=unused-import
     default_thread_number,
     thread_check,
 )
-from buildstream.testing.integration import integration_cache  # pylint: disable=unused-import
+from buildstream._testing.integration import integration_cache  # pylint: disable=unused-import
 
 
 from tests.testutils.repo.git import Git
@@ -137,7 +137,7 @@ register_repo_kind("zip", Zip, None)
 
 
 # This hook enables pytest to collect the templated source tests from
-# buildstream.testing
+# buildstream._testing
 def pytest_sessionstart(session):
     if session.config.getvalue("plugins"):
         # Enable all plugins that implement the 'buildstream.tests.source_plugins' hook

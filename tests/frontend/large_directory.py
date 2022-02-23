@@ -23,7 +23,7 @@ import pytest
 
 import grpc
 
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import cli  # pylint: disable=unused-import
 from tests.testutils import create_artifact_share, assert_shared
 
 

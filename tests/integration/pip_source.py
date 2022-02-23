@@ -6,9 +6,9 @@ import pytest
 
 from buildstream import _yaml
 
-from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing.integration import assert_contains
-from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream._testing.integration import assert_contains
+from buildstream._testing._utils.site import HAVE_SANDBOX
 
 from tests.testutils.python_repo import setup_pypi_repo  # pylint: disable=unused-import
 

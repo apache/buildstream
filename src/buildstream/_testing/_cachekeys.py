@@ -43,7 +43,7 @@ def check_cache_key_stability(project_path: os.PathLike, cli: Cli) -> None:
     The ``.expected`` file should contain the expected cache key.
 
     In order to automatically created the ``.expected`` files, or updated them,
-    you can run ``python3 -m buildstream.testing._update_cachekeys`` in the
+    you can run ``python3 -m buildstream._testing._update_cachekeys`` in the
     project's directory.
 
     :param project_path: Path to a project

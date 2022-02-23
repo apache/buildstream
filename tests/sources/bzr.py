@@ -7,10 +7,10 @@ import subprocess
 import pytest
 
 from buildstream import _yaml
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
-from buildstream.testing import generate_element
-from buildstream.testing._utils.site import HAVE_BZR
+from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
+from buildstream._testing import generate_element
+from buildstream._testing._utils.site import HAVE_BZR
 
 pytestmark = pytest.mark.skipif(HAVE_BZR is False, reason="bzr is not available")
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "bzr")

@@ -6,9 +6,9 @@ import stat
 import pytest
 
 from buildstream import utils
-from buildstream.testing import ErrorDomain
-from buildstream.testing import generate_project
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import ErrorDomain
+from buildstream._testing import generate_project
+from buildstream._testing import cli  # pylint: disable=unused-import
 from tests.testutils.file_server import create_file_server
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "remote",)

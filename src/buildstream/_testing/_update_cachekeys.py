@@ -31,8 +31,8 @@ import os
 import tempfile
 from unittest import mock
 
-from buildstream.testing._cachekeys import _element_filename, _parse_output_keys, _load_expected_keys
-from buildstream.testing.runcli import Cli
+from ._cachekeys import _element_filename, _parse_output_keys, _load_expected_keys
+from .runcli import Cli
 
 
 def write_expected_key(project_dir, element_name, actual_key):
