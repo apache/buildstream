@@ -12,7 +12,7 @@ recursive-include src/buildstream *.pxd
 recursive-include src/buildstream *.c
 
 # Data files required by BuildStream's generic source tests
-graft src/buildstream/testing/_sourcetests/project
+graft src/buildstream/_testing/_sourcetests/project
 
 # Documentation package includes
 include doc/Makefile

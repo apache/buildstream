@@ -6,8 +6,8 @@ import textwrap
 import pytest
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
+from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
 from tests.testutils import generate_junction
 
 

@@ -7,8 +7,8 @@ import pytest
 
 from buildstream import utils, _yaml
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing._utils.site import IS_LINUX
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing._utils.site import IS_LINUX
+from buildstream._testing import cli  # pylint: disable=unused-import
 
 
 # Project directory

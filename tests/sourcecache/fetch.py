@@ -26,8 +26,8 @@ import pytest
 from buildstream.exceptions import ErrorDomain
 from buildstream._project import Project
 from buildstream import _yaml
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
+from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
 
 from tests.testutils import create_artifact_share, dummy_context
 

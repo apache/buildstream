@@ -6,7 +6,7 @@ import tarfile
 
 import pytest
 
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import cli  # pylint: disable=unused-import
 
 from buildstream import utils, _yaml
 

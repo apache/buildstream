@@ -9,9 +9,9 @@ import shutil
 
 import pytest
 
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
-from buildstream.testing._utils.site import CASD_SEPARATE_USER
+from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
+from buildstream._testing._utils.site import CASD_SEPARATE_USER
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream import utils

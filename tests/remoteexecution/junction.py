@@ -19,8 +19,8 @@
 
 import os
 import pytest
-from buildstream.testing import cli_remote_execution as cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
+from buildstream._testing import cli_remote_execution as cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
 from buildstream import _yaml
 from tests.testutils import generate_junction
 

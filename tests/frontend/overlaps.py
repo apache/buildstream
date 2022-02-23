@@ -3,7 +3,7 @@
 
 import os
 import pytest
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+from buildstream._testing.runcli import cli  # pylint: disable=unused-import
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
 from buildstream import CoreWarnings, OverlapAction

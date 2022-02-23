@@ -5,8 +5,8 @@ import os
 import pytest
 
 from buildstream import _yaml
-from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream._testing._utils.site import HAVE_SANDBOX
 from buildstream.exceptions import ErrorDomain
 from buildstream.utils import BST_ARBITRARY_TIMESTAMP
 

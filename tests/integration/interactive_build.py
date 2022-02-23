@@ -5,8 +5,8 @@ import os
 import pexpect
 import pytest
 
-from buildstream.testing import runcli
-from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream._testing import runcli
+from buildstream._testing._utils.site import HAVE_SANDBOX
 from tests.testutils.constants import PEXPECT_TIMEOUT_SHORT, PEXPECT_TIMEOUT_LONG
 
 

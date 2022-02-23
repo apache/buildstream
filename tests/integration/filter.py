@@ -5,9 +5,9 @@ import os
 import shutil
 import pytest
 
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing.integration import assert_contains
-from buildstream.testing._utils.site import HAVE_SANDBOX, BUILDBOX_RUN
+from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing.integration import assert_contains
+from buildstream._testing._utils.site import HAVE_SANDBOX, BUILDBOX_RUN
 
 
 pytestmark = pytest.mark.integration

@@ -88,16 +88,16 @@ def list_man_pages():
         return []
 
 
-#####################################################
-# List the data files needed by buildstream.testing #
-#####################################################
+######################################################
+# List the data files needed by buildstream._testing #
+######################################################
 #
 # List the datafiles which need to be installed for the
-# buildstream.testing package
+# buildstream._testing package
 #
 def list_testing_datafiles():
     bst_dir = Path(os.path.dirname(os.path.abspath(__file__)))
-    data_dir = bst_dir.joinpath("src", "buildstream", "testing", "_sourcetests", "project")
+    data_dir = bst_dir.joinpath("src", "buildstream", "_testing", "_sourcetests", "project")
     return [str(f) for f in data_dir.rglob("*")]
 
 

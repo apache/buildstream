@@ -27,8 +27,8 @@ import shutil
 import pytest
 
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing import cli, generate_project, Cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import have_subsecond_mtime
+from buildstream._testing import cli, generate_project, Cli  # pylint: disable=unused-import
+from buildstream._testing._utils.site import have_subsecond_mtime
 from tests.testutils import (
     create_artifact_share,
     create_element_size,

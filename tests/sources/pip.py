@@ -6,7 +6,7 @@ import pytest
 
 from buildstream.exceptions import ErrorDomain
 from buildstream.plugins.sources.pip import _match_package_name
-from buildstream.testing import cli, generate_project  # pylint: disable=unused-import
+from buildstream._testing import cli, generate_project  # pylint: disable=unused-import
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pip",)
 

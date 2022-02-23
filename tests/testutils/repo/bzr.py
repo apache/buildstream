@@ -2,8 +2,8 @@ import os
 import subprocess
 import pytest
 
-from buildstream.testing import Repo
-from buildstream.testing._utils.site import BZR, BZR_ENV, HAVE_BZR
+from buildstream._testing import Repo
+from buildstream._testing._utils.site import BZR, BZR_ENV, HAVE_BZR
 
 
 class Bzr(Repo):

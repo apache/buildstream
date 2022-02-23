@@ -4,8 +4,8 @@
 import os
 
 import pytest
-from buildstream.testing import create_repo
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
+from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 
 # Project directory

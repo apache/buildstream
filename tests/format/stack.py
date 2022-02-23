@@ -5,7 +5,7 @@ import os
 import pytest
 
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import cli  # pylint: disable=unused-import
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "stack")
 

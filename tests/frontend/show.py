@@ -5,7 +5,7 @@ import os
 import sys
 import shutil
 import pytest
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream.types import CoreWarnings

@@ -3,7 +3,7 @@ import tarfile
 
 from buildstream.utils import sha256sum
 
-from buildstream.testing import Repo
+from buildstream._testing import Repo
 
 
 class Tar(Repo):

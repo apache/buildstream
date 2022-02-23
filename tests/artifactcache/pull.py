@@ -8,7 +8,7 @@ import pytest
 from buildstream import _yaml
 from buildstream._project import Project
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import cli  # pylint: disable=unused-import
 
 from tests.testutils import create_artifact_share, dummy_context
 

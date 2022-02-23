@@ -6,8 +6,8 @@ import shutil
 import stat
 import pytest
 from buildstream import utils, _yaml
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
+from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
 from tests.testutils import (
     create_artifact_share,
     create_split_share,

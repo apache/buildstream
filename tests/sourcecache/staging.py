@@ -26,7 +26,7 @@ import pytest
 
 from buildstream._project import Project
 
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+from buildstream._testing.runcli import cli  # pylint: disable=unused-import
 
 from tests.testutils import dummy_context
 from tests.testutils.element_generators import create_element_size
