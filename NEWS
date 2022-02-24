@@ -9,6 +9,19 @@ buildstream 1.6.4
   o Python 3.6 is no longer tested in CI but support is maintained on
     best effort level.
 
+  o New fatal warnings for unaliased sources
+
+  o New errors raised when using an unresolved source alias
+
+  o Add support for .netrc in remote/tar/zip sources
+
+  o Bugfixes and better stability in fuse layer
+
+  o Drop CI support for EOL python 3.6 (although BuildStream
+    should still work when installed in python 3.6 environments)
+
+  o Various bug fixes, documentation updates and CI related cleanup
+
 =================
 buildstream 1.6.3
 =================
