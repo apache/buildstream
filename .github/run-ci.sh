@@ -62,7 +62,7 @@ function runTest() {
 
 # Lazily ensure that the script exits when a command fails
 #
-set -x
+set -e
 
 if [ -z "${test_names}" ]; then
     runTest "lint"
