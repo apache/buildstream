@@ -27,6 +27,10 @@ _AWAIT_THREADS_TIMEOUT_SECONDS = 5
 
 def has_no_unexpected_background_threads(expected_num_threads):
     # Use psutil as threading.active_count() doesn't include gRPC threads.
+    #
+    # If background gRPC threads are lingering, there is a good chance that
+    # this is due to BuildStream failing to close an open grpc channel.
+    #
     process = psutil.Process()
 
     wait = 0.1
