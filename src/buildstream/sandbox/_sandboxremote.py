@@ -53,6 +53,7 @@ class SandboxRemote(SandboxREAPI):
         self.operation_name = None
 
         if self.storage_spec:
+            self.own_storage_remote = True
             self.storage_remote = CASRemote(self.storage_spec, cascache)
             try:
                 self.storage_remote.init()
@@ -61,6 +62,7 @@ class SandboxRemote(SandboxREAPI):
                     "Failed to contact remote execution CAS endpoint at {}: {}".format(self.storage_spec.url, e)
                 ) from e
         else:
+            self.own_storage_remote = False
             self.storage_remote = cascache.get_default_remote()
 
     def run_remote_command(self, channel, action_digest):
@@ -288,3 +290,7 @@ class SandboxRemote(SandboxREAPI):
             raise SandboxError("Remote server failed at executing the build request.")
 
         return execution_response.result
+
+    def _cleanup(self):
+        if self.own_storage_remote:
+            self.storage_remote.close()

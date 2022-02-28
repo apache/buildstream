@@ -2777,7 +2777,7 @@ class Element(Plugin):
 
             self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
 
-            sandbox = SandboxRemote(
+            with SandboxRemote(
                 context,
                 project,
                 directory,
@@ -2786,8 +2786,8 @@ class Element(Plugin):
                 stderr=stderr,
                 config=config,
                 output_node_properties=output_node_properties,
-            )
-            yield sandbox
+            ) as sandbox:
+                yield sandbox
 
         elif directory is not None and os.path.exists(directory):
             platform = context.platform
@@ -2803,7 +2803,8 @@ class Element(Plugin):
                 config=config,
                 output_node_properties=output_node_properties,
             )
-            yield sandbox
+            with sandbox:
+                yield sandbox
 
         else:
             os.makedirs(context.builddir, exist_ok=True)
