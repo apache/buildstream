@@ -23,4 +23,3 @@ useful for working on BuildStream itself.
    buildstream.sandbox.sandbox
    buildstream.exceptions
    buildstream.utils
-   buildstream.testing
