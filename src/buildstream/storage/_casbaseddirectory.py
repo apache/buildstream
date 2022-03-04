@@ -611,11 +611,6 @@ class CasBasedDirectory(Directory):
             else:
                 raise DirectoryError("can not export file type {} to tar".format(entry.type))
 
-    def _mark_changed(self):
-        """ It should not be possible to externally modify a CAS-based
-        directory at the moment."""
-        raise NotImplementedError()
-
     def is_empty(self):
         """ Return true if this directory has no files, subdirectories or links in it.
         """

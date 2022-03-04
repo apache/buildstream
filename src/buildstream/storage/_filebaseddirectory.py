@@ -151,9 +151,6 @@ class FileBasedDirectory(Directory):
             shutil.copyfile(external_pathspec, dstpath, follow_symlinks=False)
         return result
 
-    def _mark_changed(self):
-        pass
-
     def set_deterministic_user(self):
         _set_deterministic_user(self.external_directory)
 

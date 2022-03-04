@@ -183,16 +183,6 @@ class Directory:
         """
         raise NotImplementedError()
 
-    def _mark_changed(self):
-        """Internal function to mark this directory as having been changed
-        outside this API. This normally can only happen by calling the
-        Sandbox's `run` method. This does *not* mark everything as modified
-        (i.e. list_modified_paths will not necessarily return the same results
-        as list_relative_paths after calling this.)
-
-        """
-        raise NotImplementedError()
-
     def get_size(self):
         """ Get an approximation of the storage space in bytes used by this directory
         and all files and subdirectories in it. Storage space varies by implementation
