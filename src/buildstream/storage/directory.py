@@ -291,7 +291,7 @@ class Directory:
         try:
             st = self.stat(*path, follow_symlinks=follow_symlinks)
             return stat.S_ISREG(st.st_mode)
-        except (DirectoryError, FileNotFoundError):
+        except DirectoryError:
             return False
 
     def isdir(self, *path: str, follow_symlinks: bool = False) -> bool:
@@ -307,7 +307,7 @@ class Directory:
         try:
             st = self.stat(*path, follow_symlinks=follow_symlinks)
             return stat.S_ISDIR(st.st_mode)
-        except (DirectoryError, FileNotFoundError):
+        except DirectoryError:
             return False
 
     def islink(self, *path: str, follow_symlinks: bool = False) -> bool:
@@ -323,7 +323,7 @@ class Directory:
         try:
             st = self.stat(*path, follow_symlinks=follow_symlinks)
             return stat.S_ISLNK(st.st_mode)
-        except (DirectoryError, FileNotFoundError):
+        except DirectoryError:
             return False
 
     ###################################################################

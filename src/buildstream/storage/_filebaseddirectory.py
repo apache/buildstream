@@ -215,14 +215,23 @@ class FileBasedDirectory(Directory):
 
     def stat(self, *path, follow_symlinks=False):
         subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
-        newpath = os.path.join(subdir.external_directory, path[-1])
-        st = os.lstat(newpath)
+        newpath = os.path.join(subdir.__external_directory, path[-1])
+
+        try:
+            st = os.lstat(newpath)
+        except OSError as e:
+            raise DirectoryError("Error accessing path '{}': {}".format(newpath, e)) from e
+
         if follow_symlinks and stat.S_ISLNK(st.st_mode):
             linklocation = os.readlink(newpath)
             newpath = linklocation.split(os.path.sep)
             if os.path.isabs(linklocation):
-                return subdir._find_root().stat(*newpath, follow_symlinks=True)
-            return subdir.stat(*newpath, follow_symlinks=True)
+                try:
+                    st = subdir.__find_root().stat(*newpathsplit, follow_symlinks=True)
+                except OSError as e:
+                    raise DirectoryError("Error accessing path '{}': {}".format(newpath, e)) from e
+                return st
+            return subdir.stat(*newpathsplit, follow_symlinks=True)
         else:
             return st
 
@@ -271,7 +280,7 @@ class FileBasedDirectory(Directory):
                 # This check is not atomic, however, we're operating with a
                 # single thread in a private directory tree.
                 if subdir.exists(path[-1]):
-                    raise FileExistsError("{} already exists in {}".format(path[-1], str(subdir)))
+                    raise DirectoryError("{} already exists in {}".format(path[-1], str(subdir)))
                 mode = "w" + mode[1:]
 
             return utils.save_file_atomic(newpath, mode=mode, encoding=encoding)
@@ -328,7 +337,11 @@ class FileBasedDirectory(Directory):
         if name:
             path = os.path.join(path, name)
 
-        st = os.lstat(path)
+        try:
+            st = os.lstat(path)
+        except OSError as e:
+            raise DirectoryError("Error accessing path '{}': {}".format(path, e)) from e
+
         if stat.S_ISDIR(st.st_mode):
             return _FileType.DIRECTORY
         elif stat.S_ISLNK(st.st_mode):

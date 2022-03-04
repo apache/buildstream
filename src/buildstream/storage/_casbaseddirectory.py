@@ -313,7 +313,7 @@ class CasBasedDirectory(Directory):
         self.__validate_path_component(name)
         entry = self.index.get(name)
         if not entry:
-            raise FileNotFoundError("{} not found in {}".format(name, str(self)))
+            raise DirectoryError("{} not found in {}".format(name, str(self)))
 
         if entry.type == _FileType.DIRECTORY and not recursive:
             subdir = entry.get_directory(self)
@@ -733,14 +733,14 @@ class CasBasedDirectory(Directory):
 
         if "r" in mode:
             if not entry:
-                raise FileNotFoundError("{} not found in {}".format(path[-1], str(subdir)))
+                raise DirectoryError("{} not found in {}".format(path[-1], str(subdir)))
 
             # Read-only access, allow direct access to CAS object
             with open(self.cas_cache.objpath(entry.digest), mode, encoding=encoding) as f:
                 yield f
         else:
             if "x" in mode and entry:
-                raise FileExistsError("{} already exists in {}".format(path[-1], str(subdir)))
+                raise DirectoryError("{} already exists in {}".format(path[-1], str(subdir)))
 
             with utils._tempnamedfile(mode, encoding=encoding, dir=self.cas_cache.tmpdir) as f:
                 # Make sure the temporary file is readable by buildbox-casd
@@ -819,7 +819,7 @@ class CasBasedDirectory(Directory):
         self.__validate_path_component(path[-1])
         target = subdir.index.get(path[-1])
         if target is None:
-            raise FileNotFoundError("{} not found in {}".format(path[-1], str(subdir)))
+            raise DirectoryError("{} not found in {}".format(path[-1], str(subdir)))
 
         if follow_symlinks and target.type == _FileType.SYMLINK:
             linklocation = target.target

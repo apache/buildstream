@@ -262,7 +262,7 @@ def test_remove(tmpdir, datafiles, backend):
         with pytest.raises((OSError, DirectoryError)):
             c.remove("subdirectory")
 
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(DirectoryError):
             c.remove("subdirectory", "does-not-exist")
 
         # Check that `remove()` doesn't follow symlinks
