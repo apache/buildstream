@@ -1512,7 +1512,7 @@ class Element(Plugin):
             vdirectory.import_files(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP)
 
         # Ensure deterministic owners of sources at build time
-        vdirectory.set_deterministic_user()
+        vdirectory._set_deterministic_user()
 
     # _set_required():
     #

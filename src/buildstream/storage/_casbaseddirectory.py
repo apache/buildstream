@@ -535,10 +535,14 @@ class CasBasedDirectory(Directory):
             result.files_written.append(external_pathspec)
         return result
 
-    def set_deterministic_user(self):
-        """ Sets all files in this directory to the current user's euid/egid.
-        We also don't store user data, so this can be ignored.
-        """
+    # _set_deterministic_user():
+    #
+    # Sets all files in this directory to the current user's euid/egid.
+    #
+    # We don't store user data in CAS presently, so this can be ignored.
+    #
+    def _set_deterministic_user(self):
+        pass
 
     def export_files(self, to_directory, *, can_link=False, can_destroy=False):
         """Copies everything from this into to_directory, which must be the name

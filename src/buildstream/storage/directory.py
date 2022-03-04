@@ -152,11 +152,6 @@ class Directory:
         """
         raise NotImplementedError()
 
-    def set_deterministic_user(self):
-        """ Sets all files in this directory to the current user's euid/egid.
-        """
-        raise NotImplementedError()
-
     def list_relative_paths(self):
         """Provide a list of all relative paths in this directory. Includes
         directories only if they are empty.
@@ -289,6 +284,13 @@ class Directory:
           *src: Source path components.
           *dest: Destination path components.
         """
+        raise NotImplementedError()
+
+    # _set_deterministic_user():
+    #
+    # Sets all files in this directory to the current user's euid/egid.
+    #
+    def _set_deterministic_user(self):
         raise NotImplementedError()
 
     def _create_empty_file(self, *paths):

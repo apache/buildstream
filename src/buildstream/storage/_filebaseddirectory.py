@@ -33,7 +33,6 @@ import stat
 from .directory import Directory, DirectoryError, _FileType
 from .. import utils
 from ..utils import link_files, copy_files, list_relative_paths, BST_ARBITRARY_TIMESTAMP
-from ..utils import _set_deterministic_user
 from ..utils import FileListResult
 
 # FileBasedDirectory intentionally doesn't call its superclass constuctor,
@@ -151,8 +150,8 @@ class FileBasedDirectory(Directory):
             shutil.copyfile(external_pathspec, dstpath, follow_symlinks=False)
         return result
 
-    def set_deterministic_user(self):
-        _set_deterministic_user(self.external_directory)
+    def _set_deterministic_user(self):
+        utils._set_deterministic_user(self.external_directory)
 
     def export_files(self, to_directory, *, can_link=False, can_destroy=False):
         if can_destroy:
