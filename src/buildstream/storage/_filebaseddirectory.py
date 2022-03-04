@@ -32,8 +32,8 @@ import stat
 
 from .directory import Directory, DirectoryError, _FileType
 from .. import utils
-from ..utils import link_files, copy_files, list_relative_paths, _get_link_mtime, BST_ARBITRARY_TIMESTAMP
-from ..utils import _set_deterministic_user, _set_deterministic_mtime
+from ..utils import link_files, copy_files, list_relative_paths, BST_ARBITRARY_TIMESTAMP
+from ..utils import _set_deterministic_user
 from ..utils import FileListResult
 
 # FileBasedDirectory intentionally doesn't call its superclass constuctor,
@@ -202,23 +202,6 @@ class FileBasedDirectory(Directory):
     def is_empty(self):
         it = os.scandir(self.external_directory)
         return next(it, None) is None
-
-    def mark_unmodified(self):
-        """ Marks all files in this directory (recursively) as unmodified.
-        """
-        _set_deterministic_mtime(self.external_directory)
-
-    def list_modified_paths(self):
-        """Provide a list of relative paths which have been modified since the
-        last call to mark_unmodified.
-
-        Return value: List(str) - list of modified paths
-        """
-        return [
-            f
-            for f in list_relative_paths(self.external_directory)
-            if _get_link_mtime(os.path.join(self.external_directory, f)) != BST_ARBITRARY_TIMESTAMP
-        ]
 
     def list_relative_paths(self):
         """Provide a list of all relative paths.

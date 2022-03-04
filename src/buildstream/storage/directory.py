@@ -157,22 +157,6 @@ class Directory:
         """
         raise NotImplementedError()
 
-    def mark_unmodified(self):
-        """ Marks all files in this directory (recursively) as unmodified.
-        """
-        raise NotImplementedError()
-
-    def list_modified_paths(self):
-        """Provide a list of relative paths which have been modified since the
-        last call to mark_unmodified. Includes directories only if
-        they are empty.
-
-        Yields:
-          (List(str)) - list of all modified files with relative paths.
-
-        """
-        raise NotImplementedError()
-
     def list_relative_paths(self):
         """Provide a list of all relative paths in this directory. Includes
         directories only if they are empty.

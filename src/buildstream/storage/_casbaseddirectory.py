@@ -44,16 +44,7 @@ class IndexEntry:
     """ Directory entry used in CasBasedDirectory.index """
 
     def __init__(
-        self,
-        name,
-        entrytype,
-        *,
-        digest=None,
-        target=None,
-        is_executable=False,
-        buildstream_object=None,
-        modified=False,
-        mtime=None
+        self, name, entrytype, *, digest=None, target=None, is_executable=False, buildstream_object=None, mtime=None
     ):
         self.name = name
         self.type = entrytype
@@ -61,7 +52,6 @@ class IndexEntry:
         self.target = target
         self.is_executable = is_executable
         self.buildstream_object = buildstream_object
-        self.modified = modified
         self.mtime = mtime
 
     def get_directory(self, parent):
@@ -218,7 +208,7 @@ class CasBasedDirectory(Directory):
 
         return newdir
 
-    def _add_file(self, name, path, modified=False, can_link=False, properties=None):
+    def _add_file(self, name, path, can_link=False, properties=None):
         digest = self.cas_cache.add_object(path=path)
         is_executable = os.access(path, os.X_OK)
         mtime = None
@@ -226,14 +216,7 @@ class CasBasedDirectory(Directory):
             mtime = timestamp_pb2.Timestamp()
             utils._get_file_protobuf_mtimestamp(mtime, path)
 
-        entry = IndexEntry(
-            name,
-            _FileType.REGULAR_FILE,
-            digest=digest,
-            is_executable=is_executable,
-            modified=modified or name in self.index,
-            mtime=mtime,
-        )
+        entry = IndexEntry(name, _FileType.REGULAR_FILE, digest=digest, is_executable=is_executable, mtime=mtime,)
         self.index[name] = entry
 
         self.__invalidate_digest()
@@ -315,7 +298,7 @@ class CasBasedDirectory(Directory):
         self.__invalidate_digest()
 
     def _add_new_link_direct(self, name, target):
-        self.index[name] = IndexEntry(name, _FileType.SYMLINK, target=target, modified=name in self.index)
+        self.index[name] = IndexEntry(name, _FileType.SYMLINK, target=target)
 
         self.__invalidate_digest()
 
@@ -503,7 +486,6 @@ class CasBasedDirectory(Directory):
                 if self._check_replacement(name, relative_pathname, result):
                     if entry.type == _FileType.REGULAR_FILE:
                         self._add_entry(entry)
-                        self.index[entry.name].modified = True
                     else:
                         assert entry.type == _FileType.SYMLINK
                         self._add_new_link_direct(name=name, target=entry.target)
@@ -548,10 +530,7 @@ class CasBasedDirectory(Directory):
         result = FileListResult()
         if self._check_replacement(os.path.basename(external_pathspec), os.path.dirname(external_pathspec), result):
             self._add_file(
-                os.path.basename(external_pathspec),
-                external_pathspec,
-                modified=os.path.basename(external_pathspec) in result.overwritten,
-                properties=properties,
+                os.path.basename(external_pathspec), external_pathspec, properties=properties,
             )
             result.files_written.append(external_pathspec)
         return result
@@ -616,30 +595,6 @@ class CasBasedDirectory(Directory):
         """
         return len(self.index) == 0
 
-    def _mark_directory_unmodified(self):
-        # Marks all entries in this directory and all child directories as unmodified.
-        for i in self.index.values():
-            i.modified = False
-            if i.type == _FileType.DIRECTORY and i.buildstream_object:
-                i.buildstream_object._mark_directory_unmodified()
-
-    def _mark_entry_unmodified(self, name):
-        # Marks an entry as unmodified. If the entry is a directory, it will
-        # recursively mark all its tree as unmodified.
-        self.index[name].modified = False
-        if self.index[name].buildstream_object:
-            self.index[name].buildstream_object._mark_directory_unmodified()
-
-    def mark_unmodified(self):
-        """ Marks all files in this directory (recursively) as unmodified.
-        If we have a parent, we mark our own entry as unmodified in that parent's
-        index.
-        """
-        if self.parent:
-            self.parent._mark_entry_unmodified(self._find_self_in_parent())
-        else:
-            self._mark_directory_unmodified()
-
     def _lightweight_resolve_to_index(self, path):
         """A lightweight function for transforming paths into IndexEntry
         objects. This does not follow symlinks.
@@ -661,18 +616,6 @@ class CasBasedDirectory(Directory):
             else:
                 return None
         return directory.index.get(path_components[-1], None)
-
-    def list_modified_paths(self):
-        """Provide a list of relative paths which have been modified since the
-        last call to mark_unmodified.
-
-        Return value: List(str) - list of modified paths
-        """
-
-        for p in self.list_relative_paths():
-            i = self._lightweight_resolve_to_index(p)
-            if i and i.modified:
-                yield p
 
     def list_relative_paths(self):
         """Provide a list of all relative paths.
@@ -801,7 +744,7 @@ class CasBasedDirectory(Directory):
                 yield f
                 # Import written temporary file into CAS
                 f.flush()
-                subdir._add_file(path[-1], f.name, modified=True)
+                subdir._add_file(path[-1], f.name)
 
     def __str__(self):
         return "[CAS:{}]".format(self._get_identifier())

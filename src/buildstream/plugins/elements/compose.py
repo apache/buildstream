@@ -100,7 +100,6 @@ class ComposeElement(Element):
 
         # Make a snapshot of all the files.
         vbasedir = sandbox.get_virtual_directory()
-        modified_files = set()
         removed_files = set()
         added_files = set()
 
@@ -112,16 +111,14 @@ class ComposeElement(Element):
 
                     # Make a snapshot of all the files before integration-commands are run.
                     snapshot = set(vbasedir.list_relative_paths())
-                    vbasedir.mark_unmodified()
 
                 with sandbox.batch():
                     for dep in self.dependencies():
                         dep.integrate(sandbox)
 
                 if require_split:
-                    # Calculate added, modified and removed files
+                    # Calculate added and removed files
                     post_integration_snapshot = vbasedir.list_relative_paths()
-                    modified_files = set(vbasedir.list_modified_paths())
                     basedir_contents = set(post_integration_snapshot)
                     for path in manifest:
                         if path in snapshot and path not in basedir_contents:
@@ -130,19 +127,14 @@ class ComposeElement(Element):
                     for path in basedir_contents:
                         if path not in snapshot:
                             added_files.add(path)
-                    self.info(
-                        "Integration modified {}, added {} and removed {} files".format(
-                            len(modified_files), len(added_files), len(removed_files)
-                        )
-                    )
+                    self.info("Integration added {} and removed {} files".format(len(added_files), len(removed_files)))
 
         # The remainder of this is expensive, make an early exit if
         # we're not being selective about what is to be included.
         if not require_split:
             return "/"
 
-        # Do we want to force include files which were modified by
-        # the integration commands, even if they were not added ?
+        # Update the manifest with files which were added/removed by integration commands
         #
         manifest.update(added_files)
         manifest.difference_update(removed_files)

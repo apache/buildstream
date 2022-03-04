@@ -45,25 +45,6 @@ def test_import(tmpdir, datafiles, backend):
         assert "bin/hello" in c.list_relative_paths()
 
 
-@pytest.mark.parametrize("backend", [FileBasedDirectory, CasBasedDirectory])
-@pytest.mark.datafiles(DATA_DIR)
-def test_modified_file_list(tmpdir, datafiles, backend):
-    original = os.path.join(str(datafiles), "original")
-    overlay = os.path.join(str(datafiles), "overlay")
-
-    with setup_backend(backend, str(tmpdir)) as c:
-        c.import_files(original)
-
-        c.mark_unmodified()
-
-        c.import_files(overlay)
-
-        print("List of all paths in imported results: {}".format(c.list_relative_paths()))
-        assert "bin/bash" in c.list_relative_paths()
-        assert "bin/bash" in c.list_modified_paths()
-        assert "bin/hello" not in c.list_modified_paths()
-
-
 @pytest.mark.parametrize(
     "directories", [("merge-base", "merge-base"), ("empty", "empty"),],
 )
