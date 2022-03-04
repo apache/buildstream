@@ -30,7 +30,7 @@ import os
 import shutil
 import stat
 
-from .directory import Directory, VirtualDirectoryError, _FileType
+from .directory import Directory, DirectoryError, _FileType
 from .. import utils
 from ..utils import link_files, copy_files, list_relative_paths, _get_link_mtime, BST_ARBITRARY_TIMESTAMP
 from ..utils import _set_deterministic_user, _set_deterministic_mtime
@@ -77,7 +77,7 @@ class FileBasedDirectory(Directory):
                     else:
                         current_dir = current_dir.descend(*newpaths, follow_symlinks=True)
                 else:
-                    raise VirtualDirectoryError(
+                    raise DirectoryError(
                         "Cannot descend into '{}': '{}' is not a directory".format(path, new_path),
                         reason="not-a-directory",
                     )
@@ -86,7 +86,7 @@ class FileBasedDirectory(Directory):
                     os.mkdir(new_path)
                     current_dir = FileBasedDirectory(new_path, parent=current_dir)
                 else:
-                    raise VirtualDirectoryError("Cannot descend into '{}': '{}' does not exist".format(path, new_path))
+                    raise DirectoryError("Cannot descend into '{}': '{}' does not exist".format(path, new_path))
 
         return current_dir
 
@@ -251,14 +251,14 @@ class FileBasedDirectory(Directory):
         try:
             self.stat(*path, follow_symlinks=follow_symlinks)
             return True
-        except (VirtualDirectoryError, FileNotFoundError):
+        except (DirectoryError, FileNotFoundError):
             return False
 
     def file_digest(self, *path):
         # Use descend() to avoid following symlinks (potentially escaping the sandbox)
         subdir = self.descend(*path[:-1])
         if subdir.exists(path[-1]) and not subdir.isfile(path[-1]):
-            raise VirtualDirectoryError("Unsupported file type for digest")
+            raise DirectoryError("Unsupported file type for digest")
 
         newpath = os.path.join(subdir.external_directory, path[-1])
         return utils.sha256sum(newpath)
@@ -267,7 +267,7 @@ class FileBasedDirectory(Directory):
         # Use descend() to avoid following symlinks (potentially escaping the sandbox)
         subdir = self.descend(*path[:-1])
         if subdir.exists(path[-1]) and not subdir.islink(path[-1]):
-            raise VirtualDirectoryError("Unsupported file type for readlink")
+            raise DirectoryError("Unsupported file type for readlink")
 
         newpath = os.path.join(subdir.external_directory, path[-1])
         return os.readlink(newpath)
@@ -379,9 +379,9 @@ class FileBasedDirectory(Directory):
                 try:
                     create_subdir = not os.path.lexists(dest_path)
                     dest_subdir = self.descend(name, create=create_subdir)
-                except VirtualDirectoryError:
+                except DirectoryError:
                     filetype = self._get_filetype(name)
-                    raise VirtualDirectoryError(
+                    raise DirectoryError(
                         "Destination is a {}, not a directory: /{}".format(filetype, relative_pathname)
                     )
 

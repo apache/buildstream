@@ -41,12 +41,14 @@ from ..types import FastEnum
 from ..utils import BST_ARBITRARY_TIMESTAMP, FileListResult
 
 
-class VirtualDirectoryError(BstError):
-    """Raised by Directory functions when system calls fail.
-    This will be handled internally by the BuildStream core,
-    if you need to handle this error, then it should be reraised,
-    or either of the :class:`.ElementError` or :class:`.SourceError`
-    exceptions should be raised from this error.
+class DirectoryError(BstError):
+    """Raised by Directory functions.
+
+    It is recommended to handle this error and raise a more descriptive
+    user facing :class:`.ElementError` or :class:`.SourceError` from this error.
+
+    If this is not handled, the BuildStream core will fail the current
+    task where the error occurs and present the user with the error.
     """
 
     def __init__(self, message, reason=None):
@@ -70,7 +72,7 @@ class Directory:
           A Directory object representing the found directory.
 
         Raises:
-          VirtualDirectoryError: if any of the components in subdirectory_spec
+          DirectoryError: if any of the components in subdirectory_spec
             cannot be found, or are files, or symlinks to files.
 
         """
@@ -234,7 +236,7 @@ class Directory:
         try:
             st = self.stat(*paths, follow_symlinks=follow_symlinks)
             return stat.S_ISREG(st.st_mode)
-        except (VirtualDirectoryError, FileNotFoundError):
+        except (DirectoryError, FileNotFoundError):
             return False
 
     def isdir(self, *paths: str, follow_symlinks: bool = False) -> bool:
@@ -250,7 +252,7 @@ class Directory:
         try:
             st = self.stat(*paths, follow_symlinks=follow_symlinks)
             return stat.S_ISDIR(st.st_mode)
-        except (VirtualDirectoryError, FileNotFoundError):
+        except (DirectoryError, FileNotFoundError):
             return False
 
     def islink(self, *paths: str, follow_symlinks: bool = False) -> bool:
@@ -266,7 +268,7 @@ class Directory:
         try:
             st = self.stat(*paths, follow_symlinks=follow_symlinks)
             return stat.S_ISLNK(st.st_mode)
-        except (VirtualDirectoryError, FileNotFoundError):
+        except (DirectoryError, FileNotFoundError):
             return False
 
     def open_file(self, *paths: str, mode: str = "r"):

@@ -108,9 +108,8 @@ from ._elementsources import ElementSources
 from ._loader import Symbol, DependencyType, MetaSource
 from ._overlapcollector import OverlapCollector
 
-from .storage.directory import Directory
+from .storage import Directory, DirectoryError
 from .storage._filebaseddirectory import FileBasedDirectory
-from .storage.directory import VirtualDirectoryError
 
 if TYPE_CHECKING:
     from typing import Tuple
@@ -1778,7 +1777,7 @@ class Element(Plugin):
                     *self.get_variable("build-root").lstrip(os.sep).split(os.sep)
                 )
                 sandbox._fetch_missing_blobs(sandbox_build_dir)
-            except VirtualDirectoryError:
+            except DirectoryError:
                 # Directory could not be found. Pre-virtual
                 # directory behaviour was to continue silently
                 # if the directory could not be found.
@@ -1790,7 +1789,7 @@ class Element(Plugin):
             try:
                 collectvdir = sandbox_vroot.descend(*collect.lstrip(os.sep).split(os.sep))
                 sandbox._fetch_missing_blobs(collectvdir)
-            except VirtualDirectoryError:
+            except DirectoryError:
                 pass
 
         # We should always have cache keys already set when caching an artifact
@@ -2188,7 +2187,7 @@ class Element(Plugin):
             try:
                 # Stage all element sources into CAS
                 self.__sources.stage_and_cache()
-            except (SourceCacheError, VirtualDirectoryError) as e:
+            except (SourceCacheError, DirectoryError) as e:
                 raise ElementError(
                     "Error trying to stage sources for {}: {}".format(self.name, e), reason="stage-sources-fail"
                 )

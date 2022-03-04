@@ -18,10 +18,10 @@ import random
 
 import pytest
 
+from buildstream import DirectoryError
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
 from buildstream._cas import CASCache
-from buildstream.storage.directory import VirtualDirectoryError
 from buildstream.utils import _set_file_mtime, _parse_timestamp
 from buildstream._testing._utils.site import have_subsecond_mtime
 
@@ -327,15 +327,15 @@ def test_bad_symlinks(tmpdir):
         d.import_files(test_dir)
         exp_reason = "not-a-directory"
 
-        with pytest.raises(VirtualDirectoryError) as error:
+        with pytest.raises(DirectoryError) as error:
             d.descend("a", "l", follow_symlinks=True)
             assert error.reason == exp_reason
 
-        with pytest.raises(VirtualDirectoryError) as error:
+        with pytest.raises(DirectoryError) as error:
             d.descend("a", "l")
             assert error.reason == exp_reason
 
-        with pytest.raises(VirtualDirectoryError) as error:
+        with pytest.raises(DirectoryError) as error:
             d.descend("a", "f")
             assert error.reason == exp_reason
     finally:
@@ -416,7 +416,7 @@ def test_bad_sym_escape(tmpdir):
         generate_import_root(test_dir, filesys_discription)
         d.import_files(os.path.join(test_dir, "jail"))
 
-        with pytest.raises(VirtualDirectoryError) as error:
+        with pytest.raises(DirectoryError) as error:
             d.descend("a", "l", follow_symlinks=True)
             assert error.reason == "directory-not-found"
     finally:

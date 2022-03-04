@@ -10,10 +10,11 @@ from typing import List, Optional
 
 import pytest
 
+from buildstream import DirectoryError
 from buildstream._cas import CASCache
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
-from buildstream.storage.directory import _FileType, VirtualDirectoryError
+from buildstream.storage.directory import _FileType
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "storage")
 
@@ -277,7 +278,7 @@ def test_remove(tmpdir, datafiles, backend):
     with setup_backend(backend, str(tmpdir)) as c:
         c.import_files(os.path.join(str(datafiles), "merge-link"))
 
-        with pytest.raises((OSError, VirtualDirectoryError)):
+        with pytest.raises((OSError, DirectoryError)):
             c.remove("subdirectory")
 
         with pytest.raises(FileNotFoundError):

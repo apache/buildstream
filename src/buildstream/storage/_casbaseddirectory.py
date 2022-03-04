@@ -35,7 +35,7 @@ from google.protobuf import timestamp_pb2
 
 from .. import utils
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
-from .directory import Directory, VirtualDirectoryError, _FileType
+from .directory import Directory, DirectoryError, _FileType
 from ._filebaseddirectory import FileBasedDirectory
 from ..utils import FileListResult, BST_ARBITRARY_TIMESTAMP
 
@@ -175,7 +175,7 @@ class CasBasedDirectory(Directory):
             with open(self.cas_cache.objpath(digest), "rb") as f:
                 pb2_directory.ParseFromString(f.read())
         except FileNotFoundError as e:
-            raise VirtualDirectoryError("Directory not found in local cache: {}".format(e)) from e
+            raise DirectoryError("Directory not found in local cache: {}".format(e)) from e
 
         for prop in pb2_directory.node_properties.properties:
             if prop.name == "SubtreeReadOnly":
@@ -335,7 +335,7 @@ class CasBasedDirectory(Directory):
         if entry.type == _FileType.DIRECTORY and not recursive:
             subdir = entry.get_directory(self)
             if not subdir.is_empty():
-                raise VirtualDirectoryError("{} is not empty".format(str(subdir)))
+                raise DirectoryError("{} is not empty".format(str(subdir)))
 
         del self.index[name]
         self.__invalidate_digest()
@@ -392,7 +392,7 @@ class CasBasedDirectory(Directory):
                         current_dir = current_dir.descend(*newpaths, follow_symlinks=True)
                 else:
                     error = "Cannot descend into {}, which is a '{}' in the directory {}"
-                    raise VirtualDirectoryError(
+                    raise DirectoryError(
                         error.format(path, current_dir.index[path].type, current_dir), reason="not-a-directory"
                     )
             else:
@@ -407,7 +407,7 @@ class CasBasedDirectory(Directory):
                     current_dir = current_dir._add_directory(path)
                 else:
                     error = "'{}' not found in {}"
-                    raise VirtualDirectoryError(error.format(path, str(current_dir)), reason="directory-not-found")
+                    raise DirectoryError(error.format(path, str(current_dir)), reason="directory-not-found")
 
         return current_dir
 
@@ -481,9 +481,9 @@ class CasBasedDirectory(Directory):
 
                     try:
                         dest_subdir = self.descend(name, create=create_subdir)
-                    except VirtualDirectoryError:
+                    except DirectoryError:
                         filetype = self.index[name].type
-                        raise VirtualDirectoryError(
+                        raise DirectoryError(
                             "Destination is a {}, not a directory: /{}".format(filetype, relative_pathname)
                         )
 
@@ -609,7 +609,7 @@ class CasBasedDirectory(Directory):
                 f = StringIO(entry.target)
                 tarfile.addfile(tarinfo, f)
             else:
-                raise VirtualDirectoryError("can not export file type {} to tar".format(entry.type))
+                raise DirectoryError("can not export file type {} to tar".format(entry.type))
 
     def _mark_changed(self):
         """ It should not be possible to externally modify a CAS-based
@@ -779,7 +779,7 @@ class CasBasedDirectory(Directory):
         entry = subdir.index.get(path[-1])
 
         if entry and entry.type != _FileType.REGULAR_FILE:
-            raise VirtualDirectoryError("{} in {} is not a file".format(path[-1], str(subdir)))
+            raise DirectoryError("{} in {} is not a file".format(path[-1], str(subdir)))
 
         if mode not in ["r", "rb", "w", "wb", "w+", "w+b", "x", "xb", "x+", "x+b"]:
             raise ValueError("Unsupported mode: `{}`".format(mode))
@@ -814,7 +814,7 @@ class CasBasedDirectory(Directory):
     def _get_underlying_directory(self):
         """ There is no underlying directory for a CAS-backed directory, so
         throw an exception. """
-        raise VirtualDirectoryError(
+        raise DirectoryError(
             "_get_underlying_directory was called on a CAS-backed directory," + " which has no underlying directory."
         )
 
@@ -892,7 +892,7 @@ class CasBasedDirectory(Directory):
         try:
             self._entry_from_path(*path, follow_symlinks=follow_symlinks)
             return True
-        except (VirtualDirectoryError, FileNotFoundError):
+        except (DirectoryError, FileNotFoundError):
             return False
 
     def stat(self, *path, follow_symlinks=False):
@@ -912,7 +912,7 @@ class CasBasedDirectory(Directory):
             st_mode |= stat.S_IFLNK
             st_size = len(entry.target)
         else:
-            raise VirtualDirectoryError("Unsupported file type {}".format(entry.type))
+            raise DirectoryError("Unsupported file type {}".format(entry.type))
 
         if entry.type == _FileType.DIRECTORY or entry.is_executable:
             st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
@@ -925,14 +925,14 @@ class CasBasedDirectory(Directory):
     def file_digest(self, *path):
         entry = self._entry_from_path(*path)
         if entry.type != _FileType.REGULAR_FILE:
-            raise VirtualDirectoryError("Unsupported file type for digest: {}".format(entry.type))
+            raise DirectoryError("Unsupported file type for digest: {}".format(entry.type))
 
         return entry.digest.hash
 
     def readlink(self, *path):
         entry = self._entry_from_path(*path)
         if entry.type != _FileType.SYMLINK:
-            raise VirtualDirectoryError("Unsupported file type for readlink: {}".format(entry.type))
+            raise DirectoryError("Unsupported file type for readlink: {}".format(entry.type))
 
         return entry.target
 
@@ -963,4 +963,4 @@ class CasBasedDirectory(Directory):
 
     def __validate_path_component(self, path):
         if "/" in path:
-            raise VirtualDirectoryError("Invalid path component: '{}'".format(path))
+            raise DirectoryError("Invalid path component: '{}'".format(path))
