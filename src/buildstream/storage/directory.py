@@ -330,6 +330,17 @@ class Directory:
     #                         Internal API                            #
     ###################################################################
 
+    # _get_underlying_directory()
+    #
+    # Returns the underlying (real) file system directory this
+    # object refers to.
+    #
+    # Raises:
+    #    DirectoryError: if the backend doesn't have an underlying directory
+    #
+    def _get_underlying_directory(self) -> str:
+        raise NotImplementedError()
+
     # _set_deterministic_user():
     #
     # Abstract method to set all files in this directory to the current user's euid/egid.
