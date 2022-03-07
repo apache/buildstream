@@ -26,7 +26,7 @@ from contextlib import contextmanager
 from tarfile import TarFile
 from typing import Callable, Optional, Union, List, IO, Iterator
 
-from .directory import Directory, DirectoryError, _FileType
+from .directory import Directory, DirectoryError, FileMode, FileStat, _FileType
 from .. import utils
 from ..utils import BST_ARBITRARY_TIMESTAMP
 from ..utils import FileListResult
@@ -223,10 +223,10 @@ class FileBasedDirectory(Directory):
         try:
             self.stat(*path, follow_symlinks=follow_symlinks)
             return True
-        except (DirectoryError, FileNotFoundError):
+        except DirectoryError:
             return False
 
-    def stat(self, *path: str, follow_symlinks: bool = False) -> os.stat_result:
+    def stat(self, *path: str, follow_symlinks: bool = False) -> FileStat:
         subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
         newpath = os.path.join(subdir.__external_directory, path[-1])
 
@@ -239,14 +239,10 @@ class FileBasedDirectory(Directory):
             linklocation = os.readlink(newpath)
             newpathsplit = linklocation.split(os.path.sep)
             if os.path.isabs(linklocation):
-                try:
-                    st = subdir.__find_root().stat(*newpathsplit, follow_symlinks=True)
-                except OSError as e:
-                    raise DirectoryError("Error accessing path '{}': {}".format(newpath, e)) from e
-                return st
+                return subdir.__find_root().stat(*newpathsplit, follow_symlinks=True)
             return subdir.stat(*newpathsplit, follow_symlinks=True)
         else:
-            return st
+            return self.__convert_filestat(st)
 
     @contextmanager
     def open_file(self, *path: str, mode: str = "r") -> Iterator[IO]:
@@ -299,13 +295,19 @@ class FileBasedDirectory(Directory):
         subdir = self.descend(*path[:-1])
         newpath = os.path.join(subdir.__external_directory, path[-1])
 
-        if subdir.__get_filetype(path[-1]) == _FileType.DIRECTORY:
+        if subdir.isdir(path[-1]):
             if recursive:
                 shutil.rmtree(newpath)
             else:
-                os.rmdir(newpath)
+                try:
+                    os.rmdir(newpath)
+                except OSError as e:
+                    raise DirectoryError("Error removing '{}': {}".format(newpath, e))
         else:
-            os.unlink(newpath)
+            try:
+                os.unlink(newpath)
+            except OSError as e:
+                raise DirectoryError("Error removing '{}': {}".format(newpath, e))
 
     def rename(self, src: List[str], dest: List[str]) -> None:
         # Use descend() to avoid following symlinks (potentially escaping the sandbox)
@@ -316,7 +318,10 @@ class FileBasedDirectory(Directory):
 
         if destdir.exists(dest[-1]):
             destdir.remove(dest[-1])
-        os.rename(srcpath, destpath)
+        try:
+            os.rename(srcpath, destpath)
+        except OSError as e:
+            raise DirectoryError("Error renaming '{}' -> '{}': {}".format(srcpath, destpath, e))
 
     #############################################################
     #             Implementation of Internal API                #
@@ -336,6 +341,26 @@ class FileBasedDirectory(Directory):
     #                      Private methods                      #
     #############################################################
 
+    # __convert_filestat()
+    #
+    # Convert an os.stat_result into a FileStat
+    #
+    def __convert_filestat(self, st: os.stat_result) -> FileStat:
+        if stat.S_ISREG(st.st_mode):
+            mode = FileMode(regular=True)
+        elif stat.S_ISDIR(st.st_mode):
+            mode = FileMode(directory=True)
+        elif stat.S_ISLNK(st.st_mode):
+            mode = FileMode(symlink=True)
+        else:
+            # A special file not supported by CAS, a device or FIFO or such
+            mode = FileMode()
+
+        # If any of the executable bits are set, lets call it executable
+        mode.executable = bool(st.st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
+
+        return FileStat(mode, size=st.st_size, mtime=st.st_mtime)
+
     # __find_root()
     #
     # Finds the root of this directory tree by following 'parent' until there is
@@ -346,30 +371,6 @@ class FileBasedDirectory(Directory):
             return self.__parent.__find_root()
         else:
             return self
-
-    # __get_filetype()
-    #
-    # Get the type of a file in this directory
-    #
-    def __get_filetype(self, name: str = None) -> int:
-        path = self.__external_directory
-
-        if name:
-            path = os.path.join(path, name)
-
-        try:
-            st = os.lstat(path)
-        except OSError as e:
-            raise DirectoryError("Error accessing path '{}': {}".format(path, e)) from e
-
-        if stat.S_ISDIR(st.st_mode):
-            return _FileType.DIRECTORY
-        elif stat.S_ISLNK(st.st_mode):
-            return _FileType.SYMLINK
-        elif stat.S_ISREG(st.st_mode):
-            return _FileType.REGULAR_FILE
-        else:
-            return _FileType.SPECIAL_FILE
 
     # __import_files_from_cas()
     #
@@ -402,10 +403,7 @@ class FileBasedDirectory(Directory):
                     create_subdir = not os.path.lexists(dest_path)
                     dest_subdir = self.descend(name, create=create_subdir)
                 except DirectoryError:
-                    filetype = self.__get_filetype(name)
-                    raise DirectoryError(
-                        "Destination is a {}, not a directory: /{}".format(filetype, relative_pathname)
-                    )
+                    raise DirectoryError("Destination is not a directory: /{}".format(relative_pathname))
 
                 dest_subdir.__import_files_from_cas(
                     src_subdir,

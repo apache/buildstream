@@ -35,7 +35,7 @@ from google.protobuf import timestamp_pb2
 
 from .. import utils
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
-from .directory import Directory, DirectoryError, _FileType
+from .directory import Directory, DirectoryError, FileMode, FileStat, _FileType
 from ._filebaseddirectory import FileBasedDirectory
 from ..utils import FileListResult, BST_ARBITRARY_TIMESTAMP
 
@@ -840,29 +840,26 @@ class CasBasedDirectory(Directory):
     def stat(self, *path, follow_symlinks=False):
         entry = self._entry_from_path(*path, follow_symlinks=follow_symlinks)
 
-        st_mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
-        st_nlink = 1
-        st_mtime = BST_ARBITRARY_TIMESTAMP
-
         if entry.type == _FileType.REGULAR_FILE:
-            st_mode |= stat.S_IFREG
-            st_size = entry.get_digest().size_bytes
+            mode = FileMode(regular=True)
+            size = entry.get_digest().size_bytes
         elif entry.type == _FileType.DIRECTORY:
-            st_mode |= stat.S_IFDIR
-            st_size = 0
+            mode = FileMode(directory=True)
+            size = 0
         elif entry.type == _FileType.SYMLINK:
-            st_mode |= stat.S_IFLNK
-            st_size = len(entry.target)
+            mode = FileMode(symlink=True)
+            size = len(entry.target)
         else:
             raise DirectoryError("Unsupported file type {}".format(entry.type))
 
         if entry.type == _FileType.DIRECTORY or entry.is_executable:
-            st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+            mode.executable = True
 
+        mtime = BST_ARBITRARY_TIMESTAMP
         if entry.mtime is not None:
-            st_mtime = utils._parse_protobuf_timestamp(entry.mtime)
+            mtime = utils._parse_protobuf_timestamp(entry.mtime)
 
-        return os.stat_result((st_mode, 0, 0, st_nlink, 0, 0, st_size, st_mtime, st_mtime, st_mtime))
+        return FileStat(mode, size=size, mtime=mtime)
 
     def file_digest(self, *path):
         entry = self._entry_from_path(*path)

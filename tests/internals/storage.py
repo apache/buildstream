@@ -2,7 +2,6 @@ from contextlib import contextmanager
 import os
 import pprint
 import shutil
-import stat
 import glob
 import hashlib
 from pathlib import Path
@@ -216,16 +215,16 @@ def test_file_types(tmpdir, datafiles, backend):
         assert not c.isdir("root-file")
         assert not c.islink("root-file")
 
-        st = c.stat("root-file")
-        assert stat.S_ISREG(st.st_mode)
+        stat = c.stat("root-file")
+        assert stat.mode.regular
 
         assert c.exists("link")
         assert c.islink("link")
         assert not c.isfile("link")
         assert c.readlink("link") == "root-file"
 
-        st = c.stat("link")
-        assert stat.S_ISLNK(st.st_mode)
+        stat = c.stat("link")
+        assert stat.mode.symlink
 
         assert c.exists("subdirectory")
         assert c.isdir("subdirectory")
@@ -233,8 +232,8 @@ def test_file_types(tmpdir, datafiles, backend):
         subdir = c.descend("subdirectory")
         assert set(subdir) == {"subdir-file"}
 
-        st = c.stat("subdirectory")
-        assert stat.S_ISDIR(st.st_mode)
+        stat = c.stat("subdirectory")
+        assert stat.mode.directory
 
 
 @pytest.mark.parametrize("backend", [FileBasedDirectory, CasBasedDirectory])
@@ -259,7 +258,7 @@ def test_remove(tmpdir, datafiles, backend):
     with setup_backend(backend, str(tmpdir)) as c:
         c.import_files(os.path.join(str(datafiles), "merge-link"))
 
-        with pytest.raises((OSError, DirectoryError)):
+        with pytest.raises(DirectoryError):
             c.remove("subdirectory")
 
         with pytest.raises(DirectoryError):

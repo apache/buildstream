@@ -33,8 +33,6 @@ See also: :ref:`sandboxing`.
 """
 
 
-import os
-import stat
 from contextlib import contextmanager
 from tarfile import TarFile
 from typing import Callable, Optional, Union, List, IO, Iterator
@@ -57,6 +55,40 @@ class DirectoryError(BstError):
 
     def __init__(self, message: str, reason: str = None):
         super().__init__(message, domain=ErrorDomain.VIRTUAL_FS, reason=reason)
+
+
+class FileMode:
+    """Depicts the type of a file"""
+
+    def __init__(
+        self, *, regular: bool = False, directory: bool = False, symlink: bool = False, executable: bool = False
+    ) -> None:
+        self.regular: bool = regular
+        """Whether this is a regular file"""
+
+        self.directory: bool = directory
+        """Whether this is a directory"""
+
+        self.symlink: bool = symlink
+        """Whether this is a symbolic link"""
+
+        self.executable: bool = executable
+        """Whether this file is executable"""
+
+
+class FileStat:
+    """Depicts stats about a file"""
+
+    def __init__(self, mode: FileMode, *, size: int = 0, mtime: float = BST_ARBITRARY_TIMESTAMP) -> None:
+
+        self.mode: FileMode = mode
+        """The file type"""
+
+        self.size: int = size
+        """The size of the file in bytes"""
+
+        self.mtime: float = mtime
+        """The modification time of the file"""
 
 
 class Directory:
@@ -198,7 +230,7 @@ class Directory:
         """
         raise NotImplementedError()
 
-    def stat(self, *path: str, follow_symlinks: bool = False) -> os.stat_result:
+    def stat(self, *path: str, follow_symlinks: bool = False) -> FileStat:
         """ Get the status of a file.
 
         Args:
@@ -206,7 +238,7 @@ class Directory:
            follow_symlinks: True to follow symlinks.
 
         Returns:
-           A `os.stat_result` object.
+           A :class:`.FileStat` object.
 
         Raises:
            DirectoryError: if any system error occurs.
@@ -290,7 +322,7 @@ class Directory:
         """
         try:
             st = self.stat(*path, follow_symlinks=follow_symlinks)
-            return stat.S_ISREG(st.st_mode)
+            return st.mode.regular
         except DirectoryError:
             return False
 
@@ -306,7 +338,7 @@ class Directory:
         """
         try:
             st = self.stat(*path, follow_symlinks=follow_symlinks)
-            return stat.S_ISDIR(st.st_mode)
+            return st.mode.directory
         except DirectoryError:
             return False
 
@@ -322,7 +354,7 @@ class Directory:
         """
         try:
             st = self.stat(*path, follow_symlinks=follow_symlinks)
-            return stat.S_ISLNK(st.st_mode)
+            return st.mode.symlink
         except DirectoryError:
             return False
 
@@ -357,7 +389,7 @@ class Directory:
             pass
 
 
-# FileType:
+# _FileType:
 #
 # Type of file or directory entry.
 #
