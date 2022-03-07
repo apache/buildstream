@@ -810,7 +810,7 @@ class Stream:
     #    targets (str): Targets to view the contents of
     #
     # Returns:
-    #    elements_to_files (list): A list of tuples of the artifact name and it's contents
+    #    elements_to_files (Dict[str, Directory]): A list of tuples of the artifact name and it's contents
     #
     def artifact_list_contents(self, targets):
         # Return list of Element and/or ArtifactElement objects
@@ -827,8 +827,12 @@ class Stream:
                 continue
             if isinstance(obj, ArtifactElement):
                 obj.name = ref
-            files = list(obj._walk_artifact_files())
+
+            # Just hand over a Directory here
+            artifact = obj._get_artifact()
+            files = artifact.get_files()
             elements_to_files[obj.name] = files
+
         return elements_to_files
 
     # artifact_delete()

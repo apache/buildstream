@@ -2388,17 +2388,6 @@ class Element(Plugin):
                             rdep.__buildable_callback(rdep)
                             rdep.__buildable_callback = None
 
-    # _walk_artifact_files()
-    #
-    # A generator which yields all of the files cached in the
-    # element's artifact.
-    #
-    # Yields:
-    #    (str): Filenames in the artifact
-    #
-    def _walk_artifact_files(self):
-        yield from self.__artifact.get_files().walk()
-
     # _get_artifact()
     #
     # Return the Element's Artifact object

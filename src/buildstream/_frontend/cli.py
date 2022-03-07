@@ -1568,7 +1568,6 @@ def artifact_list_contents(app, artifacts, long_):
 
     Note that 'artifacts' can be element names, which must end in '.bst',
     or artifact references, which must be in the format `<project_name>/<element>/<key>`.
-
     """
     with app.initialized():
         elements_to_files = app.stream.artifact_list_contents(artifacts)
@@ -1576,7 +1575,7 @@ def artifact_list_contents(app, artifacts, long_):
             click.echo("None of the specified artifacts are cached.", err=True)
             sys.exit(1)
         else:
-            click.echo(app.logger._pretty_print_dictionary(elements_to_files, long_))
+            click.echo(app.logger.pretty_print_element_contents(elements_to_files, long_))
             sys.exit(0)
 
 
