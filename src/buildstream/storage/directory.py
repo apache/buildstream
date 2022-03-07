@@ -95,6 +95,9 @@ class Directory:
     def __init__(self, external_directory=None):
         raise NotImplementedError()
 
+    def __iter__(self) -> Iterator[str]:
+        raise NotImplementedError()
+
     ###################################################################
     #                           Public API                            #
     ###################################################################
@@ -361,6 +364,21 @@ class Directory:
     ###################################################################
     #                         Internal API                            #
     ###################################################################
+
+    # _get_underlying_path()
+    #
+    # Args:
+    #    filename: The name of the file in this directory
+    #
+    # Returns the underlying (real) file system path for the file in this
+    # directory
+    #
+    # Raises:
+    #    DirectoryError: if the backend doesn't use local files, or if
+    #                    there is no such file in this directory
+    #
+    def _get_underlying_path(self, filename) -> str:
+        raise NotImplementedError()
 
     # _get_underlying_directory()
     #

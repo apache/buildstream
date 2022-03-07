@@ -753,6 +753,13 @@ class CasBasedDirectory(Directory):
     def __str__(self):
         return "[CAS:{}]".format(self._get_identifier())
 
+    def _get_underlying_path(self, filename) -> str:
+        try:
+            entry = self.index[filename]
+        except IndexError as e:
+            raise DirectoryError("Directory does not contain any filename: {}".format(filename)) from e
+        return self.cas_cache.objpath(entry.digest)
+
     def _get_underlying_directory(self):
         """ There is no underlying directory for a CAS-backed directory, so
         throw an exception. """

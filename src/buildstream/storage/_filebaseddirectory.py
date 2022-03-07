@@ -26,7 +26,7 @@ from contextlib import contextmanager
 from tarfile import TarFile
 from typing import Callable, Optional, Union, List, IO, Iterator
 
-from .directory import Directory, DirectoryError, FileMode, FileStat, _FileType
+from .directory import Directory, DirectoryError, FileMode, FileStat
 from .. import utils
 from ..utils import BST_ARBITRARY_TIMESTAMP
 from ..utils import FileListResult
@@ -105,34 +105,20 @@ class FileBasedDirectory(Directory):
     ) -> FileListResult:
         """ See superclass Directory for arguments """
 
-        from ._casbaseddirectory import CasBasedDirectory  # pylint: disable=cyclic-import
+        # See if we can get a source directory to copy from
+        source_directory: Optional[str] = None
+        if isinstance(external_pathspec, str):
+            source_directory = external_pathspec
+        elif isinstance(external_pathspec, Directory):
+            try:
+                source_directory = external_pathspec._get_underlying_directory()
+            except DirectoryError:
+                pass
 
-        # Satisfy type checking by providing some wrappers around these
-        # utilities which do not have exactly the same call signatures.
-        #
-        def link_action(src_path, dest_path, result):
-            utils.safe_link(src_path, dest_path, result=result)
-
-        def copy_action(src_path, dest_path, result):
-            utils.safe_copy(src_path, dest_path, result=result)
-
-        if isinstance(external_pathspec, CasBasedDirectory):
-            if can_link:
-                actionfunc = link_action
-            else:
-                actionfunc = copy_action
-
-            import_result = FileListResult()
-            self.__import_files_from_cas(
-                external_pathspec, actionfunc, filter_callback, update_mtime=update_mtime, result=import_result,
-            )
-        else:
-            if isinstance(external_pathspec, FileBasedDirectory):
-                source_directory = external_pathspec.__external_directory
-            else:
-                assert isinstance(external_pathspec, str)
-                source_directory = external_pathspec
-
+        if source_directory:
+            #
+            # We've got a source directory to copy from
+            #
             if can_link and not update_mtime:
                 import_result = utils.link_files(
                     source_directory,
@@ -152,6 +138,31 @@ class FileBasedDirectory(Directory):
                 if update_mtime:
                     for f in import_result.files_written:
                         os.utime(os.path.join(self.__external_directory, f), times=(update_mtime, update_mtime))
+        else:
+            #
+            # We're dealing with an abstract Directory object
+            #
+            assert isinstance(external_pathspec, Directory)
+
+            # Satisfy type checking by providing some wrappers around these
+            # utilities which do not have exactly the same call signatures.
+            #
+            def link_action(src_path, dest_path, mtime, result):
+                utils.safe_link(src_path, dest_path, result=result)
+
+            def copy_action(src_path, dest_path, mtime, result):
+                utils.safe_copy(src_path, dest_path, result=result)
+                utils._set_file_mtime(dest_path, mtime)
+
+            if can_link:
+                actionfunc = link_action
+            else:
+                actionfunc = copy_action
+
+            import_result = FileListResult()
+            self.__import_files_from_directory(
+                external_pathspec, actionfunc, filter_callback, update_mtime=update_mtime, result=import_result,
+            )
 
         return import_result
 
@@ -329,11 +340,9 @@ class FileBasedDirectory(Directory):
     def _set_deterministic_user(self) -> None:
         utils._set_deterministic_user(self.__external_directory)
 
-    # _get_underlying_directory()
-    #
-    # Returns the underlying (real) file system directory this
-    # object refers to.
-    #
+    def _get_underlying_path(self, filename) -> str:
+        return os.path.join(self.__external_directory, filename)
+
     def _get_underlying_directory(self) -> str:
         return self.__external_directory
 
@@ -372,14 +381,14 @@ class FileBasedDirectory(Directory):
         else:
             return self
 
-    # __import_files_from_cas()
+    # __import_files_from_directory()
     #
     # Import files from a CAS-based directory.
     #
-    def __import_files_from_cas(
+    def __import_files_from_directory(
         self,
-        source_directory,  # XXX FIXME
-        actionfunc: Callable[[str, str, FileListResult], None],
+        source_directory: Directory,
+        actionfunc: Callable[[str, str, float, FileListResult], None],
         filter_callback: Optional[Callable[[str], bool]] = None,
         *,
         path_prefix: str = "",
@@ -387,14 +396,16 @@ class FileBasedDirectory(Directory):
         result: FileListResult
     ) -> None:
 
-        for name, entry in source_directory.index.items():
+        # Iterate over entries in the source directory
+        for name in source_directory:
+
             # The destination filename, relative to the root where the import started
             relative_pathname = os.path.join(path_prefix, name)
 
             # The full destination path
             dest_path = os.path.join(self.__external_directory, name)
 
-            is_dir = entry.type == _FileType.DIRECTORY
+            is_dir = source_directory.isdir(name)
 
             if is_dir:
                 src_subdir = source_directory.descend(name)
@@ -405,7 +416,7 @@ class FileBasedDirectory(Directory):
                 except DirectoryError:
                     raise DirectoryError("Destination is not a directory: /{}".format(relative_pathname))
 
-                dest_subdir.__import_files_from_cas(
+                dest_subdir.__import_files_from_directory(
                     src_subdir,
                     actionfunc,
                     filter_callback,
@@ -419,7 +430,7 @@ class FileBasedDirectory(Directory):
                     # Complete subdirectory has been filtered out, remove it
                     os.rmdir(dest_subdir.__external_directory)
 
-                # Entry filtered out, move to next
+                # Filename filtered out, move to next
                 continue
 
             if not is_dir:
@@ -432,22 +443,19 @@ class FileBasedDirectory(Directory):
                         result.ignored.append(relative_pathname)
                         continue
 
-                if entry.type == _FileType.REGULAR_FILE:
-                    src_path = source_directory.cas_cache.objpath(entry.digest)
+                if source_directory.isfile(name):
+                    src_path = source_directory._get_underlying_path(name)
+                    filestat = source_directory.stat(name)
 
-                    # fallback to copying if we require mtime support on this file
-                    if update_mtime or entry.mtime is not None:
-                        utils.safe_copy(src_path, dest_path, result=result)
-                        mtime = update_mtime
-                        # mtime property will override specified mtime
-                        if entry.mtime is not None:
-                            mtime = utils._parse_protobuf_timestamp(entry.mtime)
-                        if mtime:
-                            utils._set_file_mtime(dest_path, mtime)
-                    else:
-                        actionfunc(src_path, dest_path, result)
+                    # hardlink files on request, they wont have their mtimes
+                    # updated if hardlinking is performed
+                    mtime = update_mtime
+                    if mtime is None:
+                        mtime = filestat.mtime
 
-                    if entry.is_executable:
+                    actionfunc(src_path, dest_path, mtime, result)
+
+                    if filestat.mode.executable:
                         os.chmod(
                             dest_path,
                             stat.S_IRUSR
@@ -458,8 +466,9 @@ class FileBasedDirectory(Directory):
                             | stat.S_IROTH
                             | stat.S_IXOTH,
                         )
+                    result.files_written.append(relative_pathname)
 
-                else:
-                    assert entry.type == _FileType.SYMLINK
-                    os.symlink(entry.target, dest_path)
-                result.files_written.append(relative_pathname)
+                elif source_directory.islink(name):
+                    link_target = source_directory.readlink(name)
+                    os.symlink(link_target, dest_path)
+                    result.files_written.append(relative_pathname)
