@@ -98,7 +98,6 @@ class FileBasedDirectory(Directory):
         external_pathspec: Union[Directory, str],
         *,
         filter_callback: Optional[Callable[[str], bool]] = None,
-        report_written: bool = True,
         update_mtime: Optional[float] = None,
         can_link: bool = False,
         properties: Optional[List[str]] = None
@@ -125,7 +124,7 @@ class FileBasedDirectory(Directory):
                     self.__external_directory,
                     filter_callback=filter_callback,
                     ignore_missing=False,
-                    report_written=report_written,
+                    report_written=True,
                 )
             else:
                 import_result = utils.copy_files(
@@ -133,7 +132,7 @@ class FileBasedDirectory(Directory):
                     self.__external_directory,
                     filter_callback=filter_callback,
                     ignore_missing=False,
-                    report_written=report_written,
+                    report_written=True,
                 )
                 if update_mtime:
                     for f in import_result.files_written:

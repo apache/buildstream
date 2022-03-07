@@ -126,7 +126,6 @@ class Directory:
         external_pathspec: Union["Directory", str],
         *,
         filter_callback: Optional[Callable[[str], bool]] = None,
-        report_written: bool = True,
         update_mtime: Optional[float] = None,
         can_link: bool = False,
         properties: Optional[List[str]] = None
@@ -140,8 +139,6 @@ class Directory:
                             relative path as argument for every file in the source directory.
                             The file is imported only if the callable returns True.
                             If no filter callback is specified, all files will be imported.
-           report_written: Return the full list of files written. Defaults to true.
-                           If false, only a list of overwritten files is returned.
            update_mtime: Update the access and modification time of each file copied to the time specified in seconds.
            can_link: Whether it's OK to create a hard link to the original content, meaning the stored copy will change
                      when the original files change. Setting this doesn't guarantee hard links will be made.

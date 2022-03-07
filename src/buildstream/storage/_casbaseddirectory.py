@@ -492,14 +492,7 @@ class CasBasedDirectory(Directory):
                     result.files_written.append(relative_pathname)
 
     def import_files(
-        self,
-        external_pathspec,
-        *,
-        filter_callback=None,
-        report_written=True,
-        update_mtime=None,
-        can_link=False,
-        properties=None
+        self, external_pathspec, *, filter_callback=None, update_mtime=None, can_link=False, properties=None
     ):
         """ See superclass Directory for arguments """
 
@@ -519,10 +512,6 @@ class CasBasedDirectory(Directory):
 
         assert isinstance(external_pathspec, CasBasedDirectory)
         self._partial_import_cas_into_cas(external_pathspec, filter_callback, result=result)
-
-        # TODO: No notice is taken of report_written or update_mtime.
-        # Current behaviour is to fully populate the report, which is inefficient,
-        # but still correct.
 
         return result
 

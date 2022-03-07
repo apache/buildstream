@@ -998,7 +998,7 @@ class Element(Plugin):
 
         split_filter = self.__split_filter_func(include, exclude, orphans)
 
-        result = vstagedir.import_files(files_vdir, filter_callback=split_filter, report_written=True, can_link=True)
+        result = vstagedir.import_files(files_vdir, filter_callback=split_filter, can_link=True)
 
         owner._overlap_collector.collect_stage_result(self, result)
 
