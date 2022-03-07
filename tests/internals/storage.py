@@ -11,9 +11,8 @@ import pytest
 
 from buildstream import DirectoryError
 from buildstream._cas import CASCache
-from buildstream.storage._casbaseddirectory import CasBasedDirectory
+from buildstream.storage._casbaseddirectory import CasBasedDirectory, _FileType
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
-from buildstream.storage.directory import _FileType
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "storage")
 

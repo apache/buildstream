@@ -34,10 +34,34 @@ from io import StringIO
 from google.protobuf import timestamp_pb2
 
 from .. import utils
+from ..types import FastEnum
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
-from .directory import Directory, DirectoryError, FileMode, FileStat, _FileType
+from .directory import Directory, DirectoryError, FileMode, FileStat
 from ._filebaseddirectory import FileBasedDirectory
 from ..utils import FileListResult, BST_ARBITRARY_TIMESTAMP
+
+
+# _FileType:
+#
+# Type of file or directory entry.
+#
+class _FileType(FastEnum):
+
+    # Directory
+    DIRECTORY = 1
+
+    # Regular file
+    REGULAR_FILE = 2
+
+    # Symbolic link
+    SYMLINK = 3
+
+    # Special file (FIFO, character device, block device, or socket)
+    SPECIAL_FILE = 4
+
+    def __str__(self):
+        # https://github.com/PyCQA/pylint/issues/2062
+        return self.name.lower().replace("_", " ")  # pylint: disable=no-member
 
 
 class IndexEntry:

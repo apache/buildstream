@@ -39,7 +39,6 @@ from typing import Callable, Optional, Union, List, IO, Iterator
 
 from .._exceptions import BstError
 from ..exceptions import ErrorDomain
-from ..types import FastEnum
 from ..utils import BST_ARBITRARY_TIMESTAMP, FileListResult
 
 
@@ -402,26 +401,3 @@ class Directory:
     def _create_empty_file(self, *path):
         with self.open_file(*path, mode="w"):
             pass
-
-
-# _FileType:
-#
-# Type of file or directory entry.
-#
-class _FileType(FastEnum):
-
-    # Directory
-    DIRECTORY = 1
-
-    # Regular file
-    REGULAR_FILE = 2
-
-    # Symbolic link
-    SYMLINK = 3
-
-    # Special file (FIFO, character device, block device, or socket)
-    SPECIAL_FILE = 4
-
-    def __str__(self):
-        # https://github.com/PyCQA/pylint/issues/2062
-        return self.name.lower().replace("_", " ")  # pylint: disable=no-member
