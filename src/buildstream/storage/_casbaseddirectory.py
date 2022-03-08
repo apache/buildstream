@@ -31,13 +31,13 @@ import stat
 import tarfile as tarfilelib
 from contextlib import contextmanager
 from io import StringIO
+from typing import Optional
 from google.protobuf import timestamp_pb2
 
 from .. import utils
 from ..types import FastEnum
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .directory import Directory, DirectoryError, FileMode, FileStat
-from ._filebaseddirectory import FileBasedDirectory
 from ..utils import FileListResult, BST_ARBITRARY_TIMESTAMP
 
 
@@ -522,16 +522,23 @@ class CasBasedDirectory(Directory):
 
         result = FileListResult()
 
-        if isinstance(external_pathspec, FileBasedDirectory):
-            external_pathspec = external_pathspec._get_underlying_directory()
-
+        # See if we can get a source directory to copy from
+        source_directory: Optional[str] = None
         if isinstance(external_pathspec, str):
+            source_directory = external_pathspec
+        elif isinstance(external_pathspec, Directory):
+            try:
+                source_directory = external_pathspec._get_underlying_directory()
+            except DirectoryError:
+                pass
+
+        if source_directory:
             # Import files from local filesystem by first importing complete
             # directory into CAS (using buildbox-casd) and then importing its
             # content into this CasBasedDirectory using CAS-to-CAS import
             # to write the report, handle possible conflicts (if the target
             # directory is not empty) and apply the optional filter.
-            digest = self.cas_cache.import_directory(external_pathspec, properties=properties)
+            digest = self.cas_cache.import_directory(source_directory, properties=properties)
             external_pathspec = CasBasedDirectory(self.cas_cache, digest=digest)
 
         assert isinstance(external_pathspec, CasBasedDirectory)
