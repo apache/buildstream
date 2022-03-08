@@ -20,16 +20,11 @@
 #        Tristan van Berkom <tristan.vanberkom@codethink.co.uk>
 
 """
-Directory
-=========
-
-This is a virtual Directory class to isolate the rest of BuildStream
-from the backing store implementation.  Sandboxes are allowed to read
-from and write to the underlying storage, but all others must use this
-Directory class to access files and directories in the sandbox.
-
-See also: :ref:`sandboxing`.
-
+Directory - Interfacing with files
+==================================
+The Directory class is given to plugins by way of the :class:`.Sandbox`
+and in some other instances. This API allows plugins to interface with files
+and directory hierarchies owned by BuildStream.
 """
 
 
