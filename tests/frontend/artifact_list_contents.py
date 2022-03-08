@@ -65,6 +65,15 @@ def test_artifact_list_exact_contents(cli, datafiles, target, with_project):
         assert expected_output in result.output
 
 
+# NOTE: The pytest-datafiles package has an issue where it fails to transfer any
+#       mode bits when copying files into the temporary directory:
+#
+#         https://github.com/omarkohl/pytest-datafiles/issues/11
+#
+#       This is why the /usr/bin/hello file appears to not be executable
+#       in the test below, in real life the /usr/bin/hello file will
+#       appear executable.
+#
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("target", ["element-name", "artifact-name"])
 def test_artifact_list_exact_contents_long(cli, datafiles, target):
