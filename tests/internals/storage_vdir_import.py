@@ -131,7 +131,7 @@ def file_contents_are(path, contents):
 
 def create_new_casdir(root_number, cas_cache, tmpdir):
     d = CasBasedDirectory(cas_cache)
-    d.import_files(os.path.join(tmpdir, "content", "root{}".format(root_number)), properties=["mtime"])
+    d._import_files_internal(os.path.join(tmpdir, "content", "root{}".format(root_number)), properties=["mtime"])
     digest = d._get_digest()
     assert digest.hash != empty_hash_ref
     return d
@@ -141,7 +141,7 @@ def create_new_filedir(root_number, tmpdir):
     root = os.path.join(tmpdir, "vdir")
     os.makedirs(root)
     d = FileBasedDirectory(root)
-    d.import_files(os.path.join(tmpdir, "content", "root{}".format(root_number)))
+    d._import_files_internal(os.path.join(tmpdir, "content", "root{}".format(root_number)))
     return d
 
 
@@ -205,7 +205,7 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
         assert duplicate_cas._get_digest().hash == d._get_digest().hash
 
         d2 = create_new_casdir(overlay, cas_cache, tmpdir)
-        d.import_files(d2, properties=["mtime"])
+        d._import_files_internal(d2, properties=["mtime"])
         export_dir = os.path.join(tmpdir, "output-{}-{}".format(original, overlay))
         roundtrip_dir = os.path.join(tmpdir, "roundtrip-{}-{}".format(original, overlay))
         d2.export_files(roundtrip_dir)
@@ -244,7 +244,7 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
 
         # Now do the same thing with filebaseddirectories and check the contents match
 
-        duplicate_cas.import_files(roundtrip_dir, properties=["mtime"])
+        duplicate_cas._import_files_internal(roundtrip_dir, properties=["mtime"])
 
         assert duplicate_cas._get_digest().hash == d._get_digest().hash
     finally:

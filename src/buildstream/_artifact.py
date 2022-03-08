@@ -233,7 +233,7 @@ class Artifact:
         # Store files
         if collectvdir:
             filesvdir = CasBasedDirectory(cas_cache=self._cas)
-            filesvdir.import_files(collectvdir, properties=properties)
+            filesvdir._import_files_internal(collectvdir, properties=properties)
             artifact.files.CopyFrom(filesvdir._get_digest())
             size += filesvdir.get_size()
 
@@ -292,7 +292,7 @@ class Artifact:
         # Store build tree
         if sandbox_build_dir:
             buildtreevdir = CasBasedDirectory(cas_cache=self._cas)
-            buildtreevdir.import_files(sandbox_build_dir, properties=properties)
+            buildtreevdir._import_files_internal(sandbox_build_dir, properties=properties)
             artifact.buildtree.CopyFrom(buildtreevdir._get_digest())
             size += buildtreevdir.get_size()
 

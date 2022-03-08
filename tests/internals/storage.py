@@ -137,10 +137,10 @@ def _test_merge_dirs(
     with setup_backend(CasBasedDirectory, tmpdir) as c, setup_backend(
         CasBasedDirectory, tmpdir
     ) as copy, setup_backend(CasBasedDirectory, tmpdir) as a, setup_backend(CasBasedDirectory, tmpdir) as b:
-        a.import_files(before, properties=properties)
-        b.import_files(after, properties=properties)
-        c.import_files(buildtree, properties=properties)
-        copy.import_files(buildtree, properties=properties)
+        a._import_files_internal(before, properties=properties)
+        b._import_files_internal(after, properties=properties)
+        c._import_files_internal(buildtree, properties=properties)
+        copy._import_files_internal(buildtree, properties=properties)
 
         assert c._get_digest() == copy._get_digest()
 

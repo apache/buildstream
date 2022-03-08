@@ -93,79 +93,7 @@ class FileBasedDirectory(Directory):
 
         return current_dir
 
-    def import_files(
-        self,
-        external_pathspec: Union[Directory, str],
-        *,
-        filter_callback: Optional[Callable[[str], bool]] = None,
-        update_mtime: Optional[float] = None,
-        can_link: bool = False,
-        properties: Optional[List[str]] = None
-    ) -> FileListResult:
-        """ See superclass Directory for arguments """
-
-        # See if we can get a source directory to copy from
-        source_directory: Optional[str] = None
-        if isinstance(external_pathspec, str):
-            source_directory = external_pathspec
-        elif isinstance(external_pathspec, Directory):
-            try:
-                source_directory = external_pathspec._get_underlying_directory()
-            except DirectoryError:
-                pass
-
-        if source_directory:
-            #
-            # We've got a source directory to copy from
-            #
-            if can_link and not update_mtime:
-                import_result = utils.link_files(
-                    source_directory,
-                    self.__external_directory,
-                    filter_callback=filter_callback,
-                    ignore_missing=False,
-                    report_written=True,
-                )
-            else:
-                import_result = utils.copy_files(
-                    source_directory,
-                    self.__external_directory,
-                    filter_callback=filter_callback,
-                    ignore_missing=False,
-                    report_written=True,
-                )
-                if update_mtime:
-                    for f in import_result.files_written:
-                        os.utime(os.path.join(self.__external_directory, f), times=(update_mtime, update_mtime))
-        else:
-            #
-            # We're dealing with an abstract Directory object
-            #
-            assert isinstance(external_pathspec, Directory)
-
-            # Satisfy type checking by providing some wrappers around these
-            # utilities which do not have exactly the same call signatures.
-            #
-            def link_action(src_path, dest_path, mtime, result):
-                utils.safe_link(src_path, dest_path, result=result)
-
-            def copy_action(src_path, dest_path, mtime, result):
-                utils.safe_copy(src_path, dest_path, result=result)
-                utils._set_file_mtime(dest_path, mtime)
-
-            if can_link:
-                actionfunc = link_action
-            else:
-                actionfunc = copy_action
-
-            import_result = FileListResult()
-            self.__import_files_from_directory(
-                external_pathspec, actionfunc, filter_callback, update_mtime=update_mtime, result=import_result,
-            )
-
-        return import_result
-
-    def import_single_file(self, external_pathspec: str, properties: Optional[List[str]] = None) -> FileListResult:
+    def import_single_file(self, external_pathspec: str) -> FileListResult:
         dstpath = os.path.join(self.__external_directory, os.path.basename(external_pathspec))
         result = FileListResult()
         if os.path.exists(dstpath):
@@ -336,6 +264,78 @@ class FileBasedDirectory(Directory):
     #############################################################
     #             Implementation of Internal API                #
     #############################################################
+    def _import_files(
+        self,
+        external_pathspec: Union[Directory, str],
+        *,
+        filter_callback: Optional[Callable[[str], bool]] = None,
+        update_mtime: Optional[float] = None,
+        can_link: bool = False,
+        properties: Optional[List[str]] = None
+    ) -> FileListResult:
+        """ See superclass Directory for arguments """
+
+        # See if we can get a source directory to copy from
+        source_directory: Optional[str] = None
+        if isinstance(external_pathspec, str):
+            source_directory = external_pathspec
+        elif isinstance(external_pathspec, Directory):
+            try:
+                source_directory = external_pathspec._get_underlying_directory()
+            except DirectoryError:
+                pass
+
+        if source_directory:
+            #
+            # We've got a source directory to copy from
+            #
+            if can_link and not update_mtime:
+                import_result = utils.link_files(
+                    source_directory,
+                    self.__external_directory,
+                    filter_callback=filter_callback,
+                    ignore_missing=False,
+                    report_written=True,
+                )
+            else:
+                import_result = utils.copy_files(
+                    source_directory,
+                    self.__external_directory,
+                    filter_callback=filter_callback,
+                    ignore_missing=False,
+                    report_written=True,
+                )
+                if update_mtime:
+                    for f in import_result.files_written:
+                        os.utime(os.path.join(self.__external_directory, f), times=(update_mtime, update_mtime))
+        else:
+            #
+            # We're dealing with an abstract Directory object
+            #
+            assert isinstance(external_pathspec, Directory)
+
+            # Satisfy type checking by providing some wrappers around these
+            # utilities which do not have exactly the same call signatures.
+            #
+            def link_action(src_path, dest_path, mtime, result):
+                utils.safe_link(src_path, dest_path, result=result)
+
+            def copy_action(src_path, dest_path, mtime, result):
+                utils.safe_copy(src_path, dest_path, result=result)
+                utils._set_file_mtime(dest_path, mtime)
+
+            if can_link:
+                actionfunc = link_action
+            else:
+                actionfunc = copy_action
+
+            import_result = FileListResult()
+            self.__import_files_from_directory(
+                external_pathspec, actionfunc, filter_callback, update_mtime=update_mtime, result=import_result,
+            )
+
+        return import_result
+
     def _set_deterministic_user(self) -> None:
         utils._set_deterministic_user(self.__external_directory)
 

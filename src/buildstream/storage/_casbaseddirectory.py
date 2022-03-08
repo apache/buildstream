@@ -515,7 +515,7 @@ class CasBasedDirectory(Directory):
                         self._add_new_link_direct(name=name, target=entry.target)
                     result.files_written.append(relative_pathname)
 
-    def import_files(
+    def _import_files(
         self, external_pathspec, *, filter_callback=None, update_mtime=None, can_link=False, properties=None
     ):
         """ See superclass Directory for arguments """
@@ -539,11 +539,11 @@ class CasBasedDirectory(Directory):
 
         return result
 
-    def import_single_file(self, external_pathspec, properties=None):
+    def import_single_file(self, external_pathspec):
         result = FileListResult()
         if self._check_replacement(os.path.basename(external_pathspec), os.path.dirname(external_pathspec), result):
             self._add_file(
-                os.path.basename(external_pathspec), external_pathspec, properties=properties,
+                os.path.basename(external_pathspec), external_pathspec, properties=None,
             )
             result.files_written.append(external_pathspec)
         return result
