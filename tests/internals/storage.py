@@ -163,7 +163,7 @@ def _test_merge_dirs(
         # We need to strip some types of values, since they're more
         # than our little list comparisons can handle
         def make_info(entry, list_props=None):
-            ret = {k: v for k, v in vars(entry).items() if k != "buildstream_object"}
+            ret = {k: v for k, v in vars(entry).items() if k not in ("directory", "cas_cache")}
             if entry.type == _FileType.REGULAR_FILE:
                 # Only file digests make sense here (directory digests
                 # need to be re-calculated taking into account their
@@ -299,14 +299,14 @@ def list_relative_paths(directory):
         else:
             return entry.get_digest().hash
 
-    return {name: entry_output(entry) for name, entry in directory.index.items()}
+    return {name: entry_output(entry) for name, entry in directory._CasBasedDirectory__index.items()}
 
 
 def list_paths_with_properties(directory, prefix=""):
-    for leaf in directory.index.keys():
-        entry = directory.index[leaf].clone()
-        if directory.filename:
-            entry.name = directory.filename + os.path.sep + entry.name
+    for leaf in directory._CasBasedDirectory__index.keys():
+        entry = directory._CasBasedDirectory__index[leaf].clone()
+        if directory._CasBasedDirectory__filename:
+            entry.name = directory._CasBasedDirectory__filename + os.path.sep + entry.name
         yield entry
         if entry.type == _FileType.DIRECTORY:
             subdir = entry.get_directory(directory)

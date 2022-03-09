@@ -303,7 +303,7 @@ def test_descend(tmpdir):
         generate_import_root(test_dir, filesys_discription)
 
         d.import_files(test_dir)
-        digest = d.descend("a", "l").index["g"].get_digest()
+        digest = d.descend("a", "l")._CasBasedDirectory__index["g"].get_digest()
 
         with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
@@ -361,7 +361,7 @@ def test_relative_symlink(tmpdir):
         generate_import_root(test_dir, filesys_discription)
         d.import_files(test_dir)
 
-        digest = d.descend("a", "l", follow_symlinks=True).index["file"].get_digest()
+        digest = d.descend("a", "l", follow_symlinks=True)._CasBasedDirectory__index["file"].get_digest()
         with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
         assert Content_to_check == content
@@ -388,7 +388,7 @@ def test_abs_symlink(tmpdir):
         generate_import_root(test_dir, filesys_discription)
         d.import_files(test_dir)
 
-        digest = d.descend("a", "l", follow_symlinks=True).index["file"].get_digest()
+        digest = d.descend("a", "l", follow_symlinks=True)._CasBasedDirectory__index["file"].get_digest()
 
         with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
