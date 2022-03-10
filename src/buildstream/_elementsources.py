@@ -476,7 +476,7 @@ class ElementSources:
                 else:
                     with utils._tempdir(dir=self._context.tmpdir, prefix="staging-temp") as tmpdir:
                         # Stage previous sources
-                        vsubdir.export_files(tmpdir)
+                        vsubdir._export_files(tmpdir)
 
                         source._stage(tmpdir)
 
@@ -503,5 +503,5 @@ class ElementSources:
             yield vdir
         else:
             with source.tempdir() as tempdir:
-                vdir.export_files(tempdir)
+                vdir._export_files(tempdir)
                 yield tempdir

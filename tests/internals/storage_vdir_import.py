@@ -208,8 +208,8 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
         d._import_files_internal(d2, properties=["mtime"])
         export_dir = os.path.join(tmpdir, "output-{}-{}".format(original, overlay))
         roundtrip_dir = os.path.join(tmpdir, "roundtrip-{}-{}".format(original, overlay))
-        d2.export_files(roundtrip_dir)
-        d.export_files(export_dir)
+        d2._export_files(roundtrip_dir)
+        d._export_files(export_dir)
 
         if verify_contents:
             for item in root_filesets[overlay - 1]:

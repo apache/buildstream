@@ -151,21 +151,6 @@ class Directory:
         """
         raise NotImplementedError()
 
-    def export_files(self, to_directory: str, *, can_link: bool = False, can_destroy: bool = False) -> None:
-        """Copies everything from this into to_directory.
-
-        Args:
-           to_directory: a path outside this directory object where the contents will be copied to.
-           can_link: Whether we can create hard links in to_directory instead of copying.
-                     Setting this does not guarantee hard links will be used.
-           can_destroy: Can we destroy the data already in this directory when exporting? If set,
-                        this may allow data to be moved rather than copied which will be quicker.
-
-        Raises:
-           DirectoryError: if any system error occurs.
-        """
-        raise NotImplementedError()
-
     def export_to_tar(self, tarfile: TarFile, destination_dir: str, mtime: int = BST_ARBITRARY_TIMESTAMP) -> None:
         """ Exports this directory into the given tar file.
 
@@ -406,6 +391,23 @@ class Directory:
         update_mtime: Optional[float] = None,
         properties: Optional[List[str]] = None,
     ) -> FileListResult:
+        raise NotImplementedError()
+
+    # _export_files()
+    #
+    # Exports everything from this directory into to_directory.
+    #
+    # Args:
+    #    to_directory: a path outside this directory object where the contents will be copied to.
+    #    can_link: Whether we can create hard links in to_directory instead of copying.
+    #              Setting this does not guarantee hard links will be used.
+    #    can_destroy: Can we destroy the data already in this directory when exporting? If set,
+    #                 this may allow data to be moved rather than copied which will be quicker.
+    #
+    # Raises:
+    #    DirectoryError: if any system error occurs.
+    #
+    def _export_files(self, to_directory: str, *, can_link: bool = False, can_destroy: bool = False) -> None:
         raise NotImplementedError()
 
     # _get_underlying_path()

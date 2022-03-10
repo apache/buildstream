@@ -102,23 +102,6 @@ class FileBasedDirectory(Directory):
             shutil.copyfile(external_pathspec, dstpath, follow_symlinks=False)
         return result
 
-    def export_files(self, to_directory: str, *, can_link: bool = False, can_destroy: bool = False) -> None:
-        if can_destroy:
-            # Try a simple rename of the sandbox root; if that
-            # doesnt cut it, then do the regular link files code path
-            try:
-                os.rename(self.__external_directory, to_directory)
-                return
-            except OSError:
-                # Proceed using normal link/copy
-                pass
-
-        os.makedirs(to_directory, exist_ok=True)
-        if can_link:
-            utils.link_files(self.__external_directory, to_directory)
-        else:
-            utils.copy_files(self.__external_directory, to_directory)
-
     # Add a directory entry deterministically to a tar file
     #
     # This function takes extra steps to ensure the output is deterministic.
@@ -313,6 +296,23 @@ class FileBasedDirectory(Directory):
             )
 
         return import_result
+
+    def _export_files(self, to_directory: str, *, can_link: bool = False, can_destroy: bool = False) -> None:
+        if can_destroy:
+            # Try a simple rename of the sandbox root; if that
+            # doesnt cut it, then do the regular link files code path
+            try:
+                os.rename(self.__external_directory, to_directory)
+                return
+            except OSError:
+                # Proceed using normal link/copy
+                pass
+
+        os.makedirs(to_directory, exist_ok=True)
+        if can_link:
+            utils.link_files(self.__external_directory, to_directory)
+        else:
+            utils.copy_files(self.__external_directory, to_directory)
 
     def _set_deterministic_user(self) -> None:
         utils._set_deterministic_user(self.__external_directory)

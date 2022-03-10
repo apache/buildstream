@@ -247,13 +247,6 @@ class CasBasedDirectory(Directory):
             result.files_written.append(external_pathspec)
         return result
 
-    def export_files(self, to_directory: str, *, can_link: bool = False, can_destroy: bool = False) -> None:
-        #
-        # This is documented to raise DirectoryError, if we are raising a system error
-        # or an error from CAS, it is a bug and we should catch/re-raise from here.
-        #
-        self.__cas_cache.checkout(to_directory, self._get_digest(), can_link=can_link)
-
     def export_to_tar(self, tarfile: TarFile, destination_dir: str, mtime: int = BST_ARBITRARY_TIMESTAMP) -> None:
         for filename, entry in sorted(self.__index.items()):
             arcname = os.path.join(destination_dir, filename)
@@ -454,6 +447,13 @@ class CasBasedDirectory(Directory):
         self.__partial_import_cas_into_cas(external_pathspec, filter_callback, result=result)
 
         return result
+
+    def _export_files(self, to_directory: str, *, can_link: bool = False, can_destroy: bool = False) -> None:
+        #
+        # This is documented to raise DirectoryError, if we are raising a system error
+        # or an error from CAS, it is a bug and we should catch/re-raise from here.
+        #
+        self.__cas_cache.checkout(to_directory, self._get_digest(), can_link=can_link)
 
     # We don't store UID/GID in CAS presently, so this can be ignored.
     def _set_deterministic_user(self) -> None:
