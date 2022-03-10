@@ -427,7 +427,6 @@ class CasBasedDirectory(Directory):
         *,
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
-        can_link: bool = False,
         properties: Optional[List[str]] = None
     ) -> FileListResult:
         result = FileListResult()
@@ -683,7 +682,7 @@ class CasBasedDirectory(Directory):
 
         return newdir
 
-    def __add_file(self, name: str, path: str, can_link: bool = False, properties: Optional[List[str]] = None) -> None:
+    def __add_file(self, name: str, path: str, properties: Optional[List[str]] = None) -> None:
         digest = self.__cas_cache.add_object(path=path)
         is_executable = os.access(path, os.X_OK)
         mtime = None

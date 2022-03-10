@@ -991,14 +991,14 @@ class Element(Plugin):
         # `self.__artifact` can't be None at this stage.
         files_vdir = self.__artifact.get_files()  # type: ignore
 
-        # Hard link it into the staging area
+        # Import files into the staging area
         #
         vbasedir = sandbox.get_virtual_directory()
         vstagedir = vbasedir if path is None else vbasedir.descend(*path.lstrip(os.sep).split(os.sep), create=True)
 
         split_filter = self.__split_filter_func(include, exclude, orphans)
 
-        result = vstagedir._import_files_internal(files_vdir, filter_callback=split_filter, can_link=True)
+        result = vstagedir._import_files_internal(files_vdir, filter_callback=split_filter)
 
         owner._overlap_collector.collect_stage_result(self, result)
 

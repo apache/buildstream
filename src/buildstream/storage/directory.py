@@ -116,11 +116,7 @@ class Directory:
 
     # Import and export of files and links
     def import_files(
-        self,
-        external_pathspec: Union["Directory", str],
-        *,
-        filter_callback: Optional[Callable[[str], bool]] = None,
-        can_link: bool = False,
+        self, external_pathspec: Union["Directory", str], *, filter_callback: Optional[Callable[[str], bool]] = None,
     ) -> FileListResult:
         """Imports some or all files from external_path into this directory.
 
@@ -131,8 +127,6 @@ class Directory:
                             relative path as argument for every file in the source directory.
                             The file is imported only if the callable returns True.
                             If no filter callback is specified, all files will be imported.
-           can_link: Whether it's OK to create a hard link to the original content, meaning the stored copy will change
-                     when the original files change. Setting this doesn't guarantee hard links will be made.
 
         Returns:
            A :class:`.FileListResult` report of files imported and overwritten.
@@ -140,7 +134,7 @@ class Directory:
         Raises:
            DirectoryError: if any system error occurs.
         """
-        return self._import_files_internal(external_pathspec, filter_callback=filter_callback, can_link=can_link,)
+        return self._import_files_internal(external_pathspec, filter_callback=filter_callback,)
 
     def import_single_file(self, external_pathspec: str) -> FileListResult:
         """Imports a single file from an external path
@@ -364,8 +358,6 @@ class Directory:
     #                    The file is imported only if the callable returns True.
     #                    If no filter callback is specified, all files will be imported.
     #                    update_mtime: Update the access and modification time of each file copied to the time specified in seconds.
-    #   can_link: Whether it's OK to create a hard link to the original content, meaning the stored copy will change
-    #                     when the original files change. Setting this doesn't guarantee hard links will be made.
     #   properties: Optional list of strings representing file properties to capture when importing.
     #
     # Returns:
@@ -380,15 +372,10 @@ class Directory:
         *,
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
-        can_link: bool = False,
         properties: Optional[List[str]] = None,
     ) -> FileListResult:
         return self._import_files(
-            external_pathspec,
-            filter_callback=filter_callback,
-            update_mtime=update_mtime,
-            can_link=can_link,
-            properties=properties,
+            external_pathspec, filter_callback=filter_callback, update_mtime=update_mtime, properties=properties,
         )
 
     # _import_files()
@@ -403,8 +390,6 @@ class Directory:
     #                    The file is imported only if the callable returns True.
     #                    If no filter callback is specified, all files will be imported.
     #                    update_mtime: Update the access and modification time of each file copied to the time specified in seconds.
-    #   can_link: Whether it's OK to create a hard link to the original content, meaning the stored copy will change
-    #                     when the original files change. Setting this doesn't guarantee hard links will be made.
     #   properties: Optional list of strings representing file properties to capture when importing.
     #
     # Returns:
@@ -419,7 +404,6 @@ class Directory:
         *,
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
-        can_link: bool = False,
         properties: Optional[List[str]] = None,
     ) -> FileListResult:
         raise NotImplementedError()
