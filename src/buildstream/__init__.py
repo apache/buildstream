@@ -29,7 +29,7 @@ if "_BST_COMPLETION" not in os.environ:
 
     from .utils import UtilError, ProgramNotFoundError
     from .sandbox import Sandbox, SandboxCommandError
-    from .storage import Directory, DirectoryError
+    from .storage import Directory, DirectoryError, FileType, FileStat
     from .types import CoreWarnings, OverlapAction
     from .node import MappingNode, Node, ProvenanceInformation, ScalarNode, SequenceNode
     from .plugin import Plugin

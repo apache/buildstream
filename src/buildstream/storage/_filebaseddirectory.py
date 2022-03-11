@@ -26,7 +26,7 @@ from contextlib import contextmanager
 from tarfile import TarFile
 from typing import Callable, Optional, Union, List, IO, Iterator
 
-from .directory import Directory, DirectoryError, FileMode, FileStat
+from .directory import Directory, DirectoryError, FileType, FileStat
 from .. import utils
 from ..utils import BST_ARBITRARY_TIMESTAMP
 from ..utils import FileListResult
@@ -332,20 +332,20 @@ class FileBasedDirectory(Directory):
     # Convert an os.stat_result into a FileStat
     #
     def __convert_filestat(self, st: os.stat_result) -> FileStat:
+
+        file_type: int = 0
+
         if stat.S_ISREG(st.st_mode):
-            mode = FileMode(regular=True)
+            file_type = FileType.REGULAR_FILE
         elif stat.S_ISDIR(st.st_mode):
-            mode = FileMode(directory=True)
+            file_type = FileType.DIRECTORY
         elif stat.S_ISLNK(st.st_mode):
-            mode = FileMode(symlink=True)
-        else:
-            # A special file not supported by CAS, a device or FIFO or such
-            mode = FileMode()
+            file_type = FileType.SYMLINK
 
         # If any of the executable bits are set, lets call it executable
-        mode.executable = bool(st.st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
+        executable = bool(st.st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
 
-        return FileStat(mode, size=st.st_size, mtime=st.st_mtime)
+        return FileStat(file_type, executable=executable, size=st.st_size, mtime=st.st_mtime)
 
     # __find_root()
     #
@@ -432,7 +432,7 @@ class FileBasedDirectory(Directory):
 
                     actionfunc(src_path, dest_path, mtime, result)
 
-                    if filestat.mode.executable:
+                    if filestat.executable:
                         os.chmod(
                             dest_path,
                             stat.S_IRUSR

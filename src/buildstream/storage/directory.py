@@ -35,6 +35,7 @@ from typing import Callable, Optional, Union, List, IO, Iterator
 from .._exceptions import BstError
 from ..exceptions import ErrorDomain
 from ..utils import BST_ARBITRARY_TIMESTAMP, FileListResult
+from ..types import FastEnum
 
 
 class DirectoryError(BstError):
@@ -51,38 +52,52 @@ class DirectoryError(BstError):
         super().__init__(message, domain=ErrorDomain.VIRTUAL_FS, reason=reason)
 
 
-class FileMode:
+class FileType(FastEnum):
     """Depicts the type of a file"""
 
-    def __init__(
-        self, *, regular: bool = False, directory: bool = False, symlink: bool = False, executable: bool = False
-    ) -> None:
-        self.regular: bool = regular
-        """Whether this is a regular file"""
+    DIRECTORY: int = 1
+    """A directory"""
 
-        self.directory: bool = directory
-        """Whether this is a directory"""
+    REGULAR_FILE: int = 2
+    """A regular file"""
 
-        self.symlink: bool = symlink
-        """Whether this is a symbolic link"""
+    SYMLINK: int = 3
+    """A symbolic link"""
 
-        self.executable: bool = executable
-        """Whether this file is executable"""
+    def __str__(self):
+        # https://github.com/PyCQA/pylint/issues/2062
+        return self.name.lower().replace("_", " ")  # pylint: disable=no-member
 
 
 class FileStat:
     """Depicts stats about a file"""
 
-    def __init__(self, mode: FileMode, *, size: int = 0, mtime: float = BST_ARBITRARY_TIMESTAMP) -> None:
+    def __init__(
+        self, file_type: int, *, executable: bool = False, size: int = 0, mtime: float = BST_ARBITRARY_TIMESTAMP
+    ) -> None:
 
-        self.mode: FileMode = mode
-        """The file type"""
+        self.file_type: int = file_type
+        """The :class:`.FileType` of this file"""
+
+        self.executable: bool = executable
+        """Whether this file is executable"""
 
         self.size: int = size
         """The size of the file in bytes"""
 
         self.mtime: float = mtime
         """The modification time of the file"""
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, FileStat):
+            return NotImplemented
+
+        return (
+            self.file_type == other.file_type
+            and self.executable == other.file_type
+            and self.size == other.size
+            and self.mtime == other.mtime
+        )
 
 
 class Directory:
@@ -290,7 +305,7 @@ class Directory:
         """
         try:
             st = self.stat(*path, follow_symlinks=follow_symlinks)
-            return st.mode.regular
+            return st.file_type == FileType.REGULAR_FILE
         except DirectoryError:
             return False
 
@@ -306,7 +321,7 @@ class Directory:
         """
         try:
             st = self.stat(*path, follow_symlinks=follow_symlinks)
-            return st.mode.directory
+            return st.file_type == FileType.DIRECTORY
         except DirectoryError:
             return False
 
@@ -322,7 +337,7 @@ class Directory:
         """
         try:
             st = self.stat(*path, follow_symlinks=follow_symlinks)
-            return st.mode.symlink
+            return st.file_type == FileType.SYMLINK
         except DirectoryError:
             return False
 

@@ -9,9 +9,9 @@ from typing import List, Optional
 
 import pytest
 
-from buildstream import DirectoryError
+from buildstream import DirectoryError, FileType
 from buildstream._cas import CASCache
-from buildstream.storage._casbaseddirectory import CasBasedDirectory, _FileType
+from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "storage")
@@ -164,7 +164,7 @@ def _test_merge_dirs(
         # than our little list comparisons can handle
         def make_info(entry, list_props=None):
             ret = {k: v for k, v in vars(entry).items() if k not in ("directory", "cas_cache")}
-            if entry.type == _FileType.REGULAR_FILE:
+            if entry.type == FileType.REGULAR_FILE:
                 # Only file digests make sense here (directory digests
                 # need to be re-calculated taking into account their
                 # contents).
@@ -190,7 +190,7 @@ def _test_merge_dirs(
         for e in combined:
             path = Path(e.name)
             for parent in list(path.parents)[:-1]:
-                if not str(parent) in (e.name for e in combined if e.type == _FileType.DIRECTORY):
+                if not str(parent) in (e.name for e in combined if e.type == FileType.DIRECTORY):
                     # If not all parent directories are existing
                     # directories
                     combined = [e for e in combined if e.name != str(path)]
@@ -215,7 +215,7 @@ def test_file_types(tmpdir, datafiles, backend):
         assert not c.islink("root-file")
 
         stat = c.stat("root-file")
-        assert stat.mode.regular
+        assert stat.file_type == FileType.REGULAR_FILE
 
         assert c.exists("link")
         assert c.islink("link")
@@ -223,7 +223,7 @@ def test_file_types(tmpdir, datafiles, backend):
         assert c.readlink("link") == "root-file"
 
         stat = c.stat("link")
-        assert stat.mode.symlink
+        assert stat.file_type == FileType.SYMLINK
 
         assert c.exists("subdirectory")
         assert c.isdir("subdirectory")
@@ -232,7 +232,7 @@ def test_file_types(tmpdir, datafiles, backend):
         assert set(subdir) == {"subdir-file"}
 
         stat = c.stat("subdirectory")
-        assert stat.mode.directory
+        assert stat.file_type == FileType.DIRECTORY
 
 
 @pytest.mark.parametrize("backend", [FileBasedDirectory, CasBasedDirectory])
@@ -292,9 +292,9 @@ def test_rename(tmpdir, datafiles, backend):
 # their digests so differences are human-grokkable
 def list_relative_paths(directory):
     def entry_output(entry):
-        if entry.type == _FileType.DIRECTORY:
+        if entry.type == FileType.DIRECTORY:
             return list_relative_paths(entry.get_directory(directory))
-        elif entry.type == _FileType.SYMLINK:
+        elif entry.type == FileType.SYMLINK:
             return "-> " + entry.target
         else:
             return entry.get_digest().hash
@@ -308,7 +308,7 @@ def list_paths_with_properties(directory, prefix=""):
         if directory._CasBasedDirectory__filename:
             entry.name = directory._CasBasedDirectory__filename + os.path.sep + entry.name
         yield entry
-        if entry.type == _FileType.DIRECTORY:
+        if entry.type == FileType.DIRECTORY:
             subdir = entry.get_directory(directory)
             yield from list_paths_with_properties(subdir)
 

@@ -29,31 +29,10 @@ from typing import Callable, Optional, Union, List, IO, Iterator, Dict
 from google.protobuf import timestamp_pb2
 
 from .. import utils
-from ..types import FastEnum
 from .._cas import CASCache
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
-from .directory import Directory, DirectoryError, FileMode, FileStat
+from .directory import Directory, DirectoryError, FileType, FileStat
 from ..utils import FileListResult, BST_ARBITRARY_TIMESTAMP
-
-
-# _FileType:
-#
-# Type of file or directory entry.
-#
-class _FileType(FastEnum):
-
-    # Directory
-    DIRECTORY = 1
-
-    # Regular file
-    REGULAR_FILE = 2
-
-    # Symbolic link
-    SYMLINK = 3
-
-    def __str__(self):
-        # https://github.com/PyCQA/pylint/issues/2062
-        return self.name.lower().replace("_", " ")  # pylint: disable=no-member
 
 
 # _IndexEntry()
@@ -79,7 +58,7 @@ class _IndexEntry:
         # The name of the entry (filename)
         self.name: str = name
 
-        # The type of file (_FileType)
+        # The type of file (FileType)
         self.type: int = entrytype
 
         # The digest of the entry, as calculated by CAS
@@ -87,13 +66,13 @@ class _IndexEntry:
         # This protobuf generated type (remote_execution_pb2.Digest) cannot be annotated
         self.digest = digest
 
-        # The target of a symbolic link (for _FileType.SYMLINK)
+        # The target of a symbolic link (for FileType.SYMLINK)
         self.target: Optional[str] = target
 
-        # Whether the file is executable (for _FileType.REGULAR_FILE)
+        # Whether the file is executable (for FileType.REGULAR_FILE)
         self.is_executable: bool = is_executable
 
-        # The associated directory object (for _FileType.DIRECTORY)
+        # The associated directory object (for FileType.DIRECTORY)
         self.directory: Optional["CasBasedDirectory"] = directory
 
         # The mtime of the file, if provided
@@ -101,7 +80,7 @@ class _IndexEntry:
 
     def get_directory(self, parent: "CasBasedDirectory") -> "CasBasedDirectory":
         if not self.directory:
-            assert self.type == _FileType.DIRECTORY
+            assert self.type == FileType.DIRECTORY
             self.directory = CasBasedDirectory(self.cas_cache, digest=self.digest, parent=parent, filename=self.name)
             self.digest = None
         return self.directory
@@ -207,9 +186,9 @@ class CasBasedDirectory(Directory):
             entry = current_dir.__index.get(element)
 
             if entry:
-                if entry.type == _FileType.DIRECTORY:
+                if entry.type == FileType.DIRECTORY:
                     current_dir = entry.get_directory(current_dir)
-                elif follow_symlinks and entry.type == _FileType.SYMLINK:
+                elif follow_symlinks and entry.type == FileType.SYMLINK:
                     assert entry.target is not None
                     linklocation = entry.target
                     newpaths = linklocation.split(os.path.sep)
@@ -250,14 +229,14 @@ class CasBasedDirectory(Directory):
     def export_to_tar(self, tarfile: TarFile, destination_dir: str, mtime: int = BST_ARBITRARY_TIMESTAMP) -> None:
         for filename, entry in sorted(self.__index.items()):
             arcname = os.path.join(destination_dir, filename)
-            if entry.type == _FileType.DIRECTORY:
+            if entry.type == FileType.DIRECTORY:
                 tarinfo = tarfilelib.TarInfo(arcname)
                 tarinfo.mtime = mtime
                 tarinfo.type = tarfilelib.DIRTYPE
                 tarinfo.mode = 0o755
                 tarfile.addfile(tarinfo)
                 self.descend(filename).export_to_tar(tarfile, arcname, mtime)
-            elif entry.type == _FileType.REGULAR_FILE:
+            elif entry.type == FileType.REGULAR_FILE:
                 source_name = self.__cas_cache.objpath(entry.digest)
                 tarinfo = tarfilelib.TarInfo(arcname)
                 tarinfo.mtime = mtime
@@ -266,7 +245,7 @@ class CasBasedDirectory(Directory):
                 tarinfo.size = os.path.getsize(source_name)
                 with open(source_name, "rb") as f:
                     tarfile.addfile(tarinfo, f)
-            elif entry.type == _FileType.SYMLINK:
+            elif entry.type == FileType.SYMLINK:
                 assert entry.target is not None
                 tarinfo = tarfilelib.TarInfo(arcname)
                 tarinfo.mtime = mtime
@@ -289,10 +268,10 @@ class CasBasedDirectory(Directory):
         digest = self._get_digest()
         total = digest.size_bytes
         for i in self.__index.values():
-            if i.type == _FileType.DIRECTORY:
+            if i.type == FileType.DIRECTORY:
                 subdir = i.get_directory(self)
                 total += subdir.get_size()
-            elif i.type == _FileType.REGULAR_FILE:
+            elif i.type == FileType.REGULAR_FILE:
                 total += i.digest.size_bytes
             # Symlink nodes are encoded as part of the directory serialization.
         return total
@@ -307,27 +286,25 @@ class CasBasedDirectory(Directory):
     def stat(self, *path: str, follow_symlinks: bool = False) -> FileStat:
         entry = self.__entry_from_path(*path, follow_symlinks=follow_symlinks)
 
-        if entry.type == _FileType.REGULAR_FILE:
-            mode = FileMode(regular=True)
+        if entry.type == FileType.REGULAR_FILE:
             size = entry.get_digest().size_bytes
-        elif entry.type == _FileType.DIRECTORY:
-            mode = FileMode(directory=True)
+        elif entry.type == FileType.DIRECTORY:
             size = 0
-        elif entry.type == _FileType.SYMLINK:
+        elif entry.type == FileType.SYMLINK:
             assert entry.target is not None
-            mode = FileMode(symlink=True)
             size = len(entry.target)
         else:
             raise DirectoryError("Unsupported file type {}".format(entry.type))
 
-        if entry.type == _FileType.DIRECTORY or entry.is_executable:
-            mode.executable = True
+        executable = False
+        if entry.type == FileType.DIRECTORY or entry.is_executable:
+            executable = True
 
         mtime: float = BST_ARBITRARY_TIMESTAMP
         if entry.mtime is not None:
             mtime = utils._parse_protobuf_timestamp(entry.mtime)
 
-        return FileStat(mode, size=size, mtime=mtime)
+        return FileStat(entry.type, executable=executable, size=size, mtime=mtime)
 
     @contextmanager
     def open_file(self, *path: str, mode: str = "r") -> Iterator[IO]:
@@ -335,7 +312,7 @@ class CasBasedDirectory(Directory):
         self.__validate_path_component(path[-1])
         entry = subdir.__index.get(path[-1])
 
-        if entry and entry.type != _FileType.REGULAR_FILE:
+        if entry and entry.type != FileType.REGULAR_FILE:
             raise DirectoryError("{} in {} is not a file".format(path[-1], str(subdir)))
 
         if mode not in ["r", "rb", "w", "wb", "w+", "w+b", "x", "xb", "x+", "x+b"]:
@@ -367,14 +344,14 @@ class CasBasedDirectory(Directory):
 
     def file_digest(self, *path: str) -> str:
         entry = self.__entry_from_path(*path)
-        if entry.type != _FileType.REGULAR_FILE:
+        if entry.type != FileType.REGULAR_FILE:
             raise DirectoryError("Unsupported file type for digest: {}".format(entry.type))
 
         return entry.digest.hash
 
     def readlink(self, *path: str) -> str:
         entry = self.__entry_from_path(*path)
-        if entry.type != _FileType.SYMLINK:
+        if entry.type != FileType.SYMLINK:
             raise DirectoryError("Unsupported file type for readlink: {}".format(entry.type))
         assert entry.target is not None
         return entry.target
@@ -392,7 +369,7 @@ class CasBasedDirectory(Directory):
         if not entry:
             raise DirectoryError("{} not found in {}".format(name, str(self)))
 
-        if entry.type == _FileType.DIRECTORY and not recursive:
+        if entry.type == FileType.DIRECTORY and not recursive:
             subdir = entry.get_directory(self)
             if not subdir.is_empty():
                 raise DirectoryError("{} is not empty".format(str(subdir)))
@@ -539,7 +516,7 @@ class CasBasedDirectory(Directory):
             return directory.__index[entry.name].get_directory(directory)
 
         def is_dir_in(entry: _IndexEntry, directory: CasBasedDirectory) -> bool:
-            return directory.__index[entry.name].type == _FileType.DIRECTORY
+            return directory.__index[entry.name].type == FileType.DIRECTORY
 
         # We first check which files were added, and add them to our
         # directory.
@@ -601,7 +578,7 @@ class CasBasedDirectory(Directory):
                 node_property.value = "true" if self.__subtree_read_only else "false"
 
             for name, entry in sorted(self.__index.items()):
-                if entry.type == _FileType.DIRECTORY:
+                if entry.type == FileType.DIRECTORY:
                     dirnode = pb2_directory.directories.add()
                     dirnode.name = name
 
@@ -613,14 +590,14 @@ class CasBasedDirectory(Directory):
                         dirnode.digest.CopyFrom(subdir._get_digest())
                     else:
                         dirnode.digest.CopyFrom(entry.digest)
-                elif entry.type == _FileType.REGULAR_FILE:
+                elif entry.type == FileType.REGULAR_FILE:
                     filenode = pb2_directory.files.add()
                     filenode.name = name
                     filenode.digest.CopyFrom(entry.digest)
                     filenode.is_executable = entry.is_executable
                     if entry.mtime is not None:
                         filenode.node_properties.mtime.CopyFrom(entry.mtime)
-                elif entry.type == _FileType.SYMLINK:
+                elif entry.type == FileType.SYMLINK:
                     symlinknode = pb2_directory.symlinks.add()
                     symlinknode.name = name
                     symlinknode.target = entry.target
@@ -650,7 +627,7 @@ class CasBasedDirectory(Directory):
 
         for entry in pb2_directory.directories:
             self.__index[entry.name] = _IndexEntry(
-                self.__cas_cache, entry.name, _FileType.DIRECTORY, digest=entry.digest
+                self.__cas_cache, entry.name, FileType.DIRECTORY, digest=entry.digest
             )
         for entry in pb2_directory.files:
             if entry.node_properties.HasField("mtime"):
@@ -661,22 +638,20 @@ class CasBasedDirectory(Directory):
             self.__index[entry.name] = _IndexEntry(
                 self.__cas_cache,
                 entry.name,
-                _FileType.REGULAR_FILE,
+                FileType.REGULAR_FILE,
                 digest=entry.digest,
                 is_executable=entry.is_executable,
                 mtime=mtime,
             )
         for entry in pb2_directory.symlinks:
-            self.__index[entry.name] = _IndexEntry(
-                self.__cas_cache, entry.name, _FileType.SYMLINK, target=entry.target
-            )
+            self.__index[entry.name] = _IndexEntry(self.__cas_cache, entry.name, FileType.SYMLINK, target=entry.target)
 
     def __add_directory(self, name: str) -> "CasBasedDirectory":
         assert name not in self.__index
 
         newdir = CasBasedDirectory(self.__cas_cache, parent=self, filename=name)
 
-        self.__index[name] = _IndexEntry(self.__cas_cache, name, _FileType.DIRECTORY, directory=newdir)
+        self.__index[name] = _IndexEntry(self.__cas_cache, name, FileType.DIRECTORY, directory=newdir)
 
         self.__invalidate_digest()
 
@@ -691,7 +666,7 @@ class CasBasedDirectory(Directory):
             utils._get_file_protobuf_mtimestamp(mtime, path)
 
         entry = _IndexEntry(
-            self.__cas_cache, name, _FileType.REGULAR_FILE, digest=digest, is_executable=is_executable, mtime=mtime,
+            self.__cas_cache, name, FileType.REGULAR_FILE, digest=digest, is_executable=is_executable, mtime=mtime,
         )
         self.__index[name] = entry
 
@@ -705,7 +680,7 @@ class CasBasedDirectory(Directory):
         return entry == self.__index.get(entry.name)
 
     def __add_new_link_direct(self, name, target) -> None:
-        self.__index[name] = _IndexEntry(self.__cas_cache, name, _FileType.SYMLINK, target=target)
+        self.__index[name] = _IndexEntry(self.__cas_cache, name, FileType.SYMLINK, target=target)
         self.__invalidate_digest()
 
     # __check_replacement()
@@ -720,7 +695,7 @@ class CasBasedDirectory(Directory):
         existing_entry = self.__index.get(name)
         if existing_entry is None:
             return True
-        elif existing_entry.type == _FileType.DIRECTORY:
+        elif existing_entry.type == FileType.DIRECTORY:
             # If 'name' maps to a DirectoryNode, then there must be an entry in index
             # pointing to another Directory.
             subdir = existing_entry.get_directory(self)
@@ -757,7 +732,7 @@ class CasBasedDirectory(Directory):
             # The destination filename, relative to the root where the import started
             relative_pathname = os.path.join(path_prefix, name)
 
-            is_dir = entry.type == _FileType.DIRECTORY
+            is_dir = entry.type == FileType.DIRECTORY
 
             if is_dir:
                 create_subdir = name not in self.__index
@@ -767,7 +742,7 @@ class CasBasedDirectory(Directory):
                     # we can import the whole source directory by digest instead
                     # of importing each directory entry individually.
                     subdir_digest = entry.get_digest()
-                    dest_entry = _IndexEntry(self.__cas_cache, name, _FileType.DIRECTORY, digest=subdir_digest)
+                    dest_entry = _IndexEntry(self.__cas_cache, name, FileType.DIRECTORY, digest=subdir_digest)
                     self.__index[name] = dest_entry
                     self.__invalidate_digest()
 
@@ -812,10 +787,10 @@ class CasBasedDirectory(Directory):
 
             if not is_dir:
                 if self.__check_replacement(name, relative_pathname, result):
-                    if entry.type == _FileType.REGULAR_FILE:
+                    if entry.type == FileType.REGULAR_FILE:
                         self.__add_entry(entry)
                     else:
-                        assert entry.type == _FileType.SYMLINK
+                        assert entry.type == FileType.SYMLINK
                         self.__add_new_link_direct(name=name, target=entry.target)
                     result.files_written.append(relative_pathname)
 
@@ -831,8 +806,8 @@ class CasBasedDirectory(Directory):
     #    ist of all files with relative paths.
     #
     def __list_prefixed_relative_paths(self, prefix: str = "") -> Iterator[str]:
-        file_list = list(filter(lambda i: i[1].type != _FileType.DIRECTORY, self.__index.items()))
-        directory_list = filter(lambda i: i[1].type == _FileType.DIRECTORY, self.__index.items())
+        file_list = list(filter(lambda i: i[1].type != FileType.DIRECTORY, self.__index.items()))
+        directory_list = filter(lambda i: i[1].type == FileType.DIRECTORY, self.__index.items())
 
         if prefix != "":
             yield prefix
@@ -867,7 +842,7 @@ class CasBasedDirectory(Directory):
         if target is None:
             raise DirectoryError("{} not found in {}".format(path[-1], str(subdir)))
 
-        if follow_symlinks and target.type == _FileType.SYMLINK:
+        if follow_symlinks and target.type == FileType.SYMLINK:
             assert target.target is not None
             linklocation = target.target
             newpath = linklocation.split(os.path.sep)
@@ -888,7 +863,7 @@ class CasBasedDirectory(Directory):
             # The destination filename, relative to the root where the import started
             relative_pathname = os.path.join(path_prefix, name)
 
-            if entry.type == _FileType.DIRECTORY:
+            if entry.type == FileType.DIRECTORY:
                 subdir = self.descend(name)
                 subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
             else:

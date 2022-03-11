@@ -28,6 +28,7 @@ import click
 from .profile import Profile
 from ..types import _Scope
 from .. import __version__ as bst_version
+from .. import FileType
 from .._exceptions import BstError, ImplError
 from .._message import MessageType
 from .._artifactelement import ArtifactElement
@@ -1029,20 +1030,20 @@ class LogLine(Widget):
             size = str(filestat.size)
             # Support files up to 99G, meaning maximum characters is 11
             max_v_len = 11
-            if filestat.mode.directory:
+            if filestat.file_type == FileType.DIRECTORY:
                 return (
                     "drwxr-xr-x  dir    {}".format(size)
                     + "{} ".format(" " * (max_v_len - len(size)))
                     + "{}".format(filename)
                 )
-            elif filestat.mode.symlink:
+            elif filestat.file_type == FileType.SYMLINK:
                 target = directory.readlink(*filename.split(os.path.sep))
                 return (
                     "lrwxrwxrwx  link   {}".format(size)
                     + "{} ".format(" " * (max_v_len - len(size)))
                     + "{} -> {}".format(filename, target)
                 )
-            elif filestat.mode.executable:
+            elif filestat.executable:
                 return (
                     "-rwxr-xr-x  exe    {}".format(size)
                     + "{} ".format(" " * (max_v_len - len(size)))
