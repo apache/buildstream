@@ -167,55 +167,11 @@ class CasBasedDirectory(Directory):
     #############################################################
     #              Implementation of Public API                 #
     #############################################################
-    def descend(self, *path: str, create: bool = False, follow_symlinks: bool = False) -> "CasBasedDirectory":
-        # Note: At the moment, creating a directory by descending does
-        # not update this object in the CAS cache. However, performing
-        # an import_files() into a subdirectory of any depth obtained by
-        # descending from this object *will* cause this directory to be
-        # updated and stored.
-        current_dir = self
-        paths = list(path)
 
-        for element in paths:
-            # Skip empty path segments
-            if not element:
-                continue
-
-            self.__validate_path_component(element)
-
-            entry = current_dir.__index.get(element)
-
-            if entry:
-                if entry.type == FileType.DIRECTORY:
-                    current_dir = entry.get_directory(current_dir)
-                elif follow_symlinks and entry.type == FileType.SYMLINK:
-                    assert entry.target is not None
-                    linklocation = entry.target
-                    newpaths = linklocation.split(os.path.sep)
-                    if os.path.isabs(linklocation):
-                        current_dir = current_dir.__find_root().descend(*newpaths, follow_symlinks=True)
-                    else:
-                        current_dir = current_dir.descend(*newpaths, follow_symlinks=True)
-                else:
-                    error = "Cannot descend into {}, which is a '{}' in the directory {}"
-                    raise DirectoryError(
-                        error.format(element, current_dir.__index[element].type, current_dir), reason="not-a-directory"
-                    )
-            else:
-                if element == ".":
-                    continue
-                if element == "..":
-                    if current_dir.__parent is not None:
-                        current_dir = current_dir.__parent
-                    # In POSIX /.. == / so just stay at the root dir
-                    continue
-                if create:
-                    current_dir = current_dir.__add_directory(element)
-                else:
-                    error = "'{}' not found in {}"
-                    raise DirectoryError(error.format(element, str(current_dir)), reason="directory-not-found")
-
-        return current_dir
+    def descend(self, path: str, *, create: bool = False, follow_symlinks: bool = False) -> "CasBasedDirectory":
+        self._validate_path(path)
+        paths = path.split("/")
+        return self.__descend(paths, create=create, follow_symlinks=follow_symlinks)
 
     def import_single_file(self, external_pathspec: str) -> FileListResult:
         result = FileListResult()
@@ -276,15 +232,19 @@ class CasBasedDirectory(Directory):
             # Symlink nodes are encoded as part of the directory serialization.
         return total
 
-    def exists(self, *path: str, follow_symlinks: bool = False) -> bool:
+    def exists(self, path: str, *, follow_symlinks: bool = False) -> bool:
+        self._validate_path(path)
+        paths = path.split("/")
         try:
-            self.__entry_from_path(*path, follow_symlinks=follow_symlinks)
+            self.__entry_from_path(paths, follow_symlinks=follow_symlinks)
             return True
-        except (DirectoryError, FileNotFoundError):
+        except DirectoryError:
             return False
 
-    def stat(self, *path: str, follow_symlinks: bool = False) -> FileStat:
-        entry = self.__entry_from_path(*path, follow_symlinks=follow_symlinks)
+    def stat(self, path: str, *, follow_symlinks: bool = False) -> FileStat:
+        self._validate_path(path)
+        paths = path.split("/")
+        entry = self.__entry_from_path(paths, follow_symlinks=follow_symlinks)
 
         if entry.type == FileType.REGULAR_FILE:
             size = entry.get_digest().size_bytes
@@ -307,13 +267,15 @@ class CasBasedDirectory(Directory):
         return FileStat(entry.type, executable=executable, size=size, mtime=mtime)
 
     @contextmanager
-    def open_file(self, *path: str, mode: str = "r") -> Iterator[IO]:
-        subdir = self.descend(*path[:-1])
-        self.__validate_path_component(path[-1])
-        entry = subdir.__index.get(path[-1])
+    def open_file(self, path: str, *, mode: str = "r") -> Iterator[IO]:
+        self._validate_path(path)
+        paths = path.split("/")
+
+        subdir = self.__descend(paths[:-1])
+        entry = subdir.__index.get(paths[-1])
 
         if entry and entry.type != FileType.REGULAR_FILE:
-            raise DirectoryError("{} in {} is not a file".format(path[-1], str(subdir)))
+            raise DirectoryError("{} in {} is not a file".format(paths[-1], str(subdir)))
 
         if mode not in ["r", "rb", "w", "wb", "w+", "w+b", "x", "xb", "x+", "x+b"]:
             raise ValueError("Unsupported mode: `{}`".format(mode))
@@ -325,14 +287,14 @@ class CasBasedDirectory(Directory):
 
         if "r" in mode:
             if not entry:
-                raise DirectoryError("{} not found in {}".format(path[-1], str(subdir)))
+                raise DirectoryError("{} not found in {}".format(paths[-1], str(subdir)))
 
             # Read-only access, allow direct access to CAS object
             with open(self.__cas_cache.objpath(entry.digest), mode, encoding=encoding) as f:
                 yield f
         else:
             if "x" in mode and entry:
-                raise DirectoryError("{} already exists in {}".format(path[-1], str(subdir)))
+                raise DirectoryError("{} already exists in {}".format(paths[-1], str(subdir)))
 
             with utils._tempnamedfile(mode, encoding=encoding, dir=self.__cas_cache.tmpdir) as f:
                 # Make sure the temporary file is readable by buildbox-casd
@@ -340,31 +302,37 @@ class CasBasedDirectory(Directory):
                 yield f
                 # Import written temporary file into CAS
                 f.flush()
-                subdir.__add_file(path[-1], f.name)
+                subdir.__add_file(paths[-1], f.name)
 
-    def file_digest(self, *path: str) -> str:
-        entry = self.__entry_from_path(*path)
+    def file_digest(self, path: str) -> str:
+        self._validate_path(path)
+        paths = path.split("/")
+        entry = self.__entry_from_path(paths)
         if entry.type != FileType.REGULAR_FILE:
             raise DirectoryError("Unsupported file type for digest: {}".format(entry.type))
 
         return entry.digest.hash
 
-    def readlink(self, *path: str) -> str:
-        entry = self.__entry_from_path(*path)
+    def readlink(self, path: str) -> str:
+        self._validate_path(path)
+        paths = path.split("/")
+        entry = self.__entry_from_path(paths)
         if entry.type != FileType.SYMLINK:
             raise DirectoryError("Unsupported file type for readlink: {}".format(entry.type))
         assert entry.target is not None
         return entry.target
 
-    def remove(self, *path: str, recursive: bool = False) -> None:
-        if len(path) > 1:
+    def remove(self, path: str, *, recursive: bool = False) -> None:
+        self._validate_path(path)
+        paths = path.split("/")
+
+        if len(paths) > 1:
             # Delegate remove to subdirectory
-            subdir = self.descend(*path[:-1])
-            subdir.remove(path[-1], recursive=recursive)
+            subdir = self.__descend(paths[:-1])
+            subdir.remove(paths[-1], recursive=recursive)
             return
 
-        name = path[0]
-        self.__validate_path_component(name)
+        name = paths[0]
         entry = self.__index.get(name)
         if not entry:
             raise DirectoryError("{} not found in {}".format(name, str(self)))
@@ -377,15 +345,19 @@ class CasBasedDirectory(Directory):
         del self.__index[name]
         self.__invalidate_digest()
 
-    def rename(self, src: List[str], dest: List[str]) -> None:
-        srcdir = self.descend(*src[:-1])
-        entry = srcdir.__entry_from_path(src[-1])
+    def rename(self, src: str, dest: str) -> None:
+        self._validate_path(src)
+        self._validate_path(dest)
+        src_paths = src.split("/")
+        dest_paths = dest.split("/")
 
-        destdir = self.descend(*dest[:-1])
-        self.__validate_path_component(dest[-1])
+        srcdir = self.__descend(src_paths[:-1])
+        entry = srcdir.__entry_from_path([src_paths[-1]])
 
-        srcdir.remove(src[-1], recursive=True)
-        entry.name = dest[-1]
+        destdir = self.__descend(dest_paths[:-1])
+
+        srcdir.remove(src_paths[-1], recursive=True)
+        entry.name = dest_paths[-1]
         destdir.__add_entry(entry)
 
     #############################################################
@@ -605,6 +577,59 @@ class CasBasedDirectory(Directory):
             self.__digest = self.__cas_cache.add_object(buffer=pb2_directory.SerializeToString())
 
         return self.__digest
+
+    # __descend()
+    #
+    # Descend using a list of already separated path components
+    #
+    def __descend(
+        self, paths: List[str], *, create: bool = False, follow_symlinks: bool = False
+    ) -> "CasBasedDirectory":
+        # Note: At the moment, creating a directory by descending does
+        # not update this object in the CAS cache. However, performing
+        # an import_files() into a subdirectory of any depth obtained by
+        # descending from this object *will* cause this directory to be
+        # updated and stored.
+        current_dir = self
+
+        for element in paths:
+            # Skip empty path segments
+            if not element:
+                continue
+
+            entry = current_dir.__index.get(element)
+
+            if entry:
+                if entry.type == FileType.DIRECTORY:
+                    current_dir = entry.get_directory(current_dir)
+                elif follow_symlinks and entry.type == FileType.SYMLINK:
+                    assert entry.target is not None
+                    linklocation = entry.target
+                    newpaths = linklocation.split(os.path.sep)
+                    if os.path.isabs(linklocation):
+                        current_dir = current_dir.__find_root().__descend(newpaths, follow_symlinks=True)
+                    else:
+                        current_dir = current_dir.__descend(newpaths, follow_symlinks=True)
+                else:
+                    error = "Cannot descend into {}, which is a '{}' in the directory {}"
+                    raise DirectoryError(
+                        error.format(element, current_dir.__index[element].type, current_dir), reason="not-a-directory"
+                    )
+            else:
+                if element == ".":
+                    continue
+                if element == "..":
+                    if current_dir.__parent is not None:
+                        current_dir = current_dir.__parent
+                    # In POSIX /.. == / so just stay at the root dir
+                    continue
+                if create:
+                    current_dir = current_dir.__add_directory(element)
+                else:
+                    error = "'{}' not found in {}"
+                    raise DirectoryError(error.format(element, str(current_dir)), reason="directory-not-found")
+
+        return current_dir
 
     # __populate_index()
     #
@@ -835,9 +860,8 @@ class CasBasedDirectory(Directory):
         else:
             return self
 
-    def __entry_from_path(self, *path: str, follow_symlinks: bool = False) -> _IndexEntry:
-        subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
-        self.__validate_path_component(path[-1])
+    def __entry_from_path(self, path: List[str], *, follow_symlinks: bool = False) -> _IndexEntry:
+        subdir = self.__descend(path[:-1], follow_symlinks=follow_symlinks)
         target = subdir.__index.get(path[-1])
         if target is None:
             raise DirectoryError("{} not found in {}".format(path[-1], str(subdir)))
@@ -845,10 +869,10 @@ class CasBasedDirectory(Directory):
         if follow_symlinks and target.type == FileType.SYMLINK:
             assert target.target is not None
             linklocation = target.target
-            newpath = linklocation.split(os.path.sep)
+            newpath = linklocation.split("/")
             if os.path.isabs(linklocation):
-                return subdir.__find_root().__entry_from_path(*newpath, follow_symlinks=True)
-            return subdir.__entry_from_path(*newpath, follow_symlinks=True)
+                return subdir.__find_root().__entry_from_path(newpath, follow_symlinks=True)
+            return subdir.__entry_from_path(newpath, follow_symlinks=True)
         else:
             return target
 
@@ -868,7 +892,3 @@ class CasBasedDirectory(Directory):
                 subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
             else:
                 result.files_written.append(relative_pathname)
-
-    def __validate_path_component(self, path) -> None:
-        if "/" in path:
-            raise DirectoryError("Invalid path component: '{}'".format(path))

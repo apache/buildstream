@@ -25,6 +25,24 @@ Directory - Interfacing with files
 The Directory class is given to plugins by way of the :class:`.Sandbox`
 and in some other instances. This API allows plugins to interface with files
 and directory hierarchies owned by BuildStream.
+
+
+.. _directory_path:
+
+Paths
+-----
+The path argument to directory functions depict a relative path. Path elements are
+separated with the ``/`` character regardless of the platform. Both ``.`` and ``..`` entries
+are permitted. Absolute paths are not permitted, as such it is illegal to specify a path
+with a leading ``/`` character.
+
+Directory objects represent a directory entry within the context of a *directory tree*,
+and the directory returned by
+:func:`Sandbox.get_virtual_directory() <buildstream.sandbox.Sandbox.get_virtual_directory>`
+is the root of the sandbox's *directory tree*. Attempts to escape the root of a *directory tree*
+using ``..`` entries will not result in an error, instead ``..`` entries which cross the
+root boundary will be evaluated as the root directory. This behavior matches POSIX behavior
+of filesystem root directories.
 """
 
 
@@ -70,7 +88,14 @@ class FileType(FastEnum):
 
 
 class FileStat:
-    """Depicts stats about a file"""
+    """Depicts stats about a file
+
+    .. note::
+
+       This object can be compared with the equality operator, two :class:`.FileStat`
+       objects will be considered equivalent if they have the same :class:`.FileType`
+       and have equivalent attributes.
+    """
 
     def __init__(
         self, file_type: int, *, executable: bool = False, size: int = 0, mtime: float = BST_ARBITRARY_TIMESTAMP
@@ -101,6 +126,15 @@ class FileStat:
 
 
 class Directory:
+    """The Directory object represents a directory in a filesystem hierarchy
+
+    .. note::
+
+       Directory objects can be iterated over. Iterating over a directory object
+       will yeild strings depicting the entries in the given directory, similar
+       to ``os.listdir()``.
+    """
+
     def __init__(self, external_directory=None):
         raise NotImplementedError()
 
@@ -111,12 +145,12 @@ class Directory:
     #                           Public API                            #
     ###################################################################
 
-    def descend(self, *path: str, create: bool = False, follow_symlinks: bool = False) -> "Directory":
+    def descend(self, path: str, *, create: bool = False, follow_symlinks: bool = False) -> "Directory":
         """Descend one or more levels of directory hierarchy and return a new
         Directory object for that directory.
 
         Args:
-           *path: A list of strings which are all directory names.
+           path: A :ref:`path <directory_path>` relative to this directory.
            create: If this is true, the directories will be created if
                    they don't already exist.
 
@@ -167,7 +201,7 @@ class Directory:
         raise NotImplementedError()
 
     def export_to_tar(self, tarfile: TarFile, destination_dir: str, mtime: int = BST_ARBITRARY_TIMESTAMP) -> None:
-        """ Exports this directory into the given tar file.
+        """Exports this directory into the given tar file.
 
         Args:
           tarfile: A Python TarFile object to export into.
@@ -181,14 +215,15 @@ class Directory:
 
     # Convenience functions
     def is_empty(self) -> bool:
-        """ Return true if this directory has no files, subdirectories or links in it.
+        """Return true if this directory has no files, subdirectories or links in it.
+
+        Returns:
+            True if this directory has no entries
         """
         raise NotImplementedError()
 
     def list_relative_paths(self) -> Iterator[str]:
-        """Provide a list of all relative paths in this directory.
-
-        Includes directories only if they are empty.
+        """Generate a list of all relative paths in this directory.
 
         Yields:
            All files in this directory with relative paths.
@@ -201,23 +236,23 @@ class Directory:
         and effective space used may be lower than this number due to deduplication. """
         raise NotImplementedError()
 
-    def exists(self, *path: str, follow_symlinks: bool = False) -> bool:
-        """ Check whether the specified path exists.
+    def exists(self, path: str, *, follow_symlinks: bool = False) -> bool:
+        """Check whether the specified path exists.
 
         Args:
-          *path: A list of strings which are all path components.
-          follow_symlinks: True to follow symlinks.
+           path: A :ref:`path <directory_path>` relative to this directory.
+           follow_symlinks: True to follow symlinks.
 
         Returns:
            True if the path exists, False otherwise.
         """
         raise NotImplementedError()
 
-    def stat(self, *path: str, follow_symlinks: bool = False) -> FileStat:
-        """ Get the status of a file.
+    def stat(self, path: str, *, follow_symlinks: bool = False) -> FileStat:
+        """Get the status of a file.
 
         Args:
-          *path: A list of strings which are all path components.
+           path: A :ref:`path <directory_path>` relative to this directory.
            follow_symlinks: True to follow symlinks.
 
         Returns:
@@ -229,12 +264,12 @@ class Directory:
         raise NotImplementedError()
 
     @contextmanager
-    def open_file(self, *path: str, mode: str = "r") -> Iterator[IO]:
-        """ Open file and return a corresponding file object. In text mode,
+    def open_file(self, path: str, *, mode: str = "r") -> Iterator[IO]:
+        """Open file and return a corresponding file object. In text mode,
         UTF-8 is used as encoding.
 
         Args:
-           *path: A list of strings which are all path components.
+           path: A :ref:`path <directory_path>` relative to this directory.
            mode (str): An optional string that specifies the mode in which the file is opened.
 
         Yields:
@@ -245,98 +280,101 @@ class Directory:
         """
         raise NotImplementedError()
 
-    def file_digest(self, *path: str) -> str:
-        """ Return a digest of a file. The digest algorithm is implementation-
-        defined.
+    def file_digest(self, path: str) -> str:
+        """Return a unique digest of a file.
 
         Args:
-           *path: A list of strings which are all path components.
+           path: A :ref:`path <directory_path>` relative to this directory.
+
+        Raises:
+           DirectoryError: if the specified *path* depicts an entry that is not a
+                           :attr:`.FileType.REGULAR_FILE`, or if any system error occurs.
+        """
+        raise NotImplementedError()
+
+    def readlink(self, path: str) -> str:
+        """Return a string representing the path to which the symbolic link points.
+
+        Args:
+           path: A :ref:`path <directory_path>` relative to this directory.
+
+        Returns:
+           The path to which the symbolic link points to.
 
         Raises:
            DirectoryError: if any system error occurs.
         """
         raise NotImplementedError()
 
-    def readlink(self, *path: str) -> str:
-        """ Return a string representing the path to which the symbolic link points.
-
-        Args:
-           *path: A list of strings which are all path components.
-
-        Raises:
-           DirectoryError: if any system error occurs.
-        """
-        raise NotImplementedError()
-
-    def remove(self, *path: str, recursive: bool = False) -> None:
+    def remove(self, path: str, *, recursive: bool = False) -> None:
         """ Remove a file, symlink or directory. Symlinks are not followed.
 
         Args:
-          *path: A list of strings which are all path components.
-          recursive: True to delete non-empty directories.
+           path: A :ref:`path <directory_path>` relative to this directory.
+           recursive: True to delete non-empty directories.
 
         Raises:
            DirectoryError: if any system error occurs.
         """
         raise NotImplementedError()
 
-    def rename(self, src: List[str], dest: List[str]) -> None:
+    def rename(self, src: str, dest: str) -> None:
         """ Rename a file, symlink or directory. If destination path exists
         already and is a file or empty directory, it will be replaced.
 
         Args:
-          *src: Source path components.
-          *dest: Destination path components.
+           src: A source :ref:`path <directory_path>` relative to this directory.
+           dest: A destination :ref:`path <directory_path>` relative to this directory.
 
         Raises:
            DirectoryError: if any system error occurs.
         """
         raise NotImplementedError()
 
-    def isfile(self, *path: str, follow_symlinks: bool = False) -> bool:
+    def isfile(self, path: str, *, follow_symlinks: bool = False) -> bool:
         """ Check whether the specified path is an existing regular file.
 
         Args:
-           *path: A list of strings which are all path components.
+           path: A :ref:`path <directory_path>` relative to this directory.
            follow_symlinks: True to follow symlinks.
 
         Returns:
            True if the path is an existing regular file, False otherwise.
         """
         try:
-            st = self.stat(*path, follow_symlinks=follow_symlinks)
+            st = self.stat(path, follow_symlinks=follow_symlinks)
             return st.file_type == FileType.REGULAR_FILE
         except DirectoryError:
             return False
 
-    def isdir(self, *path: str, follow_symlinks: bool = False) -> bool:
+    def isdir(self, path: str, *, follow_symlinks: bool = False) -> bool:
         """ Check whether the specified path is an existing directory.
 
         Args:
-          *path: A list of strings which are all path components.
+           path: A :ref:`path <directory_path>` relative to this directory.
            follow_symlinks: True to follow symlinks.
 
         Returns:
            True if the path is an existing directory, False otherwise.
         """
         try:
-            st = self.stat(*path, follow_symlinks=follow_symlinks)
+            st = self.stat(path, follow_symlinks=follow_symlinks)
             return st.file_type == FileType.DIRECTORY
         except DirectoryError:
             return False
 
-    def islink(self, *path: str, follow_symlinks: bool = False) -> bool:
+    def islink(self, path: str, *, follow_symlinks: bool = False) -> bool:
         """ Check whether the specified path is an existing symlink.
 
         Args:
-           *path: A list of strings which are all path components.
+           path: A :ref:`path <directory_path>` relative to this directory.
            follow_symlinks: True to follow symlinks.
 
         Returns:
            True if the path is an existing symlink, False otherwise.
         """
         try:
-            st = self.stat(*path, follow_symlinks=follow_symlinks)
+            st = self.stat(path, follow_symlinks=follow_symlinks)
             return st.file_type == FileType.SYMLINK
         except DirectoryError:
             return False
@@ -462,6 +500,14 @@ class Directory:
     #
     # Utility function to create an empty file
     #
-    def _create_empty_file(self, *path):
-        with self.open_file(*path, mode="w"):
+    def _create_empty_file(self, path: str) -> None:
+        with self.open_file(path, mode="w"):
             pass
+
+    # _validate_path()
+    #
+    # Convenience function for backends to validate path input
+    #
+    def _validate_path(self, path: str) -> None:
+        if path and path[0] == "/":
+            raise ValueError("Invalid path '{}'".format(path))

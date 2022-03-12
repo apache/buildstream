@@ -51,47 +51,11 @@ class FileBasedDirectory(Directory):
     #############################################################
     #              Implementation of Public API                 #
     #############################################################
-    def descend(self, *paths: str, create: bool = False, follow_symlinks: bool = False) -> "FileBasedDirectory":
-        current_dir = self
 
-        for path in paths:
-            # Skip empty path segments
-            if not path:
-                continue
-
-            if path == ".":
-                continue
-            if path == "..":
-                if current_dir.__parent is not None:
-                    current_dir = current_dir.__parent
-                # In POSIX /.. == / so just stay at the root dir
-                continue
-
-            new_path = os.path.join(current_dir.__external_directory, path)
-            try:
-                st = os.lstat(new_path)
-                if stat.S_ISDIR(st.st_mode):
-                    current_dir = FileBasedDirectory(new_path, parent=current_dir)
-                elif follow_symlinks and stat.S_ISLNK(st.st_mode):
-                    linklocation = os.readlink(new_path)
-                    newpaths = linklocation.split(os.path.sep)
-                    if os.path.isabs(linklocation):
-                        current_dir = current_dir.__find_root().descend(*newpaths, follow_symlinks=True)
-                    else:
-                        current_dir = current_dir.descend(*newpaths, follow_symlinks=True)
-                else:
-                    raise DirectoryError(
-                        "Cannot descend into '{}': '{}' is not a directory".format(path, new_path),
-                        reason="not-a-directory",
-                    )
-            except FileNotFoundError:
-                if create:
-                    os.mkdir(new_path)
-                    current_dir = FileBasedDirectory(new_path, parent=current_dir)
-                else:
-                    raise DirectoryError("Cannot descend into '{}': '{}' does not exist".format(path, new_path))
-
-        return current_dir
+    def descend(self, path: str, *, create: bool = False, follow_symlinks: bool = False) -> "FileBasedDirectory":
+        self._validate_path(path)
+        paths = path.split("/")
+        return self.__descend(paths, create=create, follow_symlinks=follow_symlinks)
 
     def import_single_file(self, external_pathspec: str) -> FileListResult:
         dstpath = os.path.join(self.__external_directory, os.path.basename(external_pathspec))
@@ -126,7 +90,7 @@ class FileBasedDirectory(Directory):
                     tarfile.addfile(tarinfo, f)
             elif tarinfo.isdir():
                 tarfile.addfile(tarinfo)
-                self.descend(*filename.split(os.path.sep)).export_to_tar(tarfile, arcname, mtime)
+                self.descend(filename).export_to_tar(tarfile, arcname, mtime)
             else:
                 tarfile.addfile(tarinfo)
 
@@ -140,16 +104,19 @@ class FileBasedDirectory(Directory):
     def get_size(self) -> int:
         return utils._get_dir_size(self.__external_directory)
 
-    def exists(self, *path: str, follow_symlinks: bool = False) -> bool:
+    def exists(self, path: str, *, follow_symlinks: bool = False) -> bool:
         try:
-            self.stat(*path, follow_symlinks=follow_symlinks)
+            self.stat(path, follow_symlinks=follow_symlinks)
             return True
         except DirectoryError:
             return False
 
-    def stat(self, *path: str, follow_symlinks: bool = False) -> FileStat:
-        subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
-        newpath = os.path.join(subdir.__external_directory, path[-1])
+    def stat(self, path: str, *, follow_symlinks: bool = False) -> FileStat:
+        self._validate_path(path)
+        paths = path.split("/")
+
+        subdir = self.__descend(paths[:-1], follow_symlinks=follow_symlinks)
+        newpath = os.path.join(subdir.__external_directory, paths[-1])
 
         try:
             st = os.lstat(newpath)
@@ -158,18 +125,21 @@ class FileBasedDirectory(Directory):
 
         if follow_symlinks and stat.S_ISLNK(st.st_mode):
             linklocation = os.readlink(newpath)
-            newpathsplit = linklocation.split(os.path.sep)
             if os.path.isabs(linklocation):
-                return subdir.__find_root().stat(*newpathsplit, follow_symlinks=True)
-            return subdir.stat(*newpathsplit, follow_symlinks=True)
+                # Call stat on the root, remove the leading "/"
+                return subdir.__find_root().stat(linklocation[1:], follow_symlinks=True)
+            return subdir.stat(linklocation, follow_symlinks=True)
         else:
             return self.__convert_filestat(st)
 
     @contextmanager
-    def open_file(self, *path: str, mode: str = "r") -> Iterator[IO]:
+    def open_file(self, path: str, *, mode: str = "r") -> Iterator[IO]:
+        self._validate_path(path)
+        paths = path.split("/")
+
         # Use descend() to avoid following symlinks (potentially escaping the sandbox)
-        subdir = self.descend(*path[:-1])
-        newpath = os.path.join(subdir.__external_directory, path[-1])
+        subdir = self.__descend(paths[:-1])
+        newpath = os.path.join(subdir.__external_directory, paths[-1])
 
         if mode not in ["r", "rb", "w", "wb", "w+", "w+b", "x", "xb", "x+", "x+b"]:
             raise ValueError("Unsupported mode: `{}`".format(mode))
@@ -193,30 +163,39 @@ class FileBasedDirectory(Directory):
             with utils.save_file_atomic(newpath, mode=mode, encoding=encoding) as f:
                 yield f
 
-    def file_digest(self, *path: str) -> str:
+    def file_digest(self, path: str) -> str:
+        self._validate_path(path)
+        paths = path.split("/")
+
         # Use descend() to avoid following symlinks (potentially escaping the sandbox)
-        subdir = self.descend(*path[:-1])
-        if subdir.exists(path[-1]) and not subdir.isfile(path[-1]):
+        subdir = self.__descend(paths[:-1])
+        if subdir.exists(paths[-1]) and not subdir.isfile(paths[-1]):
             raise DirectoryError("Unsupported file type for digest")
 
-        newpath = os.path.join(subdir.__external_directory, path[-1])
+        newpath = os.path.join(subdir.__external_directory, paths[-1])
         return utils.sha256sum(newpath)
 
-    def readlink(self, *path: str) -> str:
+    def readlink(self, path: str) -> str:
+        self._validate_path(path)
+        paths = path.split("/")
+
         # Use descend() to avoid following symlinks (potentially escaping the sandbox)
-        subdir = self.descend(*path[:-1])
-        if subdir.exists(path[-1]) and not subdir.islink(path[-1]):
+        subdir = self.__descend(paths[:-1])
+        if subdir.exists(paths[-1]) and not subdir.islink(paths[-1]):
             raise DirectoryError("Unsupported file type for readlink")
 
-        newpath = os.path.join(subdir.__external_directory, path[-1])
+        newpath = os.path.join(subdir.__external_directory, paths[-1])
         return os.readlink(newpath)
 
-    def remove(self, *path: str, recursive: bool = False) -> None:
-        # Use descend() to avoid following symlinks (potentially escaping the sandbox)
-        subdir = self.descend(*path[:-1])
-        newpath = os.path.join(subdir.__external_directory, path[-1])
+    def remove(self, path: str, *, recursive: bool = False) -> None:
+        self._validate_path(path)
+        paths = path.split("/")
 
-        if subdir.isdir(path[-1]):
+        # Use descend() to avoid following symlinks (potentially escaping the sandbox)
+        subdir = self.__descend(paths[:-1])
+        newpath = os.path.join(subdir.__external_directory, paths[-1])
+
+        if subdir.isdir(paths[-1]):
             if recursive:
                 shutil.rmtree(newpath)
             else:
@@ -230,15 +209,21 @@ class FileBasedDirectory(Directory):
             except OSError as e:
                 raise DirectoryError("Error removing '{}': {}".format(newpath, e))
 
-    def rename(self, src: List[str], dest: List[str]) -> None:
-        # Use descend() to avoid following symlinks (potentially escaping the sandbox)
-        srcdir = self.descend(*src[:-1])
-        destdir = self.descend(*dest[:-1])
-        srcpath = os.path.join(srcdir.__external_directory, src[-1])
-        destpath = os.path.join(destdir.__external_directory, dest[-1])
+    def rename(self, src: str, dest: str) -> None:
 
-        if destdir.exists(dest[-1]):
-            destdir.remove(dest[-1])
+        self._validate_path(src)
+        self._validate_path(dest)
+        src_paths = src.split("/")
+        dest_paths = dest.split("/")
+
+        # Use descend() to avoid following symlinks (potentially escaping the sandbox)
+        srcdir = self.__descend(src_paths[:-1])
+        destdir = self.__descend(dest_paths[:-1])
+        srcpath = os.path.join(srcdir.__external_directory, src_paths[-1])
+        destpath = os.path.join(destdir.__external_directory, dest_paths[-1])
+
+        if destdir.exists(dest_paths[-1]):
+            destdir.remove(dest_paths[-1])
         try:
             os.rename(srcpath, destpath)
         except OSError as e:
@@ -326,6 +311,49 @@ class FileBasedDirectory(Directory):
     #############################################################
     #                      Private methods                      #
     #############################################################
+    def __descend(
+        self, paths: List[str], *, create: bool = False, follow_symlinks: bool = False
+    ) -> "FileBasedDirectory":
+        current_dir = self
+
+        for path in paths:
+            # Skip empty path segments
+            if not path:
+                continue
+
+            if path == ".":
+                continue
+            if path == "..":
+                if current_dir.__parent is not None:
+                    current_dir = current_dir.__parent
+                # In POSIX /.. == / so just stay at the root dir
+                continue
+
+            new_path = os.path.join(current_dir.__external_directory, path)
+            try:
+                st = os.lstat(new_path)
+                if stat.S_ISDIR(st.st_mode):
+                    current_dir = FileBasedDirectory(new_path, parent=current_dir)
+                elif follow_symlinks and stat.S_ISLNK(st.st_mode):
+                    linklocation = os.readlink(new_path)
+                    newpaths = linklocation.split(os.path.sep)
+                    if os.path.isabs(linklocation):
+                        current_dir = current_dir.__find_root().__descend(newpaths, follow_symlinks=True)
+                    else:
+                        current_dir = current_dir.__descend(newpaths, follow_symlinks=True)
+                else:
+                    raise DirectoryError(
+                        "Cannot descend into '{}': '{}' is not a directory".format(path, new_path),
+                        reason="not-a-directory",
+                    )
+            except FileNotFoundError:
+                if create:
+                    os.mkdir(new_path)
+                    current_dir = FileBasedDirectory(new_path, parent=current_dir)
+                else:
+                    raise DirectoryError("Cannot descend into '{}': '{}' does not exist".format(path, new_path))
+
+        return current_dir
 
     # __convert_filestat()
     #

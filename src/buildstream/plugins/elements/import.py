@@ -74,10 +74,10 @@ class ImportElement(Element):
         outputdir = rootdir.descend("output", create=True)
 
         # The directory to grab
-        inputdir = inputdir.descend(*self.source.strip(os.sep).split(os.sep))
+        inputdir = inputdir.descend(self.source.strip(os.sep))
 
         # The output target directory
-        outputdir = outputdir.descend(*self.target.strip(os.sep).split(os.sep), create=True)
+        outputdir = outputdir.descend(self.target.strip(os.sep), create=True)
 
         if inputdir.is_empty():
             raise ElementError("{}: No files were found inside directory '{}'".format(self, self.source))

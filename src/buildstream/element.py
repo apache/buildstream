@@ -994,7 +994,7 @@ class Element(Plugin):
         # Import files into the staging area
         #
         vbasedir = sandbox.get_virtual_directory()
-        vstagedir = vbasedir if path is None else vbasedir.descend(*path.lstrip(os.sep).split(os.sep), create=True)
+        vstagedir = vbasedir if path is None else vbasedir.descend(path.lstrip(os.sep), create=True)
 
         split_filter = self.__split_filter_func(include, exclude, orphans)
 
@@ -1465,7 +1465,7 @@ class Element(Plugin):
 
         # Stage all sources that need to be copied
         sandbox_vroot = sandbox.get_virtual_directory()
-        host_vdirectory = sandbox_vroot.descend(*directory.lstrip(os.sep).split(os.sep), create=True)
+        host_vdirectory = sandbox_vroot.descend(directory.lstrip(os.sep), create=True)
         self._stage_sources_at(host_vdirectory, usebuildtree=sandbox._usebuildtree)
 
     # _stage_sources_at():
@@ -1773,9 +1773,7 @@ class Element(Plugin):
             cache_buildtrees == _CacheBuildTrees.AUTO and (not build_success or self._get_workspace())
         ):
             try:
-                sandbox_build_dir = sandbox_vroot.descend(
-                    *self.get_variable("build-root").lstrip(os.sep).split(os.sep)
-                )
+                sandbox_build_dir = sandbox_vroot.descend(self.get_variable("build-root").lstrip(os.sep))
                 sandbox._fetch_missing_blobs(sandbox_build_dir)
             except DirectoryError:
                 # Directory could not be found. Pre-virtual
@@ -1787,7 +1785,7 @@ class Element(Plugin):
 
         if collect is not None:
             try:
-                collectvdir = sandbox_vroot.descend(*collect.lstrip(os.sep).split(os.sep))
+                collectvdir = sandbox_vroot.descend(collect.lstrip(os.sep))
                 sandbox._fetch_missing_blobs(collectvdir)
             except DirectoryError:
                 pass

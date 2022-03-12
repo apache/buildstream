@@ -261,7 +261,7 @@ def test_remove(tmpdir, datafiles, backend):
             c.remove("subdirectory")
 
         with pytest.raises(DirectoryError):
-            c.remove("subdirectory", "does-not-exist")
+            c.remove("subdirectory/does-not-exist")
 
         # Check that `remove()` doesn't follow symlinks
         c.remove("link")
@@ -282,10 +282,10 @@ def test_rename(tmpdir, datafiles, backend):
     with setup_backend(backend, str(tmpdir)) as c:
         c.import_files(os.path.join(str(datafiles), "original"))
 
-        c.rename(["bin", "hello"], ["bin", "hello2"])
-        c.rename(["bin"], ["bin2"])
+        c.rename("bin/hello", "bin/hello2")
+        c.rename("bin", "bin2")
 
-        assert c.isfile("bin2", "hello2")
+        assert c.isfile("bin2/hello2")
 
 
 # This is purely for error output; lists relative paths and

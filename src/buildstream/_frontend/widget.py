@@ -946,7 +946,7 @@ class LogLine(Widget):
 
             rendered_files = []
             for filename in directory.list_relative_paths():
-                filestat = directory.stat(*filename.split(os.path.sep))
+                filestat = directory.stat(filename)
                 rendered_files.append(self._get_filestats(directory, filename, filestat, list_long=long_))
 
             value_list = "\n\t" + "\n\t".join(rendered_files)

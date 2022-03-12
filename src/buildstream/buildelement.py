@@ -340,7 +340,7 @@ class BuildElement(Element):
 
             vdir = sandbox.get_virtual_directory()
             buildroot = self.get_variable("build-root")
-            buildroot_vdir = vdir.descend(*buildroot.lstrip(os.sep).split(os.sep))
+            buildroot_vdir = vdir.descend(buildroot.lstrip(os.sep))
 
             if buildroot_vdir.exists(marker_filename):
                 # Already prepared
