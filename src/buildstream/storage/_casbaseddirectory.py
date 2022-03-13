@@ -220,18 +220,6 @@ class CasBasedDirectory(Directory):
     def list_relative_paths(self) -> Iterator[str]:
         yield from self.__list_prefixed_relative_paths()
 
-    def get_size(self) -> int:
-        digest = self._get_digest()
-        total = digest.size_bytes
-        for i in self.__index.values():
-            if i.type == FileType.DIRECTORY:
-                subdir = i.get_directory(self)
-                total += subdir.get_size()
-            elif i.type == FileType.REGULAR_FILE:
-                total += i.digest.size_bytes
-            # Symlink nodes are encoded as part of the directory serialization.
-        return total
-
     def exists(self, path: str, *, follow_symlinks: bool = False) -> bool:
         self._validate_path(path)
         paths = path.split("/")
@@ -420,6 +408,18 @@ class CasBasedDirectory(Directory):
         raise DirectoryError(
             "_get_underlying_directory was called on a CAS-backed directory, which has no underlying directory."
         )
+
+    def _get_size(self) -> int:
+        digest = self._get_digest()
+        total = digest.size_bytes
+        for i in self.__index.values():
+            if i.type == FileType.DIRECTORY:
+                subdir = i.get_directory(self)
+                total += subdir._get_size()
+            elif i.type == FileType.REGULAR_FILE:
+                total += i.digest.size_bytes
+            # Symlink nodes are encoded as part of the directory serialization.
+        return total
 
     #############################################################
     #        Internal API (specific to CasBasedDirectory)       #

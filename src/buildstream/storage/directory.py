@@ -230,12 +230,6 @@ class Directory:
         """
         raise NotImplementedError()
 
-    def get_size(self) -> int:
-        """ Get an approximation of the storage space in bytes used by this directory
-        and all files and subdirectories in it. Storage space varies by implementation
-        and effective space used may be lower than this number due to deduplication. """
-        raise NotImplementedError()
-
     def exists(self, path: str, *, follow_symlinks: bool = False) -> bool:
         """Check whether the specified path exists.
 
@@ -494,6 +488,15 @@ class Directory:
     # Abstract method to set all files in this directory to the current user's euid/egid.
     #
     def _set_deterministic_user(self):
+        raise NotImplementedError()
+
+    # _get_size()
+    #
+    # Get an approximation of the storage space in bytes used by this directory
+    # and all files and subdirectories in it. Storage space varies by implementation
+    # and effective space used may be lower than this number due to deduplication.
+    #
+    def _get_size(self) -> int:
         raise NotImplementedError()
 
     # _create_empty_file()

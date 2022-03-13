@@ -235,7 +235,7 @@ class Artifact:
             filesvdir = CasBasedDirectory(cas_cache=self._cas)
             filesvdir._import_files_internal(collectvdir, properties=properties)
             artifact.files.CopyFrom(filesvdir._get_digest())
-            size += filesvdir.get_size()
+            size += filesvdir._get_size()
 
         # Store public data
         with utils._tempnamedfile_name(dir=self._tmpdir) as tmpname:
@@ -294,12 +294,12 @@ class Artifact:
             buildtreevdir = CasBasedDirectory(cas_cache=self._cas)
             buildtreevdir._import_files_internal(sandbox_build_dir, properties=properties)
             artifact.buildtree.CopyFrom(buildtreevdir._get_digest())
-            size += buildtreevdir.get_size()
+            size += buildtreevdir._get_size()
 
         # Store sources
         if sourcesvdir:
             artifact.sources.CopyFrom(sourcesvdir._get_digest())
-            size += sourcesvdir.get_size()
+            size += sourcesvdir._get_size()
 
         os.makedirs(os.path.dirname(os.path.join(self._artifactdir, element.get_artifact_name())), exist_ok=True)
         keys = utils._deduplicate([self._cache_key, self._weak_cache_key])

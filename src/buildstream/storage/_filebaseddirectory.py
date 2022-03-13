@@ -101,9 +101,6 @@ class FileBasedDirectory(Directory):
     def list_relative_paths(self) -> Iterator[str]:
         yield from utils.list_relative_paths(self.__external_directory)
 
-    def get_size(self) -> int:
-        return utils._get_dir_size(self.__external_directory)
-
     def exists(self, path: str, *, follow_symlinks: bool = False) -> bool:
         try:
             self.stat(path, follow_symlinks=follow_symlinks)
@@ -307,6 +304,9 @@ class FileBasedDirectory(Directory):
 
     def _get_underlying_directory(self) -> str:
         return self.__external_directory
+
+    def _get_size(self) -> int:
+        return utils._get_dir_size(self.__external_directory)
 
     #############################################################
     #                      Private methods                      #
