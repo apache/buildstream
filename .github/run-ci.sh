@@ -63,6 +63,7 @@ function runTest() {
         --env-file ${topdir}/common.env \
         --file ${topdir}/compose/ci.docker-compose.yml \
         run "${test_name}"
+    return $?
 }
 
 
@@ -80,9 +81,12 @@ function runServiceTest() {
         --env-file "${topdir}/common.env" \
         --file "${topdir}/compose/ci.${test_name}.yml" \
         up --detach --renew-anon-volumes --remove-orphans
+
     docker-compose \
         --env-file "${topdir}/common.env" \
         --file "${topdir}/compose/ci.docker-compose.yml" run ${test_name}
+    test_exit_status=$?
+
     docker-compose \
         --env-file "${topdir}/common.env" \
         --file "${topdir}/compose/ci.${test_name}.yml" stop
@@ -91,31 +95,39 @@ function runServiceTest() {
         --file "${topdir}/compose/ci.${test_name}.yml" logs
     docker-compose \
         --env-file "${topdir}/common.env" \
-        --file "${topdir}/compose/ci.${test_name}.yml" down
+        --file "${topdir}/compose/ci.${test_name}.yml" down --volumes
+
+    return $test_exit_status
 }
 
 
-# Lazily ensure that the script exits when a command fails
-#
-set -e
-
 if [ -z "${test_names}" ]; then
-    runTest "lint"
-    runTest "mypy"
-    runTest "debian-10"
-    runTest "fedora-34"
-    runTest "fedora-35"
-    runTest "fedora-missing-deps"
-    runServiceTest "buildbarn"
-    runServiceTest "buildgrid"
+    for test_name in "mypy debian-10 fedora-34 fedora-35 fedora-missing-deps"; do
+	if ! runTest "${test_name}"; then
+	    echo "Tests failed"
+	    exit 1
+	fi
+    done
+    for test_name in "buildgrid buildbarn"; do
+	if ! runServiceTest "${test_name}"; then
+	    echo "Tests failed"
+	    exit 1
+	fi
+    done
 else
     if $arg_service; then
 	for test_name in "${test_names}"; do
-	    runServiceTest "${test_name}"
+	    if ! runServiceTest "${test_name}"; then
+		echo "Tests failed"
+		exit 1
+	    fi
 	done
     else
 	for test_name in "${test_names}"; do
-	    runTest "${test_name}"
+	    if ! runTest "${test_name}"; then
+		echo "Tests failed"
+		exit 1
+	    fi
 	done
     fi
 fi
