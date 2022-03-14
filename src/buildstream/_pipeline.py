@@ -245,13 +245,12 @@ def except_elements(targets: List[Element], elements: List[Element], except_targ
 def assert_consistent(context: Context, elements: List[Element]) -> None:
     inconsistent = []
     inconsistent_workspaced = []
-    with context.messenger.timed_activity("Checking sources"):
-        for element in elements:
-            if not element._has_all_sources_resolved():
-                if element._get_workspace():
-                    inconsistent_workspaced.append(element)
-                else:
-                    inconsistent.append(element)
+    for element in elements:
+        if not element._has_all_sources_resolved():
+            if element._get_workspace():
+                inconsistent_workspaced.append(element)
+            else:
+                inconsistent.append(element)
 
     if inconsistent:
         detail = "Exact versions are missing for the following elements:\n\n"

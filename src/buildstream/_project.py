@@ -435,7 +435,7 @@ class Project:
             load_elements = self.loader.load(targets)
             self.load_context.set_task(None)
 
-        with self._context.messenger.simple_task("Resolving elements") as task:
+        with self._context.messenger.simple_task("Resolving elements", silent_nested=True) as task:
             if task:
                 task.set_maximum_progress(self.loader.loaded)
             elements = [Element._new_from_load_element(load_element, task) for load_element in load_elements]
