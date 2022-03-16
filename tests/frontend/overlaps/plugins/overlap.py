@@ -40,7 +40,7 @@ class OverlapElement(Element):
 
     def configure_sandbox(self, sandbox):
         for location in self.layout:
-            sandbox.mark_directory(location, artifact=True)
+            sandbox.mark_directory(location)
 
     def stage(self, sandbox):
         sorted_locations = sorted(self.layout)

@@ -205,11 +205,11 @@ class ScriptElement(Element):
         sandbox.set_environment(self.get_environment())
 
         # Mark the install root
-        sandbox.mark_directory(self.__install_root, artifact=False)
+        sandbox.mark_directory(self.__install_root)
 
         # Mark the artifact directories in the layout
         for location in self.__layout:
-            sandbox.mark_directory(location, artifact=True)
+            sandbox.mark_directory(location)
 
     def stage(self, sandbox):
 

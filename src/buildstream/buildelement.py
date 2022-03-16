@@ -260,7 +260,7 @@ class BuildElement(Element):
 
         # Mark the artifact directories in the layout
         for location in self.__layout:
-            sandbox.mark_directory(location, artifact=True)
+            sandbox.mark_directory(location)
 
         # Allow running all commands in a specified subdirectory
         if self._command_subdir:
