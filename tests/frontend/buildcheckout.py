@@ -729,20 +729,6 @@ def test_build_checkout_force_tarball(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_install_to_build(cli, datafiles):
-    project = str(datafiles)
-    element = "installed-to-build.bst"
-
-    # Attempt building the element
-    # We expect this to throw an ElementError, since the element will
-    # attempt to stage into /buildstream/build, which is not allowed.
-    result = cli.run(project=project, args=strict_args(["build", element], True))
-
-    result.assert_main_error(ErrorDomain.STREAM, None)
-    result.assert_task_error(ErrorDomain.ELEMENT, None)
-
-
-@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [("inline"), ("project.refs")])
 def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
     project = str(datafiles)
