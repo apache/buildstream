@@ -128,17 +128,20 @@ class FileStat:
 class Directory:
     """The Directory object represents a directory in a filesystem hierarchy
 
-    .. note::
+    .. tip::
 
-       Directory objects can be iterated over. Iterating over a directory object
-       will yeild strings depicting the entries in the given directory, similar
-       to ``os.listdir()``.
+       Directory objects behave as a collection of entries in the pythonic sense.
+       Iterating over a directory will yield the entries, and a directory is
+       truthy if it contains any entries and falsy if it is empty.
     """
 
     def __init__(self, external_directory=None):
         raise NotImplementedError()
 
     def __iter__(self) -> Iterator[str]:
+        raise NotImplementedError()
+
+    def __len__(self) -> int:
         raise NotImplementedError()
 
     ###################################################################
@@ -210,15 +213,6 @@ class Directory:
 
         Raises:
            DirectoryError: if any system error occurs.
-        """
-        raise NotImplementedError()
-
-    # Convenience functions
-    def is_empty(self) -> bool:
-        """Return true if this directory has no files, subdirectories or links in it.
-
-        Returns:
-            True if this directory has no entries
         """
         raise NotImplementedError()
 

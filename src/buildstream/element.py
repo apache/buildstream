@@ -1473,7 +1473,7 @@ class Element(Plugin):
     # Stage this element's sources to a directory
     #
     # Args:
-    #     vdirectory (:class:`.storage.Directory`): A virtual directory object to stage sources into.
+    #     vdirectory (Union[str, Directory]): A virtual directory object or local path to stage sources to.
     #     usebuildtree (bool): use a the elements build tree as its source.
     #
     def _stage_sources_at(self, vdirectory, usebuildtree=False):
@@ -1484,13 +1484,13 @@ class Element(Plugin):
 
             if not isinstance(vdirectory, Directory):
                 vdirectory = FileBasedDirectory(vdirectory)
-            if not vdirectory.is_empty():
+            if vdirectory:
                 raise ElementError("Staging directory '{}' is not empty".format(vdirectory))
 
             # Check if we have a cached buildtree to use
             if usebuildtree:
                 import_dir = self.__artifact.get_buildtree()
-                if import_dir.is_empty():
+                if not import_dir:
                     detail = "Element type either does not expect a buildtree or it was explictily cached without one."
                     self.warn("WARNING: {} Artifact contains an empty buildtree".format(self.name), detail=detail)
 

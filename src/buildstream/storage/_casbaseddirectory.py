@@ -79,7 +79,7 @@ class _IndexEntry:
         self.mtime: Optional[timestamp_pb2.Timestamp] = mtime
 
     def get_directory(self, parent: "CasBasedDirectory") -> "CasBasedDirectory":
-        if not self.directory:
+        if self.directory is None:
             assert self.type == FileType.DIRECTORY
             self.directory = CasBasedDirectory(self.cas_cache, digest=self.digest, parent=parent, filename=self.name)
             self.digest = None
@@ -88,7 +88,7 @@ class _IndexEntry:
     # Get the remote_execution_pb2.Digest for this _IndexEntry
     #
     def get_digest(self):
-        if self.directory:
+        if self.directory is not None:
             # directory with buildstream object
             return self.directory._get_digest()
         else:
@@ -161,6 +161,9 @@ class CasBasedDirectory(Directory):
     def __iter__(self) -> Iterator[str]:
         yield from self.__index.keys()
 
+    def __len__(self) -> int:
+        return len(self.__index)
+
     def __str__(self) -> str:
         return "[CAS:{}]".format(self.__get_identifier())
 
@@ -213,9 +216,6 @@ class CasBasedDirectory(Directory):
                 tarfile.addfile(tarinfo, bio)
             else:
                 raise DirectoryError("can not export file type {} to tar".format(entry.type))
-
-    def is_empty(self) -> bool:
-        return len(self.__index) == 0
 
     def list_relative_paths(self) -> Iterator[str]:
         yield from self.__list_prefixed_relative_paths()
@@ -327,7 +327,7 @@ class CasBasedDirectory(Directory):
 
         if entry.type == FileType.DIRECTORY and not recursive:
             subdir = entry.get_directory(self)
-            if not subdir.is_empty():
+            if subdir:
                 raise DirectoryError("{} is not empty".format(str(subdir)))
 
         del self.__index[name]
@@ -558,7 +558,7 @@ class CasBasedDirectory(Directory):
                     # No need to call entry.get_directory().
                     # If it hasn't been instantiated, digest must be up-to-date.
                     subdir = entry.directory
-                    if subdir:
+                    if subdir is not None:
                         dirnode.digest.CopyFrom(subdir._get_digest())
                     else:
                         dirnode.digest.CopyFrom(entry.digest)
@@ -724,7 +724,7 @@ class CasBasedDirectory(Directory):
             # If 'name' maps to a DirectoryNode, then there must be an entry in index
             # pointing to another Directory.
             subdir = existing_entry.get_directory(self)
-            if subdir.is_empty():
+            if not subdir:
                 self.remove(name)
                 fileListResult.overwritten.append(relative_pathname)
                 return True
@@ -779,7 +779,7 @@ class CasBasedDirectory(Directory):
                     # This is based on the assumption that the destination
                     # subdirectory is more likely to be modified later on
                     # (e.g., by further import_files() calls).
-                    if entry.directory:
+                    if entry.directory is not None:
                         subdir = entry.directory
                     else:
                         subdir = dest_entry.get_directory(self)
@@ -803,7 +803,7 @@ class CasBasedDirectory(Directory):
                     )
 
             if filter_callback and not filter_callback(relative_pathname):
-                if is_dir and create_subdir and dest_subdir.is_empty():
+                if is_dir and create_subdir and not dest_subdir:
                     # Complete subdirectory has been filtered out, remove it
                     self.remove(name)
 

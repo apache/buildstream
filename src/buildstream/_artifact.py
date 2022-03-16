@@ -231,7 +231,7 @@ class Artifact:
         properties = ["mtime"] if artifact.was_workspaced else []
 
         # Store files
-        if collectvdir:
+        if collectvdir is not None:
             filesvdir = CasBasedDirectory(cas_cache=self._cas)
             filesvdir._import_files_internal(collectvdir, properties=properties)
             artifact.files.CopyFrom(filesvdir._get_digest())
@@ -290,14 +290,14 @@ class Artifact:
             size += log.digest.size_bytes
 
         # Store build tree
-        if sandbox_build_dir:
+        if sandbox_build_dir is not None:
             buildtreevdir = CasBasedDirectory(cas_cache=self._cas)
             buildtreevdir._import_files_internal(sandbox_build_dir, properties=properties)
             artifact.buildtree.CopyFrom(buildtreevdir._get_digest())
             size += buildtreevdir._get_size()
 
         # Store sources
-        if sourcesvdir:
+        if sourcesvdir is not None:
             artifact.sources.CopyFrom(sourcesvdir._get_digest())
             size += sourcesvdir._get_size()
 

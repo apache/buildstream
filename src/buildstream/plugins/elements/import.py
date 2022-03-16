@@ -79,7 +79,7 @@ class ImportElement(Element):
         # The output target directory
         outputdir = outputdir.descend(self.target.strip(os.sep), create=True)
 
-        if inputdir.is_empty():
+        if not inputdir:
             raise ElementError("{}: No files were found inside directory '{}'".format(self, self.source))
 
         # Move it over

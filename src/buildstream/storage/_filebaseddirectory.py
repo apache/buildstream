@@ -42,6 +42,10 @@ class FileBasedDirectory(Directory):
     def __iter__(self) -> Iterator[str]:
         yield from os.listdir(self.__external_directory)
 
+    def __len__(self) -> int:
+        entries = list(os.listdir(self.__external_directory))
+        return len(entries)
+
     def __str__(self) -> str:
         # This returns the whole path (since we don't know where the directory started)
         # which exposes the sandbox directory; we will have to assume for the time being
@@ -93,10 +97,6 @@ class FileBasedDirectory(Directory):
                 self.descend(filename).export_to_tar(tarfile, arcname, mtime)
             else:
                 tarfile.addfile(tarinfo)
-
-    def is_empty(self) -> bool:
-        it = os.scandir(self.__external_directory)
-        return next(it, None) is None
 
     def list_relative_paths(self) -> Iterator[str]:
         yield from utils.list_relative_paths(self.__external_directory)
@@ -431,7 +431,7 @@ class FileBasedDirectory(Directory):
                 )
 
             if filter_callback and not filter_callback(relative_pathname):
-                if is_dir and create_subdir and dest_subdir.is_empty():
+                if is_dir and create_subdir and not dest_subdir:
                     # Complete subdirectory has been filtered out, remove it
                     os.rmdir(dest_subdir.__external_directory)
 
