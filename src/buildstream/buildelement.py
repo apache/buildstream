@@ -338,20 +338,6 @@ class BuildElement(Element):
                 for cmd in commands:
                     self.__run_command(sandbox, cmd)
 
-            # %{install-root}/%{build-root} should normally not be written
-            # to - if an element later attempts to stage to a location
-            # that is not empty, we abort the build - in this case this
-            # will almost certainly happen.
-            staged_build = os.path.join(self.get_variable("install-root"), self.get_variable("build-root"))
-
-            if os.path.isdir(staged_build) and os.listdir(staged_build):
-                self.warn(
-                    "Writing to %{install-root}/%{build-root}.",
-                    detail="Writing to this directory will almost "
-                    + "certainly cause an error, since later elements "
-                    + "will not be allowed to stage to %{build-root}.",
-                )
-
             # Return the payload, this is configurable but is generally
             # always the /buildstream-install directory
             return self.get_variable("install-root")
