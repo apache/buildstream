@@ -171,10 +171,10 @@ class CasBasedDirectory(Directory):
     #              Implementation of Public API                 #
     #############################################################
 
-    def descend(self, path: str, *, create: bool = False, follow_symlinks: bool = False) -> "CasBasedDirectory":
+    def open_directory(self, path: str, *, create: bool = False, follow_symlinks: bool = False) -> "CasBasedDirectory":
         self._validate_path(path)
         paths = path.split("/")
-        return self.__descend(paths, create=create, follow_symlinks=follow_symlinks)
+        return self.__open_directory(paths, create=create, follow_symlinks=follow_symlinks)
 
     def import_single_file(self, external_pathspec: str) -> FileListResult:
         result = FileListResult()
@@ -194,7 +194,7 @@ class CasBasedDirectory(Directory):
                 tarinfo.type = tarfilelib.DIRTYPE
                 tarinfo.mode = 0o755
                 tarfile.addfile(tarinfo)
-                self.descend(filename).export_to_tar(tarfile, arcname, mtime)
+                self.open_directory(filename).export_to_tar(tarfile, arcname, mtime)
             elif entry.type == FileType.REGULAR_FILE:
                 source_name = self.__cas_cache.objpath(entry.digest)
                 tarinfo = tarfilelib.TarInfo(arcname)
@@ -259,7 +259,7 @@ class CasBasedDirectory(Directory):
         self._validate_path(path)
         paths = path.split("/")
 
-        subdir = self.__descend(paths[:-1])
+        subdir = self.__open_directory(paths[:-1])
         entry = subdir.__index.get(paths[-1])
 
         if entry and entry.type != FileType.REGULAR_FILE:
@@ -316,7 +316,7 @@ class CasBasedDirectory(Directory):
 
         if len(paths) > 1:
             # Delegate remove to subdirectory
-            subdir = self.__descend(paths[:-1])
+            subdir = self.__open_directory(paths[:-1])
             subdir.remove(paths[-1], recursive=recursive)
             return
 
@@ -339,10 +339,10 @@ class CasBasedDirectory(Directory):
         src_paths = src.split("/")
         dest_paths = dest.split("/")
 
-        srcdir = self.__descend(src_paths[:-1])
+        srcdir = self.__open_directory(src_paths[:-1])
         entry = srcdir.__entry_from_path([src_paths[-1]])
 
-        destdir = self.__descend(dest_paths[:-1])
+        destdir = self.__open_directory(dest_paths[:-1])
 
         srcdir.remove(src_paths[-1], recursive=True)
         entry.name = dest_paths[-1]
@@ -578,18 +578,17 @@ class CasBasedDirectory(Directory):
 
         return self.__digest
 
-    # __descend()
+    # __open_directory()
     #
-    # Descend using a list of already separated path components
+    # Open a directory using a list of already separated path components
     #
-    def __descend(
+    def __open_directory(
         self, paths: List[str], *, create: bool = False, follow_symlinks: bool = False
     ) -> "CasBasedDirectory":
-        # Note: At the moment, creating a directory by descending does
+        # Note: At the moment, creating a directory by opening a directory does
         # not update this object in the CAS cache. However, performing
-        # an import_files() into a subdirectory of any depth obtained by
-        # descending from this object *will* cause this directory to be
-        # updated and stored.
+        # an import_files() into a subdirectory of any depth obtained
+        # from this object *will* cause this directory to be updated and stored.
         current_dir = self
 
         for element in paths:
@@ -607,11 +606,11 @@ class CasBasedDirectory(Directory):
                     linklocation = entry.target
                     newpaths = linklocation.split(os.path.sep)
                     if os.path.isabs(linklocation):
-                        current_dir = current_dir.__find_root().__descend(newpaths, follow_symlinks=True)
+                        current_dir = current_dir.__find_root().__open_directory(newpaths, follow_symlinks=True)
                     else:
-                        current_dir = current_dir.__descend(newpaths, follow_symlinks=True)
+                        current_dir = current_dir.__open_directory(newpaths, follow_symlinks=True)
                 else:
-                    error = "Cannot descend into {}, which is a '{}' in the directory {}"
+                    error = "Cannot open {}, which is a '{}' in the directory {}"
                     raise DirectoryError(
                         error.format(element, current_dir.__index[element].type, current_dir), reason="not-a-directory"
                     )
@@ -786,12 +785,12 @@ class CasBasedDirectory(Directory):
 
                     subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
                 else:
-                    src_subdir = source_directory.descend(name)
+                    src_subdir = source_directory.open_directory(name)
                     if src_subdir == origin:
                         continue
 
                     try:
-                        dest_subdir = self.descend(name, create=create_subdir)
+                        dest_subdir = self.open_directory(name, create=create_subdir)
                     except DirectoryError:
                         filetype = self.__index[name].type
                         raise DirectoryError(
@@ -861,7 +860,7 @@ class CasBasedDirectory(Directory):
             return self
 
     def __entry_from_path(self, path: List[str], *, follow_symlinks: bool = False) -> _IndexEntry:
-        subdir = self.__descend(path[:-1], follow_symlinks=follow_symlinks)
+        subdir = self.__open_directory(path[:-1], follow_symlinks=follow_symlinks)
         target = subdir.__index.get(path[-1])
         if target is None:
             raise DirectoryError("{} not found in {}".format(path[-1], str(subdir)))
@@ -888,7 +887,7 @@ class CasBasedDirectory(Directory):
             relative_pathname = os.path.join(path_prefix, name)
 
             if entry.type == FileType.DIRECTORY:
-                subdir = self.descend(name)
+                subdir = self.open_directory(name)
                 subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
             else:
                 result.files_written.append(relative_pathname)

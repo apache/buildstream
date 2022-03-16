@@ -70,14 +70,14 @@ class ImportElement(Element):
         self.stage_sources(sandbox, "input")
 
         rootdir = sandbox.get_virtual_directory()
-        inputdir = rootdir.descend("input")
-        outputdir = rootdir.descend("output", create=True)
+        inputdir = rootdir.open_directory("input")
+        outputdir = rootdir.open_directory("output", create=True)
 
         # The directory to grab
-        inputdir = inputdir.descend(self.source.strip(os.sep))
+        inputdir = inputdir.open_directory(self.source.strip(os.sep))
 
         # The output target directory
-        outputdir = outputdir.descend(self.target.strip(os.sep), create=True)
+        outputdir = outputdir.open_directory(self.target.strip(os.sep), create=True)
 
         if not inputdir:
             raise ElementError("{}: No files were found inside directory '{}'".format(self, self.source))

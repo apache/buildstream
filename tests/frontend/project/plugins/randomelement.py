@@ -24,7 +24,7 @@ class RandomElement(Element):
 
     def assemble(self, sandbox):
         rootdir = sandbox.get_virtual_directory()
-        outputdir = rootdir.descend("output", create=True)
+        outputdir = rootdir.open_directory("output", create=True)
 
         # Generate non-reproducible output
         with outputdir.open_file("random", mode="wb") as f:

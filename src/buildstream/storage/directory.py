@@ -148,9 +148,8 @@ class Directory:
     #                           Public API                            #
     ###################################################################
 
-    def descend(self, path: str, *, create: bool = False, follow_symlinks: bool = False) -> "Directory":
-        """Descend one or more levels of directory hierarchy and return a new
-        Directory object for that directory.
+    def open_directory(self, path: str, *, create: bool = False, follow_symlinks: bool = False) -> "Directory":
+        """Open a Directory object relative to this directory
 
         Args:
            path: A :ref:`path <directory_path>` relative to this directory.

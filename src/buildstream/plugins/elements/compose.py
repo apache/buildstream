@@ -143,7 +143,7 @@ class ComposeElement(Element):
         # instead of into a subdir. The element assemble() method should
         # support this in some way.
         #
-        installdir = vbasedir.descend("buildstream/install", create=True)
+        installdir = vbasedir.open_directory("buildstream/install", create=True)
 
         # We already saved the manifest for created files in the integration phase,
         # now collect the rest of the manifest.

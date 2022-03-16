@@ -529,7 +529,7 @@ class Sandbox:
         else:
             vdir = self.get_virtual_directory()
             cwd = self._get_work_directory()
-            cwd_vdir = vdir.descend(cwd.lstrip(os.sep), create=True)
+            cwd_vdir = vdir.open_directory(cwd.lstrip(os.sep), create=True)
             cwd_vdir._create_empty_file(name)
 
     # _get_element_name()
@@ -643,7 +643,7 @@ class _SandboxBatch:
     def create_empty_file(self, name):
         vdir = self.sandbox.get_virtual_directory()
         cwd = self.sandbox._get_work_directory()
-        cwd_vdir = vdir.descend(cwd.lstrip(os.sep), create=True)
+        cwd_vdir = vdir.open_directory(cwd.lstrip(os.sep), create=True)
         cwd_vdir._create_empty_file(name)
 
 

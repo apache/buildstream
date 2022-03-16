@@ -228,7 +228,7 @@ def test_file_types(tmpdir, datafiles, backend):
         assert c.exists("subdirectory")
         assert c.isdir("subdirectory")
         assert not c.isfile("subdirectory")
-        subdir = c.descend("subdirectory")
+        subdir = c.open_directory("subdirectory")
         assert set(subdir) == {"subdir-file"}
 
         stat = c.stat("subdirectory")
@@ -272,7 +272,7 @@ def test_remove(tmpdir, datafiles, backend):
         assert not c.exists("subdirectory")
 
         # Removing an empty directory does not require recursive=True
-        c.descend("empty-directory", create=True)
+        c.open_directory("empty-directory", create=True)
         c.remove("empty-directory")
 
 

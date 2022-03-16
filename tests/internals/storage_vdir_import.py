@@ -291,7 +291,7 @@ def test_fixed_directory_listing(tmpdir, root):
 
 
 # Check that the vdir is decending and readable
-def test_descend(tmpdir):
+def test_open_directory(tmpdir):
     cas_dir = os.path.join(str(tmpdir), "cas")
     cas_cache = CASCache(cas_dir, log_directory=os.path.join(str(tmpdir), "logs"))
     try:
@@ -303,7 +303,7 @@ def test_descend(tmpdir):
         generate_import_root(test_dir, filesys_discription)
 
         d.import_files(test_dir)
-        digest = d.descend("a/l")._CasBasedDirectory__index["g"].get_digest()
+        digest = d.open_directory("a/l")._CasBasedDirectory__index["g"].get_digest()
 
         with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
@@ -328,15 +328,15 @@ def test_bad_symlinks(tmpdir):
         exp_reason = "not-a-directory"
 
         with pytest.raises(DirectoryError) as error:
-            d.descend("a/l", follow_symlinks=True)
+            d.open_directory("a/l", follow_symlinks=True)
             assert error.reason == exp_reason
 
         with pytest.raises(DirectoryError) as error:
-            d.descend("a/l")
+            d.open_directory("a/l")
             assert error.reason == exp_reason
 
         with pytest.raises(DirectoryError) as error:
-            d.descend("a/f")
+            d.open_directory("a/f")
             assert error.reason == exp_reason
     finally:
         cas_cache.release_resources()
@@ -361,7 +361,7 @@ def test_relative_symlink(tmpdir):
         generate_import_root(test_dir, filesys_discription)
         d.import_files(test_dir)
 
-        digest = d.descend("a/l", follow_symlinks=True)._CasBasedDirectory__index["file"].get_digest()
+        digest = d.open_directory("a/l", follow_symlinks=True)._CasBasedDirectory__index["file"].get_digest()
         with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
         assert Content_to_check == content
@@ -388,7 +388,7 @@ def test_abs_symlink(tmpdir):
         generate_import_root(test_dir, filesys_discription)
         d.import_files(test_dir)
 
-        digest = d.descend("a/l", follow_symlinks=True)._CasBasedDirectory__index["file"].get_digest()
+        digest = d.open_directory("a/l", follow_symlinks=True)._CasBasedDirectory__index["file"].get_digest()
 
         with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
@@ -417,7 +417,7 @@ def test_bad_sym_escape(tmpdir):
         d.import_files(os.path.join(test_dir, "jail"))
 
         with pytest.raises(DirectoryError) as error:
-            d.descend("a/l", follow_symlinks=True)
+            d.open_directory("a/l", follow_symlinks=True)
             assert error.reason == "directory-not-found"
     finally:
         cas_cache.release_resources()

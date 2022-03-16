@@ -466,7 +466,7 @@ class ElementSources:
                 break
 
             if source._directory:
-                vsubdir = vdir.descend(source._directory.lstrip(os.path.sep), create=True)
+                vsubdir = vdir.open_directory(source._directory.lstrip(os.path.sep), create=True)
             else:
                 vsubdir = vdir
 
@@ -497,7 +497,7 @@ class ElementSources:
         vdir = self._stage(stop=source)
 
         if source._directory:
-            vdir = vdir.descend(source._directory, create=True)
+            vdir = vdir.open_directory(source._directory, create=True)
 
         if source.BST_STAGE_VIRTUAL_DIRECTORY:
             yield vdir
