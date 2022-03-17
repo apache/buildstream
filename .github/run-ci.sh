@@ -102,13 +102,13 @@ function runServiceTest() {
 
 
 if [ -z "${test_names}" ]; then
-    for test_name in "mypy debian-10 fedora-34 fedora-35 fedora-missing-deps"; do
+    for test_name in mypy debian-10 fedora-34 fedora-35 fedora-missing-deps; do
 	if ! runTest "${test_name}"; then
 	    echo "Tests failed"
 	    exit 1
 	fi
     done
-    for test_name in "buildgrid buildbarn"; do
+    for test_name in buildgrid buildbarn; do
 	if ! runServiceTest "${test_name}"; then
 	    echo "Tests failed"
 	    exit 1
@@ -116,14 +116,14 @@ if [ -z "${test_names}" ]; then
     done
 else
     if $arg_service; then
-	for test_name in "${test_names}"; do
+	for test_name in ${test_names}; do
 	    if ! runServiceTest "${test_name}"; then
 		echo "Tests failed"
 		exit 1
 	    fi
 	done
     else
-	for test_name in "${test_names}"; do
+	for test_name in ${test_names}; do
 	    if ! runTest "${test_name}"; then
 		echo "Tests failed"
 		exit 1
