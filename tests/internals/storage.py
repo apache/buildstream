@@ -2,7 +2,6 @@ from contextlib import contextmanager
 import os
 import pprint
 import shutil
-import stat
 import glob
 import hashlib
 from pathlib import Path
@@ -10,10 +9,10 @@ from typing import List, Optional
 
 import pytest
 
+from buildstream import DirectoryError, FileType
 from buildstream._cas import CASCache
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
-from buildstream.storage.directory import _FileType, VirtualDirectoryError
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "storage")
 
@@ -42,25 +41,6 @@ def test_import(tmpdir, datafiles, backend):
 
         assert "bin/bash" in c.list_relative_paths()
         assert "bin/hello" in c.list_relative_paths()
-
-
-@pytest.mark.parametrize("backend", [FileBasedDirectory, CasBasedDirectory])
-@pytest.mark.datafiles(DATA_DIR)
-def test_modified_file_list(tmpdir, datafiles, backend):
-    original = os.path.join(str(datafiles), "original")
-    overlay = os.path.join(str(datafiles), "overlay")
-
-    with setup_backend(backend, str(tmpdir)) as c:
-        c.import_files(original)
-
-        c.mark_unmodified()
-
-        c.import_files(overlay)
-
-        print("List of all paths in imported results: {}".format(c.list_relative_paths()))
-        assert "bin/bash" in c.list_relative_paths()
-        assert "bin/bash" in c.list_modified_paths()
-        assert "bin/hello" not in c.list_modified_paths()
 
 
 @pytest.mark.parametrize(
@@ -157,10 +137,10 @@ def _test_merge_dirs(
     with setup_backend(CasBasedDirectory, tmpdir) as c, setup_backend(
         CasBasedDirectory, tmpdir
     ) as copy, setup_backend(CasBasedDirectory, tmpdir) as a, setup_backend(CasBasedDirectory, tmpdir) as b:
-        a.import_files(before, properties=properties)
-        b.import_files(after, properties=properties)
-        c.import_files(buildtree, properties=properties)
-        copy.import_files(buildtree, properties=properties)
+        a._import_files_internal(before, properties=properties)
+        b._import_files_internal(after, properties=properties)
+        c._import_files_internal(buildtree, properties=properties)
+        copy._import_files_internal(buildtree, properties=properties)
 
         assert c._get_digest() == copy._get_digest()
 
@@ -183,8 +163,8 @@ def _test_merge_dirs(
         # We need to strip some types of values, since they're more
         # than our little list comparisons can handle
         def make_info(entry, list_props=None):
-            ret = {k: v for k, v in vars(entry).items() if k != "buildstream_object"}
-            if entry.type == _FileType.REGULAR_FILE:
+            ret = {k: v for k, v in vars(entry).items() if k not in ("directory", "cas_cache")}
+            if entry.type == FileType.REGULAR_FILE:
                 # Only file digests make sense here (directory digests
                 # need to be re-calculated taking into account their
                 # contents).
@@ -210,7 +190,7 @@ def _test_merge_dirs(
         for e in combined:
             path = Path(e.name)
             for parent in list(path.parents)[:-1]:
-                if not str(parent) in (e.name for e in combined if e.type == _FileType.DIRECTORY):
+                if not str(parent) in (e.name for e in combined if e.type == FileType.DIRECTORY):
                     # If not all parent directories are existing
                     # directories
                     combined = [e for e in combined if e.name != str(path)]
@@ -234,25 +214,25 @@ def test_file_types(tmpdir, datafiles, backend):
         assert not c.isdir("root-file")
         assert not c.islink("root-file")
 
-        st = c.stat("root-file")
-        assert stat.S_ISREG(st.st_mode)
+        stat = c.stat("root-file")
+        assert stat.file_type == FileType.REGULAR_FILE
 
         assert c.exists("link")
         assert c.islink("link")
         assert not c.isfile("link")
         assert c.readlink("link") == "root-file"
 
-        st = c.stat("link")
-        assert stat.S_ISLNK(st.st_mode)
+        stat = c.stat("link")
+        assert stat.file_type == FileType.SYMLINK
 
         assert c.exists("subdirectory")
         assert c.isdir("subdirectory")
         assert not c.isfile("subdirectory")
-        subdir = c.descend("subdirectory")
+        subdir = c.open_directory("subdirectory")
         assert set(subdir) == {"subdir-file"}
 
-        st = c.stat("subdirectory")
-        assert stat.S_ISDIR(st.st_mode)
+        stat = c.stat("subdirectory")
+        assert stat.file_type == FileType.DIRECTORY
 
 
 @pytest.mark.parametrize("backend", [FileBasedDirectory, CasBasedDirectory])
@@ -277,11 +257,11 @@ def test_remove(tmpdir, datafiles, backend):
     with setup_backend(backend, str(tmpdir)) as c:
         c.import_files(os.path.join(str(datafiles), "merge-link"))
 
-        with pytest.raises((OSError, VirtualDirectoryError)):
+        with pytest.raises(DirectoryError):
             c.remove("subdirectory")
 
-        with pytest.raises(FileNotFoundError):
-            c.remove("subdirectory", "does-not-exist")
+        with pytest.raises(DirectoryError):
+            c.remove("subdirectory/does-not-exist")
 
         # Check that `remove()` doesn't follow symlinks
         c.remove("link")
@@ -292,7 +272,7 @@ def test_remove(tmpdir, datafiles, backend):
         assert not c.exists("subdirectory")
 
         # Removing an empty directory does not require recursive=True
-        c.descend("empty-directory", create=True)
+        c.open_directory("empty-directory", create=True)
         c.remove("empty-directory")
 
 
@@ -302,33 +282,33 @@ def test_rename(tmpdir, datafiles, backend):
     with setup_backend(backend, str(tmpdir)) as c:
         c.import_files(os.path.join(str(datafiles), "original"))
 
-        c.rename(["bin", "hello"], ["bin", "hello2"])
-        c.rename(["bin"], ["bin2"])
+        c.rename("bin/hello", "bin/hello2")
+        c.rename("bin", "bin2")
 
-        assert c.isfile("bin2", "hello2")
+        assert c.isfile("bin2/hello2")
 
 
 # This is purely for error output; lists relative paths and
 # their digests so differences are human-grokkable
 def list_relative_paths(directory):
     def entry_output(entry):
-        if entry.type == _FileType.DIRECTORY:
+        if entry.type == FileType.DIRECTORY:
             return list_relative_paths(entry.get_directory(directory))
-        elif entry.type == _FileType.SYMLINK:
+        elif entry.type == FileType.SYMLINK:
             return "-> " + entry.target
         else:
             return entry.get_digest().hash
 
-    return {name: entry_output(entry) for name, entry in directory.index.items()}
+    return {name: entry_output(entry) for name, entry in directory._CasBasedDirectory__index.items()}
 
 
 def list_paths_with_properties(directory, prefix=""):
-    for leaf in directory.index.keys():
-        entry = directory.index[leaf].clone()
-        if directory.filename:
-            entry.name = directory.filename + os.path.sep + entry.name
+    for leaf in directory._CasBasedDirectory__index.keys():
+        entry = directory._CasBasedDirectory__index[leaf].clone()
+        if directory._CasBasedDirectory__filename:
+            entry.name = directory._CasBasedDirectory__filename + os.path.sep + entry.name
         yield entry
-        if entry.type == _FileType.DIRECTORY:
+        if entry.type == FileType.DIRECTORY:
             subdir = entry.get_directory(directory)
             yield from list_paths_with_properties(subdir)
 

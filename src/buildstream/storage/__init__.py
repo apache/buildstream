@@ -19,4 +19,4 @@
 
 from ._filebaseddirectory import FileBasedDirectory
 from ._casbaseddirectory import CasBasedDirectory
-from .directory import Directory
+from .directory import Directory, DirectoryError, FileType, FileStat

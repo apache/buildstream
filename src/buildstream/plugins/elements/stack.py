@@ -152,7 +152,7 @@ class StackElement(Element):
         # Just create a dummy empty artifact, its existence is a statement
         # that all this stack's dependencies are built.
         vrootdir = sandbox.get_virtual_directory()
-        vrootdir.descend("output", create=True)
+        vrootdir.open_directory("output", create=True)
 
         # And we're done
         return "/output"

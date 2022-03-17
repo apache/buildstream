@@ -48,11 +48,11 @@ class SandboxREAPI(Sandbox):
         # Ensure working directory exists
         if len(cwd) > 1:
             assert cwd.startswith("/")
-            vdir.descend(*cwd[1:].split(os.path.sep), create=True)
+            vdir.open_directory(cwd[1:], create=True)
 
         # Ensure directories required for sandboxed execution exist
         for directory in ["dev", "proc", "tmp"]:
-            vsubdir = vdir.descend(directory, create=True)
+            vsubdir = vdir.open_directory(directory, create=True)
             if flags & _SandboxFlags.ROOT_READ_ONLY:
                 vsubdir._set_subtree_read_only(False)
 
@@ -66,22 +66,22 @@ class SandboxREAPI(Sandbox):
 
             if directory in mount_sources:
                 # Bind mount
-                mount_point = directory
-                mount_source = mount_sources[mount_point]
+                mount_point = directory.lstrip(os.path.sep)
+                mount_source = mount_sources[directory]
 
                 # Ensure mount point exists in sandbox
-                mount_point_components = mount_point.split(os.path.sep)
-                if not vdir.exists(*mount_point_components):
+                if not vdir.exists(mount_point):
                     if os.path.isdir(mount_source):
                         # Mounting a directory, mount point must be a directory
-                        vdir.descend(*mount_point_components, create=True)
+                        vdir.open_directory(mount_point, create=True)
                     else:
                         # Mounting a file or device node, mount point must be a file
-                        parent_vdir = vdir.descend(*mount_point_components[:-1], create=True)
-                        parent_vdir._create_empty_file(mount_point_components[-1])
+                        split_mount_point = mount_point.rsplit(os.path.sep, 1)
+                        parent_vdir = vdir.open_directory(split_mount_point[0], create=True)
+                        parent_vdir._create_empty_file(split_mount_point[1])
             else:
                 # Read-write directory
-                marked_vdir = vdir.descend(*directory.split(os.path.sep), create=True)
+                marked_vdir = vdir.open_directory(directory.lstrip(os.path.sep), create=True)
                 read_write_directories.append(directory)
                 if flags & _SandboxFlags.ROOT_READ_ONLY:
                     marked_vdir._set_subtree_read_only(False)
@@ -184,10 +184,10 @@ class SandboxREAPI(Sandbox):
             dir_digest = utils._message_digest(root_directory)
 
             # Create a normalized absolute path (inside the input tree)
-            path = os.path.normpath(os.path.join(working_directory, output_directory.path))
+            path = os.path.normpath(os.path.join(working_directory, output_directory.path)).lstrip(os.path.sep)
 
             # Get virtual directory at the path of the output directory
-            vsubdir = vdir.descend(*path.split(os.path.sep), create=True)
+            vsubdir = vdir.open_directory(path, create=True)
 
             # Replace contents with returned output
             vsubdir._reset(digest=dir_digest)

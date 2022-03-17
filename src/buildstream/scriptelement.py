@@ -245,8 +245,7 @@ class ScriptElement(Element):
 
         # Ensure the install root exists
         #
-        install_root_path_components = self.__install_root.lstrip(os.sep).split(os.sep)
-        sandbox.get_virtual_directory().descend(*install_root_path_components, create=True)
+        sandbox.get_virtual_directory().open_directory(self.__install_root.lstrip(os.sep), create=True)
 
     def assemble(self, sandbox):
         with sandbox.batch(root_read_only=self.__root_read_only, collect=self.__install_root):

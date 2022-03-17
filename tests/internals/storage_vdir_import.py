@@ -18,10 +18,10 @@ import random
 
 import pytest
 
+from buildstream import DirectoryError
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
 from buildstream._cas import CASCache
-from buildstream.storage.directory import VirtualDirectoryError
 from buildstream.utils import _set_file_mtime, _parse_timestamp
 from buildstream._testing._utils.site import have_subsecond_mtime
 
@@ -131,7 +131,7 @@ def file_contents_are(path, contents):
 
 def create_new_casdir(root_number, cas_cache, tmpdir):
     d = CasBasedDirectory(cas_cache)
-    d.import_files(os.path.join(tmpdir, "content", "root{}".format(root_number)), properties=["mtime"])
+    d._import_files_internal(os.path.join(tmpdir, "content", "root{}".format(root_number)), properties=["mtime"])
     digest = d._get_digest()
     assert digest.hash != empty_hash_ref
     return d
@@ -141,7 +141,7 @@ def create_new_filedir(root_number, tmpdir):
     root = os.path.join(tmpdir, "vdir")
     os.makedirs(root)
     d = FileBasedDirectory(root)
-    d.import_files(os.path.join(tmpdir, "content", "root{}".format(root_number)))
+    d._import_files_internal(os.path.join(tmpdir, "content", "root{}".format(root_number)))
     return d
 
 
@@ -205,11 +205,11 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
         assert duplicate_cas._get_digest().hash == d._get_digest().hash
 
         d2 = create_new_casdir(overlay, cas_cache, tmpdir)
-        d.import_files(d2, properties=["mtime"])
+        d._import_files_internal(d2, properties=["mtime"])
         export_dir = os.path.join(tmpdir, "output-{}-{}".format(original, overlay))
         roundtrip_dir = os.path.join(tmpdir, "roundtrip-{}-{}".format(original, overlay))
-        d2.export_files(roundtrip_dir)
-        d.export_files(export_dir)
+        d2._export_files(roundtrip_dir)
+        d._export_files(export_dir)
 
         if verify_contents:
             for item in root_filesets[overlay - 1]:
@@ -244,7 +244,7 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
 
         # Now do the same thing with filebaseddirectories and check the contents match
 
-        duplicate_cas.import_files(roundtrip_dir, properties=["mtime"])
+        duplicate_cas._import_files_internal(roundtrip_dir, properties=["mtime"])
 
         assert duplicate_cas._get_digest().hash == d._get_digest().hash
     finally:
@@ -291,7 +291,7 @@ def test_fixed_directory_listing(tmpdir, root):
 
 
 # Check that the vdir is decending and readable
-def test_descend(tmpdir):
+def test_open_directory(tmpdir):
     cas_dir = os.path.join(str(tmpdir), "cas")
     cas_cache = CASCache(cas_dir, log_directory=os.path.join(str(tmpdir), "logs"))
     try:
@@ -303,7 +303,7 @@ def test_descend(tmpdir):
         generate_import_root(test_dir, filesys_discription)
 
         d.import_files(test_dir)
-        digest = d.descend("a", "l").index["g"].get_digest()
+        digest = d.open_directory("a/l")._CasBasedDirectory__index["g"].get_digest()
 
         with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
@@ -327,16 +327,16 @@ def test_bad_symlinks(tmpdir):
         d.import_files(test_dir)
         exp_reason = "not-a-directory"
 
-        with pytest.raises(VirtualDirectoryError) as error:
-            d.descend("a", "l", follow_symlinks=True)
+        with pytest.raises(DirectoryError) as error:
+            d.open_directory("a/l", follow_symlinks=True)
             assert error.reason == exp_reason
 
-        with pytest.raises(VirtualDirectoryError) as error:
-            d.descend("a", "l")
+        with pytest.raises(DirectoryError) as error:
+            d.open_directory("a/l")
             assert error.reason == exp_reason
 
-        with pytest.raises(VirtualDirectoryError) as error:
-            d.descend("a", "f")
+        with pytest.raises(DirectoryError) as error:
+            d.open_directory("a/f")
             assert error.reason == exp_reason
     finally:
         cas_cache.release_resources()
@@ -361,7 +361,7 @@ def test_relative_symlink(tmpdir):
         generate_import_root(test_dir, filesys_discription)
         d.import_files(test_dir)
 
-        digest = d.descend("a", "l", follow_symlinks=True).index["file"].get_digest()
+        digest = d.open_directory("a/l", follow_symlinks=True)._CasBasedDirectory__index["file"].get_digest()
         with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
         assert Content_to_check == content
@@ -388,7 +388,7 @@ def test_abs_symlink(tmpdir):
         generate_import_root(test_dir, filesys_discription)
         d.import_files(test_dir)
 
-        digest = d.descend("a", "l", follow_symlinks=True).index["file"].get_digest()
+        digest = d.open_directory("a/l", follow_symlinks=True)._CasBasedDirectory__index["file"].get_digest()
 
         with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
@@ -416,8 +416,8 @@ def test_bad_sym_escape(tmpdir):
         generate_import_root(test_dir, filesys_discription)
         d.import_files(os.path.join(test_dir, "jail"))
 
-        with pytest.raises(VirtualDirectoryError) as error:
-            d.descend("a", "l", follow_symlinks=True)
+        with pytest.raises(DirectoryError) as error:
+            d.open_directory("a/l", follow_symlinks=True)
             assert error.reason == "directory-not-found"
     finally:
         cas_cache.release_resources()

@@ -466,7 +466,7 @@ class ElementSources:
                 break
 
             if source._directory:
-                vsubdir = vdir.descend(*source._directory.split(os.sep), create=True)
+                vsubdir = vdir.open_directory(source._directory.lstrip(os.path.sep), create=True)
             else:
                 vsubdir = vdir
 
@@ -476,7 +476,7 @@ class ElementSources:
                 else:
                     with utils._tempdir(dir=self._context.tmpdir, prefix="staging-temp") as tmpdir:
                         # Stage previous sources
-                        vsubdir.export_files(tmpdir)
+                        vsubdir._export_files(tmpdir)
 
                         source._stage(tmpdir)
 
@@ -497,11 +497,11 @@ class ElementSources:
         vdir = self._stage(stop=source)
 
         if source._directory:
-            vdir = vdir.descend(*source._directory.split(os.sep), create=True)
+            vdir = vdir.open_directory(source._directory, create=True)
 
         if source.BST_STAGE_VIRTUAL_DIRECTORY:
             yield vdir
         else:
             with source.tempdir() as tempdir:
-                vdir.export_files(tempdir)
+                vdir._export_files(tempdir)
                 yield tempdir

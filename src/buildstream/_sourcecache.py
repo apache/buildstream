@@ -77,7 +77,7 @@ class SourceCache(AssetCache):
         if not source.BST_STAGE_VIRTUAL_DIRECTORY:
             with utils._tempdir(dir=self.context.tmpdir, prefix="staging-temp") as tmpdir:
                 source._stage(tmpdir)
-                vdir.import_files(tmpdir, can_link=True)
+                vdir.import_files(tmpdir)
         else:
             source._stage(vdir)
 

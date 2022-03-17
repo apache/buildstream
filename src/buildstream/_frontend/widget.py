@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2022 Codethink Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@ import click
 from .profile import Profile
 from ..types import _Scope
 from .. import __version__ as bst_version
+from .. import FileType
 from .._exceptions import BstError, ImplError
 from .._message import MessageType
-from ..storage.directory import _FileType
 from .._artifactelement import ArtifactElement
 
 # These messages are printed a bit differently
@@ -925,36 +925,33 @@ class LogLine(Widget):
 
         return text
 
-    # _pretty_print_dictionary()
+    # pretty_print_element_contents()
     #
-    # Formats a dictionary so it can be easily read by the user
+    # Formats a dictionary of elements and their contents in a human readable way
     #
     # Args:
-    #    values: A dictionary
-    #    style_value: Whether to use the content profile for the values
-    #    list_long (Bool): whether to display verbose information about artifacts
+    #    values (Dict[str, Directory]): A dictionary
+    #    style_value (bool): Whether to use the content profile for the values
+    #    list_long (bool): whether to display verbose information about files
     #
     # Returns:
-    #    (str): The formatted values
+    #    (str): The formatted element contents
     #
-    def _pretty_print_dictionary(self, values, long_=False, style_value=True):
+    def pretty_print_element_contents(self, values, long_=False, style_value=True):
         text = ""
-        max_key_len = 0
-        try:
-            max_key_len = max(len(key) for key in values.keys())
-        except ValueError:
-            text = ""
 
-        for key, value in values.items():
-            if isinstance(value, str) and "\n" in value:
-                text += self.format_profile.fmt("  {}:".format(key))
-                text += textwrap.indent(value, self._indent)
-                continue
+        for element_name, directory in values.items():
 
-            text += self.format_profile.fmt("  {}:{}".format(key, " " * (max_key_len - len(key))))
+            text += self.format_profile.fmt("  {}:".format(element_name))
 
-            value_list = "\n\t" + "\n\t".join((self._get_filestats(v, list_long=long_) for v in value))
-            if value == []:
+            rendered_files = []
+            for filename in directory.list_relative_paths():
+                filestat = directory.stat(filename)
+                rendered_files.append(self._get_filestats(directory, filename, filestat, list_long=long_))
+
+            value_list = "\n\t" + "\n\t".join(rendered_files)
+
+            if rendered_files == []:
                 message = "\n\tThis element has no associated artifacts"
                 if style_value:
                     text += self.content_profile.fmt(message)
@@ -1020,39 +1017,42 @@ class LogLine(Widget):
     # Gets the necessary information from a dictionary
     #
     # Args:
-    #    entry: A dictionary of info about the element
+    #    directory (Directory): The base directory
+    #    filename (str): A filename inside the directory
+    #    filestat (FileStat): A FileStat for the filename
     #    list_long (Bool): whether to display verbose information about artifacts
     #
     # Returns:
     #    (str): The information about the element
     #
-    def _get_filestats(self, entry, list_long=False):
+    def _get_filestats(self, directory, filename, filestat, list_long=False):
         if list_long:
-            size = str(entry["size"])
+            size = str(filestat.size)
             # Support files up to 99G, meaning maximum characters is 11
             max_v_len = 11
-            if entry["type"] == _FileType.DIRECTORY:
+            if filestat.file_type == FileType.DIRECTORY:
                 return (
-                    "drwxr-xr-x  dir    {}".format(entry["size"])
+                    "drwxr-xr-x  dir    {}".format(size)
                     + "{} ".format(" " * (max_v_len - len(size)))
-                    + "{}".format(entry["name"])
+                    + "{}".format(filename)
                 )
-            elif entry["type"] == _FileType.SYMLINK:
+            elif filestat.file_type == FileType.SYMLINK:
+                target = directory.readlink(*filename.split(os.path.sep))
                 return (
-                    "lrwxrwxrwx  link   {}".format(entry["size"])
+                    "lrwxrwxrwx  link   {}".format(size)
                     + "{} ".format(" " * (max_v_len - len(size)))
-                    + "{} -> {}".format(entry["name"], entry["target"])
+                    + "{} -> {}".format(filename, target)
                 )
-            elif entry["executable"]:
+            elif filestat.executable:
                 return (
-                    "-rwxr-xr-x  exe    {}".format(entry["size"])
+                    "-rwxr-xr-x  exe    {}".format(size)
                     + "{} ".format(" " * (max_v_len - len(size)))
-                    + "{}".format(entry["name"])
+                    + "{}".format(filename)
                 )
             else:
                 return (
-                    "-rw-r--r--  reg    {}".format(entry["size"])
+                    "-rw-r--r--  reg    {}".format(size)
                     + "{} ".format(" " * (max_v_len - len(size)))
-                    + "{}".format(entry["name"])
+                    + "{}".format(filename)
                 )
-        return entry["name"]
+        return filename

@@ -108,9 +108,8 @@ from ._elementsources import ElementSources
 from ._loader import Symbol, DependencyType, MetaSource
 from ._overlapcollector import OverlapCollector
 
-from .storage.directory import Directory
+from .storage import Directory, DirectoryError
 from .storage._filebaseddirectory import FileBasedDirectory
-from .storage.directory import VirtualDirectoryError
 
 if TYPE_CHECKING:
     from typing import Tuple
@@ -992,14 +991,14 @@ class Element(Plugin):
         # `self.__artifact` can't be None at this stage.
         files_vdir = self.__artifact.get_files()  # type: ignore
 
-        # Hard link it into the staging area
+        # Import files into the staging area
         #
         vbasedir = sandbox.get_virtual_directory()
-        vstagedir = vbasedir if path is None else vbasedir.descend(*path.lstrip(os.sep).split(os.sep), create=True)
+        vstagedir = vbasedir if path is None else vbasedir.open_directory(path.lstrip(os.sep), create=True)
 
         split_filter = self.__split_filter_func(include, exclude, orphans)
 
-        result = vstagedir.import_files(files_vdir, filter_callback=split_filter, report_written=True, can_link=True)
+        result = vstagedir._import_files_internal(files_vdir, filter_callback=split_filter)
 
         owner._overlap_collector.collect_stage_result(self, result)
 
@@ -1466,7 +1465,7 @@ class Element(Plugin):
 
         # Stage all sources that need to be copied
         sandbox_vroot = sandbox.get_virtual_directory()
-        host_vdirectory = sandbox_vroot.descend(*directory.lstrip(os.sep).split(os.sep), create=True)
+        host_vdirectory = sandbox_vroot.open_directory(directory.lstrip(os.sep), create=True)
         self._stage_sources_at(host_vdirectory, usebuildtree=sandbox._usebuildtree)
 
     # _stage_sources_at():
@@ -1474,7 +1473,7 @@ class Element(Plugin):
     # Stage this element's sources to a directory
     #
     # Args:
-    #     vdirectory (:class:`.storage.Directory`): A virtual directory object to stage sources into.
+    #     vdirectory (Union[str, Directory]): A virtual directory object or local path to stage sources to.
     #     usebuildtree (bool): use a the elements build tree as its source.
     #
     def _stage_sources_at(self, vdirectory, usebuildtree=False):
@@ -1485,13 +1484,13 @@ class Element(Plugin):
 
             if not isinstance(vdirectory, Directory):
                 vdirectory = FileBasedDirectory(vdirectory)
-            if not vdirectory.is_empty():
+            if vdirectory:
                 raise ElementError("Staging directory '{}' is not empty".format(vdirectory))
 
             # Check if we have a cached buildtree to use
             if usebuildtree:
                 import_dir = self.__artifact.get_buildtree()
-                if import_dir.is_empty():
+                if not import_dir:
                     detail = "Element type either does not expect a buildtree or it was explictily cached without one."
                     self.warn("WARNING: {} Artifact contains an empty buildtree".format(self.name), detail=detail)
 
@@ -1510,10 +1509,10 @@ class Element(Plugin):
                     import_dir = staged_sources
 
             # Set update_mtime to ensure deterministic mtime of sources at build time
-            vdirectory.import_files(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP)
+            vdirectory._import_files_internal(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP)
 
         # Ensure deterministic owners of sources at build time
-        vdirectory.set_deterministic_user()
+        vdirectory._set_deterministic_user()
 
     # _set_required():
     #
@@ -1774,11 +1773,9 @@ class Element(Plugin):
             cache_buildtrees == _CacheBuildTrees.AUTO and (not build_success or self._get_workspace())
         ):
             try:
-                sandbox_build_dir = sandbox_vroot.descend(
-                    *self.get_variable("build-root").lstrip(os.sep).split(os.sep)
-                )
+                sandbox_build_dir = sandbox_vroot.open_directory(self.get_variable("build-root").lstrip(os.sep))
                 sandbox._fetch_missing_blobs(sandbox_build_dir)
-            except VirtualDirectoryError:
+            except DirectoryError:
                 # Directory could not be found. Pre-virtual
                 # directory behaviour was to continue silently
                 # if the directory could not be found.
@@ -1788,9 +1785,9 @@ class Element(Plugin):
 
         if collect is not None:
             try:
-                collectvdir = sandbox_vroot.descend(*collect.lstrip(os.sep).split(os.sep))
+                collectvdir = sandbox_vroot.open_directory(collect.lstrip(os.sep))
                 sandbox._fetch_missing_blobs(collectvdir)
-            except VirtualDirectoryError:
+            except DirectoryError:
                 pass
 
         # We should always have cache keys already set when caching an artifact
@@ -2188,7 +2185,7 @@ class Element(Plugin):
             try:
                 # Stage all element sources into CAS
                 self.__sources.stage_and_cache()
-            except (SourceCacheError, VirtualDirectoryError) as e:
+            except (SourceCacheError, DirectoryError) as e:
                 raise ElementError(
                     "Error trying to stage sources for {}: {}".format(self.name, e), reason="stage-sources-fail"
                 )
@@ -2388,17 +2385,6 @@ class Element(Plugin):
                         if rdep.__buildable_callback is not None:
                             rdep.__buildable_callback(rdep)
                             rdep.__buildable_callback = None
-
-    # _walk_artifact_files()
-    #
-    # A generator which yields all of the files cached in the
-    # element's artifact.
-    #
-    # Yields:
-    #    (str): Filenames in the artifact
-    #
-    def _walk_artifact_files(self):
-        yield from self.__artifact.get_files().walk()
 
     # _get_artifact()
     #

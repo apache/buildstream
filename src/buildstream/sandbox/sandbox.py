@@ -495,16 +495,15 @@ class Sandbox:
     #         (bool): Whether a command exists inside the sandbox.
     def _has_command(self, command, env=None):
         vroot = self.get_virtual_directory()
-        command_as_parts = command.lstrip(os.sep).split(os.sep)
         if os.path.isabs(command):
-            return vroot.exists(*command_as_parts, follow_symlinks=True)
+            return vroot.exists(command.lstrip(os.sep), follow_symlinks=True)
 
-        if len(command_as_parts) > 1:
+        if "/" in command:
             return False
 
         for path in env.get("PATH").split(":"):
-            path_as_parts = path.lstrip(os.sep).split(os.sep)
-            if vroot.exists(*path_as_parts, command, follow_symlinks=True):
+            try_path = os.path.join(path, command).lstrip(os.sep)
+            if vroot.exists(try_path, follow_symlinks=True):
                 return True
 
         return False
@@ -530,7 +529,7 @@ class Sandbox:
         else:
             vdir = self.get_virtual_directory()
             cwd = self._get_work_directory()
-            cwd_vdir = vdir.descend(*cwd.lstrip(os.sep).split(os.sep), create=True)
+            cwd_vdir = vdir.open_directory(cwd.lstrip(os.sep), create=True)
             cwd_vdir._create_empty_file(name)
 
     # _get_element_name()
@@ -644,7 +643,7 @@ class _SandboxBatch:
     def create_empty_file(self, name):
         vdir = self.sandbox.get_virtual_directory()
         cwd = self.sandbox._get_work_directory()
-        cwd_vdir = vdir.descend(*cwd.lstrip(os.sep).split(os.sep), create=True)
+        cwd_vdir = vdir.open_directory(cwd.lstrip(os.sep), create=True)
         cwd_vdir._create_empty_file(name)
 
 
