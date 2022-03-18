@@ -63,11 +63,6 @@ class AutotoolsElement(BuildElement):
 
     BST_MIN_VERSION = "2.0"
 
-    # Enable command batching across prepare() and assemble()
-    def configure_sandbox(self, sandbox):
-        super().configure_sandbox(sandbox)
-        self.batch_prepare_assemble(root_read_only=True, collect=self.get_variable("install-root"))
-
 
 # Plugin entry point
 def setup():

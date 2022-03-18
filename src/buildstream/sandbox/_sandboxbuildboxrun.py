@@ -104,8 +104,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
             marked_directories = self._get_marked_directories()
             mount_sources = self._get_mount_sources()
-            for mark in marked_directories:
-                mount_point = mark["directory"]
+            for mount_point in marked_directories:
                 mount_source = mount_sources.get(mount_point)
                 if not mount_source:
                     # Handled by the input tree in the action

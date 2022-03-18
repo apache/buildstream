@@ -47,13 +47,6 @@ explicitly stated otherwise.
   Stage dependencies and :class:`Sources <buildstream.source.Source>` into
   the sandbox.
 
-* :func:`Element.prepare() <buildstream.element.Element.prepare>`
-
-  Call preparation methods that should only be performed once in the
-  lifetime of a build directory (e.g. autotools' ./configure).
-
-  **Optional**: If left unimplemented, this step will be skipped.
-
 * :func:`Element.assemble() <buildstream.element.Element.assemble>`
 
   Perform the actual assembly of the element
@@ -77,7 +70,6 @@ import re
 import stat
 import copy
 import warnings
-import contextlib
 from contextlib import contextmanager, suppress
 from functools import partial
 from itertools import chain
@@ -300,13 +292,6 @@ class Element(Plugin):
         self.__dynamic_public = None
         self.__sandbox_config = None  # type: Optional[SandboxConfig]
 
-        self.__batch_prepare_assemble = False  # Whether batching across prepare()/assemble() is configured
-        self.__batch_prepare_assemble_rro = (
-            False  # Whether the root is readonly when batching across prepare()/assemble()
-        )
-        # Collect dir for batching across prepare()/assemble()
-        self.__batch_prepare_assemble_collect = None  # type: Optional[str]
-
         # Callbacks
         self.__required_callback = None  # Callback to Queues
         self.__can_query_cache_callback = None  # Callback to PullQueue/FetchQueue
@@ -397,24 +382,6 @@ class Element(Plugin):
         on, or both.
         """
         raise ImplError("element plugin '{kind}' does not implement stage()".format(kind=self.get_kind()))
-
-    def prepare(self, sandbox: "Sandbox") -> None:
-        """Run one-off preparation commands.
-
-        This is run before assemble(), but is guaranteed to run only
-        the first time if we build incrementally - this makes it
-        possible to run configure-like commands without causing the
-        entire element to rebuild.
-
-        Args:
-           sandbox: The build sandbox
-
-        Raises:
-           (:class:`.ElementError`): When the element raises an error
-
-        By default, this method does nothing, but may be overriden to
-        allow configure-like commands.
-        """
 
     def assemble(self, sandbox: "Sandbox") -> str:
         """Assemble the output artifact
@@ -819,24 +786,6 @@ class Element(Plugin):
         """
         assert self.__variables
         return self.__variables.get(varname)
-
-    def batch_prepare_assemble(self, *, root_read_only: bool = False, collect: Optional[str] = None) -> None:
-        """ Configure command batching across prepare() and assemble()
-
-        Args:
-           root_read_only: Whether the filesystem root should be read only
-           collect: An optional directory containing partial install contents
-                    on command failure.
-
-        This may be called in :func:`Element.configure_sandbox() <buildstream.element.Element.configure_sandbox>`
-        to enable batching of all sandbox commands issued in prepare() and assemble().
-        """
-        if self.__batch_prepare_assemble:
-            raise ElementError("{}: Command batching for prepare/assemble is already configured".format(self))
-
-        self.__batch_prepare_assemble = True
-        self.__batch_prepare_assemble_rro = root_read_only
-        self.__batch_prepare_assemble_collect = collect
 
     #############################################################
     #            Private Methods used in BuildStream            #
@@ -1724,19 +1673,8 @@ class Element(Plugin):
                 # Step 2 - Stage
                 self.__stage(sandbox)
                 try:
-                    if self.__batch_prepare_assemble:
-                        cm = sandbox.batch(
-                            root_read_only=self.__batch_prepare_assemble_rro,
-                            collect=self.__batch_prepare_assemble_collect,
-                        )
-                    else:
-                        cm = contextlib.suppress()
-
-                    with cm:
-                        # Step 3 - Prepare
-                        self.__prepare(sandbox)
-                        # Step 4 - Assemble
-                        collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
+                    # Step 3 - Assemble
+                    collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
 
                     self.__set_build_result(success=True, description="succeeded")
                 except (ElementError, SandboxCommandError) as e:
@@ -2606,7 +2544,6 @@ class Element(Plugin):
     # Internal method for calling public abstract configure_sandbox() method.
     #
     def __configure_sandbox(self, sandbox):
-        self.__batch_prepare_assemble = False
 
         self.configure_sandbox(sandbox)
 
@@ -2619,13 +2556,6 @@ class Element(Plugin):
         # Enable the overlap collector during the staging process
         with self.__collect_overlaps():
             self.stage(sandbox)
-
-    # __prepare():
-    #
-    # Internal method for calling public abstract prepare() method.
-    #
-    def __prepare(self, sandbox):
-        self.prepare(sandbox)
 
     # __preflight():
     #

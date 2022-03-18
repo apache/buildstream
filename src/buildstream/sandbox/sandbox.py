@@ -76,7 +76,7 @@ class Sandbox:
     def __init__(self, context: "Context", project: "Project", directory: str, **kwargs):
         self.__context = context
         self.__project = project
-        self.__directories = []  # type: List[Dict[str, Union[int, str]]]
+        self.__directories = []  # type: List[str]
         self.__cwd = None  # type: Optional[str]
         self.__env = None  # type: Optional[Dict[str, str]]
         self.__mount_sources = {}  # type: Dict[str, str]
@@ -149,13 +149,11 @@ class Sandbox:
 
         self.__cwd = directory
 
-    def mark_directory(self, directory: str, *, artifact: bool = False) -> None:
+    def mark_directory(self, directory: str) -> None:
         """Marks a sandbox directory and ensures it will exist
 
         Args:
            directory: An absolute path within the sandbox to mark
-           artifact: Whether the content staged at this location
-                     contains artifacts
 
         .. note::
            Any marked directories will be read-write in the sandboxed
@@ -163,7 +161,7 @@ class Sandbox:
         """
         assert directory.startswith("/"), "The directories marked in the sandbox must be absolute paths"
 
-        self.__directories.append({"directory": directory, "artifact": artifact})
+        self.__directories.append(directory)
 
     def run(
         self,
@@ -397,11 +395,7 @@ class Sandbox:
     # Fetches the marked directories in the sandbox
     #
     # Returns:
-    #    (list): A list of directory mark objects.
-    #
-    # The returned objects are dictionaries with the following attributes:
-    #    directory: The absolute path within the sandbox
-    #    artifact: Whether the path will contain artifacts or not
+    #    (List[str]): A list of marked directories.
     #
     def _get_marked_directories(self):
         return self.__directories
