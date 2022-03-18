@@ -89,7 +89,7 @@ class ArtifactShare():
                                max_head_size=self.max_head_size,
                                min_head_size=self.min_head_size,
                                enable_push=True)
-        port = server.add_insecure_port('localhost:0')
+        port = server.add_insecure_port('127.0.0.1:0')
 
         server.start()
 
