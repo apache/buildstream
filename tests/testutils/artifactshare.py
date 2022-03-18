@@ -47,7 +47,7 @@ class BaseArtifactShare:
         with ExitStack() as stack:
             try:
                 server = stack.enter_context(self._create_server())
-                port = server.add_insecure_port("localhost:0")
+                port = server.add_insecure_port("127.0.0.1:0")
                 server.start()
             except Exception:
                 q.put(None)
