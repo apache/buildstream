@@ -951,7 +951,7 @@ class LogLine(Widget):
 
             value_list = "\n\t" + "\n\t".join(rendered_files)
 
-            if rendered_files == []:
+            if not rendered_files:
                 message = "\n\tThis element has no associated artifacts"
                 if style_value:
                     text += self.content_profile.fmt(message)

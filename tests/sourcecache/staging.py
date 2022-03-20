@@ -160,7 +160,7 @@ def test_staged_source_build(tmpdir, datafiles, cli):
     files = []
     for _, _, filename in os.walk(source_dir):
         files.extend(filename)
-    assert files == []
+    assert not files, files
 
     # Now remove the source refs and check the state
     shutil.rmtree(source_protos)
