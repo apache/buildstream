@@ -18,8 +18,6 @@ depends:
 - sources/remote2.bst
 - sources/tar1.bst
 - sources/tar2.bst
-- sources/zip1.bst
-- sources/zip2.bst
 - elements/build1.bst
 - elements/build2.bst
 - elements/build3.bst
