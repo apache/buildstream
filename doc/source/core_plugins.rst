@@ -52,7 +52,6 @@ information.
    sources/remote
    sources/tar
    sources/git
-   sources/bzr
    sources/patch
    sources/pip
 
