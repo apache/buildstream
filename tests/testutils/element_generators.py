@@ -20,16 +20,15 @@ from buildstream._testing import create_repo
 #    size: (int) size of the element in bytes
 #
 # Returns:
-#    (Repo): A git repo which can be used to introduce trackable changes
-#            by using the update_element_size() function below.
+#    (Repo): A repo representing the sized element
 #
 def create_element_size(name, project_dir, elements_path, dependencies, size):
     full_elements_path = os.path.join(project_dir, elements_path)
     os.makedirs(full_elements_path, exist_ok=True)
 
-    # Create a git repo
+    # Create a repo
     repodir = os.path.join(project_dir, "repos")
-    repo = create_repo("git", repodir, subdir=name)
+    repo = create_repo("tar", repodir, subdir=name)
 
     with utils._tempdir(dir=project_dir) as tmp:
 
@@ -61,37 +60,3 @@ def create_element_size(name, project_dir, elements_path, dependencies, size):
 
     # Return the repo, so that it can later be used to add commits
     return repo
-
-
-# update_element_size()
-#
-# Updates a repo returned by create_element_size() such that
-# the newly added commit is completely changed, and has the newly
-# specified size.
-#
-# The name and project_dir arguments must match the arguments
-# previously given to create_element_size()
-#
-# Args:
-#    name: (str) of the element name (e.g. target.bst)
-#    project_dir (str): The path to the project
-#    repo: (Repo) The Repo returned by create_element_size()
-#    size: (int) The new size which the element generates, in bytes
-#
-# Returns:
-#    (Repo): A git repo which can be used to introduce trackable changes
-#            by using the update_element_size() function below.
-#
-def update_element_size(name, project_dir, repo, size):
-
-    with utils._tempdir(dir=project_dir) as tmp:
-
-        new_file = os.path.join(tmp, name)
-
-        # Use /dev/urandom to create the sized file in the datadir
-        with open(new_file, "wb+") as f:
-            f.write(os.urandom(size))
-
-        # Modify the git repo with a new commit to the same path,
-        # replacing the original file with a new one.
-        repo.modify_file(new_file, os.path.join("data", name))

@@ -54,7 +54,7 @@ def test_junction_build_remote(cli, tmpdir, datafiles):
     junction_path = os.path.join(element_path, "junction.bst")
 
     # We need a repo for real trackable elements
-    repo = create_repo("git", str(tmpdir))
+    repo = create_repo("tar", str(tmpdir))
     ref = repo.create(amhello_files_path)
 
     # ensure that the correct project directory is also listed in the junction

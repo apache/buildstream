@@ -1038,7 +1038,7 @@ def test_partial_artifact_checkout_fetch(cli, datafiles, tmpdir):
     project = str(datafiles)
     checkout_dir = os.path.join(str(tmpdir), "checkout")
 
-    repo = create_repo("git", str(tmpdir))
+    repo = create_repo("tar", str(tmpdir))
     repo.create(os.path.join(str(datafiles), "files"))
     element_dir = os.path.join(str(tmpdir), "elements")
     project = str(tmpdir)

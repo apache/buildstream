@@ -52,7 +52,7 @@ def test_source_checkout(tmpdir, datafiles, cli):
     # check implicit fetching
     res = cli.run(project=project_dir, args=["source", "checkout", "--directory", target_dir, "target.bst"])
     res.assert_success()
-    assert "Fetching from" in res.stderr
+    assert "Fetching" in res.stderr
 
     # remove the directory and check source checkout works with sources only in
     # the CAS
@@ -62,11 +62,11 @@ def test_source_checkout(tmpdir, datafiles, cli):
 
     res = cli.run(project=project_dir, args=["source", "checkout", "--directory", target_dir, "target.bst"])
     res.assert_success()
-    assert "Fetching from" not in res.stderr
+    assert "Fetching" not in res.stderr
 
     # remove the CAS and check it doesn't work again
     shutil.rmtree(target_dir)
     shutil.rmtree(os.path.join(cache_dir, "cas"))
 
     res = cli.run(project=project_dir, args=["source", "checkout", "--directory", target_dir, "target.bst"])
-    res.assert_task_error(ErrorDomain.PLUGIN, None)
+    res.assert_task_error(ErrorDomain.SOURCE, None)

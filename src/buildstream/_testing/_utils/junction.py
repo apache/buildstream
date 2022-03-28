@@ -1,9 +1,8 @@
-import subprocess
-import pytest
+import os
+import tarfile
 
-from buildstream import _yaml
+from buildstream import _yaml, utils
 from .. import Repo
-from .site import HAVE_GIT, GIT, GIT_ENV
 
 
 # generate_junction()
@@ -23,7 +22,7 @@ def generate_junction(tmpdir, subproject_path, junction_path, *, store_ref=True,
     # Create a repo to hold the subproject and generate
     # a junction element for it
     #
-    repo = _SimpleGit(str(tmpdir))
+    repo = _SimpleTar(str(tmpdir))
     source_ref = ref = repo.create(subproject_path)
     if not store_ref:
         source_ref = None
@@ -38,45 +37,23 @@ def generate_junction(tmpdir, subproject_path, junction_path, *, store_ref=True,
     return ref
 
 
-# A barebones Git Repo class to use for generating junctions
-class _SimpleGit(Repo):
-    def __init__(self, directory, subdir="repo"):
-        if not HAVE_GIT:
-            pytest.skip("git is not available")
-        super().__init__(directory, subdir)
-
+# A barebones Tar Repo class to use for generating junctions
+class _SimpleTar(Repo):
     def create(self, directory):
-        self.copy_directory(directory, self.repo)
-        self._run_git("init", ".")
-        self._run_git("add", ".")
-        self._run_git("commit", "-m", "Initial commit")
-        return self.latest_commit()
+        tarball = os.path.join(self.repo, "file.tar.gz")
 
-    def latest_commit(self):
-        return self._run_git(
-            "rev-parse",
-            "HEAD",
-            stdout=subprocess.PIPE,
-            universal_newlines=True,
-        ).stdout.strip()
+        old_dir = os.getcwd()
+        os.chdir(directory)
+        with tarfile.open(tarball, "w:gz") as tar:
+            tar.add(".")
+        os.chdir(old_dir)
+
+        return utils.sha256sum(tarball)
 
     def source_config(self, ref=None):
-        return self.source_config_extra(ref)
-
-    def source_config_extra(self, ref=None, checkout_submodules=None):
-        config = {"kind": "git", "url": "file://" + self.repo, "track": "master"}
+        tarball = os.path.join(self.repo, "file.tar.gz")
+        config = {"kind": "tar", "url": "file://" + tarball, "directory": "", "base-dir": ""}
         if ref is not None:
             config["ref"] = ref
-        if checkout_submodules is not None:
-            config["checkout-submodules"] = checkout_submodules
 
         return config
-
-    def _run_git(self, *args, **kwargs):
-        argv = [GIT]
-        argv.extend(args)
-        if "env" not in kwargs:
-            kwargs["env"] = dict(GIT_ENV, PWD=self.repo)
-        kwargs.setdefault("cwd", self.repo)
-        kwargs.setdefault("check", True)
-        return subprocess.run(argv, **kwargs)  # pylint: disable=subprocess-run-check

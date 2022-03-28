@@ -110,7 +110,7 @@ def test_default_target_track(cli, tmpdir, datafiles):
     target = "track-fetch-test.bst"
 
     # First, create an element with trackable sources
-    repo = create_repo("git", str(tmpdir))
+    repo = create_repo("tar", str(tmpdir))
     repo.create(project)
     element_conf = {"kind": "import", "sources": [repo.source_config()]}
     _yaml.roundtrip_dump(element_conf, os.path.join(project, "elements", target))
@@ -140,7 +140,7 @@ def test_default_target_fetch(cli, tmpdir, datafiles):
     target = "track-fetch-test.bst"
 
     # First, create an element with trackable sources
-    repo = create_repo("git", str(tmpdir))
+    repo = create_repo("tar", str(tmpdir))
     ref = repo.create(project)
     element_conf = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
     _yaml.roundtrip_dump(element_conf, os.path.join(project, "elements", target))
