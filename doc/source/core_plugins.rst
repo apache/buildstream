@@ -53,7 +53,6 @@ information.
    sources/tar
    sources/git
    sources/patch
-   sources/pip
 
 
 .. _plugins_external:
