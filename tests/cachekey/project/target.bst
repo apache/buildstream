@@ -4,7 +4,6 @@ description: |
   This is the main entry point including cases in the cache key test.
 
 depends:
-- sources/bzr1.bst
 - sources/git1.bst
 - sources/git2.bst
 - sources/git3.bst
