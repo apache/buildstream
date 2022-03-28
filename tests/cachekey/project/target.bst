@@ -9,9 +9,6 @@ depends:
 - sources/git3.bst
 - sources/local1.bst
 - sources/local2.bst
-- sources/patch1.bst
-- sources/patch2.bst
-- sources/patch3.bst
 - sources/remote1.bst
 - sources/remote2.bst
 - sources/tar1.bst
