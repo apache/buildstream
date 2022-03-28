@@ -52,7 +52,6 @@ information.
    sources/remote
    sources/tar
    sources/git
-   sources/patch
 
 
 .. _plugins_external:
