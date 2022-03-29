@@ -96,8 +96,7 @@ class ProgramNotFoundError(BstError):
 
 
 class DirectoryExistsError(OSError):
-    """Raised when a `os.rename` is attempted but the destination is an existing directory.
-    """
+    """Raised when a `os.rename` is attempted but the destination is an existing directory."""
 
 
 class FileListResult:
@@ -223,7 +222,7 @@ def _set_file_mtime(fullpath: str, seconds: Union[int, float]) -> None:
     """
     assert isinstance(fullpath, str), "Path to file must be a string: {}".format(str(fullpath))
     assert isinstance(seconds, (int, float)), "Mtime to set must be a float or integer: {}".format(str(seconds))
-    set_mtime = seconds * 10 ** 9
+    set_mtime = seconds * 10**9
     try:
         os.utime(fullpath, times=None, ns=(int(set_mtime), int(set_mtime)))
     except OSError:
@@ -1611,7 +1610,9 @@ def _parse_version(version: str) -> Tuple[int, int]:
         major = int(versions[0])
         minor = int(versions[1])
     except (IndexError, ValueError, AttributeError) as e:
-        raise UtilError("Malformed version string: {}".format(version),) from e
+        raise UtilError(
+            "Malformed version string: {}".format(version),
+        ) from e
 
     return major, minor
 

@@ -152,11 +152,11 @@ def combinations(integer_range):
 
 
 def resolve_symlinks(path, root):
-    """ A function to resolve symlinks inside 'path' components apart from the last one.
-        For example, resolve_symlinks('/a/b/c/d', '/a/b')
-        will return '/a/b/f/d' if /a/b/c is a symlink to /a/b/f. The final component of
-        'path' is not resolved, because we typically want to inspect the symlink found
-        at that path, not its target.
+    """A function to resolve symlinks inside 'path' components apart from the last one.
+    For example, resolve_symlinks('/a/b/c/d', '/a/b')
+    will return '/a/b/f/d' if /a/b/c is a symlink to /a/b/f. The final component of
+    'path' is not resolved, because we typically want to inspect the symlink found
+    at that path, not its target.
 
     """
     components = path.split(os.path.sep)

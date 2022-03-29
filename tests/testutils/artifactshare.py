@@ -133,7 +133,12 @@ class ArtifactShare(BaseArtifactShare):
         super().__init__()
 
     def _create_server(self):
-        return create_server(self.repodir, quota=self.quota, enable_push=True, index_only=self.index_only,)
+        return create_server(
+            self.repodir,
+            quota=self.quota,
+            enable_push=True,
+            index_only=self.index_only,
+        )
 
     # has_object():
     #

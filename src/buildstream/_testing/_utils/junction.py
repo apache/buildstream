@@ -53,7 +53,12 @@ class _SimpleGit(Repo):
         return self.latest_commit()
 
     def latest_commit(self):
-        return self._run_git("rev-parse", "HEAD", stdout=subprocess.PIPE, universal_newlines=True,).stdout.strip()
+        return self._run_git(
+            "rev-parse",
+            "HEAD",
+            stdout=subprocess.PIPE,
+            universal_newlines=True,
+        ).stdout.strip()
 
     def source_config(self, ref=None):
         return self.source_config_extra(ref)

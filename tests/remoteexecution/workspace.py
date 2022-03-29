@@ -98,7 +98,12 @@ def get_mtimes(root):
 
 
 def check_buildtree(
-    cli, project, element_name, input_files, generated_files, incremental=False,
+    cli,
+    project,
+    element_name,
+    input_files,
+    generated_files,
+    incremental=False,
 ):
     # check modified workspace dir was cached
     #   - generated files are present
@@ -175,7 +180,8 @@ def check_buildtree(
 
 def get_timemark(cli, project, element_name, marker):
     result = cli.run(
-        project=project, args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", marker[1:]],
+        project=project,
+        args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", marker[1:]],
     )
     result.assert_success()
     marker_time = int(result.output)
@@ -184,7 +190,11 @@ def get_timemark(cli, project, element_name, marker):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
-    "modification", [pytest.param("content"), pytest.param("time"),],
+    "modification",
+    [
+        pytest.param("content"),
+        pytest.param("time"),
+    ],
 )
 def test_workspace_build(cli, tmpdir, datafiles, modification):
     project = str(datafiles)

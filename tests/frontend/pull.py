@@ -18,7 +18,10 @@ from tests.testutils import (
 
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 # Tests that:
@@ -91,7 +94,14 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
 
         # Build the target and push it to share2 only.
         cli.configure(
-            {"artifacts": {"servers": [{"url": share1.repo, "push": False}, {"url": share2.repo, "push": True},]}}
+            {
+                "artifacts": {
+                    "servers": [
+                        {"url": share1.repo, "push": False},
+                        {"url": share2.repo, "push": True},
+                    ]
+                }
+            }
         )
         result = cli.run(project=project, args=["build", "target.bst"])
         result.assert_success()
@@ -139,7 +149,15 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
 
         # Configure the default push location to be bad_share; we will assert that
         # nothing actually gets pushed there.
-        cli.configure({"artifacts": {"servers": [{"url": bad_share.repo, "push": True},]}})
+        cli.configure(
+            {
+                "artifacts": {
+                    "servers": [
+                        {"url": bad_share.repo, "push": True},
+                    ]
+                }
+            }
+        )
 
         # Now try `bst artifact push` to the good_share.
         result = cli.run(

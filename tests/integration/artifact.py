@@ -35,7 +35,10 @@ pytestmark = pytest.mark.integration
 
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 # A test to capture the integration of the cachebuildtrees

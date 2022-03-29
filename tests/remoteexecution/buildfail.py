@@ -27,7 +27,10 @@ from buildstream._testing import cli_remote_execution as cli  # pylint: disable=
 pytestmark = pytest.mark.remoteexecution
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -39,8 +42,18 @@ def test_build_remote_failure(cli, datafiles):
     # Write out our test target
     element = {
         "kind": "script",
-        "depends": [{"filename": "base.bst", "type": "build",},],
-        "config": {"commands": ["touch %{install-root}/foo", "false",],},
+        "depends": [
+            {
+                "filename": "base.bst",
+                "type": "build",
+            },
+        ],
+        "config": {
+            "commands": [
+                "touch %{install-root}/foo",
+                "false",
+            ],
+        },
     }
     _yaml.roundtrip_dump(element, element_path)
 

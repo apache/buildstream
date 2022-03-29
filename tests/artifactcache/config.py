@@ -181,13 +181,21 @@ def test_only_one(cli, datafiles, override_caches, project_caches, user_caches):
         [
             {
                 "url": "http://localhost.test",
-                "auth": {"server-cert": "~/server.crt", "client-cert": "~/client.crt", "client-key": "~/client.key",},
+                "auth": {
+                    "server-cert": "~/server.crt",
+                    "client-cert": "~/client.crt",
+                    "client-key": "~/client.key",
+                },
             }
         ],
         [
             {
                 "url": "http://localhost.test",
-                "auth": {"server-cert": "~/server.crt", "client-cert": "~/client.crt", "client-key": "~/client.key",},
+                "auth": {
+                    "server-cert": "~/server.crt",
+                    "client-cert": "~/client.crt",
+                    "client-key": "~/client.key",
+                },
             },
             {
                 "url": "http://localhost2.test",

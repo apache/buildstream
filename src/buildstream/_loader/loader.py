@@ -858,8 +858,9 @@ class Loader:
             )
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
-                message = provenance_str() + "Could not find the project.conf file in the project " "referred to by junction element '{}'.".format(
-                    element.name
+                message = (
+                    provenance_str() + "Could not find the project.conf file in the project "
+                    "referred to by junction element '{}'.".format(element.name)
                 )
                 if element.path:
                     message += " Was expecting it at path '{}' in the junction's source.".format(element.path)

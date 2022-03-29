@@ -10,7 +10,10 @@ from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "link",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "link",
+)
 
 #
 # Test links to elements, this tests both specifying the link as
@@ -109,15 +112,30 @@ def test_conditional_junctions(cli, tmpdir, datafiles, greeting, expected_file):
         # Target is a link to a non-existing local element
         ("link-target.bst", "link-target.bst [line 4 column 10]"),
         # Target is a stack depending on a link to a non-existing local element
-        ("depends-on-link-target.bst", "link-target.bst [line 4 column 10]",),
+        (
+            "depends-on-link-target.bst",
+            "link-target.bst [line 4 column 10]",
+        ),
         # Depends on non-existing subproject element, via a local link
-        ("linked-local-junction-target.bst", "linked-local-junction-target.bst [line 4 column 2]",),
+        (
+            "linked-local-junction-target.bst",
+            "linked-local-junction-target.bst [line 4 column 2]",
+        ),
         # Depends on non-existing subsubproject element, via a local link
-        ("linked-nested-junction-target.bst", "linked-nested-junction-target.bst [line 4 column 2]",),
+        (
+            "linked-nested-junction-target.bst",
+            "linked-nested-junction-target.bst [line 4 column 2]",
+        ),
         # Depends on an element via a link to a non-existing local junction
-        ("linked-local-junction.bst", "subproject-link-notfound.bst [line 4 column 10]",),
+        (
+            "linked-local-junction.bst",
+            "subproject-link-notfound.bst [line 4 column 10]",
+        ),
         # Depends on an element via a link to a non-existing subproject junction
-        ("linked-nested-junction.bst", "subsubproject-link-notfound.bst [line 4 column 10]",),
+        (
+            "linked-nested-junction.bst",
+            "subsubproject-link-notfound.bst [line 4 column 10]",
+        ),
         # Target is a link to a non-existing nested element referred to with a full path
         ("link-full-path.bst", "link-full-path.bst [line 4 column 10]"),
         # Target depends on a link to a non-existing nested element referred to with a full path

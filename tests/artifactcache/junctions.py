@@ -11,7 +11,10 @@ from buildstream._testing import cli  # pylint: disable=unused-import
 from tests.testutils import create_artifact_share, assert_shared, assert_not_shared
 
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "junctions",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "junctions",
+)
 
 
 def project_set_artifacts(project, url):

@@ -9,7 +9,10 @@ from buildstream import _yaml, utils
 from buildstream._exceptions import LoadError
 from buildstream.exceptions import LoadErrorReason
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "context",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "context",
+)
 
 
 # Simple fixture to create a Context object.

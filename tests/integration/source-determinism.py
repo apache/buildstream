@@ -30,8 +30,7 @@ def create_test_directory(*path, mode=0o644):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
 def test_deterministic_source_local(cli, tmpdir, datafiles):
-    """Only user rights should be considered for local source.
-    """
+    """Only user rights should be considered for local source."""
     project = str(datafiles)
     element_name = "test.bst"
     element_path = os.path.join(project, "elements", element_name)

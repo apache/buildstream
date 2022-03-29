@@ -27,7 +27,10 @@ from tests.testutils import generate_junction
 pytestmark = pytest.mark.remoteexecution
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 def configure_project(path, config):

@@ -173,7 +173,9 @@ class RemoteSpec:
     def credentials(self) -> ChannelCredentials:
         if not self._credentials:
             self._credentials = grpc.ssl_channel_credentials(
-                root_certificates=self.server_cert, private_key=self.client_key, certificate_chain=self.client_cert,
+                root_certificates=self.server_cert,
+                private_key=self.client_key,
+                certificate_chain=self.client_cert,
             )
         return self._credentials
 

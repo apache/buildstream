@@ -65,10 +65,10 @@ from buildstream import utils
 
 class ReadableTarInfo(tarfile.TarInfo):
     """
-           The goal is to override `TarFile`'s `extractall` semantics by ensuring that on extraction, the
-           files are readable by the owner of the file. This is done by overriding the accessor for the
-           `mode` attribute in `TarInfo`, the class that encapsulates the internal meta-data of the tarball,
-           so that the owner-read bit is always set.
+    The goal is to override `TarFile`'s `extractall` semantics by ensuring that on extraction, the
+    files are readable by the owner of the file. This is done by overriding the accessor for the
+    `mode` attribute in `TarInfo`, the class that encapsulates the internal meta-data of the tarball,
+    so that the owner-read bit is always set.
     """
 
     # https://github.com/python/mypy/issues/4125

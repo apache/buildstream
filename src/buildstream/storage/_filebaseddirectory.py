@@ -276,7 +276,11 @@ class FileBasedDirectory(Directory):
 
             import_result = FileListResult()
             self.__import_files_from_directory(
-                external_pathspec, copy_action, filter_callback, update_mtime=update_mtime, result=import_result,
+                external_pathspec,
+                copy_action,
+                filter_callback,
+                update_mtime=update_mtime,
+                result=import_result,
             )
 
         return import_result
@@ -345,7 +349,8 @@ class FileBasedDirectory(Directory):
                         current_dir = current_dir.__open_directory(newpaths, follow_symlinks=True)
                 else:
                     raise DirectoryError(
-                        "Cannot open '{}': '{}' is not a directory".format(path, new_path), reason="not-a-directory",
+                        "Cannot open '{}': '{}' is not a directory".format(path, new_path),
+                        reason="not-a-directory",
                     )
             except FileNotFoundError:
                 if create:

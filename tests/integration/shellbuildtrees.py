@@ -296,7 +296,16 @@ def test_shell_pull_cached_buildtree(share_with_buildtrees, datafiles, cli, pull
     # Run the shell and request that required artifacts and buildtrees should be pulled
     result = cli.run(
         project=project,
-        args=["--pull-buildtrees", "shell", "--build", element_name, "--use-buildtree", "--", "cat", "test",],
+        args=[
+            "--pull-buildtrees",
+            "shell",
+            "--build",
+            element_name,
+            "--use-buildtree",
+            "--",
+            "cat",
+            "test",
+        ],
     )
 
     # In this case, we should succeed every time, regardless of what was

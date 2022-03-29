@@ -28,7 +28,10 @@ from tests.testutils import create_artifact_share, assert_shared
 
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 @contextmanager
@@ -63,7 +66,15 @@ def test_large_directory(cli, tmpdir, datafiles):
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
         # Configure bst to push to the artifact share
-        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True},]}})
+        cli.configure(
+            {
+                "artifacts": {
+                    "servers": [
+                        {"url": share.repo, "push": True},
+                    ]
+                }
+            }
+        )
 
         # Enforce 1 MB gRPC message limit
         with limit_grpc_message_length(MAX_MESSAGE_LENGTH):

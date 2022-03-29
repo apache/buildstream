@@ -18,7 +18,10 @@ from buildstream._testing._utils.site import HAVE_LZIP
 from tests.testutils.file_server import create_file_server
 from . import list_dir_contents
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tar",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "tar",
+)
 
 
 def _assemble_tar(workingdir, srcdir, dstfile):

@@ -44,7 +44,11 @@ def test_import(tmpdir, datafiles, backend):
 
 
 @pytest.mark.parametrize(
-    "directories", [("merge-base", "merge-base"), ("empty", "empty"),],
+    "directories",
+    [
+        ("merge-base", "merge-base"),
+        ("empty", "empty"),
+    ],
 )
 @pytest.mark.datafiles(DATA_DIR)
 def test_merge_same_casdirs(tmpdir, datafiles, directories):

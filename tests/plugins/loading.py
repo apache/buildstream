@@ -255,7 +255,11 @@ def test_plugin_found(cli, datafiles, plugin_type):
         project,
         {
             "plugins": [
-                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "found"),
+                    plugin_type: ["found"],
+                }
             ]
         },
     )
@@ -345,7 +349,16 @@ def test_pip_origin_load_success(cli, datafiles, plugin_type):
     project = str(datafiles)
 
     update_project(
-        project, {"plugins": [{"origin": "pip", "package-name": "sample-plugins", plugin_type: ["sample"],}]},
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "pip",
+                    "package-name": "sample-plugins",
+                    plugin_type: ["sample"],
+                }
+            ]
+        },
     )
     setup_element(project, plugin_type, "sample")
 
@@ -363,7 +376,11 @@ def test_pip_origin_with_constraints(cli, datafiles, plugin_type):
         project,
         {
             "plugins": [
-                {"origin": "pip", "package-name": "sample-plugins>=1.0,<1.2.5,!=1.1.3", plugin_type: ["sample"],}
+                {
+                    "origin": "pip",
+                    "package-name": "sample-plugins>=1.0,<1.2.5,!=1.1.3",
+                    plugin_type: ["sample"],
+                }
             ]
         },
     )
@@ -379,7 +396,16 @@ def test_pip_origin_package_not_found(cli, datafiles, plugin_type):
     project = str(datafiles)
 
     update_project(
-        project, {"plugins": [{"origin": "pip", "package-name": "not-a-package", plugin_type: ["sample"],}]},
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "pip",
+                    "package-name": "not-a-package",
+                    plugin_type: ["sample"],
+                }
+            ]
+        },
     )
     setup_element(project, plugin_type, "sample")
 
@@ -394,7 +420,16 @@ def test_pip_origin_plugin_not_found(cli, datafiles, plugin_type):
     project = str(datafiles)
 
     update_project(
-        project, {"plugins": [{"origin": "pip", "package-name": "sample-plugins", plugin_type: ["notfound"],}]},
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "pip",
+                    "package-name": "sample-plugins",
+                    plugin_type: ["notfound"],
+                }
+            ]
+        },
     )
     setup_element(project, plugin_type, "notfound")
 
@@ -409,7 +444,16 @@ def test_pip_origin_version_conflict(cli, datafiles, plugin_type):
     project = str(datafiles)
 
     update_project(
-        project, {"plugins": [{"origin": "pip", "package-name": "sample-plugins>=1.4", plugin_type: ["sample"],}]},
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "pip",
+                    "package-name": "sample-plugins>=1.4",
+                    plugin_type: ["sample"],
+                }
+            ]
+        },
     )
     setup_element(project, plugin_type, "sample")
 
@@ -424,7 +468,16 @@ def test_pip_origin_malformed_constraints(cli, datafiles, plugin_type):
     project = str(datafiles)
 
     update_project(
-        project, {"plugins": [{"origin": "pip", "package-name": "sample-plugins>1.4,A", plugin_type: ["sample"],}]},
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "pip",
+                    "package-name": "sample-plugins>1.4,A",
+                    plugin_type: ["sample"],
+                }
+            ]
+        },
     )
     setup_element(project, plugin_type, "sample")
 
@@ -441,13 +494,26 @@ def test_junction_plugin_found(cli, datafiles, plugin_type):
     shutil.copytree(os.path.join(project, "plugins"), os.path.join(subproject, "plugins"))
 
     update_project(
-        project, {"plugins": [{"origin": "junction", "junction": "subproject-junction.bst", plugin_type: ["found"],}]},
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "junction",
+                    "junction": "subproject-junction.bst",
+                    plugin_type: ["found"],
+                }
+            ]
+        },
     )
     update_project(
         subproject,
         {
             "plugins": [
-                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "found"),
+                    plugin_type: ["found"],
+                }
             ]
         },
     )
@@ -469,7 +535,15 @@ def test_junction_plugin_not_found(cli, datafiles, plugin_type):
     #
     update_project(
         project,
-        {"plugins": [{"origin": "junction", "junction": "subproject-junction.bst", plugin_type: ["notfound"],}]},
+        {
+            "plugins": [
+                {
+                    "origin": "junction",
+                    "junction": "subproject-junction.bst",
+                    plugin_type: ["notfound"],
+                }
+            ]
+        },
     )
 
     # The subproject only configures the "found" plugin
@@ -478,7 +552,11 @@ def test_junction_plugin_not_found(cli, datafiles, plugin_type):
         subproject,
         {
             "plugins": [
-                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "found"),
+                    plugin_type: ["found"],
+                }
             ]
         },
     )
@@ -498,17 +576,38 @@ def test_junction_deep_plugin_found(cli, datafiles, plugin_type):
     shutil.copytree(os.path.join(project, "plugins"), os.path.join(subsubproject, "plugins"))
 
     update_project(
-        project, {"plugins": [{"origin": "junction", "junction": "subproject-junction.bst", plugin_type: ["found"],}]},
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "junction",
+                    "junction": "subproject-junction.bst",
+                    plugin_type: ["found"],
+                }
+            ]
+        },
     )
     update_project(
         subproject,
-        {"plugins": [{"origin": "junction", "junction": "subsubproject-junction.bst", plugin_type: ["found"],}]},
+        {
+            "plugins": [
+                {
+                    "origin": "junction",
+                    "junction": "subsubproject-junction.bst",
+                    plugin_type: ["found"],
+                }
+            ]
+        },
     )
     update_project(
         subsubproject,
         {
             "plugins": [
-                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "found"),
+                    plugin_type: ["found"],
+                }
             ]
         },
     )
@@ -531,14 +630,30 @@ def test_junction_deep_plugin_not_found(cli, datafiles, plugin_type):
     #
     update_project(
         project,
-        {"plugins": [{"origin": "junction", "junction": "subproject-junction.bst", plugin_type: ["notfound"],}]},
+        {
+            "plugins": [
+                {
+                    "origin": "junction",
+                    "junction": "subproject-junction.bst",
+                    plugin_type: ["notfound"],
+                }
+            ]
+        },
     )
 
     # The subproject says to search for the "notfound" plugin in the subproject
     #
     update_project(
         subproject,
-        {"plugins": [{"origin": "junction", "junction": "subsubproject-junction.bst", plugin_type: ["notfound"],}]},
+        {
+            "plugins": [
+                {
+                    "origin": "junction",
+                    "junction": "subsubproject-junction.bst",
+                    plugin_type: ["notfound"],
+                }
+            ]
+        },
     )
 
     # The subsubproject only configures the "found" plugin
@@ -547,7 +662,11 @@ def test_junction_deep_plugin_not_found(cli, datafiles, plugin_type):
         subsubproject,
         {
             "plugins": [
-                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "found"),
+                    plugin_type: ["found"],
+                }
             ]
         },
     )
@@ -568,10 +687,27 @@ def test_junction_pip_plugin_found(cli, datafiles, plugin_type):
 
     update_project(
         project,
-        {"plugins": [{"origin": "junction", "junction": "subproject-junction.bst", plugin_type: ["sample"],}]},
+        {
+            "plugins": [
+                {
+                    "origin": "junction",
+                    "junction": "subproject-junction.bst",
+                    plugin_type: ["sample"],
+                }
+            ]
+        },
     )
     update_project(
-        subproject, {"plugins": [{"origin": "pip", "package-name": "sample-plugins", plugin_type: ["sample"],}]},
+        subproject,
+        {
+            "plugins": [
+                {
+                    "origin": "pip",
+                    "package-name": "sample-plugins",
+                    plugin_type: ["sample"],
+                }
+            ]
+        },
     )
     setup_element(project, plugin_type, "sample")
 
@@ -590,10 +726,27 @@ def test_junction_pip_plugin_version_conflict(cli, datafiles, plugin_type):
 
     update_project(
         project,
-        {"plugins": [{"origin": "junction", "junction": "subproject-junction.bst", plugin_type: ["sample"],}]},
+        {
+            "plugins": [
+                {
+                    "origin": "junction",
+                    "junction": "subproject-junction.bst",
+                    plugin_type: ["sample"],
+                }
+            ]
+        },
     )
     update_project(
-        subproject, {"plugins": [{"origin": "pip", "package-name": "sample-plugins>=1.4", plugin_type: ["sample"],}]},
+        subproject,
+        {
+            "plugins": [
+                {
+                    "origin": "pip",
+                    "package-name": "sample-plugins>=1.4",
+                    plugin_type: ["sample"],
+                }
+            ]
+        },
     )
     setup_element(project, plugin_type, "sample")
 
@@ -626,7 +779,11 @@ def test_junction_full_path_found(cli, datafiles, plugin_type):
         subsubproject,
         {
             "plugins": [
-                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "found"),
+                    plugin_type: ["found"],
+                }
             ]
         },
     )
@@ -666,7 +823,11 @@ def test_junction_full_path_not_found(cli, datafiles, plugin_type):
         subsubproject,
         {
             "plugins": [
-                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "found"),
+                    plugin_type: ["found"],
+                }
             ]
         },
     )

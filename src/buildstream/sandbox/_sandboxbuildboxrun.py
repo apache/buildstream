@@ -131,7 +131,11 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 stdin = subprocess.DEVNULL
 
             self._run_buildbox(
-                buildbox_command, stdin, stdout, stderr, interactive=(flags & _SandboxFlags.INTERACTIVE),
+                buildbox_command,
+                stdin,
+                stdout,
+                stderr,
+                interactive=(flags & _SandboxFlags.INTERACTIVE),
             )
 
             return remote_execution_pb2.ActionResult().FromString(result_file.read())
@@ -172,7 +176,12 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 stack.enter_context(_signals.terminator(kill_proc))
 
             process = subprocess.Popen(  # pylint: disable=consider-using-with
-                argv, close_fds=True, stdin=stdin, stdout=stdout, stderr=stderr, start_new_session=new_session,
+                argv,
+                close_fds=True,
+                stdin=stdin,
+                stdout=stdout,
+                stderr=stderr,
+                start_new_session=new_session,
             )
 
             # Wait for the child process to finish, ensuring that

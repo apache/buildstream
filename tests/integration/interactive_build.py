@@ -27,7 +27,15 @@ def build_session(datafiles, element_name):
     with runcli.configured(project) as config_file:
         session = pexpect.spawn(
             "bst",
-            ["--directory", project, "--config", config_file, "--no-colors", "build", element_name,],
+            [
+                "--directory",
+                project,
+                "--config",
+                config_file,
+                "--no-colors",
+                "build",
+                element_name,
+            ],
             timeout=PEXPECT_TIMEOUT_SHORT,
         )
         yield session

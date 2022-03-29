@@ -91,7 +91,7 @@ def register_repo_kind(kind, cls, plugin_package):
 
 
 def sourcetests_collection_hook(session):
-    """ Used to hook the templated source plugin tests into a pyest test suite.
+    """Used to hook the templated source plugin tests into a pyest test suite.
 
     This should be called via the `pytest_sessionstart
     hook <https://docs.pytest.org/en/latest/reference.html#collection-hooks>`_.

@@ -80,7 +80,17 @@ def test_workspace_commanddir(cli, datafiles):
     # using the cached buildtree.
     res = cli.run(
         project=project,
-        args=["shell", "--build", element_name, "--use-buildtree", "--", "find", "..", "-mindepth", "1",],
+        args=[
+            "shell",
+            "--build",
+            element_name,
+            "--use-buildtree",
+            "--",
+            "find",
+            "..",
+            "-mindepth",
+            "1",
+        ],
     )
     res.assert_success()
 
@@ -290,7 +300,17 @@ def test_incremental_configure_commands_run_only_once(cli, datafiles):
     # the configure should have been run in the sandbox, so check the buildtree
     res = cli.run(
         project=project,
-        args=["shell", "--build", element_name, "--use-buildtree", "--", "find", ".", "-mindepth", "1",],
+        args=[
+            "shell",
+            "--build",
+            element_name,
+            "--use-buildtree",
+            "--",
+            "find",
+            ".",
+            "-mindepth",
+            "1",
+        ],
     )
     res.assert_success()
 
@@ -311,7 +331,17 @@ def test_incremental_configure_commands_run_only_once(cli, datafiles):
     assert not os.path.exists(os.path.join(workspace, "prepared-again"))
     res = cli.run(
         project=project,
-        args=["shell", "--build", element_name, "--use-buildtree", "--", "find", ".", "-mindepth", "1",],
+        args=[
+            "shell",
+            "--build",
+            element_name,
+            "--use-buildtree",
+            "--",
+            "find",
+            ".",
+            "-mindepth",
+            "1",
+        ],
     )
     res.assert_success()
 
@@ -382,7 +412,18 @@ def test_workspace_failed_logs(cli, datafiles):
 
 
 def get_buildtree_file_contents(cli, project, element_name, filename):
-    res = cli.run(project=project, args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", filename,],)
+    res = cli.run(
+        project=project,
+        args=[
+            "shell",
+            "--build",
+            element_name,
+            "--use-buildtree",
+            "--",
+            "cat",
+            filename,
+        ],
+    )
     res.assert_success()
     return res.output
 

@@ -48,7 +48,11 @@ def test_conditional_cli(cli, datafiles, target, option, expected):
 #
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
-    "target,option,expected", [("element.bst", True, "a pony"), ("element.bst", False, "not pony"),]
+    "target,option,expected",
+    [
+        ("element.bst", True, "a pony"),
+        ("element.bst", False, "not pony"),
+    ],
 )
 def test_conditional_config(cli, datafiles, target, option, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename, "option-bool")

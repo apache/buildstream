@@ -43,7 +43,9 @@ def test_script(cli, datafiles):
     create_script_element(
         element_name,
         element_path,
-        config={"commands": ["mkdir -p %{install-root}", "echo 'Hi' > %{install-root}/test"],},
+        config={
+            "commands": ["mkdir -p %{install-root}", "echo 'Hi' > %{install-root}/test"],
+        },
     )
 
     res = cli.run(project=project, args=["build", element_name])
@@ -130,7 +132,9 @@ def test_script_cwd(cli, datafiles):
     create_script_element(
         element_name,
         element_path,
-        config={"commands": ["echo 'test' > test", "cp /buildstream/test %{install-root}"],},
+        config={
+            "commands": ["echo 'test' > test", "cp /buildstream/test %{install-root}"],
+        },
         variables={"cwd": "/buildstream"},
     )
 

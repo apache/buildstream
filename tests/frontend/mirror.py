@@ -40,23 +40,77 @@ def generate_element(output_file):
 
 
 DEFAULT_MIRROR_LIST = [
-    {"name": "middle-earth", "aliases": {"foo": ["OOF/"], "bar": ["RAB/"],},},
-    {"name": "arrakis", "aliases": {"foo": ["OFO/"], "bar": ["RBA/"],},},
-    {"name": "oz", "aliases": {"foo": ["ooF/"], "bar": ["raB/"],}},
+    {
+        "name": "middle-earth",
+        "aliases": {
+            "foo": ["OOF/"],
+            "bar": ["RAB/"],
+        },
+    },
+    {
+        "name": "arrakis",
+        "aliases": {
+            "foo": ["OFO/"],
+            "bar": ["RBA/"],
+        },
+    },
+    {
+        "name": "oz",
+        "aliases": {
+            "foo": ["ooF/"],
+            "bar": ["raB/"],
+        },
+    },
 ]
 
 
 SUCCESS_MIRROR_LIST = [
-    {"name": "middle-earth", "aliases": {"foo": ["OOF/"], "bar": ["RAB/"],},},
-    {"name": "arrakis", "aliases": {"foo": ["FOO/"], "bar": ["RBA/"],},},
-    {"name": "oz", "aliases": {"foo": ["ooF/"], "bar": ["raB/"],}},
+    {
+        "name": "middle-earth",
+        "aliases": {
+            "foo": ["OOF/"],
+            "bar": ["RAB/"],
+        },
+    },
+    {
+        "name": "arrakis",
+        "aliases": {
+            "foo": ["FOO/"],
+            "bar": ["RBA/"],
+        },
+    },
+    {
+        "name": "oz",
+        "aliases": {
+            "foo": ["ooF/"],
+            "bar": ["raB/"],
+        },
+    },
 ]
 
 
 FAIL_MIRROR_LIST = [
-    {"name": "middle-earth", "aliases": {"foo": ["pony/"], "bar": ["horzy/"],},},
-    {"name": "arrakis", "aliases": {"foo": ["donkey/"], "bar": ["rabbit/"],},},
-    {"name": "oz", "aliases": {"foo": ["bear/"], "bar": ["buffalo/"],}},
+    {
+        "name": "middle-earth",
+        "aliases": {
+            "foo": ["pony/"],
+            "bar": ["horzy/"],
+        },
+    },
+    {
+        "name": "arrakis",
+        "aliases": {
+            "foo": ["donkey/"],
+            "bar": ["rabbit/"],
+        },
+    },
+    {
+        "name": "oz",
+        "aliases": {
+            "foo": ["bear/"],
+            "bar": ["buffalo/"],
+        },
+    },
 ]
 
 
@@ -438,7 +492,14 @@ def test_mirror_git_submodule_fetch(cli, tmpdir, datafiles):
         "min-version": "2.0",
         "element-path": "elements",
         "aliases": {alias: "http://www.example.com/"},
-        "mirrors": [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"],},},],
+        "mirrors": [
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    alias: [mirror_map + "/"],
+                },
+            },
+        ],
     }
     project_file = os.path.join(project_dir, "project.conf")
     _yaml.roundtrip_dump(project, project_file)
@@ -510,7 +571,14 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
         "min-version": "2.0",
         "element-path": "elements",
         "aliases": {alias: upstream_map + "/"},
-        "mirrors": [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"],}}],
+        "mirrors": [
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    alias: [mirror_map + "/"],
+                },
+            }
+        ],
     }
     project_file = os.path.join(project_dir, "project.conf")
     _yaml.roundtrip_dump(project, project_file)
@@ -596,7 +664,14 @@ def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
         "min-version": "2.0",
         "element-path": "elements",
         "aliases": {alias: upstream_map + "/"},
-        "mirrors": [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"],}}],
+        "mirrors": [
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    alias: [mirror_map + "/"],
+                },
+            }
+        ],
     }
     project_file = os.path.join(project_dir, "project.conf")
     _yaml.roundtrip_dump(project, project_file)
@@ -634,11 +709,32 @@ def test_mirror_expand_project_and_toplevel_root(cli, tmpdir):
         "name": "test",
         "min-version": "2.0",
         "element-path": "elements",
-        "aliases": {"foo": "FOO/", "bar": "BAR/",},
+        "aliases": {
+            "foo": "FOO/",
+            "bar": "BAR/",
+        },
         "mirrors": [
-            {"name": "middle-earth", "aliases": {"foo": ["OOF/"], "bar": ["RAB/"],},},
-            {"name": "arrakis", "aliases": {"foo": ["%{project-root}/OFO/"], "bar": ["%{project-root}/RBA/"],},},
-            {"name": "oz", "aliases": {"foo": ["ooF/"], "bar": ["raB/"],}},
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    "foo": ["OOF/"],
+                    "bar": ["RAB/"],
+                },
+            },
+            {
+                "name": "arrakis",
+                "aliases": {
+                    "foo": ["%{project-root}/OFO/"],
+                    "bar": ["%{project-root}/RBA/"],
+                },
+            },
+            {
+                "name": "oz",
+                "aliases": {
+                    "foo": ["ooF/"],
+                    "bar": ["raB/"],
+                },
+            },
         ],
         "plugins": [{"origin": "local", "path": "sources", "sources": ["fetch_source"]}],
     }

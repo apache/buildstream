@@ -32,7 +32,10 @@ pytestmark = pytest.mark.integration
 
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 @pytest.mark.datafiles(DATA_DIR)

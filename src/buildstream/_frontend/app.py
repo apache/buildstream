@@ -360,7 +360,12 @@ class App:
     #    target_directory (str): The target directory the project should be initialized in
     #
     def init_project(
-        self, project_name, min_version=None, element_path="elements", force=False, target_directory=None,
+        self,
+        project_name,
+        min_version=None,
+        element_path="elements",
+        force=False,
+        target_directory=None,
     ):
         if target_directory:
             directory = os.path.abspath(target_directory)
@@ -970,7 +975,10 @@ class App:
 
         click.echo("", err=True)
         min_version = click.prompt(
-            self._content_profile.fmt("Minimum version"), value_proc=min_version_proc, default=min_version, err=True,
+            self._content_profile.fmt("Minimum version"),
+            value_proc=min_version_proc,
+            default=min_version,
+            err=True,
         )
         click.echo("", err=True)
 

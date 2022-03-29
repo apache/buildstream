@@ -23,9 +23,7 @@ class FooTransformSource(Source):
 
     @property
     def mirror(self):
-        """Directory where this source should stage its files
-
-        """
+        """Directory where this source should stage its files"""
         path = os.path.join(self.get_mirror_directory(), self.name, self.ref.strip())
         os.makedirs(path, exist_ok=True)
         return path

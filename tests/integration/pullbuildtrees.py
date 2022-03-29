@@ -170,7 +170,13 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
 def test_invalid_cache_pullbuildtrees(cli, datafiles, value, success):
     project = str(datafiles)
 
-    cli.configure({"cache": {"pull-buildtrees": value,}})
+    cli.configure(
+        {
+            "cache": {
+                "pull-buildtrees": value,
+            }
+        }
+    )
 
     res = cli.run(project=project, args=["workspace", "list"])
     if success:

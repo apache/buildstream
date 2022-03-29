@@ -44,7 +44,10 @@ from tests.testutils import create_artifact_share, create_element_size, wait_for
 repo_kinds = ALL_REPO_KINDS
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 BASE_FILENAME = os.path.basename(__file__)
 
 
@@ -100,7 +103,9 @@ class WorkspaceCreator:
         element_tuples = []
 
         if suffixs is None:
-            suffixs = ["",] * len(kinds)
+            suffixs = [
+                "",
+            ] * len(kinds)
         else:
             assert len(suffixs) == len(kinds)
 
@@ -590,7 +595,15 @@ def test_reset_multiple(cli, tmpdir, datafiles):
 
     # Now reset the open workspaces, this should have the
     # effect of reverting our changes.
-    result = cli.run(project=project, args=["workspace", "reset", alpha, beta,])
+    result = cli.run(
+        project=project,
+        args=[
+            "workspace",
+            "reset",
+            alpha,
+            beta,
+        ],
+    )
     result.assert_success()
     assert os.path.exists(os.path.join(workspace_alpha, "usr", "bin", "hello"))
     assert not os.path.exists(os.path.join(workspace_beta, "etc", "pony.conf"))
@@ -804,7 +817,13 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
         # Test loading a negative workspace version
         {"format-version": -1},
         # Test loading version 0 with two sources
-        {"format-version": 0, "alpha.bst": {0: "/workspaces/bravo", 1: "/workspaces/charlie",}},
+        {
+            "format-version": 0,
+            "alpha.bst": {
+                0: "/workspaces/bravo",
+                1: "/workspaces/charlie",
+            },
+        },
         # Test loading a version with decimals
         {"format-version": 0.5},
         # Test loading an unsupported old version
@@ -832,7 +851,10 @@ def test_list_unsupported_workspace(cli, datafiles, workspace_cfg):
     [
         # Test loading version 4
         (
-            {"format-version": 4, "workspaces": {"alpha.bst": {"path": "/workspaces/bravo"}},},
+            {
+                "format-version": 4,
+                "workspaces": {"alpha.bst": {"path": "/workspaces/bravo"}},
+            },
             {
                 "format-version": BST_WORKSPACE_FORMAT_VERSION,
                 "workspaces": {"alpha.bst": {"path": "/workspaces/bravo"}},

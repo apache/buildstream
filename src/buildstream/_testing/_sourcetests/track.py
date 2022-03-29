@@ -111,7 +111,13 @@ def test_track_recurse(cli, tmpdir, datafiles, kind, amount):
     #
     # This stresses the Source plugins and helps to ensure that
     # they handle concurrent access to the store correctly.
-    cli.configure({"scheduler": {"fetchers": amount,}})
+    cli.configure(
+        {
+            "scheduler": {
+                "fetchers": amount,
+            }
+        }
+    )
 
     # Create our repo object of the given source type with
     # the dev files, and then collect the initial ref.

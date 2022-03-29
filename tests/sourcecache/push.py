@@ -116,7 +116,14 @@ def test_source_push(cli, tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "source-caches": {"servers": [{"url": share.repo, "push": True,}]},
+            "source-caches": {
+                "servers": [
+                    {
+                        "url": share.repo,
+                        "push": True,
+                    }
+                ]
+            },
             "cachedir": cache_dir,
         }
         _yaml.roundtrip_dump(user_config, file=user_config_file)
@@ -166,7 +173,14 @@ def test_push_pull(cli, datafiles, tmpdir):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "source-caches": {"servers": [{"url": share.repo, "push": True,}]},
+            "source-caches": {
+                "servers": [
+                    {
+                        "url": share.repo,
+                        "push": True,
+                    }
+                ]
+            },
             "cachedir": cache_dir,
         }
         _yaml.roundtrip_dump(user_config, file=user_config_file)
@@ -204,7 +218,14 @@ def test_push_fail(cli, tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "source-caches": {"servers": [{"url": share.repo, "push": True,}]},
+            "source-caches": {
+                "servers": [
+                    {
+                        "url": share.repo,
+                        "push": True,
+                    }
+                ]
+            },
             "cachedir": cache_dir,
         }
         _yaml.roundtrip_dump(user_config, file=user_config_file)
@@ -235,7 +256,14 @@ def test_source_push_build_fail(cli, tmpdir, datafiles):
     with create_artifact_share(os.path.join(str(tmpdir), "share")) as share:
         user_config = {
             "scheduler": {"pushers": 1},
-            "source-caches": {"servers": [{"url": share.repo, "push": True,}]},
+            "source-caches": {
+                "servers": [
+                    {
+                        "url": share.repo,
+                        "push": True,
+                    }
+                ]
+            },
             "cachedir": cache_dir,
         }
         cli.configure(user_config)
@@ -276,7 +304,14 @@ def test_push_missing_source_after_build(cli, tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "source-caches": {"servers": [{"url": share.repo, "push": True,}]},
+            "source-caches": {
+                "servers": [
+                    {
+                        "url": share.repo,
+                        "push": True,
+                    }
+                ]
+            },
             "cachedir": cache_dir,
         }
         _yaml.roundtrip_dump(user_config, file=user_config_file)
@@ -301,7 +336,14 @@ def test_build_push_source_twice(cli, tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "source-caches": {"servers": [{"url": share.repo, "push": True,}]},
+            "source-caches": {
+                "servers": [
+                    {
+                        "url": share.repo,
+                        "push": True,
+                    }
+                ]
+            },
             "cachedir": cache_dir,
         }
         _yaml.roundtrip_dump(user_config, file=user_config_file)

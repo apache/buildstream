@@ -36,7 +36,10 @@ from buildstream._testing import generate_project, generate_element, load_yaml
 from buildstream._testing import create_repo
 from buildstream._testing._utils.site import HAVE_GIT, HAVE_OLD_GIT
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "git",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "git",
+)
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")

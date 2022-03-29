@@ -82,7 +82,14 @@ def test_mirror_fetch(cli, tmpdir, datafiles, kind):
 
     _set_project_mirrors_and_aliases(
         project_dir,
-        [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"],},},],
+        [
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    alias: [mirror_map + "/"],
+                },
+            },
+        ],
         {alias: upstream_map + "/"},
     )
 
@@ -120,7 +127,12 @@ def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
 
     _set_project_mirrors_and_aliases(
         project_dir,
-        [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"]},},],
+        [
+            {
+                "name": "middle-earth",
+                "aliases": {alias: [mirror_map + "/"]},
+            },
+        ],
         {alias: "http://www.example.com"},
     )
 
@@ -157,12 +169,23 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
     os.makedirs(config_project_dir, exist_ok=True)
     config_project = {"name": "config", "min-version": "2.0"}
     _yaml.roundtrip_dump(config_project, os.path.join(config_project_dir, "project.conf"))
-    extra_mirrors = {"mirrors": [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"],}}]}
+    extra_mirrors = {
+        "mirrors": [
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    alias: [mirror_map + "/"],
+                },
+            }
+        ]
+    }
     _yaml.roundtrip_dump(extra_mirrors, os.path.join(config_project_dir, "mirrors.yml"))
     generate_junction(str(tmpdir.join("config_repo")), config_project_dir, os.path.join(element_dir, "config.bst"))
 
     _set_project_includes_and_aliases(
-        project_dir, ["config.bst:mirrors.yml"], {alias: upstream_map + "/"},
+        project_dir,
+        ["config.bst:mirrors.yml"],
+        {alias: upstream_map + "/"},
     )
 
     # Now make the upstream unavailable.
@@ -200,7 +223,16 @@ def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
     os.makedirs(config_project_dir, exist_ok=True)
     config_project = {"name": "config", "min-version": "2.0"}
     _yaml.roundtrip_dump(config_project, os.path.join(config_project_dir, "project.conf"))
-    extra_mirrors = {"mirrors": [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"],}}]}
+    extra_mirrors = {
+        "mirrors": [
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    alias: [mirror_map + "/"],
+                },
+            }
+        ]
+    }
     _yaml.roundtrip_dump(extra_mirrors, os.path.join(config_project_dir, "mirrors.yml"))
     generate_junction(str(tmpdir.join("config_repo")), config_project_dir, os.path.join(element_dir, "config.bst"))
 
@@ -246,7 +278,14 @@ def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
 
     _set_project_mirrors_and_aliases(
         project_dir,
-        [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"],},},],
+        [
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    alias: [mirror_map + "/"],
+                },
+            },
+        ],
         {alias: upstream_map + "/"},
     )
 
@@ -294,7 +333,14 @@ def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
 
     _set_project_mirrors_and_aliases(
         project_dir,
-        [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"],},},],
+        [
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    alias: [mirror_map + "/"],
+                },
+            },
+        ],
         {alias: "http://www.example.com"},
     )
 
