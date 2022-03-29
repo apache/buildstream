@@ -32,6 +32,7 @@ setup(
         ],
         "buildstream.plugins.sources": [
             "sample = sample_plugins.sources.sample",
+            "git = sample_plugins.sources.git",
         ],
     },
     zip_safe=False,
