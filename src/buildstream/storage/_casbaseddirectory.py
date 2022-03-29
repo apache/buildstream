@@ -180,7 +180,9 @@ class CasBasedDirectory(Directory):
         result = FileListResult()
         if self.__check_replacement(os.path.basename(external_pathspec), os.path.dirname(external_pathspec), result):
             self.__add_file(
-                os.path.basename(external_pathspec), external_pathspec, properties=None,
+                os.path.basename(external_pathspec),
+                external_pathspec,
+                properties=None,
             )
             result.files_written.append(external_pathspec)
         return result
@@ -690,7 +692,12 @@ class CasBasedDirectory(Directory):
             utils._get_file_protobuf_mtimestamp(mtime, path)
 
         entry = _IndexEntry(
-            self.__cas_cache, name, FileType.REGULAR_FILE, digest=digest, is_executable=is_executable, mtime=mtime,
+            self.__cas_cache,
+            name,
+            FileType.REGULAR_FILE,
+            digest=digest,
+            is_executable=is_executable,
+            mtime=mtime,
         )
         self.__index[name] = entry
 

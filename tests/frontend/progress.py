@@ -11,7 +11,9 @@ from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from tests.testutils import generate_junction
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))

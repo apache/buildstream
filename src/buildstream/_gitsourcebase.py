@@ -89,7 +89,8 @@ class _GitMirror(SourceFetcher):
         if not os.path.exists(self.mirror):
             with self.source.tempdir() as tmpdir:
                 self.source.call(
-                    [self.source.host_git, "init", "--bare", tmpdir], fail="Failed to initialise repository",
+                    [self.source.host_git, "init", "--bare", tmpdir],
+                    fail="Failed to initialise repository",
                 )
 
                 try:

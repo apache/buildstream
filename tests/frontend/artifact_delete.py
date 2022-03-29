@@ -27,7 +27,10 @@ from tests.testutils import create_artifact_share
 
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 # Test that we can delete the artifact of the element which corresponds

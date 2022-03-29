@@ -74,7 +74,7 @@ class Repo:
         raise NotImplementedError("source_config method has not been implemeted")
 
     def copy_directory(self, src, dest):
-        """ Copies the content of src to the directory dest
+        """Copies the content of src to the directory dest
 
         Like shutil.copytree(), except dest is expected
         to exist.

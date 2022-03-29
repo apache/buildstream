@@ -50,7 +50,9 @@ def update_keys():
         # Run bst show
         cli = Cli(directory, verbose=True)
         result = cli.run(
-            project=project_dir, silent=True, args=["--no-colors", "show", "--format", "%{name}::%{full-key}"],
+            project=project_dir,
+            silent=True,
+            args=["--no-colors", "show", "--format", "%{name}::%{full-key}"],
         )
 
         # Load the actual keys, and the expected ones if they exist

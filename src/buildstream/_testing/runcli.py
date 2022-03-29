@@ -752,7 +752,10 @@ def cli_integration(tmpdir, integration_cache):
     # We want to cache sources for integration tests more permanently,
     # to avoid downloading the huge base-sdk repeatedly
     fixture.configure(
-        {"cachedir": integration_cache.cachedir, "sourcedir": integration_cache.sources,}
+        {
+            "cachedir": integration_cache.cachedir,
+            "sourcedir": integration_cache.sources,
+        }
     )
 
     yield fixture
@@ -805,7 +808,17 @@ def cli_remote_execution(tmpdir, remote_services):
         fixture.configure({"remote-execution": remote_execution})
 
     if remote_services.source_service:
-        fixture.configure({"source-caches": {"servers": [{"url": remote_services.source_service,}]}})
+        fixture.configure(
+            {
+                "source-caches": {
+                    "servers": [
+                        {
+                            "url": remote_services.source_service,
+                        }
+                    ]
+                }
+            }
+        )
 
     return fixture
 

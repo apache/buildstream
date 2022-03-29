@@ -91,7 +91,11 @@ class WallclockTime(Widget):
 
         fields = [
             self.content_profile.fmt("{:02d}".format(x))
-            for x in [message.creation_time.hour, message.creation_time.minute, message.creation_time.second,]
+            for x in [
+                message.creation_time.hour,
+                message.creation_time.minute,
+                message.creation_time.second,
+            ]
         ]
         text = self.format_profile.fmt(":").join(fields)
 

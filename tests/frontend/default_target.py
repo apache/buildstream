@@ -10,7 +10,10 @@ from buildstream._testing import cli, create_repo  # pylint: disable=unused-impo
 from tests.testutils import create_artifact_share
 
 # project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "default-target",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "default-target",
+)
 
 
 #
@@ -71,7 +74,15 @@ def test_no_default_with_junction(cli, datafiles):
     target_path = os.path.join(project, "elements", "junction-target.bst")
 
     # First, create a junction element to refer to the subproject
-    junction_config = {"kind": "junction", "sources": [{"kind": "local", "path": "files/sub-project",}]}
+    junction_config = {
+        "kind": "junction",
+        "sources": [
+            {
+                "kind": "local",
+                "path": "files/sub-project",
+            }
+        ],
+    }
     _yaml.roundtrip_dump(junction_config, junction_path)
 
     # Then, create a stack element with dependency on cross junction element

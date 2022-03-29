@@ -167,7 +167,10 @@ class Directory:
 
     # Import and export of files and links
     def import_files(
-        self, external_pathspec: Union["Directory", str], *, filter_callback: Optional[Callable[[str], bool]] = None,
+        self,
+        external_pathspec: Union["Directory", str],
+        *,
+        filter_callback: Optional[Callable[[str], bool]] = None,
     ) -> FileListResult:
         """Imports some or all files from external_path into this directory.
 
@@ -185,7 +188,10 @@ class Directory:
         Raises:
            DirectoryError: if any system error occurs.
         """
-        return self._import_files_internal(external_pathspec, filter_callback=filter_callback,)
+        return self._import_files_internal(
+            external_pathspec,
+            filter_callback=filter_callback,
+        )
 
     def import_single_file(self, external_pathspec: str) -> FileListResult:
         """Imports a single file from an external path
@@ -294,7 +300,7 @@ class Directory:
         raise NotImplementedError()
 
     def remove(self, path: str, *, recursive: bool = False) -> None:
-        """ Remove a file, symlink or directory. Symlinks are not followed.
+        """Remove a file, symlink or directory. Symlinks are not followed.
 
         Args:
            path: A :ref:`path <directory_path>` relative to this directory.
@@ -306,7 +312,7 @@ class Directory:
         raise NotImplementedError()
 
     def rename(self, src: str, dest: str) -> None:
-        """ Rename a file, symlink or directory. If destination path exists
+        """Rename a file, symlink or directory. If destination path exists
         already and is a file or empty directory, it will be replaced.
 
         Args:
@@ -319,7 +325,7 @@ class Directory:
         raise NotImplementedError()
 
     def isfile(self, path: str, *, follow_symlinks: bool = False) -> bool:
-        """ Check whether the specified path is an existing regular file.
+        """Check whether the specified path is an existing regular file.
 
         Args:
            path: A :ref:`path <directory_path>` relative to this directory.
@@ -335,7 +341,7 @@ class Directory:
             return False
 
     def isdir(self, path: str, *, follow_symlinks: bool = False) -> bool:
-        """ Check whether the specified path is an existing directory.
+        """Check whether the specified path is an existing directory.
 
         Args:
            path: A :ref:`path <directory_path>` relative to this directory.
@@ -351,7 +357,7 @@ class Directory:
             return False
 
     def islink(self, path: str, *, follow_symlinks: bool = False) -> bool:
-        """ Check whether the specified path is an existing symlink.
+        """Check whether the specified path is an existing symlink.
 
         Args:
            path: A :ref:`path <directory_path>` relative to this directory.
@@ -400,7 +406,10 @@ class Directory:
         properties: Optional[List[str]] = None,
     ) -> FileListResult:
         return self._import_files(
-            external_pathspec, filter_callback=filter_callback, update_mtime=update_mtime, properties=properties,
+            external_pathspec,
+            filter_callback=filter_callback,
+            update_mtime=update_mtime,
+            properties=properties,
         )
 
     # _import_files()

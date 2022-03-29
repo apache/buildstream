@@ -74,7 +74,14 @@ def test_workspace_open_no_source_push(tmpdir, datafiles, cli):
             {
                 "cachedir": cache_dir,
                 "scheduler": {"pushers": 1},
-                "source-caches": {"servers": [{"url": share.repo, "push": True,}]},
+                "source-caches": {
+                    "servers": [
+                        {
+                            "url": share.repo,
+                            "push": True,
+                        }
+                    ]
+                },
             }
         )
 

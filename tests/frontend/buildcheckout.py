@@ -21,7 +21,10 @@ from tests.testutils import generate_junction, create_artifact_share
 from . import configure_project
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 def strict_args(args, strict):
@@ -33,7 +36,12 @@ def strict_args(args, strict):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
     "strict,hardlinks",
-    [("strict", "copies"), ("strict", "hardlinks"), ("non-strict", "copies"), ("non-strict", "hardlinks"),],
+    [
+        ("strict", "copies"),
+        ("strict", "hardlinks"),
+        ("non-strict", "copies"),
+        ("non-strict", "hardlinks"),
+    ],
 )
 def test_build_checkout(datafiles, cli, strict, hardlinks):
     if CASD_SEPARATE_USER and hardlinks == "hardlinks":
@@ -985,7 +993,15 @@ def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
 
     # Create a stack element to depend on a cross junction element, using
     # colon (:) as the separator
-    element = {"kind": "stack", "depends": [{"filename": "junction.bst:import-etc.bst", "junction": "junction.bst",}]}
+    element = {
+        "kind": "stack",
+        "depends": [
+            {
+                "filename": "junction.bst:import-etc.bst",
+                "junction": "junction.bst",
+            }
+        ],
+    }
     _yaml.roundtrip_dump(element, element_path)
 
     # Now try to build it, this should fail as filenames should not contain
@@ -1104,7 +1120,10 @@ def test_fail_no_args(datafiles, cli):
 # While we were unable to reproduce the exact experience, we can test
 # the expected behavior.
 #
-STRICT_DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "strict-scenario",)
+STRICT_DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "strict-scenario",
+)
 
 
 @pytest.mark.datafiles(STRICT_DATA_DIR)

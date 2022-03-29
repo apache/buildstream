@@ -11,7 +11,10 @@ from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream.exceptions import ErrorDomain
 from buildstream import _yaml
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "filter",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "filter",
+)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "basic"))

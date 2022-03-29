@@ -8,7 +8,10 @@ from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream._testing import cli  # pylint: disable=unused-import
 from tests.testutils import filetypegenerator
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "patch",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "patch",
+)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "basic"))

@@ -15,7 +15,9 @@ from tests.testutils import generate_junction
 from . import configure_project
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
@@ -36,7 +38,12 @@ def test_show(cli, datafiles, target, fmt, expected):
         raise AssertionError("Expected output:\n{}\nInstead received output:\n{}".format(expected, result.output))
 
 
-@pytest.mark.datafiles(os.path.join(os.path.dirname(os.path.realpath(__file__)), "invalid_element_path",))
+@pytest.mark.datafiles(
+    os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "invalid_element_path",
+    )
+)
 def test_show_invalid_element_path(cli, datafiles):
     project = str(datafiles)
     cli.run(project=project, silent=True, args=["show", "foo.bst"])
@@ -196,7 +203,14 @@ def test_show_except_simple(cli, datafiles, target, except_, expected):
             ],
         ),
         # Test one target and excepting two elements
-        (["build.bst"], ["unrelated-1.bst", "unrelated-2.bst"], ["first-level-1.bst", "build.bst",]),
+        (
+            ["build.bst"],
+            ["unrelated-1.bst", "unrelated-2.bst"],
+            [
+                "first-level-1.bst",
+                "build.bst",
+            ],
+        ),
     ],
 )
 def test_show_except(cli, datafiles, targets, exceptions, expected):
@@ -432,7 +446,15 @@ def test_format_deps(cli, datafiles, dep_kind, expected_deps):
 #
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
 @pytest.mark.parametrize(
-    "cli_value, config_value", [(None, None), (None, "16"), ("16", None), ("5", "16"), ("0", "16"), ("16", "0"),]
+    "cli_value, config_value",
+    [
+        (None, None),
+        (None, "16"),
+        ("16", None),
+        ("5", "16"),
+        ("0", "16"),
+        ("16", "0"),
+    ],
 )
 def test_max_jobs(cli, datafiles, cli_value, config_value):
     project = str(datafiles)
@@ -486,7 +508,11 @@ def test_max_jobs(cli, datafiles, cli_value, config_value):
 #
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "strict-depends"))
 @pytest.mark.parametrize(
-    "target, expected_state", [("non-strict-depends.bst", "cached"), ("strict-depends.bst", "waiting"),]
+    "target, expected_state",
+    [
+        ("non-strict-depends.bst", "cached"),
+        ("strict-depends.bst", "waiting"),
+    ],
 )
 def test_strict_dependencies(cli, datafiles, target, expected_state):
     project = str(datafiles)

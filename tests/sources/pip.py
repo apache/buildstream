@@ -8,7 +8,10 @@ from buildstream.exceptions import ErrorDomain
 from buildstream.plugins.sources.pip import _match_package_name
 from buildstream._testing import cli, generate_project  # pylint: disable=unused-import
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pip",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "pip",
+)
 
 
 # Test that without ref, consistency is set appropriately.

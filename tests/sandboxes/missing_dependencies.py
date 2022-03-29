@@ -12,7 +12,10 @@ from buildstream._testing import cli  # pylint: disable=unused-import
 
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "missing-dependencies",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "missing-dependencies",
+)
 
 
 def _symlink_host_tools_to_dir(host_tools, dir_):
@@ -35,8 +38,17 @@ def test_missing_buildbox_run_has_nice_error_message(cli, datafiles, tmp_path):
     # Write out our test target
     element = {
         "kind": "script",
-        "depends": [{"filename": "base.bst", "type": "build",},],
-        "config": {"commands": ["false",],},
+        "depends": [
+            {
+                "filename": "base.bst",
+                "type": "build",
+            },
+        ],
+        "config": {
+            "commands": [
+                "false",
+            ],
+        },
     }
     _yaml.roundtrip_dump(element, element_path)
 

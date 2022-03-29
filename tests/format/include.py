@@ -327,7 +327,10 @@ def test_option_from_deep_junction(cli, tmpdir, datafiles):
     )
 
     generate_junction(
-        tmpdir, os.path.join(project, "subproject-1"), os.path.join(project, "junction-1.bst"), store_ref=True,
+        tmpdir,
+        os.path.join(project, "subproject-1"),
+        os.path.join(project, "junction-1.bst"),
+        store_ref=True,
     )
 
     result = cli.run(project=project, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"])

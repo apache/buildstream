@@ -294,7 +294,12 @@ def register_cython_module(module_name, dependencies=None):
         depends.append(def_file)
 
     BUILD_EXTENSIONS.append(
-        Extension(name=module_name, sources=[implementation_file], depends=depends, define_macros=extension_macros,)
+        Extension(
+            name=module_name,
+            sources=[implementation_file],
+            depends=depends,
+            define_macros=extension_macros,
+        )
     )
 
 

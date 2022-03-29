@@ -171,7 +171,12 @@ def test_manual_command_subdir(cli, datafiles):
     sources = [{"kind": "local", "path": "files/manual-element/root"}]
 
     create_manual_element(
-        element_name, element_path, {"install-commands": ["cp hello %{install-root}"]}, {}, {}, sources=sources,
+        element_name,
+        element_path,
+        {"install-commands": ["cp hello %{install-root}"]},
+        {},
+        {},
+        sources=sources,
     )
 
     # First, verify that element builds, and has the correct expected output.

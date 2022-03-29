@@ -623,7 +623,9 @@ class _SandboxBatch:
         if command.label:
             context = self.sandbox._get_context()
             context.messenger.status(
-                "Running command", detail=command.label, element_name=self.sandbox._get_element_name(),
+                "Running command",
+                detail=command.label,
+                element_name=self.sandbox._get_element_name(),
             )
 
         exitcode = self.sandbox._run(command.command, flags=self.flags, cwd=command.cwd, env=command.env)

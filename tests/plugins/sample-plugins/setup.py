@@ -27,8 +27,12 @@ setup(
     packages=find_packages(where="src"),
     include_package_data=True,
     entry_points={
-        "buildstream.plugins.elements": ["sample = sample_plugins.elements.sample",],
-        "buildstream.plugins.sources": ["sample = sample_plugins.sources.sample",],
+        "buildstream.plugins.elements": [
+            "sample = sample_plugins.elements.sample",
+        ],
+        "buildstream.plugins.sources": [
+            "sample = sample_plugins.sources.sample",
+        ],
     },
     zip_safe=False,
 )

@@ -41,7 +41,9 @@ def test_source_checkout(tmpdir, datafiles, cli):
     source_dir = os.path.join(cache_dir, "sources")
 
     cli.configure(
-        {"cachedir": cache_dir,}
+        {
+            "cachedir": cache_dir,
+        }
     )
     target_dir = os.path.join(str(tmpdir), "target")
 

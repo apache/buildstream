@@ -54,7 +54,17 @@ def test_open_workspace(cli, tmpdir, datafiles):
     project = str(datafiles)
     workspace_dir = os.path.join(str(tmpdir), "workspace_hello")
 
-    result = cli.run(project=project, args=["workspace", "open", "-f", "--directory", workspace_dir, "hello.bst",])
+    result = cli.run(
+        project=project,
+        args=[
+            "workspace",
+            "open",
+            "-f",
+            "--directory",
+            workspace_dir,
+            "hello.bst",
+        ],
+    )
     result.assert_success()
 
     result = cli.run(project=project, args=["workspace", "list"])

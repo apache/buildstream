@@ -87,7 +87,8 @@ class PluginFactory:
             self._site_plugins_path = _site.element_plugins
 
         self._site_source = self._plugin_base.make_plugin_source(
-            searchpath=[self._site_plugins_path], identifier=self._identifier + "site",
+            searchpath=[self._site_plugins_path],
+            identifier=self._identifier + "site",
         )
 
     ######################################################
@@ -224,7 +225,8 @@ class PluginFactory:
                 # Make the PluginSource object
                 #
                 source = self._plugin_base.make_plugin_source(
-                    searchpath=[location], identifier=self._identifier + location + kind,
+                    searchpath=[location],
+                    identifier=self._identifier + location + kind,
                 )
 
                 # Keep a reference on the PluginSources (see comment in __init__)

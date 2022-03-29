@@ -11,7 +11,10 @@ from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream._testing import create_repo
 
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "junctions",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "junctions",
+)
 
 
 def update_project(project_path, updated_configuration):
@@ -95,7 +98,10 @@ def test_workspaced_junction_missing_project_conf(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
     "target,expected",
-    [("target.bst", ["sub.txt", "subsub.txt"]), ("deeptarget.bst", ["sub.txt", "subsub.txt", "subsubsub.txt"]),],
+    [
+        ("target.bst", ["sub.txt", "subsub.txt"]),
+        ("deeptarget.bst", ["sub.txt", "subsub.txt", "subsubsub.txt"]),
+    ],
     ids=["simple", "deep"],
 )
 def test_nested(cli, tmpdir, datafiles, target, expected):
@@ -180,7 +186,10 @@ def test_invalid(cli, datafiles, target, domain, reason, provenance):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
     "target,expect_exists,expect_not_exists",
-    [("target-default.bst", "pony.txt", "horsy.txt"), ("target-explicit.bst", "horsy.txt", "pony.txt"),],
+    [
+        ("target-default.bst", "pony.txt", "horsy.txt"),
+        ("target-explicit.bst", "horsy.txt", "pony.txt"),
+    ],
     ids=["check-values", "set-explicit-values"],
 )
 def test_options(cli, tmpdir, datafiles, target, expect_exists, expect_not_exists):
@@ -203,7 +212,10 @@ def test_options(cli, tmpdir, datafiles, target, expect_exists, expect_not_exist
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
     "animal,expect_exists,expect_not_exists",
-    [("pony", "pony.txt", "horsy.txt"), ("horsy", "horsy.txt", "pony.txt"),],
+    [
+        ("pony", "pony.txt", "horsy.txt"),
+        ("horsy", "horsy.txt", "pony.txt"),
+    ],
     ids=["pony", "horsy"],
 )
 def test_options_propagate(cli, tmpdir, datafiles, animal, expect_exists, expect_not_exists):
@@ -411,7 +423,13 @@ def test_full_path_not_found(cli, tmpdir, datafiles, target, provenance):
         # the same element
         ("override-subsubproject.bst", ["element.txt", "subsub.txt", "subdep-override.txt"]),
     ],
-    ids=["element-with-deps", "dependency-of-element", "with-link", "using-link", "priority",],
+    ids=[
+        "element-with-deps",
+        "dependency-of-element",
+        "with-link",
+        "using-link",
+        "priority",
+    ],
 )
 def test_override_element(cli, tmpdir, datafiles, target, expected):
     project = os.path.join(str(datafiles), "override-element")
@@ -590,7 +608,16 @@ def test_conflict(cli, tmpdir, datafiles, project_dir, target, provenances):
     # Special case setup the conflicting project.conf
     if target == "plugin-conflict.bst":
         update_project(
-            project, {"plugins": [{"origin": "junction", "junction": "subproject2.bst", "elements": ["found"],}]},
+            project,
+            {
+                "plugins": [
+                    {
+                        "origin": "junction",
+                        "junction": "subproject2.bst",
+                        "elements": ["found"],
+                    }
+                ]
+            },
         )
 
     result = cli.run(project=project, args=["build", target])

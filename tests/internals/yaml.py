@@ -8,7 +8,10 @@ from buildstream.exceptions import LoadErrorReason
 from buildstream._exceptions import LoadError
 
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "yaml",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "yaml",
+)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -437,7 +440,15 @@ def test_roundtrip_dump(datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
-@pytest.mark.parametrize("case", [["a", "b", "c"], ["foo", 1], ["stuff", 0, "colour"], ["bird", 0, 1],])
+@pytest.mark.parametrize(
+    "case",
+    [
+        ["a", "b", "c"],
+        ["foo", 1],
+        ["stuff", 0, "colour"],
+        ["bird", 0, 1],
+    ],
+)
 def test_node_find_target(datafiles, case):
     filename = os.path.join(datafiles.dirname, datafiles.basename, "traversal.yaml")
     # We set copy_tree in order to ensure that the nodes in `loaded`

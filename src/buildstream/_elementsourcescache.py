@@ -268,7 +268,9 @@ class ElementSourcesCache(AssetCache):
 
         try:
             remote.push_blob(
-                [uri], source_digest, references_directories=referenced_directories,
+                [uri],
+                source_digest,
+                references_directories=referenced_directories,
             )
         except grpc.RpcError as e:
             raise SourceCacheError("Failed to push source with status {}: {}".format(e.code().name, e.details()))

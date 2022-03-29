@@ -14,7 +14,12 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "options")
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
     "project_dir",
-    [("invalid-name-spaces"), ("invalid-name-dashes"), ("invalid-name-plus"), ("invalid-name-leading-number"),],
+    [
+        ("invalid-name-spaces"),
+        ("invalid-name-dashes"),
+        ("invalid-name-plus"),
+        ("invalid-name-leading-number"),
+    ],
 )
 def test_invalid_option_name(cli, datafiles, project_dir):
     project = os.path.join(datafiles.dirname, datafiles.basename, project_dir)
@@ -23,7 +28,13 @@ def test_invalid_option_name(cli, datafiles, project_dir):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("project_dir", [("invalid-variable-name-spaces"), ("invalid-variable-name-plus"),])
+@pytest.mark.parametrize(
+    "project_dir",
+    [
+        ("invalid-variable-name-spaces"),
+        ("invalid-variable-name-plus"),
+    ],
+)
 def test_invalid_variable_name(cli, datafiles, project_dir):
     project = os.path.join(datafiles.dirname, datafiles.basename, project_dir)
     result = cli.run(project=project, silent=True, args=["show", "element.bst"])
@@ -94,7 +105,13 @@ def test_invalid_condition(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("opt_option,expected_prefix", [("False", "/usr"), ("True", "/opt"),])
+@pytest.mark.parametrize(
+    "opt_option,expected_prefix",
+    [
+        ("False", "/usr"),
+        ("True", "/opt"),
+    ],
+)
 def test_simple_conditional(cli, datafiles, opt_option, expected_prefix):
     project = os.path.join(datafiles.dirname, datafiles.basename, "simple-condition")
 
@@ -112,7 +129,12 @@ def test_simple_conditional(cli, datafiles, opt_option, expected_prefix):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
     "debug,logging,expected",
-    [("False", "False", "False"), ("True", "False", "False"), ("False", "True", "False"), ("True", "True", "True"),],
+    [
+        ("False", "False", "False"),
+        ("True", "False", "False"),
+        ("False", "True", "False"),
+        ("True", "True", "True"),
+    ],
 )
 def test_nested_conditional(cli, datafiles, debug, logging, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename, "nested-condition")
@@ -144,7 +166,12 @@ def test_nested_conditional(cli, datafiles, debug, logging, expected):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
     "debug,logging,expected",
-    [("False", "False", "False"), ("True", "False", "False"), ("False", "True", "False"), ("True", "True", "True"),],
+    [
+        ("False", "False", "False"),
+        ("True", "False", "False"),
+        ("False", "True", "False"),
+        ("True", "True", "True"),
+    ],
 )
 def test_compound_and_conditional(cli, datafiles, debug, logging, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename, "compound-and-condition")
@@ -176,7 +203,12 @@ def test_compound_and_conditional(cli, datafiles, debug, logging, expected):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
     "debug,logging,expected",
-    [("False", "False", "False"), ("True", "False", "True"), ("False", "True", "True"), ("True", "True", "True"),],
+    [
+        ("False", "False", "False"),
+        ("True", "False", "True"),
+        ("False", "True", "True"),
+        ("True", "True", "True"),
+    ],
 )
 def test_compound_or_conditional(cli, datafiles, debug, logging, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename, "compound-or-condition")
@@ -206,7 +238,13 @@ def test_compound_or_conditional(cli, datafiles, debug, logging, expected):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("option,expected", [("False", "horsy"), ("True", "pony"),])
+@pytest.mark.parametrize(
+    "option,expected",
+    [
+        ("False", "horsy"),
+        ("True", "pony"),
+    ],
+)
 def test_deep_nesting_level1(cli, datafiles, option, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename, "deep-nesting")
     result = cli.run(
@@ -223,7 +261,13 @@ def test_deep_nesting_level1(cli, datafiles, option, expected):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("option,expected", [("False", "horsy"), ("True", "pony"),])
+@pytest.mark.parametrize(
+    "option,expected",
+    [
+        ("False", "horsy"),
+        ("True", "pony"),
+    ],
+)
 def test_deep_nesting_level2(cli, datafiles, option, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename, "deep-nesting")
     result = cli.run(

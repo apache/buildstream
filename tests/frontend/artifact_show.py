@@ -26,8 +26,14 @@ from tests.testutils import create_artifact_share
 
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
-SIMPLE_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "simple",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
+SIMPLE_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "simple",
+)
 
 
 # Test artifact show
@@ -159,7 +165,10 @@ def test_artifact_show_element_available_remotely(cli, tmpdir, datafiles):
     local_cache = os.path.join(str(tmpdir), "artifacts")
     with create_artifact_share(os.path.join(str(tmpdir), "remote")) as remote:
         cli.configure(
-            {"artifacts": {"servers": [{"url": remote.repo, "push": True}]}, "cachedir": local_cache,}
+            {
+                "artifacts": {"servers": [{"url": remote.repo, "push": True}]},
+                "cachedir": local_cache,
+            }
         )
 
         # Build the element
