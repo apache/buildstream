@@ -47,7 +47,7 @@ def check_cache_key_stability(project_path: os.PathLike, cli: Cli) -> None:
     project's directory.
 
     :param project_path: Path to a project
-    :param cli: a `cli` object as provided by the fixture :func:`buildstream.testing.runcli.cli`
+    :param cli: a `cli` object as provided by the fixture :func:`buildstream._testing.runcli.cli`
     """
     result = cli.run(
         project=project_path, silent=True, args=["show", "--format", "%{name}::%{full-key}", "target.bst"]
@@ -110,7 +110,7 @@ def _load_expected_keys(project_dir, actual_keys, raise_error=True):
                 raise Exception(
                     "Cache key test needs update, "
                     + "expected file {} not found.\n\n".format(expected)
-                    + "Use python3 -m buildstream.testing._update_cachekeys in the"
+                    + "Use python3 -m buildstream._testing._update_cachekeys in the"
                     + " project's directory to automatically update this test case"
                 )
 
@@ -142,6 +142,6 @@ def _assert_cache_keys(project_dir, output):
 
         raise AssertionError(
             "Cache key mismatches occurred:\n{}\n".format(info)
-            + "Use python3 -m buildstream.testing._update_cachekeys in the project's "
+            + "Use python3 -m buildstream._testing._update_cachekeys in the project's "
             + "directory to automatically update this test case"
         )
