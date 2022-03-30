@@ -51,7 +51,6 @@ information.
    sources/local
    sources/remote
    sources/tar
-   sources/git
 
 
 .. _plugins_external:
