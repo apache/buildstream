@@ -1,1 +1,1 @@
-kind: autotools
+kind: manual
