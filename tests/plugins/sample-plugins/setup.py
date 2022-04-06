@@ -29,6 +29,7 @@ setup(
     entry_points={
         "buildstream.plugins.elements": [
             "sample = sample_plugins.elements.sample",
+            "autotools = sample_plugins.elements.autotools",
         ],
         "buildstream.plugins.sources": [
             "sample = sample_plugins.sources.sample",

@@ -1,0 +1,129 @@
+# Autotools default configurations
+
+variables:
+
+  autogen: |
+    export NOCONFIGURE=1;
+
+    if [ -x %{conf-cmd} ]; then true;
+    elif [ -x %{conf-root}/autogen ]; then %{conf-root}/autogen;
+    elif [ -x %{conf-root}/autogen.sh ]; then %{conf-root}/autogen.sh;
+    elif [ -x %{conf-root}/bootstrap ]; then %{conf-root}/bootstrap;
+    elif [ -x %{conf-root}/bootstrap.sh ]; then %{conf-root}/bootstrap.sh;
+    else autoreconf -ivf %{conf-root};
+    fi
+
+  # Project-wide extra arguments to be passed to `configure`
+  conf-global: ''
+
+  # Element-specific extra arguments to be passed to `configure`.
+  conf-local: ''
+
+  # For backwards compatibility only, do not use.
+  conf-extra: ''
+
+  conf-cmd: "%{conf-root}/configure"
+  
+  conf-args: |
+
+    --prefix=%{prefix} \
+    --exec-prefix=%{exec_prefix} \
+    --bindir=%{bindir} \
+    --sbindir=%{sbindir} \
+    --sysconfdir=%{sysconfdir} \
+    --datadir=%{datadir} \
+    --includedir=%{includedir} \
+    --libdir=%{libdir} \
+    --libexecdir=%{libexecdir} \
+    --localstatedir=%{localstatedir} \
+    --sharedstatedir=%{sharedstatedir} \
+    --mandir=%{mandir} \
+    --infodir=%{infodir} %{conf-extra} %{conf-global} %{conf-local}
+
+  configure: |
+
+    %{conf-cmd} %{conf-args}
+
+  make: make
+  make-install: make -j1 DESTDIR="%{install-root}" install
+
+  # Set this if the sources cannot handle parallelization.
+  #
+  # notparallel: True
+
+
+  # Automatically remove libtool archive files
+  #
+  # Set remove-libtool-modules to "true" to remove .la files for 
+  # modules intended to be opened with lt_dlopen()
+  #
+  # Set remove-libtool-libraries to "true" to remove .la files for
+  # libraries
+  #
+  # Value must be "true" or "false"
+  remove-libtool-modules: "false"  
+  remove-libtool-libraries: "false"
+
+  delete-libtool-archives: |
+    if %{remove-libtool-modules} || %{remove-libtool-libraries}; then
+      find "%{install-root}" -name "*.la" -print0 | while read -d '' -r file; do
+        if grep '^shouldnotlink=yes$' "${file}" &>/dev/null; then
+          if %{remove-libtool-modules}; then
+            echo "Removing ${file}."
+            rm "${file}"
+          else
+            echo "Not removing ${file}."
+          fi
+        else
+          if %{remove-libtool-libraries}; then
+            echo "Removing ${file}."
+            rm "${file}"
+          else
+            echo "Not removing ${file}."
+          fi
+        fi
+      done
+    fi
+
+config:
+
+  # Commands for configuring the software
+  #
+  configure-commands:
+  - |
+    %{autogen}
+  - |
+    %{configure}
+
+  # Commands for building the software
+  #
+  build-commands:
+  - |
+    %{make}
+
+  # Commands for installing the software into a
+  # destination folder
+  #
+  install-commands:
+  - |
+    %{make-install}
+  - |
+    %{delete-libtool-archives}
+
+  # Commands for stripping debugging information out of
+  # installed binaries
+  #
+  strip-commands:
+  - |
+    %{strip-binaries}
+
+# Use max-jobs CPUs for building and enable verbosity
+environment:
+  MAKEFLAGS: -j%{max-jobs}
+  V: 1
+
+# And dont consider MAKEFLAGS or V as something which may
+# affect build output.
+environment-nocache:
+- MAKEFLAGS
+- V
