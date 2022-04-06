@@ -10,6 +10,9 @@ from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream._testing.runcli import cli  # pylint: disable=unused-import
 
+from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
+from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
+
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "variables")
@@ -31,6 +34,7 @@ def print_warning(msg):
     [("autotools.bst", "make-install", 'make -j1 DESTDIR="/buildstream-install" install')],
 )
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "defaults"))
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_defaults(cli, datafiles, target, varname, expected):
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", target])
@@ -47,6 +51,7 @@ def test_defaults(cli, datafiles, target, varname, expected):
     [("autotools.bst", "make-install", 'make -j1 DESTDIR="/custom/install/root" install')],
 )
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "overrides"))
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_overrides(cli, datafiles, target, varname, expected):
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", target])
@@ -119,6 +124,7 @@ def test_circular_reference(cli, datafiles, element, provenances):
     [50, 500, 5000],
 )
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "defaults"))
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_deep_references(cli, datafiles, maxvars):
     project = str(datafiles)
 
