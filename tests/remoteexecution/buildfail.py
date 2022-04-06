@@ -23,6 +23,8 @@ import pytest
 from buildstream.exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream._testing import cli_remote_execution as cli  # pylint: disable=unused-import
+from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
+from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
 
 pytestmark = pytest.mark.remoteexecution
 
@@ -34,6 +36,7 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_build_remote_failure(cli, datafiles):
     project = str(datafiles)
     element_path = os.path.join(project, "elements", "element.bst")

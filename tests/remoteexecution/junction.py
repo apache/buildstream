@@ -23,6 +23,8 @@ from buildstream._testing import cli_remote_execution as cli  # pylint: disable=
 from buildstream._testing import create_repo
 from buildstream import _yaml
 from tests.testutils import generate_junction
+from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
+from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
 
 pytestmark = pytest.mark.remoteexecution
 
@@ -45,6 +47,7 @@ def create_element(repo, name, path, dependencies, ref=None):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_junction_build_remote(cli, tmpdir, datafiles):
     project = str(datafiles)
     subproject_path = os.path.join(project, "files", "sub-project")
