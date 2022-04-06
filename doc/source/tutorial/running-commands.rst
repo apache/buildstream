@@ -40,7 +40,7 @@ And we're going to build it using ``make``, using the following Makefile:
    :language: Makefile
 
 
-We'll be using the most fundamental :ref:`build element <plugins_build_elements>`,
+We'll be using the most fundamental :ref:`build element <plugins_elements>`,
 the :mod:`manual <elements.manual>` build element.
 
 The :mod:`manual <elements.manual>` element is the backbone on which all the other
@@ -149,7 +149,7 @@ the element configuration exposes four command lists:
 
 .. tip::
 
-   All other :ref:`build elements <plugins_build_elements>`
+   All other :ref:`build elements <core_buildelement_builtins>`
    implement exactly the same command lists too, except that they provide
    default commands specific to invoke the build systems they support.
 

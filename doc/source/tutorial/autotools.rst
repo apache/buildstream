@@ -138,11 +138,12 @@ the program we've compiled anyway using :ref:`bst shell <invoking_shell>`:
 
 Summary
 -------
-Now we've used a builtin :ref:`build element <plugins_build_elements>`, and
-we've taken a look into :ref:`how variables work <format_variables>`.
+Now we've used an external :ref:`build element <core_buildelement_builtins>`,
+from the ``buildstream-plugins`` package and we've taken a look into
+:ref:`how variables work <format_variables>`.
 
-When browsing the :ref:`build elements <plugins_build_elements>` in the
-documentation, we are now equipped with a good idea of what an element is going
-to do, based on their default YAML configuration and any configurations
+When browsing the :ref:`build elements <core_buildelement_builtins>` in their
+respective documentation, we are now equipped with a good idea of what an element
+is going to do, based on their default YAML configuration and any configurations
 we have in our project. We can also now observe what variables are in effect
 for the build of a given element, using :ref:`bst show <invoking_show>`.

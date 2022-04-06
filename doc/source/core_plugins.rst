@@ -10,8 +10,10 @@ given element specify their plugin specific configuration directly
 :ref:`in their source declarations <format_sources>`.
 
 
-General elements
-----------------
+.. _plugins_elements:
+
+Elements
+--------
 .. toctree::
    :maxdepth: 1
 
@@ -22,17 +24,7 @@ General elements
    elements/link
    elements/junction
    elements/filter
-
-
-.. _plugins_build_elements:
-
-Build elements
---------------
-.. toctree::
-   :maxdepth: 1
-
    elements/manual
-   elements/autotools
 
 
 .. _plugins_sources:
