@@ -1,4 +1,4 @@
-kind: autotools
+kind: manual
 description: Second dependency level
 depends:
   - multiple_targets/order/4.bst

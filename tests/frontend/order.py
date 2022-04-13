@@ -27,7 +27,7 @@ DATA_DIR = os.path.join(
 def create_element(project, name, dependencies):
     dev_files_path = os.path.join(project, "files", "dev-files")
     element_path = os.path.join(project, "elements")
-    repo = create_repo("git", project, "{}-repo".format(name))
+    repo = create_repo("tar", project, "{}-repo".format(name))
     ref = repo.create(dev_files_path)
 
     element = {"kind": "import", "sources": [repo.source_config(ref=ref)], "depends": dependencies}

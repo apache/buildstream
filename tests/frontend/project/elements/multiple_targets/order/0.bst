@@ -1,4 +1,4 @@
-kind: autotools
+kind: manual
 description: Root node
 depends:
   - multiple_targets/order/2.bst

@@ -30,9 +30,6 @@ from buildstream._testing._fixtures import (  # pylint: disable=unused-import
 )
 from buildstream._testing.integration import integration_cache  # pylint: disable=unused-import
 
-
-from tests.testutils.repo.git import Git
-from tests.testutils.repo.bzr import Bzr
 from tests.testutils.repo.tar import Tar
 
 
@@ -129,8 +126,6 @@ def remote_services(request):
 #################################################
 # Setup for templated source tests              #
 #################################################
-register_repo_kind("git", Git, None)
-register_repo_kind("bzr", Bzr, None)
 register_repo_kind("tar", Tar, None)
 
 

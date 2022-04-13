@@ -1,4 +1,4 @@
-kind: autotools
+kind: manual
 description: The kind of this element is irrelevant.
 sources:
 - kind: tar

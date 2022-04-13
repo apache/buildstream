@@ -1,5 +1,5 @@
-kind: autotools
-description: Some kinda autotools element
+kind: manual
+description: Some kinda manual element
 config:
   configure-commands:
   - pony

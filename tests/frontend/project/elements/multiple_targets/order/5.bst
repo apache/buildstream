@@ -1,2 +1,2 @@
-kind: autotools
+kind: manual
 description: Fifth level dependency

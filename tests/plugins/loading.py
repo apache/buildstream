@@ -14,6 +14,9 @@ from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 
+from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
+from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
+
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "loading")
 
@@ -41,37 +44,6 @@ def setup_element(project_path, plugin_type, plugin_name):
         element = {"kind": "manual", "sources": [{"kind": plugin_name}]}
 
     _yaml.roundtrip_dump(element, element_path)
-
-
-# This function is used for pytest skipif() expressions.
-#
-# Tests which require our plugins in tests/plugins/pip-samples need
-# to check if these plugins are installed, they are only guaranteed
-# to be installed when running tox, but not when using pytest directly
-# to test that BuildStream works when integrated in your system.
-#
-def pip_sample_packages():
-    import pkg_resources
-
-    required = {"sample-plugins"}
-    installed = {pkg.key for pkg in pkg_resources.working_set}  # pylint: disable=not-an-iterable
-    missing = required - installed
-
-    if missing:
-        return False
-
-    return True
-
-
-SAMPLE_PACKAGES_SKIP_REASON = """
-The sample plugins package used to test pip plugin origins is not installed.
-
-This is usually tested automatically with `tox`, if you are running
-`pytest` directly then you can install these plugins directly using pip.
-
-The plugins are located in the tests/plugins/sample-plugins directory
-of your BuildStream checkout.
-"""
 
 
 ####################################################

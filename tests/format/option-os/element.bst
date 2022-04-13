@@ -1,4 +1,4 @@
-kind: autotools
+kind: manual
 variables:
   result: "Nothing"
   (?):

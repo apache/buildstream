@@ -313,9 +313,9 @@ Create a junction which accesses the release tarball of the plugin repository.
 
    kind: junction
    sources:
-     kind: tar
-     url: pypi:83/dd/dc9dfe4c5054f46b1385707e3c286fccc72c9c71ef1b133677e2dbb28ffc/bst-plugins-experimental-1.93.6.tar.gz
-     ref: b20fff88f800da3ab6a666031bb13b4c3f7df0f8fe6943848717efa0d43ac990
+   - kind: tar
+     url: pypi:0c/dd/c2afff7697104f37fd67d98931c402153409bdd2b35442e088460c452f9d/bst-plugins-experimental-1.93.7.tar.gz
+     ref: 0646cf740cdc049c6343059816d36d2181d31aa0d1632107159c737a4332c83c
 
 
 Declare the plugin you want to use in your project.conf

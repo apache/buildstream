@@ -35,7 +35,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
 
 def create_test_element(tmpdir, project_dir):
-    repo = create_repo("git", str(tmpdir))
+    repo = create_repo("tar", str(tmpdir))
     ref = repo.create(os.path.join(project_dir, "files"))
     element_path = os.path.join(project_dir, "elements")
     element_name = "fetch.bst"
@@ -89,7 +89,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             res = cli.run(project=project_dir, args=["build", element_name])
             res.assert_success()
 
-            assert os.listdir(os.path.join(str(tmpdir), "cache", "sources", "git")) != []
+            assert os.listdir(os.path.join(str(tmpdir), "cache", "sources", "tar")) != []
 
             # get root digest of source
             sourcecache = context.sourcecache
@@ -123,7 +123,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             # check that we have the source in the cas now and it's not fetched
             element._query_source_cache()
             assert element._cached_sources()
-            assert os.listdir(os.path.join(str(tmpdir), "cache", "sources", "git")) == []
+            assert os.listdir(os.path.join(str(tmpdir), "cache", "sources", "tar")) == []
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -153,7 +153,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
             assert (
                 "Remote source service ({}) does not have source {} cached".format(share.repo, brief_key)
             ) in res.stderr
-            assert ("SUCCESS Fetching from {}".format(repo.source_config(ref=ref)["url"])) in res.stderr
+            assert ("SUCCESS Fetching {}".format(repo.source_config(ref=ref)["url"])) in res.stderr
 
             # Check that the source in both in the source dir and the local CAS
             project = Project(project_dir, context)
@@ -186,7 +186,7 @@ def test_pull_fail(cli, tmpdir, datafiles):
             # Should fail in stream, with a plugin task causing the error
             res = cli.run(project=project_dir, args=["build", element_name])
             res.assert_main_error(ErrorDomain.STREAM, None)
-            res.assert_task_error(ErrorDomain.PLUGIN, None)
+            res.assert_task_error(ErrorDomain.SOURCE, None)
             assert (
                 "Remote source service ({}) does not have source {} cached".format(
                     share.repo, source._get_brief_display_key()
@@ -218,7 +218,7 @@ def test_source_pull_partial_fallback_fetch(cli, tmpdir, datafiles):
             res = cli.run(project=project_dir, args=["build", element_name])
             res.assert_success()
 
-            assert os.listdir(os.path.join(str(tmpdir), "cache", "sources", "git")) != []
+            assert os.listdir(os.path.join(str(tmpdir), "cache", "sources", "tar")) != []
 
             # get root digest of source
             sourcecache = context.sourcecache
@@ -243,4 +243,4 @@ def test_source_pull_partial_fallback_fetch(cli, tmpdir, datafiles):
             res = cli.run(project=project_dir, args=["source", "fetch", element_name])
             res.assert_success()
 
-            assert ("SUCCESS Fetching from {}".format(repo.source_config(ref=ref)["url"])) in res.stderr
+            assert ("SUCCESS Fetching {}".format(repo.source_config(ref=ref)["url"])) in res.stderr

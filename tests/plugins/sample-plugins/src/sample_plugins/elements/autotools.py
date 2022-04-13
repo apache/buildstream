@@ -47,10 +47,11 @@ an example of that:
 
 Here is the default configuration for the ``autotools`` element in full:
 
-  .. literalinclude:: ../../../src/buildstream/plugins/elements/autotools.yaml
+  .. literalinclude:: ../../../src/buildstream_plugins/elements/autotools.yaml
      :language: yaml
 
-See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
+See `built-in functionality documentation
+<https://docs.buildstream.build/master/buildstream.buildelement.html#core-buildelement-builtins>`_ for
 details on common configuration options for build elements.
 """
 

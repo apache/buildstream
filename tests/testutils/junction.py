@@ -1,3 +1,5 @@
+import os
+
 from buildstream import _yaml
 from buildstream._testing import create_repo
 
@@ -19,7 +21,9 @@ def generate_junction(tmpdir, subproject_path, junction_path, *, store_ref=True,
     # Create a repo to hold the subproject and generate
     # a junction element for it
     #
-    repo = create_repo("git", str(tmpdir))
+    repodir = os.path.join(tmpdir, "junction-repo")
+    os.makedirs(repodir)
+    repo = create_repo("tar", repodir)
     source_ref = ref = repo.create(subproject_path)
     if not store_ref:
         source_ref = None

@@ -19,7 +19,145 @@
 #        Chandan Singh <csingh43@bloomberg.net>
 #        Tom Mewett <tom.mewett@codethink.co.uk>
 
-"""Abstract base class for source implementations that work with a Git repository"""
+"""
+git - stage files from a git repository
+=======================================
+
+**Host dependencies:**
+
+  * git
+
+.. attention::
+
+    Note that this plugin **will checkout git submodules by default**; even if
+    they are not specified in the `.bst` file.
+
+**Usage:**
+
+.. code:: yaml
+
+   # Specify the git source kind
+   kind: git
+
+   # Specify the repository url, using an alias defined
+   # in your project configuration is recommended.
+   url: upstream:foo.git
+
+   # Optionally specify a symbolic tracking branch or tag, this
+   # will be used to update the 'ref' when refreshing the pipeline.
+   track: master
+
+   # Optionally specify the ref format used for tracking.
+   # The default is 'sha1' for the raw commit hash.
+   # If you specify 'git-describe', the commit hash will be prefixed
+   # with the closest tag.
+   ref-format: sha1
+
+   # Specify the commit ref, this must be specified in order to
+   # checkout sources and build, but can be automatically updated
+   # if the 'track' attribute was specified.
+   ref: d63cbb6fdc0bbdadc4a1b92284826a6d63a7ebcd
+
+   # Optionally specify whether submodules should be checked-out.
+   # This is done recursively, as with `git clone --recurse-submodules`.
+   # If not set, this will default to 'True'
+   checkout-submodules: True
+
+   # If your repository has submodules, explicitly specifying the
+   # url from which they are to be fetched allows you to easily
+   # rebuild the same sources from a different location. This is
+   # especially handy when used with project defined aliases which
+   # can be redefined at a later time.
+   # You may also explicitly specify whether to check out this
+   # submodule. If 'checkout' is set, it will control whether to
+   # checkout that submodule and recurse into it. It defaults to the
+   # value of 'checkout-submodules'.
+   submodules:
+     plugins/bar:
+       url: upstream:bar.git
+       checkout: True
+     plugins/bar/quux:
+       checkout: False
+     plugins/baz:
+       url: upstream:baz.git
+       checkout: False
+
+   # Enable tag tracking.
+   #
+   # This causes the `tags` metadata to be populated automatically
+   # as a result of tracking the git source.
+   #
+   # By default this is 'False'.
+   #
+   track-tags: True
+
+   # If the list of tags below is set, then a lightweight dummy
+   # git repository will be staged along with the content at
+   # build time.
+   #
+   # This is useful for a growing number of modules which use
+   # `git describe` at build time in order to determine the version
+   # which will be encoded into the built software.
+   #
+   # The 'tags' below is considered as a part of the git source
+   # reference and will be stored in the 'project.refs' file if
+   # that has been selected as your project's ref-storage.
+   #
+   # Migration notes:
+   #
+   #   If you are upgrading from BuildStream 1.2, which used to
+   #   stage the entire repository by default, you will notice that
+   #   some modules which use `git describe` are broken, and will
+   #   need to enable this feature in order to fix them.
+   #
+   #   If you need to enable this feature without changing the
+   #   the specific commit that you are building, then we recommend
+   #   the following migration steps for any git sources where
+   #   `git describe` is required:
+   #
+   #     o Enable `track-tags` feature
+   #     o Set the `track` parameter to the desired commit sha which
+   #       the current `ref` points to
+   #     o Run `bst source track` for these elements, this will result in
+   #       populating the `tags` portion of the refs without changing
+   #       the refs
+   #     o Restore the `track` parameter to the branches which you have
+   #       previously been tracking afterwards.
+   #
+   tags:
+   - tag: lightweight-example
+     commit: 04ad0dc656cb7cc6feb781aa13bdbf1d67d0af78
+     annotated: false
+   - tag: annotated-example
+     commit: 10abe77fe8d77385d86f225b503d9185f4ef7f3a
+     annotated: true
+
+See `built-in functionality doumentation
+<https://docs.buildstream.build/master/buildstream.source.html#core-source-builtins>`_ for
+details on common configuration options for sources.
+
+
+**Configurable Warnings:**
+
+This plugin provides the following
+`configurable warnings <https://docs.buildstream.build/master/format_project.html#configurable-warnings>`_:
+
+- ``git:inconsistent-submodule`` - A submodule present in the git repository's .gitmodules was never
+  added with `git submodule add`.
+
+- ``git:unlisted-submodule`` - A submodule is present in the git repository but was not specified in
+  the source configuration and was not disabled for checkout.
+
+- ``git:invalid-submodule`` - A submodule is specified in the source configuration but does not exist
+  in the repository.
+
+This plugin also utilises the following configurable
+`core warnings <https://docs.buildstream.build/master/buildstream.types.html#buildstream.types.CoreWarnings>`_:
+
+- `ref-not-in-track <https://docs.buildstream.build/master/buildstream.types.html#buildstream.types.CoreWarnings.REF_NOT_IN_TRACK>`_ -
+  The provided ref was not found in the provided track in the element's git repository.
+"""
+
 
 import os
 import re
@@ -29,11 +167,10 @@ from tempfile import TemporaryFile
 
 from configparser import RawConfigParser
 
-from .source import Source, SourceError, SourceFetcher
-from .types import CoreWarnings
-from . import utils
-from .types import FastEnum
-from .utils import move_atomic, DirectoryExistsError
+from buildstream import Source, SourceError, SourceFetcher
+from buildstream import CoreWarnings, FastEnum
+from buildstream import utils
+from buildstream.utils import DirectoryExistsError
 
 GIT_MODULES = ".gitmodules"
 EXACT_TAG_PATTERN = r"(?P<tag>.*)-0-g(?P<commit>.*)"
@@ -56,19 +193,19 @@ def _strip_tag(rev):
 # This class represents a single Git repository. The Git source needs to account for
 # submodules, but we don't want to cache them all under the umbrella of the
 # superproject - so we use this class which caches them independently, according
-# to their URL. Instances keep reference to their "parent" GitSourceBase,
+# to their URL. Instances keep reference to their "parent" GitSource,
 # and if applicable, where in the superproject they are found.
 #
 # Args:
-#    source (_GitSourceBase or subclass): The parent source
+#    source (GitSource): The parent source
 #    path (str): The relative location of the submodule in the superproject;
 #                the empty string for the superproject itself
 #    url (str): Where to clone the repo from
 #    ref (str): Specified 'ref' from the source configuration
 #    primary (bool): Whether this is the primary URL for the source
-#    tags (list): Tag configuration; see _GitSourceBase._load_tags
+#    tags (list): Tag configuration; see GitSource._load_tags
 #
-class _GitMirror(SourceFetcher):
+class GitMirror(SourceFetcher):
     def __init__(self, source, path, url, ref, *, primary=False, tags=None):
 
         super().__init__()
@@ -94,7 +231,7 @@ class _GitMirror(SourceFetcher):
                 )
 
                 try:
-                    move_atomic(tmpdir, self.mirror)
+                    utils.move_atomic(tmpdir, self.mirror)
                 except DirectoryExistsError:
                     # Another process was quicker to download this repository.
                     # Let's discard our own
@@ -238,7 +375,15 @@ class _GitMirror(SourceFetcher):
     #
     def describe(self, rev):
         _, output = self.source.check_output(
-            [self.source.host_git, "describe", "--tags", "--abbrev=40", "--long", "--always", rev],
+            [
+                self.source.host_git,
+                "describe",
+                "--tags",
+                "--abbrev=40",
+                "--long",
+                "--always",
+                rev,
+            ],
             fail="Unable to find revision {}".format(rev),
             cwd=self.mirror,
         )
@@ -257,9 +402,21 @@ class _GitMirror(SourceFetcher):
     #
     def reachable_tags(self, rev):
         tags = set()
-        for options in [[], ["--first-parent"], ["--tags"], ["--tags", "--first-parent"]]:
+        for options in [
+            [],
+            ["--first-parent"],
+            ["--tags"],
+            ["--tags", "--first-parent"],
+        ]:
             exit_code, output = self.source.check_output(
-                [self.source.host_git, "describe", "--abbrev=0", rev, *options], cwd=self.mirror
+                [
+                    self.source.host_git,
+                    "describe",
+                    "--abbrev=0",
+                    rev,
+                    *options,
+                ],
+                cwd=self.mirror,
             )
             if exit_code == 0:
                 tag = output.strip()
@@ -268,7 +425,10 @@ class _GitMirror(SourceFetcher):
                     fail="Unable to resolve tag '{}'".format(tag),
                     cwd=self.mirror,
                 )
-                exit_code = self.source.call([self.source.host_git, "cat-file", "tag", tag], cwd=self.mirror)
+                exit_code = self.source.call(
+                    [self.source.host_git, "cat-file", "tag", tag],
+                    cwd=self.mirror,
+                )
                 annotated = exit_code == 0
 
                 tags.add((tag, commit_ref.strip(), annotated))
@@ -282,7 +442,14 @@ class _GitMirror(SourceFetcher):
         # case we're just checking out a specific commit and then removing the .git/
         # directory.
         self.source.call(
-            [self.source.host_git, "clone", "--no-checkout", "--shared", self.mirror, fullpath],
+            [
+                self.source.host_git,
+                "clone",
+                "--no-checkout",
+                "--shared",
+                self.mirror,
+                fullpath,
+            ],
             fail="Failed to create git mirror {} in directory: {}".format(self.mirror, fullpath),
             fail_temporarily=True,
         )
@@ -303,7 +470,13 @@ class _GitMirror(SourceFetcher):
         url = self.source.translate_url(self.url)
 
         self.source.call(
-            [self.source.host_git, "clone", "--no-checkout", self.mirror, fullpath],
+            [
+                self.source.host_git,
+                "clone",
+                "--no-checkout",
+                self.mirror,
+                fullpath,
+            ],
             fail="Failed to clone git mirror {} in directory: {}".format(self.mirror, fullpath),
             fail_temporarily=True,
         )
@@ -455,13 +628,24 @@ class _GitMirror(SourceFetcher):
                     )
                     commit_file.seek(0, 0)
                     self.source.call(
-                        [self.source.host_git, "hash-object", "-w", "-t", "commit", "--stdin"],
+                        [
+                            self.source.host_git,
+                            "hash-object",
+                            "-w",
+                            "-t",
+                            "commit",
+                            "--stdin",
+                        ],
                         stdin=commit_file,
                         fail="Failed to add commit object {}".format(rev),
                         cwd=fullpath,
                     )
 
-            with open(os.path.join(fullpath, ".git", "shallow"), "w", encoding="utf-8") as shallow_file:
+            with open(
+                os.path.join(fullpath, ".git", "shallow"),
+                "w",
+                encoding="utf-8",
+            ) as shallow_file:
                 for rev in shallow:
                     shallow_file.write("{}\n".format(rev))
 
@@ -472,7 +656,14 @@ class _GitMirror(SourceFetcher):
                         tag_file.write(tag_data.encode("ascii"))
                         tag_file.seek(0, 0)
                         _, tag_ref = self.source.check_output(
-                            [self.source.host_git, "hash-object", "-w", "-t", "tag", "--stdin"],
+                            [
+                                self.source.host_git,
+                                "hash-object",
+                                "-w",
+                                "-t",
+                                "tag",
+                                "--stdin",
+                            ],
                             stdin=tag_file,
                             fail="Failed to add tag object {}".format(tag),
                             cwd=fullpath,
@@ -499,18 +690,24 @@ class _GitMirror(SourceFetcher):
                 )
 
 
-class _GitSourceBase(Source):
+class GitSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
-    # The GitMirror class which this plugin uses. This may be
-    # overridden in derived plugins as long as the replacement class
-    # follows the same interface used by the _GitMirror class
-    BST_MIRROR_CLASS = _GitMirror
+    BST_MIN_VERSION = "2.0"
 
     def configure(self, node):
         ref = node.get_str("ref", None)
 
-        config_keys = ["url", "track", "ref", "submodules", "checkout-submodules", "ref-format", "track-tags", "tags"]
+        config_keys = [
+            "url",
+            "track",
+            "ref",
+            "submodules",
+            "checkout-submodules",
+            "ref-format",
+            "track-tags",
+            "tags",
+        ]
         node.validate_keys(config_keys + Source.COMMON_CONFIG_KEYS)
 
         tags_node = node.get_sequence("tags", [])
@@ -521,7 +718,7 @@ class _GitSourceBase(Source):
         self.track_tags = node.get_bool("track-tags", default=False)
 
         self.original_url = node.get_str("url")
-        self.mirror = self.BST_MIRROR_CLASS(self, "", self.original_url, ref, tags=tags, primary=True)
+        self.mirror = GitMirror(self, "", self.original_url, ref, tags=tags, primary=True)
         self.tracking = node.get_str("track", None)
 
         self.ref_format = node.get_enum("ref-format", _RefFormat, _RefFormat.SHA1)
@@ -530,7 +727,8 @@ class _GitSourceBase(Source):
         # If it is missing both then we will be unable to track or build.
         if self.mirror.ref is None and self.tracking is None:
             raise SourceError(
-                "{}: Git sources require a ref and/or track".format(self), reason="missing-track-and-ref"
+                "{}: Git sources require a ref and/or track".format(self),
+                reason="missing-track-and-ref",
             )
 
         self.checkout_submodules = node.get_bool("checkout-submodules", default=True)
@@ -626,7 +824,11 @@ class _GitSourceBase(Source):
             if tags:
                 node["tags"] = []
                 for tag, commit_ref, annotated in tags:
-                    data = {"tag": tag, "commit": commit_ref, "annotated": annotated}
+                    data = {
+                        "tag": tag,
+                        "commit": commit_ref,
+                        "annotated": annotated,
+                    }
                     node["tags"].append(data)
             else:
                 if "tags" in node:
@@ -639,12 +841,19 @@ class _GitSourceBase(Source):
             # Is there a better way to check if a ref is given.
             if self.mirror.ref is None:
                 detail = "Without a tracking branch ref can not be updated. Please " + "provide a ref or a track."
-                raise SourceError("{}: No track or ref".format(self), detail=detail, reason="track-attempt-no-track")
+                raise SourceError(
+                    "{}: No track or ref".format(self),
+                    detail=detail,
+                    reason="track-attempt-no-track",
+                )
             return None
 
         # Resolve the URL for the message
         resolved_url = self.translate_url(self.mirror.url)
-        with self.timed_activity("Tracking {} from {}".format(self.tracking, resolved_url), silent_nested=True):
+        with self.timed_activity(
+            "Tracking {} from {}".format(self.tracking, resolved_url),
+            silent_nested=True,
+        ):
             self.mirror._fetch(resolved_url, fetch_all=True)
 
             ref = self.mirror.to_commit(self.tracking)
@@ -729,14 +938,28 @@ class _GitSourceBase(Source):
         ref_in_track = False
         if not re.match(EXACT_TAG_PATTERN, self.mirror.ref) and self.tracking:
             _, branch = self.check_output(
-                [self.host_git, "branch", "--list", self.tracking, "--contains", self.mirror.ref],
+                [
+                    self.host_git,
+                    "branch",
+                    "--list",
+                    self.tracking,
+                    "--contains",
+                    self.mirror.ref,
+                ],
                 cwd=self.mirror.mirror,
             )
             if branch:
                 ref_in_track = True
             else:
                 _, tag = self.check_output(
-                    [self.host_git, "tag", "--list", self.tracking, "--contains", self.mirror.ref],
+                    [
+                        self.host_git,
+                        "tag",
+                        "--list",
+                        self.tracking,
+                        "--contains",
+                        self.mirror.ref,
+                    ],
                     cwd=self.mirror.mirror,
                 )
                 if tag:
@@ -771,7 +994,7 @@ class _GitSourceBase(Source):
     # _configure_submodules():
     #
     # Args:
-    #     submodules: An iterator of _GitMirror (or similar) objects for submodules
+    #     submodules: An iterator of GitMirror (or similar) objects for submodules
     #
     # Returns:
     #     An iterator through `submodules` but filtered of any ignored submodules
@@ -829,3 +1052,8 @@ class _GitSourceBase(Source):
     #
     def _ignoring_submodule(self, path):
         return not self.submodule_checkout_overrides.get(path, self.checkout_submodules)
+
+
+# Plugin entry point
+def setup():
+    return GitSource

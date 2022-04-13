@@ -48,7 +48,7 @@ def test_workspace_source_fetch(tmpdir, datafiles, cli):
     create_element_size("target.bst", project_dir, element_path, [], 10000)
     res = cli.run(project=project_dir, args=["build", "target.bst"])
     res.assert_success()
-    assert "Fetching from" in res.stderr
+    assert "Fetching" in res.stderr
 
     # remove the original sources
     shutil.rmtree(source_dir)
@@ -56,7 +56,7 @@ def test_workspace_source_fetch(tmpdir, datafiles, cli):
     # Open a workspace and check that fetches the original sources
     res = cli.run(project=project_dir, args=["workspace", "open", "target.bst", "--directory", workspace])
     res.assert_success()
-    assert "Fetching from" in res.stderr
+    assert "Fetching" in res.stderr
 
     assert os.listdir(workspace) != []
 
@@ -89,7 +89,7 @@ def test_workspace_open_no_source_push(tmpdir, datafiles, cli):
         create_element_size("target.bst", project_dir, element_path, [], 10000)
         res = cli.run(project=project_dir, args=["build", "target.bst"])
         res.assert_success()
-        assert "Fetching from" in res.stderr
+        assert "Fetching" in res.stderr
         assert "Pushed source" in res.stderr
 
         # clear the cas and open a workspace
