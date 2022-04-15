@@ -90,7 +90,7 @@ class LocalSource(Source):
         # Nothing to do here for a local source
         pass  # pragma: nocover
 
-    def stage(self, directory):
+    def stage_directory(self, directory):
         #
         # We've already prepared the CAS while resolving the cache key which
         # will happen before staging.
@@ -102,7 +102,7 @@ class LocalSource(Source):
         with self._cache_directory(digest=self.__digest) as cached_directory:
             directory.import_files(cached_directory)
 
-    def init_workspace(self, directory):
+    def init_workspace_directory(self, directory):
         #
         # FIXME: We should be able to stage the workspace from the content
         #        cached in CAS instead of reimporting from the filesystem

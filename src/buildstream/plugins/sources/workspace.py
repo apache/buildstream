@@ -92,13 +92,13 @@ class WorkspaceSource(Source):
     # init_workspace()
     #
     # Raises AssertionError: existing workspaces should not be reinitialized
-    def init_workspace(self, directory: str) -> None:
+    def init_workspace_directory(self, directory: Directory) -> None:
         raise AssertionError("Attempting to re-open an existing workspace")
 
     def fetch(self, *, previous_sources_dir=None) -> None:  # pylint: disable=arguments-differ
         pass  # pragma: nocover
 
-    def stage(self, directory):
+    def stage_directory(self, directory):
         #
         # We've already prepared the CAS while resolving the cache key which
         # will happen before staging.
