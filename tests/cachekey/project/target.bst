@@ -22,3 +22,4 @@ depends:
 - elements/import2.bst
 - elements/import3.bst
 - elements/script1.bst
+- elements/variables1.bst
