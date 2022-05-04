@@ -176,7 +176,7 @@ def _parse_timestamp(timestamp: str) -> float:
         raise UtilError(errmsg)
 
 
-def _make_protobuf_timestamp(timestamp: timestamp_pb2.Timestamp, timepoint: float):
+def _make_protobuf_timestamp(timestamp: timestamp_pb2.Timestamp, timepoint: float):  # pylint: disable=no-member
     """Obtain the Protobuf Timestamp represented by the time given in seconds.
 
     Args:
@@ -188,7 +188,7 @@ def _make_protobuf_timestamp(timestamp: timestamp_pb2.Timestamp, timepoint: floa
     timestamp.nanos = int(math.modf(timepoint)[0] * 1e9)
 
 
-def _get_file_protobuf_mtimestamp(timestamp: timestamp_pb2.Timestamp, fullpath: str):
+def _get_file_protobuf_mtimestamp(timestamp: timestamp_pb2.Timestamp, fullpath: str):  # pylint: disable=no-member
     """Obtain the Protobuf Timestamp represented by the mtime of the
     file at the given path."""
     assert isinstance(fullpath, str), "Path to file must be a string: {}".format(str(fullpath))
@@ -199,7 +199,7 @@ def _get_file_protobuf_mtimestamp(timestamp: timestamp_pb2.Timestamp, fullpath: 
     _make_protobuf_timestamp(timestamp, mtime)
 
 
-def _parse_protobuf_timestamp(timestamp: timestamp_pb2.Timestamp) -> float:
+def _parse_protobuf_timestamp(timestamp: timestamp_pb2.Timestamp) -> float:  # pylint: disable=no-member
     """Convert Protobuf Timestamp to seconds since epoch.
 
     Args:
