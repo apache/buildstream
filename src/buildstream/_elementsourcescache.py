@@ -103,7 +103,9 @@ class ElementSourcesCache(AssetCache):
 
         if errors and not source_digest:
             raise SourceCacheError(
-                "Failed to pull source {}".format(display_key), detail="\n".join(str(e) for e in errors)
+                "Failed to pull source {}".format(display_key),
+                detail="\n".join(str(e) for e in errors),
+                temporary=True,
             )
 
         # If we don't have a source proto, we can't pull source files
@@ -230,7 +232,7 @@ class ElementSourcesCache(AssetCache):
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
                 raise SourceCacheError(
-                    "Failed to push source blobs with status {}: {}".format(e.code().name, e.details())
+                    "Failed to push source blobs with status {}: {}".format(e.code().name, e.details()), temporary=True
                 )
             return False
 
@@ -261,7 +263,7 @@ class ElementSourcesCache(AssetCache):
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.NOT_FOUND:
                 raise SourceCacheError(
-                    "Error checking source cache with status {}: {}".format(e.code().name, e.details())
+                    "Error checking source cache with status {}: {}".format(e.code().name, e.details()), temporary=True
                 )
 
         referenced_directories = [source_proto.files]
@@ -273,7 +275,9 @@ class ElementSourcesCache(AssetCache):
                 references_directories=referenced_directories,
             )
         except grpc.RpcError as e:
-            raise SourceCacheError("Failed to push source with status {}: {}".format(e.code().name, e.details()))
+            raise SourceCacheError(
+                "Failed to push source with status {}: {}".format(e.code().name, e.details()), temporary=True
+            )
 
         return True
 
@@ -308,7 +312,9 @@ class ElementSourcesCache(AssetCache):
             self.cas._fetch_directory(remote, source.files)
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise SourceCacheError("Failed to pull source with status {}: {}".format(e.code().name, e.details()))
+                raise SourceCacheError(
+                    "Failed to pull source with status {}: {}".format(e.code().name, e.details()), temporary=True
+                )
             return False
 
         return True
@@ -324,5 +330,7 @@ class ElementSourcesCache(AssetCache):
 
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
-                raise SourceCacheError("Failed to push source with status {}: {}".format(e.code().name, e.details()))
+                raise SourceCacheError(
+                    "Failed to push source with status {}: {}".format(e.code().name, e.details()), temporary=True
+                )
             return False

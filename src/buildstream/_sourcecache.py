@@ -128,7 +128,7 @@ class SourceCache(AssetCache):
                     )
                     continue
             except CASError as e:
-                raise SourceCacheError("Failed to pull source {}: {}".format(display_key, e)) from e
+                raise SourceCacheError("Failed to pull source {}: {}".format(display_key, e), temporary=True) from e
 
         if not source_digest:
             return False
@@ -148,7 +148,7 @@ class SourceCache(AssetCache):
                 source.info("Remote cas ({}) does not have blob {} cached".format(remote, e.blob))
                 continue
             except CASError as e:
-                raise SourceCacheError("Failed to pull source {}: {}".format(display_key, e)) from e
+                raise SourceCacheError("Failed to pull source {}: {}".format(display_key, e), temporary=True) from e
 
         return False
 
@@ -240,7 +240,9 @@ class SourceCache(AssetCache):
 
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise SourceCacheError("Failed to pull source with status {}: {}".format(e.code().name, e.details()))
+                raise SourceCacheError(
+                    "Failed to pull source with status {}: {}".format(e.code().name, e.details()), temporary=True
+                )
             return None
 
     def _push_source(self, source_ref, remote):
@@ -254,5 +256,7 @@ class SourceCache(AssetCache):
 
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
-                raise SourceCacheError("Failed to push source with status {}: {}".format(e.code().name, e.details()))
+                raise SourceCacheError(
+                    "Failed to push source with status {}: {}".format(e.code().name, e.details()), temporary=True
+                )
             return False
