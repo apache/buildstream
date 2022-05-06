@@ -184,8 +184,8 @@ class AssetCacheError(BstError):
 # Raised when errors are encountered in the source caches
 #
 class SourceCacheError(BstError):
-    def __init__(self, message, detail=None, reason=None):
-        super().__init__(message, detail=detail, domain=ErrorDomain.SANDBOX, reason=reason)
+    def __init__(self, message, detail=None, reason=None, temporary=False):
+        super().__init__(message, detail=detail, domain=ErrorDomain.SANDBOX, reason=reason, temporary=temporary)
 
 
 # ArtifactError
