@@ -17,12 +17,11 @@
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 #
 import os
-import grpc
 
 from ._cas.casremote import BlobNotFound
 from .storage._casbaseddirectory import CasBasedDirectory
 from ._assetcache import AssetCache
-from ._exceptions import CASError, CASRemoteError, SourceCacheError
+from ._exceptions import CASError, CASRemoteError, SourceCacheError, AssetCacheError
 from . import utils
 from ._protos.buildstream.v2 import source_pb2
 
@@ -117,27 +116,22 @@ class SourceCache(AssetCache):
         # First fetch the source directory digest so we know what to pull
         source_digest = None
         for remote in index_remotes:
-            try:
-                remote.init()
-                source.status("Pulling source {} <- {}".format(display_key, remote))
+            remote.init()
+            source.status("Pulling source {} <- {}".format(display_key, remote))
 
-                source_digest = self._pull_source(ref, remote)
-                if source_digest is None:
-                    source.info(
-                        "Remote source service ({}) does not have source {} cached".format(remote, display_key)
-                    )
-                    continue
-            except CASError as e:
-                raise SourceCacheError("Failed to pull source {}: {}".format(display_key, e), temporary=True) from e
+            source_digest = self._pull_source(ref, remote)
+            if source_digest is None:
+                source.info("Remote source service ({}) does not have source {} cached".format(remote, display_key))
+                continue
 
         if not source_digest:
             return False
 
         for remote in storage_remotes:
-            try:
-                remote.init()
-                source.status("Pulling data for source {} <- {}".format(display_key, remote))
+            remote.init()
+            source.status("Pulling data for source {} <- {}".format(display_key, remote))
 
+            try:
                 # Fetch source blobs
                 self.cas._fetch_directory(remote, source_digest)
 
@@ -230,33 +224,26 @@ class SourceCache(AssetCache):
     def _pull_source(self, source_ref, remote):
         uri = REMOTE_ASSET_SOURCE_URN_TEMPLATE.format(source_ref)
 
+        remote.init()
         try:
-            remote.init()
             response = remote.fetch_directory([uri])
-            if not response:
-                return None
+        except AssetCacheError as e:
+            raise SourceCacheError("Failed to pull source: {}".format(e), temporary=True) from e
+
+        if response:
             self._store_source(source_ref, response.root_directory_digest)
             return response.root_directory_digest
 
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise SourceCacheError(
-                    "Failed to pull source with status {}: {}".format(e.code().name, e.details()), temporary=True
-                )
-            return None
+        return None
 
     def _push_source(self, source_ref, remote):
         uri = REMOTE_ASSET_SOURCE_URN_TEMPLATE.format(source_ref)
 
+        remote.init()
+        source_proto = self._get_source(source_ref)
         try:
-            remote.init()
-            source_proto = self._get_source(source_ref)
             remote.push_directory([uri], source_proto.files)
-            return True
+        except AssetCacheError as e:
+            raise SourceCacheError("Failed to push source: {}".format(e), temporary=True) from e
 
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
-                raise SourceCacheError(
-                    "Failed to push source with status {}: {}".format(e.code().name, e.details()), temporary=True
-                )
-            return False
+        return True
