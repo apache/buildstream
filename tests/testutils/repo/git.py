@@ -32,6 +32,7 @@ class Git(Repo):
     def create(self, directory):
         self.copy_directory(directory, self.repo)
         self._run_git("init", ".")
+        self._run_git("checkout", "-b", "master")
         self._run_git("add", ".")
         self._run_git("commit", "-m", "Initial commit")
         return self.latest_commit()
