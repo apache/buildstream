@@ -260,11 +260,8 @@ class ElementSourcesCache(AssetCache):
             # Skip push if source is already on the server
             if response and response.blob_digest == source_digest:
                 return False
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise SourceCacheError(
-                    "Error checking source cache with status {}: {}".format(e.code().name, e.details()), temporary=True
-                )
+        except AssetCacheError as e:
+            raise SourceCacheError("Error checking source cache: {}".format(e), temporary=True) from e
 
         referenced_directories = [source_proto.files]
 
