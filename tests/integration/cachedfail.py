@@ -21,8 +21,8 @@ import pytest
 
 from buildstream import utils, _yaml
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream._testing._utils.site import HAVE_SANDBOX
 
 from tests.testutils import create_artifact_share
 
@@ -43,8 +43,18 @@ def test_build_checkout_cached_fail(cli, datafiles):
     # Write out our test target
     element = {
         "kind": "script",
-        "depends": [{"filename": "base.bst", "type": "build",},],
-        "config": {"commands": ["touch %{install-root}/foo", "false",],},
+        "depends": [
+            {
+                "filename": "base.bst",
+                "type": "build",
+            },
+        ],
+        "config": {
+            "commands": [
+                "touch %{install-root}/foo",
+                "false",
+            ],
+        },
     }
     _yaml.roundtrip_dump(element, element_path)
 
@@ -73,14 +83,37 @@ def test_build_depend_on_cached_fail(cli, datafiles):
 
     dep = {
         "kind": "script",
-        "depends": [{"filename": "base.bst", "type": "build",},],
-        "config": {"commands": ["touch %{install-root}/foo", "false",],},
+        "depends": [
+            {
+                "filename": "base.bst",
+                "type": "build",
+            },
+        ],
+        "config": {
+            "commands": [
+                "touch %{install-root}/foo",
+                "false",
+            ],
+        },
     }
     _yaml.roundtrip_dump(dep, dep_path)
     target = {
         "kind": "script",
-        "depends": [{"filename": "base.bst", "type": "build",}, {"filename": "dep.bst", "type": "build",},],
-        "config": {"commands": ["test -e /foo",],},
+        "depends": [
+            {
+                "filename": "base.bst",
+                "type": "build",
+            },
+            {
+                "filename": "dep.bst",
+                "type": "build",
+            },
+        ],
+        "config": {
+            "commands": [
+                "test -e /foo",
+            ],
+        },
     }
     _yaml.roundtrip_dump(target, target_path)
 
@@ -112,7 +145,12 @@ def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
     # Write out our test target
     element = {
         "kind": "script",
-        "depends": [{"filename": "base.bst", "type": "build",},],
+        "depends": [
+            {
+                "filename": "base.bst",
+                "type": "build",
+            },
+        ],
         "config": {
             "commands": [
                 "false",
@@ -191,13 +229,26 @@ def test_host_tools_errors_are_not_cached(cli, datafiles, tmp_path):
     # Write out our test target
     element = {
         "kind": "script",
-        "depends": [{"filename": "base.bst", "type": "build",},],
-        "config": {"commands": ["true",],},
+        "depends": [
+            {
+                "filename": "base.bst",
+                "type": "build",
+            },
+        ],
+        "config": {
+            "commands": [
+                "true",
+            ],
+        },
     }
     _yaml.roundtrip_dump(element, element_path)
 
     # Build without access to host tools, this will fail
-    result1 = cli.run(project=project, args=["build", "element.bst"], env={"PATH": str(tmp_path.joinpath("bin"))},)
+    result1 = cli.run(
+        project=project,
+        args=["build", "element.bst"],
+        env={"PATH": str(tmp_path.joinpath("bin"))},
+    )
     result1.assert_task_error(ErrorDomain.SANDBOX, "unavailable-local-sandbox")
     assert cli.get_element_state(project, "element.bst") == "buildable"
 

@@ -6,11 +6,14 @@ import os
 import pytest
 
 from buildstream import _yaml
-from buildstream.testing import cli, create_repo  # pylint: disable=unused-import
+from buildstream._testing import cli, create_repo  # pylint: disable=unused-import
 from tests.testutils import create_artifact_share
 
 # project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "default-target",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "default-target",
+)
 
 
 #
@@ -71,7 +74,15 @@ def test_no_default_with_junction(cli, datafiles):
     target_path = os.path.join(project, "elements", "junction-target.bst")
 
     # First, create a junction element to refer to the subproject
-    junction_config = {"kind": "junction", "sources": [{"kind": "local", "path": "files/sub-project",}]}
+    junction_config = {
+        "kind": "junction",
+        "sources": [
+            {
+                "kind": "local",
+                "path": "files/sub-project",
+            }
+        ],
+    }
     _yaml.roundtrip_dump(junction_config, junction_path)
 
     # Then, create a stack element with dependency on cross junction element
@@ -99,7 +110,7 @@ def test_default_target_track(cli, tmpdir, datafiles):
     target = "track-fetch-test.bst"
 
     # First, create an element with trackable sources
-    repo = create_repo("git", str(tmpdir))
+    repo = create_repo("tar", str(tmpdir))
     repo.create(project)
     element_conf = {"kind": "import", "sources": [repo.source_config()]}
     _yaml.roundtrip_dump(element_conf, os.path.join(project, "elements", target))
@@ -129,7 +140,7 @@ def test_default_target_fetch(cli, tmpdir, datafiles):
     target = "track-fetch-test.bst"
 
     # First, create an element with trackable sources
-    repo = create_repo("git", str(tmpdir))
+    repo = create_repo("tar", str(tmpdir))
     ref = repo.create(project)
     element_conf = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
     _yaml.roundtrip_dump(element_conf, os.path.join(project, "elements", target))

@@ -5,8 +5,8 @@ import os
 import pytest
 
 from buildstream import _yaml
-from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_SANDBOX, BUILDBOX_RUN
+from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream._testing._utils.site import HAVE_SANDBOX, BUILDBOX_RUN
 
 
 pytestmark = pytest.mark.integration
@@ -43,7 +43,9 @@ def test_script(cli, datafiles):
     create_script_element(
         element_name,
         element_path,
-        config={"commands": ["mkdir -p %{install-root}", "echo 'Hi' > %{install-root}/test"],},
+        config={
+            "commands": ["mkdir -p %{install-root}", "echo 'Hi' > %{install-root}/test"],
+        },
     )
 
     res = cli.run(project=project, args=["build", element_name])
@@ -130,7 +132,9 @@ def test_script_cwd(cli, datafiles):
     create_script_element(
         element_name,
         element_path,
-        config={"commands": ["echo 'test' > test", "cp /buildstream/test %{install-root}"],},
+        config={
+            "commands": ["echo 'test' > test", "cp /buildstream/test %{install-root}"],
+        },
         variables={"cwd": "/buildstream"},
     )
 

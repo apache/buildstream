@@ -253,33 +253,45 @@ core plugins are :ref:`documented here <plugins>`.
 Any core plugins which you have been using in BuildStream 1 which have been migrated
 to separate repositories will need to be accessed externally.
 
-+---------------+----------------------------------------------------------------------------------+
-| Plugin        | New location                                                                     |
-+===============+==================================================================================+
-| **Element plugins**                                                                              |
-+---------------+----------------------------------------------------------------------------------+
-| make          | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_ |
-+---------------+----------------------------------------------------------------------------------+
-| cmake         | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_ |
-+---------------+----------------------------------------------------------------------------------+
-| qmake         | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_ |
-+---------------+----------------------------------------------------------------------------------+
-| distutils     | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_ |
-+---------------+----------------------------------------------------------------------------------+
-| makemaker     | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_ |
-+---------------+----------------------------------------------------------------------------------+
-| modulebuild   | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_ |
-+---------------+----------------------------------------------------------------------------------+
-| meson         | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_ |
-+---------------+----------------------------------------------------------------------------------+
-| pip           | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_ |
-+---------------+----------------------------------------------------------------------------------+
-| **Source plugins**                                                                               |
-+---------------+----------------------------------------------------------------------------------+
-| ostree        | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_ |
-+---------------+----------------------------------------------------------------------------------+
-| deb           | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_ |
-+---------------+----------------------------------------------------------------------------------+
++---------------+-----------------------------------------------------------------------------------------+
+| Plugin        | New location                                                                            |
++===============+=========================================================================================+
+| **Element plugins**                                                                                     |
++---------------+-----------------------------------------------------------------------------------------+
+| make          | `buildstream-plugins <https://pypi.org/project/buildstream-plugins/>`__                 |
++---------------+-----------------------------------------------------------------------------------------+
+| autotools     | `buildstream-plugins <https://pypi.org/project/buildstream-plugins/>`__                 |
++---------------+-----------------------------------------------------------------------------------------+
+| cmake         | `buildstream-plugins <https://pypi.org/project/buildstream-plugins/>`__                 |
++---------------+-----------------------------------------------------------------------------------------+
+| distutils     | `buildstream-plugins <https://pypi.org/project/buildstream-plugins/>`__ (as setuptools) |
++---------------+-----------------------------------------------------------------------------------------+
+| pip           | `buildstream-plugins <https://pypi.org/project/buildstream-plugins/>`__                 |
++---------------+-----------------------------------------------------------------------------------------+
+| meson         | `buildstream-plugins <https://pypi.org/project/buildstream-plugins/>`__                 |
++---------------+-----------------------------------------------------------------------------------------+
+| qmake         | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_        |
++---------------+-----------------------------------------------------------------------------------------+
+| makemaker     | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_        |
++---------------+-----------------------------------------------------------------------------------------+
+| modulebuild   | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_        |
++---------------+-----------------------------------------------------------------------------------------+
+| **Source plugins**                                                                                      |
++---------------+-----------------------------------------------------------------------------------------+
+| bzr           | `buildstream-plugins <https://pypi.org/project/buildstream-plugins/>`__                 |
++---------------+-----------------------------------------------------------------------------------------+
+| git           | `buildstream-plugins <https://pypi.org/project/buildstream-plugins/>`__                 |
++---------------+-----------------------------------------------------------------------------------------+
+| patch         | `buildstream-plugins <https://pypi.org/project/buildstream-plugins/>`__                 |
++---------------+-----------------------------------------------------------------------------------------+
+| pip           | `buildstream-plugins <https://pypi.org/project/buildstream-plugins/>`__                 |
++---------------+-----------------------------------------------------------------------------------------+
+| deb           | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_        |
++---------------+-----------------------------------------------------------------------------------------+
+| ostree        | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_        |
++---------------+-----------------------------------------------------------------------------------------+
+| zip           | `bst-plugins-experimental <https://pypi.org/project/bst-plugins-experimental/>`_        |
++---------------+-----------------------------------------------------------------------------------------+
 
 .. attention::
 
@@ -305,29 +317,29 @@ Create an alias for PyPI in your project.conf
      pypi: https://files.pythonhosted.org/packages/
 
 
-Create bst-plugins-experimental-junction.bst
-''''''''''''''''''''''''''''''''''''''''''''
+Create buildstream-plugins-junction.bst
+'''''''''''''''''''''''''''''''''''''''
 Create a junction which accesses the release tarball of the plugin repository.
 
 .. code:: yaml
 
    kind: junction
    sources:
-     kind: tar
-     url: pypi:83/dd/dc9dfe4c5054f46b1385707e3c286fccc72c9c71ef1b133677e2dbb28ffc/bst-plugins-experimental-1.93.6.tar.gz
-     ref: b20fff88f800da3ab6a666031bb13b4c3f7df0f8fe6943848717efa0d43ac990
+   - kind: tar
+     url: pypi:e2/d8/ed9e849a1386297f854f9fa0200f3fa108498c0fdb5c86468c1601c7e571/buildstream-plugins-1.91.0.tar.gz
+     ref: 44c6ea15d15476b68d0767c1d410d416f71544e57be572201058f8b3d3b05f83
 
 
 Declare the plugin you want to use in your project.conf
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''
-This will make the ``make`` and ``meson`` element plugins from the ``bst-plugins-experimental``
-project available for use in your project.
+This will make the ``make`` and ``meson`` element plugins from the
+`buildstream-plugins <https://github.com/apache/buildstream-plugins/>`__ project available for use in your project.
 
 .. code:: yaml
 
    plugins:
    - origin: junction
-     junction: bst-plugins-experimental-junction.bst
+     junction: buildstream-plugins-junction.bst
      elements:
      - make
      - meson

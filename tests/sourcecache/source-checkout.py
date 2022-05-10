@@ -26,7 +26,7 @@ import shutil
 import pytest
 
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+from buildstream._testing.runcli import cli  # pylint: disable=unused-import
 
 from tests.testutils.element_generators import create_element_size
 
@@ -41,7 +41,9 @@ def test_source_checkout(tmpdir, datafiles, cli):
     source_dir = os.path.join(cache_dir, "sources")
 
     cli.configure(
-        {"cachedir": cache_dir,}
+        {
+            "cachedir": cache_dir,
+        }
     )
     target_dir = os.path.join(str(tmpdir), "target")
 
@@ -50,7 +52,7 @@ def test_source_checkout(tmpdir, datafiles, cli):
     # check implicit fetching
     res = cli.run(project=project_dir, args=["source", "checkout", "--directory", target_dir, "target.bst"])
     res.assert_success()
-    assert "Fetching from" in res.stderr
+    assert "Fetching" in res.stderr
 
     # remove the directory and check source checkout works with sources only in
     # the CAS
@@ -60,11 +62,11 @@ def test_source_checkout(tmpdir, datafiles, cli):
 
     res = cli.run(project=project_dir, args=["source", "checkout", "--directory", target_dir, "target.bst"])
     res.assert_success()
-    assert "Fetching from" not in res.stderr
+    assert "Fetching" not in res.stderr
 
     # remove the CAS and check it doesn't work again
     shutil.rmtree(target_dir)
     shutil.rmtree(os.path.join(cache_dir, "cas"))
 
     res = cli.run(project=project_dir, args=["source", "checkout", "--directory", target_dir, "target.bst"])
-    res.assert_task_error(ErrorDomain.PLUGIN, None)
+    res.assert_task_error(ErrorDomain.SOURCE, None)

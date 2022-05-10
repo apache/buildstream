@@ -4,8 +4,10 @@
 import os
 import pytest
 
-from buildstream.testing import cli_remote_execution as cli  # pylint: disable=unused-import
-from buildstream.testing.integration import assert_contains
+from buildstream._testing import cli_remote_execution as cli  # pylint: disable=unused-import
+from buildstream._testing.integration import assert_contains
+from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
+from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
 
 
 pytestmark = pytest.mark.remoteexecution
@@ -16,6 +18,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
 # Test building an executable with remote-execution:
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_remote_autotools_build(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout")

@@ -92,13 +92,13 @@ class WorkspaceSource(Source):
     # init_workspace()
     #
     # Raises AssertionError: existing workspaces should not be reinitialized
-    def init_workspace(self, directory: str) -> None:
+    def init_workspace_directory(self, directory: Directory) -> None:
         raise AssertionError("Attempting to re-open an existing workspace")
 
     def fetch(self, *, previous_sources_dir=None) -> None:  # pylint: disable=arguments-differ
         pass  # pragma: nocover
 
-    def stage(self, directory):
+    def stage_directory(self, directory):
         #
         # We've already prepared the CAS while resolving the cache key which
         # will happen before staging.
@@ -108,7 +108,7 @@ class WorkspaceSource(Source):
         assert isinstance(directory, Directory)
         assert self.__digest is not None
         with self._cache_directory(digest=self.__digest) as cached_directory:
-            directory.import_files(cached_directory)
+            directory._import_files_internal(cached_directory)
 
     # As a core element, we speed up some scenarios when this is used for
     # a junction, by providing the local path to this content directly.
@@ -123,7 +123,7 @@ class WorkspaceSource(Source):
     def __do_stage(self, directory: Directory) -> None:
         assert isinstance(directory, Directory)
         with self.timed_activity("Staging local files"):
-            result = directory.import_files(self.path, properties=["mtime"])
+            result = directory._import_files_internal(self.path, properties=["mtime"])
 
             if result.overwritten or result.ignored:
                 raise SourceError(

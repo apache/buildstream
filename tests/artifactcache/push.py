@@ -8,13 +8,16 @@ import pytest
 from buildstream import _yaml
 from buildstream._project import Project
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import cli  # pylint: disable=unused-import
 
 from tests.testutils import create_artifact_share, create_split_share, dummy_context
 
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 # Push the given element and return its artifact key for assertions.
@@ -62,7 +65,14 @@ def test_push(cli, tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "artifacts": {"servers": [{"url": share.repo, "push": True,}]},
+            "artifacts": {
+                "servers": [
+                    {
+                        "url": share.repo,
+                        "push": True,
+                    }
+                ]
+            },
             "cachedir": rootcache_dir,
         }
 
@@ -121,7 +131,14 @@ def test_push_message(tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "artifacts": {"servers": [{"url": share.repo, "push": True,}]},
+            "artifacts": {
+                "servers": [
+                    {
+                        "url": share.repo,
+                        "push": True,
+                    }
+                ]
+            },
             "cachedir": rootcache_dir,
         }
 

@@ -6,9 +6,9 @@ import shutil
 
 import pytest
 
-from buildstream.testing import cli, cli_integration, Cli  # pylint: disable=unused-import
+from buildstream._testing import cli, cli_integration, Cli  # pylint: disable=unused-import
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream._testing._utils.site import HAVE_SANDBOX
 
 from tests.testutils import ArtifactShare
 
@@ -296,7 +296,16 @@ def test_shell_pull_cached_buildtree(share_with_buildtrees, datafiles, cli, pull
     # Run the shell and request that required artifacts and buildtrees should be pulled
     result = cli.run(
         project=project,
-        args=["--pull-buildtrees", "shell", "--build", element_name, "--use-buildtree", "--", "cat", "test",],
+        args=[
+            "--pull-buildtrees",
+            "shell",
+            "--build",
+            element_name,
+            "--use-buildtree",
+            "--",
+            "cat",
+            "test",
+        ],
     )
 
     # In this case, we should succeed every time, regardless of what was

@@ -378,25 +378,25 @@ yaml.RoundTripConstructor.add_constructor(u'tag:yaml.org,2002:null',
 yaml.RoundTripConstructor.add_constructor(u'tag:yaml.org,2002:timestamp',
                                           yaml.RoundTripConstructor.construct_yaml_str)
 
-
-# HardlineDumper
-#
 # This is a dumper used during roundtrip_dump which forces every scalar to be
 # a plain string, in order to match the output format to the input format.
 #
 # If you discover something is broken, please add a test case to the roundtrip
 # test in tests/internals/yaml/roundtrip-test.yaml
-#
-class HardlineDumper(yaml.RoundTripDumper):
-    def __init__(self, *args, **kwargs):
-        yaml.RoundTripDumper.__init__(self, *args, **kwargs)
-        # For each of YAML 1.1 and 1.2, force everything to be a plain string
-        for version in [(1, 1), (1, 2), None]:
-            self.add_version_implicit_resolver(
-                version,
-                u'tag:yaml.org,2002:str',
-                yaml.util.RegExp(r'.*'),
-                None)
+def prepare_roundtrip_yaml():
+    yml = yaml.YAML()
+    yml.preserve_quotes=True
+
+    # For each of YAML 1.1 and 1.2, force everything to be a plain string
+
+    for version in [(1, 1), (1, 2), None]:
+        yml.resolver.add_version_implicit_resolver(
+            version,
+            u'tag:yaml.org,2002:str',
+            yaml.util.RegExp(r'.*'),
+            None)
+
+    return yml
 
 
 # roundtrip_load()
@@ -420,10 +420,23 @@ class HardlineDumper(yaml.RoundTripDumper):
 #                 Also if the YAML is malformed.
 #
 def roundtrip_load(filename, *, allow_missing=False):
+    yml = prepare_roundtrip_yaml()
     try:
         with open(filename, "r") as fh:
-            data = fh.read()
-        contents = roundtrip_load_data(data, filename=filename)
+            try:
+                contents = yml.load(fh)
+            except (yaml.scanner.ScannerError, yaml.composer.ComposerError, yaml.parser.ParserError) as e:
+                raise LoadError("Malformed YAML:\n\n{}\n\n{}\n".format(e.problem, e.problem_mark),
+                                LoadErrorReason.INVALID_YAML) from e
+
+            # Special case empty files at this point
+            if contents is None:
+                # We'll make them empty mappings like the main Node loader
+                contents = {}
+
+            if not isinstance(contents, Mapping):
+                raise LoadError("YAML file has content of type '{}' instead of expected type 'dict': {}"
+                                .format(type(contents).__name__, filename), LoadErrorReason.INVALID_YAML)
     except FileNotFoundError as e:
         if allow_missing:
             # Missing files are always empty dictionaries
@@ -434,43 +447,6 @@ def roundtrip_load(filename, *, allow_missing=False):
     except IsADirectoryError as e:
         raise LoadError("{} is a directory.".format(filename),
                         LoadErrorReason.LOADING_DIRECTORY) from e
-    return contents
-
-
-# roundtrip_load_data()
-#
-# Parse the given contents as YAML, returning them as a roundtrippable data
-# structure.
-#
-# A lack of content will be returned as an empty mapping.
-#
-# Args:
-#    contents (str): The contents to be parsed as YAML
-#    filename (str): Optional filename to be used in error reports
-#
-# Returns:
-#    (Mapping): The loaded YAML mapping
-#
-# Raises:
-#    (LoadError): Raised on invalid YAML, or YAML which parses to something other
-#                 than a Mapping
-#
-def roundtrip_load_data(contents, *, filename=None):
-    try:
-        contents = yaml.load(contents, yaml.RoundTripLoader, preserve_quotes=True)
-    except (yaml.scanner.ScannerError, yaml.composer.ComposerError, yaml.parser.ParserError) as e:
-        raise LoadError("Malformed YAML:\n\n{}\n\n{}\n".format(e.problem, e.problem_mark),
-                        LoadErrorReason.INVALID_YAML) from e
-
-    # Special case empty files at this point
-    if contents is None:
-        # We'll make them empty mappings like the main Node loader
-        contents = {}
-
-    if not isinstance(contents, Mapping):
-        raise LoadError("YAML file has content of type '{}' instead of expected type 'dict': {}"
-                        .format(type(contents).__name__, filename), LoadErrorReason.INVALID_YAML)
-
     return contents
 
 
@@ -488,6 +464,7 @@ def roundtrip_load_data(contents, *, filename=None):
 #    file (any): The file to write to
 #
 def roundtrip_dump(contents, file=None):
+    yml = prepare_roundtrip_yaml()
     with ExitStack() as stack:
         if type(file) is str:
             from . import utils
@@ -496,4 +473,4 @@ def roundtrip_dump(contents, file=None):
             f = file
         else:
             f = sys.stdout
-        yaml.round_trip_dump(contents, f, Dumper=HardlineDumper)
+        yml.dump(contents, f)

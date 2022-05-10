@@ -6,12 +6,15 @@ import stat
 import pytest
 
 from buildstream import utils
-from buildstream.testing import ErrorDomain
-from buildstream.testing import generate_project
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import ErrorDomain
+from buildstream._testing import generate_project
+from buildstream._testing import cli  # pylint: disable=unused-import
 from tests.testutils.file_server import create_file_server
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "remote",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "remote",
+)
 
 
 # Test that without ref, consistency is set appropriately.
@@ -132,8 +135,7 @@ def test_unique_key(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "unique-keys"))
 def test_executable(cli, tmpdir, datafiles):
-    """This test confirms that the 'ecxecutable' parameter is honoured.
-    """
+    """This test confirms that the 'ecxecutable' parameter is honoured."""
     project = str(datafiles)
     generate_project(project, {"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
 

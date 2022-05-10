@@ -22,7 +22,7 @@ import os
 import shutil
 import pytest
 
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 
 from tests.testutils import create_artifact_share, create_element_size
@@ -74,8 +74,22 @@ def test_source_artifact_caches(cli, tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "source-caches": {"servers": [{"url": share.repo, "push": True,}]},
-            "artifacts": {"servers": [{"url": share.repo, "push": True,}]},
+            "source-caches": {
+                "servers": [
+                    {
+                        "url": share.repo,
+                        "push": True,
+                    }
+                ]
+            },
+            "artifacts": {
+                "servers": [
+                    {
+                        "url": share.repo,
+                        "push": True,
+                    }
+                ]
+            },
             "cachedir": cachedir,
         }
         _yaml.roundtrip_dump(user_config, file=user_config_file)
@@ -109,8 +123,22 @@ def test_source_cache_empty_artifact_cache(cli, tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "source-caches": {"servers": [{"url": share.repo, "push": True,}]},
-            "artifacts": {"servers": [{"url": share.repo, "push": True,}]},
+            "source-caches": {
+                "servers": [
+                    {
+                        "url": share.repo,
+                        "push": True,
+                    }
+                ]
+            },
+            "artifacts": {
+                "servers": [
+                    {
+                        "url": share.repo,
+                        "push": True,
+                    }
+                ]
+            },
             "cachedir": cachedir,
         }
         _yaml.roundtrip_dump(user_config, file=user_config_file)

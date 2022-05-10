@@ -4,7 +4,14 @@
 
 Core
 ----
-  o BuildStream now also supports Python 3.10.
+  o BuildStream now requires Python >= 3.7 and also supports Python 3.10.
+
+
+API
+---
+  o BREAKING CHANGE: Removed SandboxFlags from public API, replaced this
+    with a `root_read_only` boolean parameter to relevant Sandbox APIs.
+
 
 Format
 ------

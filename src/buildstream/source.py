@@ -78,16 +78,16 @@ these methods are mandatory to implement.
 
   Fetch the actual payload for the currently set ref
 
-* :func:`Source.stage() <buildstream.source.Source.stage>`
+* :func:`Source.stage() <buildstream.source.Source.stage>` / :func:`Source.stage_directory() <buildstream.source.Source.stage_directory>`
 
   Stage the sources for a given ref at a specified location
 
-* :func:`Source.init_workspace() <buildstream.source.Source.init_workspace>`
+* :func:`Source.init_workspace() <buildstream.source.Source.init_workspace>` / :func:`Source.init_workspace_workspace() <buildstream.source.Source.init_workspace_directory>`
 
-  Stage sources in a local directory for use as a workspace.
+  Stage sources for use as a workspace.
 
-  **Optional**: If left unimplemented, this will default to calling
-  :func:`Source.stage() <buildstream.source.Source.stage>`
+  **Optional**: If left unimplemented, these will default to calling
+  :func:`Source.stage() <buildstream.source.Source.stage>` / :func:`Source.stage_directory() <buildstream.source.Source.stage_directory>`
 
 * :func:`Source.get_source_fetchers() <buildstream.source.Source.get_source_fetchers>`
 
@@ -163,7 +163,7 @@ from typing import Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
 from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
-from .types import SourceRef, Union, CoreWarnings
+from .types import SourceRef, CoreWarnings
 from ._exceptions import BstError, ImplError, PluginError
 from .exceptions import ErrorDomain
 from ._loader.metasource import MetaSource
@@ -307,8 +307,10 @@ class Source(Plugin):
     BST_STAGE_VIRTUAL_DIRECTORY = False
     """Whether we can stage this source directly to a virtual directory
 
-    When set to true, virtual directories can be passed to the source to stage
-    to.
+    When set to True, :func:`Source.stage_directory() <buildstream.source.Source.stage_directory>`
+    and :func:`Source.init_workspace_directory() <buildstream.source.Source.init_workspace_directory>`
+    will be called in place of :func:`Source.stage() <buildstream.source.Source.stage>` and
+    :func:`Source.init_workspace() <buildstream.source.Source.init_workspace>` respectively.
     """
 
     def __init__(
@@ -485,7 +487,7 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement fetch()".format(self.get_kind()))
 
-    def stage(self, directory: Union[str, Directory]) -> None:
+    def stage(self, directory: str) -> None:
         """Stage the sources to a directory
 
         Args:
@@ -502,11 +504,34 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement stage()".format(self.get_kind()))
 
-    def init_workspace(self, directory: str) -> None:
-        """Initialises a new workspace
+    def stage_directory(self, directory: Directory) -> None:
+        """Stage the sources to a directory
 
         Args:
-           directory: Path of the workspace to init
+           directory: :class:`.Directory` object to stage the source into
+
+        Raises:
+           :class:`.SourceError`
+
+        Implementors should assume that *directory* represents an existing
+        directory root into which the source content can be populated.
+
+        Implementors should raise :class:`.SourceError` when encountering
+        some system error.
+
+        .. note::
+
+           This will be called *instead* of :func:`Source.stage() <buildstream.source.Source.stage>`
+           in the case that :attr:`~buildstream.source.Source.BST_STAGE_VIRTUAL_DIRECTORY` is set
+           for this plugin.
+        """
+        raise ImplError("Source plugin '{}' does not implement stage_directory()".format(self.get_kind()))
+
+    def init_workspace(self, directory: str) -> None:
+        """Stage sources for use as a workspace.
+
+        Args:
+           directory: Path of the workspace to initialize.
 
         Raises:
            :class:`.SourceError`
@@ -521,6 +546,32 @@ class Source(Plugin):
         some system error.
         """
         self.stage(directory)
+
+    def init_workspace_directory(self, directory: Directory) -> None:
+        """Stage sources for use as a workspace.
+
+        Args:
+           directory: :class:`.Directory` object of the workspace to initialize.
+
+        Raises:
+           :class:`.SourceError`
+
+        Default implementation is to call
+        :func:`Source.stage_directory() <buildstream.source.Source.stage_directory>`.
+
+        Implementors overriding this method should assume that *directory*
+        already exists.
+
+        Implementors should raise :class:`.SourceError` when encountering
+        some system error.
+
+        .. note::
+
+           This will be called *instead* of
+           :func:`Source.init_workspace() <buildstream.source.Source.init_workspace>` in the case that
+           :attr:`~buildstream.source.Source.BST_STAGE_VIRTUAL_DIRECTORY` is set for this plugin.
+        """
+        self.stage_directory(directory)
 
     def get_source_fetchers(self) -> Iterable[SourceFetcher]:
         """Get the objects that are used for fetching
@@ -823,7 +874,10 @@ class Source(Plugin):
     #
     def _stage(self, directory):
         self.validate_cache()
-        self.stage(directory)
+        if isinstance(directory, Directory):
+            self.stage_directory(directory)
+        else:
+            self.stage(directory)
 
     # Wrapper for init_workspace()
     def _init_workspace(self, directory):
@@ -831,7 +885,10 @@ class Source(Plugin):
             directory = FileBasedDirectory(external_directory=directory)
 
         self.validate_cache()
-        self.init_workspace(directory)
+        if isinstance(directory, Directory):
+            self.init_workspace_directory(directory)
+        else:
+            self.init_workspace(directory)
 
     # _get_unique_key():
     #

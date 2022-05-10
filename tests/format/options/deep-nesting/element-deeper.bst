@@ -1,4 +1,4 @@
-kind: autotools
+kind: manual
 
 # Yep, this is a list of lists of dictionaries.
 #

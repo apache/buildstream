@@ -26,8 +26,8 @@ import pytest
 
 from buildstream._cas import CASCache
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import have_subsecond_mtime
+from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing._utils.site import have_subsecond_mtime
 
 from tests.testutils import create_element_size, wait_for_cache_granularity
 
@@ -69,7 +69,13 @@ def test_artifact_expires(cli, datafiles):
     if not have_subsecond_mtime(project):
         pytest.skip("Filesystem does not support subsecond mtime precision: {}".format(project))
 
-    cli.configure({"cache": {"quota": 10000000,}})
+    cli.configure(
+        {
+            "cache": {
+                "quota": 10000000,
+            }
+        }
+    )
 
     # Create an element that uses almost the entire cache (an empty
     # ostree cache starts at about ~10KiB, so we need a bit of a
@@ -310,7 +316,11 @@ def test_invalid_cache_quota(cli, datafiles, quota, err_domain, err_reason):
     os.makedirs(os.path.join(project, "elements"))
 
     cli.configure(
-        {"cache": {"quota": quota,},}
+        {
+            "cache": {
+                "quota": quota,
+            },
+        }
     )
 
     res = cli.run(project=project, args=["workspace", "list"])
@@ -329,7 +339,13 @@ def test_cleanup_first(cli, datafiles):
     project = str(datafiles)
     element_path = "elements"
 
-    cli.configure({"cache": {"quota": 10000000,}})
+    cli.configure(
+        {
+            "cache": {
+                "quota": 10000000,
+            }
+        }
+    )
 
     # Create an element that uses almost the entire cache (an empty
     # ostree cache starts at about ~10KiB, so we need a bit of a
@@ -345,7 +361,14 @@ def test_cleanup_first(cli, datafiles):
     #
     # Fix the fetchers and builders just to ensure a predictable
     # sequence of events (although it does not effect this test)
-    cli.configure({"cache": {"quota": 5000000,}, "scheduler": {"fetchers": 1, "builders": 1}})
+    cli.configure(
+        {
+            "cache": {
+                "quota": 5000000,
+            },
+            "scheduler": {"fetchers": 1, "builders": 1},
+        }
+    )
 
     # Our cache is now more than full, BuildStream
     create_element_size("target2.bst", project, element_path, [], 4000000)

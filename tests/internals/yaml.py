@@ -8,7 +8,10 @@ from buildstream.exceptions import LoadErrorReason
 from buildstream._exceptions import LoadError
 
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "yaml",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "yaml",
+)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -400,21 +403,13 @@ def test_value_doesnt_match_expected(datafiles):
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
 
-# This test has been broken by upstream ruamel.yaml, filed an issue here:
-#
-#    https://sourceforge.net/p/ruamel-yaml/tickets/390/
-#
-@pytest.mark.xfail(reason="recent versions of ruamel.yaml have broken roundtripping perfection")
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
-@pytest.mark.parametrize("fromdisk", [(True), (False)])
-def test_roundtrip_dump(datafiles, fromdisk):
+def test_roundtrip_dump(datafiles):
     filename = os.path.join(datafiles.dirname, datafiles.basename, "roundtrip-test.yaml")
     with open(filename, "r", encoding="utf-8") as fh:
         rt_raw = fh.read()
-    if fromdisk:
-        rt_loaded = _yaml.roundtrip_load(filename)
-    else:
-        rt_loaded = _yaml.roundtrip_load_data(rt_raw, filename=filename)
+
+    rt_loaded = _yaml.roundtrip_load(filename)
 
     # Now walk the loaded data structure, checking for ints etc.
     def walk_node(node):
@@ -445,7 +440,15 @@ def test_roundtrip_dump(datafiles, fromdisk):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
-@pytest.mark.parametrize("case", [["a", "b", "c"], ["foo", 1], ["stuff", 0, "colour"], ["bird", 0, 1],])
+@pytest.mark.parametrize(
+    "case",
+    [
+        ["a", "b", "c"],
+        ["foo", 1],
+        ["stuff", 0, "colour"],
+        ["bird", 0, 1],
+    ],
+)
 def test_node_find_target(datafiles, case):
     filename = os.path.join(datafiles.dirname, datafiles.basename, "traversal.yaml")
     # We set copy_tree in order to ensure that the nodes in `loaded`

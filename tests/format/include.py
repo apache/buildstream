@@ -6,8 +6,8 @@ import textwrap
 import pytest
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
+from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
 from tests.testutils import generate_junction
 
 
@@ -109,7 +109,7 @@ def test_junction_element_partial_project_project(cli, tmpdir, datafiles):
     subproject_path = os.path.join(project, "subproject")
     junction_path = os.path.join(project, "junction.bst")
 
-    repo = create_repo("git", str(tmpdir))
+    repo = create_repo("tar", str(tmpdir))
 
     ref = repo.create(subproject_path)
 
@@ -133,7 +133,7 @@ def test_junction_element_not_partial_project_file(cli, tmpdir, datafiles):
     subproject_path = os.path.join(project, "subproject")
     junction_path = os.path.join(project, "junction.bst")
 
-    repo = create_repo("git", str(tmpdir))
+    repo = create_repo("tar", str(tmpdir))
 
     ref = repo.create(subproject_path)
 
@@ -317,9 +317,11 @@ def test_option_from_junction_element(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_option_from_deep_junction(cli, tmpdir, datafiles):
     project = os.path.join(str(datafiles), "junction_options_deep")
+    junction_repo_a = os.path.join(tmpdir, "a")
+    junction_repo_b = os.path.join(tmpdir, "b")
 
     generate_junction(
-        tmpdir,
+        junction_repo_a,
         os.path.join(project, "subproject-2"),
         os.path.join(project, "subproject-1", "junction-2.bst"),
         store_ref=True,
@@ -327,7 +329,10 @@ def test_option_from_deep_junction(cli, tmpdir, datafiles):
     )
 
     generate_junction(
-        tmpdir, os.path.join(project, "subproject-1"), os.path.join(project, "junction-1.bst"), store_ref=True,
+        junction_repo_b,
+        os.path.join(project, "subproject-1"),
+        os.path.join(project, "junction-1.bst"),
+        store_ref=True,
     )
 
     result = cli.run(project=project, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"])

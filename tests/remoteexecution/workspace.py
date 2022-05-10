@@ -6,8 +6,10 @@ import re
 import shutil
 import pytest
 
-from buildstream.testing import cli_remote_execution as cli  # pylint: disable=unused-import
-from buildstream.testing.integration import assert_contains
+from buildstream._testing import cli_remote_execution as cli  # pylint: disable=unused-import
+from buildstream._testing.integration import assert_contains
+from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
+from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
 
 pytestmark = pytest.mark.remoteexecution
 
@@ -98,7 +100,12 @@ def get_mtimes(root):
 
 
 def check_buildtree(
-    cli, project, element_name, input_files, generated_files, incremental=False,
+    cli,
+    project,
+    element_name,
+    input_files,
+    generated_files,
+    incremental=False,
 ):
     # check modified workspace dir was cached
     #   - generated files are present
@@ -175,7 +182,8 @@ def check_buildtree(
 
 def get_timemark(cli, project, element_name, marker):
     result = cli.run(
-        project=project, args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", marker[1:]],
+        project=project,
+        args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", marker[1:]],
     )
     result.assert_success()
     marker_time = int(result.output)
@@ -184,8 +192,13 @@ def get_timemark(cli, project, element_name, marker):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
-    "modification", [pytest.param("content"), pytest.param("time"),],
+    "modification",
+    [
+        pytest.param("content"),
+        pytest.param("time"),
+    ],
 )
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_workspace_build(cli, tmpdir, datafiles, modification):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout")

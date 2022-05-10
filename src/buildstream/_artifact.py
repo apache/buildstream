@@ -231,11 +231,11 @@ class Artifact:
         properties = ["mtime"] if artifact.was_workspaced else []
 
         # Store files
-        if collectvdir:
+        if collectvdir is not None:
             filesvdir = CasBasedDirectory(cas_cache=self._cas)
-            filesvdir.import_files(collectvdir, properties=properties)
+            filesvdir._import_files_internal(collectvdir, properties=properties)
             artifact.files.CopyFrom(filesvdir._get_digest())
-            size += filesvdir.get_size()
+            size += filesvdir._get_size()
 
         # Store public data
         with utils._tempnamedfile_name(dir=self._tmpdir) as tmpname:
@@ -290,16 +290,16 @@ class Artifact:
             size += log.digest.size_bytes
 
         # Store build tree
-        if sandbox_build_dir:
+        if sandbox_build_dir is not None:
             buildtreevdir = CasBasedDirectory(cas_cache=self._cas)
-            buildtreevdir.import_files(sandbox_build_dir, properties=properties)
+            buildtreevdir._import_files_internal(sandbox_build_dir, properties=properties)
             artifact.buildtree.CopyFrom(buildtreevdir._get_digest())
-            size += buildtreevdir.get_size()
+            size += buildtreevdir._get_size()
 
         # Store sources
-        if sourcesvdir:
+        if sourcesvdir is not None:
             artifact.sources.CopyFrom(sourcesvdir._get_digest())
-            size += sourcesvdir.get_size()
+            size += sourcesvdir._get_size()
 
         os.makedirs(os.path.dirname(os.path.join(self._artifactdir, element.get_artifact_name())), exist_ok=True)
         keys = utils._deduplicate([self._cache_key, self._weak_cache_key])

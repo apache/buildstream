@@ -20,7 +20,7 @@ import pytest
 
 from buildstream import utils, _yaml
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import cli  # pylint: disable=unused-import
 
 pytestmark = pytest.mark.integration
 
@@ -41,13 +41,26 @@ def test_dummy_sandbox_fallback(cli, datafiles, tmp_path):
     # Write out our test target
     element = {
         "kind": "script",
-        "depends": [{"filename": "base.bst", "type": "build",},],
-        "config": {"commands": ["true",],},
+        "depends": [
+            {
+                "filename": "base.bst",
+                "type": "build",
+            },
+        ],
+        "config": {
+            "commands": [
+                "true",
+            ],
+        },
     }
     _yaml.roundtrip_dump(element, element_path)
 
     # Build without access to host tools, this will fail
-    result = cli.run(project=project, args=["build", "element.bst"], env={"PATH": str(tmp_path.joinpath("bin"))},)
+    result = cli.run(
+        project=project,
+        args=["build", "element.bst"],
+        env={"PATH": str(tmp_path.joinpath("bin"))},
+    )
     # But if we dont spesify a sandbox then we fall back to dummy, we still
     # fail early but only once we know we need a facny sandbox and that
     # dumy is not enough, there for element gets fetched and so is buildable

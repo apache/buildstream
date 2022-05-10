@@ -5,8 +5,8 @@ import os
 import pexpect
 import pytest
 
-from buildstream.testing import runcli
-from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream._testing import runcli
+from buildstream._testing._utils.site import HAVE_SANDBOX
 from tests.testutils.constants import PEXPECT_TIMEOUT_SHORT, PEXPECT_TIMEOUT_LONG
 
 
@@ -27,7 +27,15 @@ def build_session(datafiles, element_name):
     with runcli.configured(project) as config_file:
         session = pexpect.spawn(
             "bst",
-            ["--directory", project, "--config", config_file, "--no-colors", "build", element_name,],
+            [
+                "--directory",
+                project,
+                "--config",
+                config_file,
+                "--no-colors",
+                "build",
+                element_name,
+            ],
             timeout=PEXPECT_TIMEOUT_SHORT,
         )
         yield session

@@ -517,7 +517,7 @@ class Messenger:
 
         timecode = EMPTYTIME
         if message.message_type in (MessageType.SUCCESS, MessageType.FAIL):
-            hours, remainder = divmod(int(message.elapsed.total_seconds()), 60 ** 2)
+            hours, remainder = divmod(int(message.elapsed.total_seconds()), 60**2)
             minutes, seconds = divmod(remainder, 60)
             timecode = "{0:02d}:{1:02d}:{2:02d}".format(hours, minutes, seconds)
 

@@ -5,8 +5,8 @@ import os
 import pytest
 
 from buildstream import _yaml
-from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_SANDBOX, CASD_SEPARATE_USER
+from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream._testing._utils.site import HAVE_SANDBOX, CASD_SEPARATE_USER
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
@@ -30,8 +30,7 @@ def create_test_directory(*path, mode=0o644):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
 def test_deterministic_source_local(cli, tmpdir, datafiles):
-    """Only user rights should be considered for local source.
-    """
+    """Only user rights should be considered for local source."""
     project = str(datafiles)
     element_name = "test.bst"
     element_path = os.path.join(project, "elements", element_name)

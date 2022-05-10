@@ -1,2 +1,2 @@
-kind: autotools
+kind: manual
 description: Should also ~not~ be removed

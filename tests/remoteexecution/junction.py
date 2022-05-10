@@ -19,15 +19,20 @@
 
 import os
 import pytest
-from buildstream.testing import cli_remote_execution as cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
+from buildstream._testing import cli_remote_execution as cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
 from buildstream import _yaml
 from tests.testutils import generate_junction
+from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
+from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
 
 pytestmark = pytest.mark.remoteexecution
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 def configure_project(path, config):
@@ -42,6 +47,7 @@ def create_element(repo, name, path, dependencies, ref=None):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_junction_build_remote(cli, tmpdir, datafiles):
     project = str(datafiles)
     subproject_path = os.path.join(project, "files", "sub-project")
@@ -51,7 +57,7 @@ def test_junction_build_remote(cli, tmpdir, datafiles):
     junction_path = os.path.join(element_path, "junction.bst")
 
     # We need a repo for real trackable elements
-    repo = create_repo("git", str(tmpdir))
+    repo = create_repo("tar", str(tmpdir))
     ref = repo.create(amhello_files_path)
 
     # ensure that the correct project directory is also listed in the junction

@@ -6,12 +6,15 @@ import os
 import re
 import pytest
 
-from buildstream.testing import create_repo, generate_project
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import have_subsecond_mtime
+from buildstream._testing import create_repo, generate_project
+from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing._utils.site import have_subsecond_mtime
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
 from tests.testutils import generate_junction
+from tests.testutils.repo.git import Git
+from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
+from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
 from . import configure_project
 
 # Project directory
@@ -28,6 +31,7 @@ def generate_element(repo, element_path, dep_name=None):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_track_single(cli, tmpdir, datafiles):
     project = str(datafiles)
     dev_files_path = os.path.join(project, "files", "dev-files")
@@ -38,7 +42,7 @@ def test_track_single(cli, tmpdir, datafiles):
     # Create our repo object of the given source type with
     # the dev files, and then collect the initial ref.
     #
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(dev_files_path)
 
     # Write out our test targets
@@ -70,6 +74,7 @@ def test_track_single(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR))
 @pytest.mark.parametrize("ref_storage", [("inline"), ("project-refs")])
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_track_optional(cli, tmpdir, datafiles, ref_storage):
     project = os.path.join(datafiles.dirname, datafiles.basename, "track-optional-" + ref_storage)
     dev_files_path = os.path.join(project, "files")
@@ -78,7 +83,7 @@ def test_track_optional(cli, tmpdir, datafiles, ref_storage):
     # Create our repo object of the given source type with
     # the dev files, and then collect the initial ref.
     #
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(dev_files_path)
 
     # Now create an optional test branch and add a commit to that,
@@ -166,6 +171,7 @@ def test_track_deps(cli, datafiles, deps, expected_states):
 @pytest.mark.datafiles(os.path.join(TOP_DIR, "track-cross-junction"))
 @pytest.mark.parametrize("cross_junction", [("cross"), ("nocross")])
 @pytest.mark.parametrize("ref_storage", [("inline"), ("project.refs")])
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storage):
     project = str(datafiles)
     dev_files_path = os.path.join(project, "files")
@@ -175,7 +181,7 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
     # Create our repo object of the given source type with
     # the dev files, and then collect the initial ref.
     #
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(dev_files_path)
 
     # Generate two elements using the git source, one in
@@ -185,7 +191,19 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
 
     # Generate project.conf
     #
-    project_conf = {"name": "test", "min-version": "2.0", "ref-storage": ref_storage}
+    project_conf = {
+        "name": "test",
+        "min-version": "2.0",
+        "ref-storage": ref_storage,
+        "plugins": [
+            {
+                "origin": "pip",
+                "package-name": "sample-plugins",
+                "sources": ["git"],
+            }
+        ],
+    }
+
     _yaml.roundtrip_dump(project_conf, os.path.join(project, "project.conf"))
 
     #
@@ -333,6 +351,7 @@ def test_junction_element(cli, tmpdir, datafiles, ref_storage):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_track_error_cannot_write_file(cli, tmpdir, datafiles):
     if os.geteuid() == 0:
         pytest.skip("This is not testable with root permissions")
@@ -344,7 +363,7 @@ def test_track_error_cannot_write_file(cli, tmpdir, datafiles):
 
     configure_project(project, {"ref-storage": "inline"})
 
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(dev_files_path)
 
     element_full_path = os.path.join(element_path, element_name)
@@ -363,6 +382,7 @@ def test_track_error_cannot_write_file(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_no_needless_overwrite(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dev_files_path = os.path.join(project, "files", "dev-files")
@@ -377,7 +397,7 @@ def test_no_needless_overwrite(cli, tmpdir, datafiles):
     # Create our repo object of the given source type with
     # the dev files, and then collect the initial ref.
     #
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(dev_files_path)
 
     # Write out our test target and assert it exists

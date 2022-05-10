@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2022 Codethink Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
-from .sandbox import Sandbox, SandboxFlags, SandboxCommandError
+from .sandbox import Sandbox, SandboxCommandError
+from .sandbox import _SandboxFlags
 from ._sandboxremote import SandboxRemote
 from ._sandboxdummy import SandboxDummy

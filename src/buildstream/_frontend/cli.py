@@ -369,8 +369,7 @@ def cli(context, **kwargs):
 @click.argument("command", nargs=-1, metavar="COMMAND")
 @click.pass_context
 def help_command(ctx, command):
-    """Print usage information about a given command
-    """
+    """Print usage information about a given command"""
     command_ctx = search_command(command, context=ctx.parent)
     if not command_ctx:
         click.echo("Not a valid command: '{} {}'".format(ctx.parent.info_name, " ".join(command)), err=True)
@@ -394,7 +393,11 @@ def help_command(ctx, command):
 @cli.command(short_help="Initialize a new BuildStream project")
 @click.option("--project-name", type=click.STRING, help="The project name to use")
 @click.option(
-    "--min-version", type=click.STRING, default="2.0", show_default=True, help="The required format version",
+    "--min-version",
+    type=click.STRING,
+    default="2.0",
+    show_default=True,
+    help="The required format version",
 )
 @click.option(
     "--element-path",
@@ -427,7 +430,8 @@ def init(app, project_name, min_version, element_path, force, target_directory):
     "-d",
     default=None,
     type=FastEnumType(
-        _PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.BUILD, _PipelineSelection.ALL],
+        _PipelineSelection,
+        [_PipelineSelection.NONE, _PipelineSelection.BUILD, _PipelineSelection.ALL],
     ),
     help="The dependencies to build",
 )
@@ -519,7 +523,12 @@ def build(
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
-        [_PipelineSelection.NONE, _PipelineSelection.RUN, _PipelineSelection.BUILD, _PipelineSelection.ALL,],
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.RUN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.ALL,
+        ],
     ),
     help="The dependencies to show",
 )
@@ -758,7 +767,12 @@ def source():
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
-        [_PipelineSelection.NONE, _PipelineSelection.BUILD, _PipelineSelection.RUN, _PipelineSelection.ALL,],
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.RUN,
+            _PipelineSelection.ALL,
+        ],
     ),
     help="The dependencies to fetch",
 )
@@ -826,7 +840,12 @@ def source_fetch(app, elements, deps, except_, source_remotes, ignore_project_so
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
-        [_PipelineSelection.NONE, _PipelineSelection.BUILD, _PipelineSelection.RUN, _PipelineSelection.ALL,],
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.RUN,
+            _PipelineSelection.ALL,
+        ],
     ),
     help="The dependencies to push",
 )
@@ -1568,7 +1587,6 @@ def artifact_list_contents(app, artifacts, long_):
 
     Note that 'artifacts' can be element names, which must end in '.bst',
     or artifact references, which must be in the format `<project_name>/<element>/<key>`.
-
     """
     with app.initialized():
         elements_to_files = app.stream.artifact_list_contents(artifacts)
@@ -1576,7 +1594,7 @@ def artifact_list_contents(app, artifacts, long_):
             click.echo("None of the specified artifacts are cached.", err=True)
             sys.exit(1)
         else:
-            click.echo(app.logger._pretty_print_dictionary(elements_to_files, long_))
+            click.echo(app.logger.pretty_print_element_contents(elements_to_files, long_))
             sys.exit(0)
 
 

@@ -1,4 +1,4 @@
-kind: autotools
+kind: manual
 variables:
   thepony: "a pony"
   (?):

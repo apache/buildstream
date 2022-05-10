@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2022 Codethink Limited
 #  Copyright (C) 2018 Bloomberg Finance LP
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -143,14 +143,6 @@ will do the following operations:
   :func:`Element.stage_sources() <buildstream.element.Element.integrate>`
 
 
-Element.prepare()
-~~~~~~~~~~~~~~~~~
-In :func:`Element.prepare() <buildstream.element.Element.prepare>`,
-the BuildElement will run ``configure-commands``, which are used to
-run one-off preparations that should not be repeated for a single
-build directory.
-
-
 Element.assemble()
 ~~~~~~~~~~~~~~~~~~
 In :func:`Element.assemble() <buildstream.element.Element.assemble>`, the
@@ -159,6 +151,7 @@ found in the element configuration.
 
 Commands are run in the following order:
 
+* ``configure-commands``: Commands to configure the build scripts
 * ``build-commands``: Commands to build the element
 * ``install-commands``: Commands to install the results into ``%{install-root}``
 * ``strip-commands``: Commands to strip debugging symbols installed binaries
@@ -166,12 +159,19 @@ Commands are run in the following order:
 The result of the build is expected to end up in ``%{install-root}``, and
 as such; Element.assemble() method will return the ``%{install-root}`` for
 artifact collection purposes.
+
+.. note::
+
+   In the case that the element is currently workspaced, the ``configure-commands``
+   will only be run in subsequent builds until they succeed at least once, unless
+   :ref:`bst workspace reset --soft <invoking_workspace_reset>` is called on the
+   workspace to explicitly avoid an incremental build.
+
 """
 
 import os
 
 from .element import Element
-from .sandbox import SandboxFlags
 
 
 _command_steps = ["configure-commands", "build-commands", "install-commands", "strip-commands"]
@@ -260,7 +260,7 @@ class BuildElement(Element):
 
         # Mark the artifact directories in the layout
         for location in self.__layout:
-            sandbox.mark_directory(location, artifact=True)
+            sandbox.mark_directory(location)
 
         # Allow running all commands in a specified subdirectory
         if self._command_subdir:
@@ -287,7 +287,7 @@ class BuildElement(Element):
         root_list = self.__layout.get("/", None)
         if root_list:
             element_list = [element for element, _ in root_list]
-            with self.timed_activity("Integrating sandbox", silent_nested=True), sandbox.batch(SandboxFlags.NONE):
+            with self.timed_activity("Integrating sandbox", silent_nested=True), sandbox.batch():
                 for dep in self.dependencies(element_list):
                     dep.integrate(sandbox)
 
@@ -295,64 +295,52 @@ class BuildElement(Element):
         self.stage_sources(sandbox, self.get_variable("build-root"))
 
     def assemble(self, sandbox):
-        # Run commands
-        for command_name in _command_steps:
-            commands = self.__commands[command_name]
-            if not commands or command_name == "configure-commands":
-                continue
 
-            with sandbox.batch(SandboxFlags.ROOT_READ_ONLY, label="Running {}".format(command_name)):
+        with sandbox.batch(root_read_only=True, label="Running commands"):
+
+            # We need to ensure that configure-commands are only called
+            # once in workspaces, because the changes will persist across
+            # incremental builds - not desirable, for example, in the case
+            # of autotools, we don't want to run `./configure` a second time
+            # in an incremental build if it has succeeded at least once.
+            #
+            # Here we use an empty file `.bst-prepared` as a marker of whether
+            # configure-commands have already completed successfully in a previous build.
+            #
+            needs_configure = True
+            marker_filename = ".bst-prepared"
+            commands = self.__commands["configure-commands"]
+            if commands:
+                if self._get_workspace():
+                    vdir = sandbox.get_virtual_directory()
+                    buildroot = self.get_variable("build-root")
+                    buildroot_vdir = vdir.open_directory(buildroot.lstrip(os.sep))
+
+                    # Marker found, no need to configure
+                    if buildroot_vdir.exists(marker_filename):
+                        needs_configure = False
+
+            if needs_configure:
                 for cmd in commands:
                     self.__run_command(sandbox, cmd)
 
-        # %{install-root}/%{build-root} should normally not be written
-        # to - if an element later attempts to stage to a location
-        # that is not empty, we abort the build - in this case this
-        # will almost certainly happen.
-        staged_build = os.path.join(self.get_variable("install-root"), self.get_variable("build-root"))
+                # This will serialize a command to create the marker file
+                # in the sandbox batch after running configure
+                if self._get_workspace():
+                    sandbox._create_empty_file(marker_filename)
 
-        if os.path.isdir(staged_build) and os.listdir(staged_build):
-            self.warn(
-                "Writing to %{install-root}/%{build-root}.",
-                detail="Writing to this directory will almost "
-                + "certainly cause an error, since later elements "
-                + "will not be allowed to stage to %{build-root}.",
-            )
+            # Run commands
+            for command_name in _command_steps:
+                commands = self.__commands[command_name]
+                if not commands or command_name == "configure-commands":
+                    continue
 
-        # Return the payload, this is configurable but is generally
-        # always the /buildstream-install directory
-        return self.get_variable("install-root")
+                for cmd in commands:
+                    self.__run_command(sandbox, cmd)
 
-    def prepare(self, sandbox):
-        commands = self.__commands["configure-commands"]
-        if not commands:
-            # No configure commands, nothing to do.
-            return
-
-        # We need to ensure that the prepare() method is only called
-        # once in workspaces, because the changes will persist across
-        # incremental builds - not desirable, for example, in the case
-        # of autotools' `./configure`.
-        marker_filename = ".bst-prepared"
-
-        if self._get_workspace():
-            # We use an empty file as a marker whether prepare() has already
-            # been called in a previous build.
-
-            vdir = sandbox.get_virtual_directory()
-            buildroot = self.get_variable("build-root")
-            buildroot_vdir = vdir.descend(*buildroot.lstrip(os.sep).split(os.sep))
-
-            if buildroot_vdir.exists(marker_filename):
-                # Already prepared
-                return
-
-        with sandbox.batch(SandboxFlags.ROOT_READ_ONLY, label="Running configure-commands"):
-            for cmd in commands:
-                self.__run_command(sandbox, cmd)
-
-        if self._get_workspace():
-            sandbox._create_empty_file(marker_filename)
+            # Return the payload, this is configurable but is generally
+            # always the /buildstream-install directory
+            return self.get_variable("install-root")
 
     def generate_script(self):
         script = ""
@@ -371,4 +359,4 @@ class BuildElement(Element):
         # Note the -e switch to 'sh' means to exit with an error
         # if any untested command fails.
         #
-        sandbox.run(["sh", "-c", "-e", cmd + "\n"], SandboxFlags.ROOT_READ_ONLY, label=cmd)
+        sandbox.run(["sh", "-c", "-e", cmd + "\n"], root_read_only=True, label=cmd)

@@ -6,8 +6,12 @@ import pytest
 
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing import create_repo
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
+from buildstream._testing import cli  # pylint: disable=unused-import
+
+from tests.testutils.repo.git import Git
+from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
+from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
 
 
 # Project directory
@@ -40,23 +44,77 @@ def generate_element(output_file):
 
 
 DEFAULT_MIRROR_LIST = [
-    {"name": "middle-earth", "aliases": {"foo": ["OOF/"], "bar": ["RAB/"],},},
-    {"name": "arrakis", "aliases": {"foo": ["OFO/"], "bar": ["RBA/"],},},
-    {"name": "oz", "aliases": {"foo": ["ooF/"], "bar": ["raB/"],}},
+    {
+        "name": "middle-earth",
+        "aliases": {
+            "foo": ["OOF/"],
+            "bar": ["RAB/"],
+        },
+    },
+    {
+        "name": "arrakis",
+        "aliases": {
+            "foo": ["OFO/"],
+            "bar": ["RBA/"],
+        },
+    },
+    {
+        "name": "oz",
+        "aliases": {
+            "foo": ["ooF/"],
+            "bar": ["raB/"],
+        },
+    },
 ]
 
 
 SUCCESS_MIRROR_LIST = [
-    {"name": "middle-earth", "aliases": {"foo": ["OOF/"], "bar": ["RAB/"],},},
-    {"name": "arrakis", "aliases": {"foo": ["FOO/"], "bar": ["RBA/"],},},
-    {"name": "oz", "aliases": {"foo": ["ooF/"], "bar": ["raB/"],}},
+    {
+        "name": "middle-earth",
+        "aliases": {
+            "foo": ["OOF/"],
+            "bar": ["RAB/"],
+        },
+    },
+    {
+        "name": "arrakis",
+        "aliases": {
+            "foo": ["FOO/"],
+            "bar": ["RBA/"],
+        },
+    },
+    {
+        "name": "oz",
+        "aliases": {
+            "foo": ["ooF/"],
+            "bar": ["raB/"],
+        },
+    },
 ]
 
 
 FAIL_MIRROR_LIST = [
-    {"name": "middle-earth", "aliases": {"foo": ["pony/"], "bar": ["horzy/"],},},
-    {"name": "arrakis", "aliases": {"foo": ["donkey/"], "bar": ["rabbit/"],},},
-    {"name": "oz", "aliases": {"foo": ["bear/"], "bar": ["buffalo/"],}},
+    {
+        "name": "middle-earth",
+        "aliases": {
+            "foo": ["pony/"],
+            "bar": ["horzy/"],
+        },
+    },
+    {
+        "name": "arrakis",
+        "aliases": {
+            "foo": ["donkey/"],
+            "bar": ["rabbit/"],
+        },
+    },
+    {
+        "name": "oz",
+        "aliases": {
+            "foo": ["bear/"],
+            "bar": ["buffalo/"],
+        },
+    },
 ]
 
 
@@ -381,6 +439,7 @@ def test_mirror_fetch_default_cmdline_overrides_config(cli, tmpdir):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_mirror_git_submodule_fetch(cli, tmpdir, datafiles):
     # Test that it behaves as expected with submodules, both defined in config
     # and discovered when fetching.
@@ -390,15 +449,15 @@ def test_mirror_git_submodule_fetch(cli, tmpdir, datafiles):
     dev_files_path = os.path.join(str(datafiles), "files", "dev-files", "usr")
     mirror_dir = os.path.join(str(datafiles), "mirror")
 
-    defined_subrepo = create_repo("git", str(tmpdir), "defined_subrepo")
+    defined_subrepo = Git(str(tmpdir), "defined_subrepo")
     defined_subrepo.create(bin_files_path)
     defined_subrepo.copy(mirror_dir)
     defined_subrepo.add_file(foo_file)
 
-    found_subrepo = create_repo("git", str(tmpdir), "found_subrepo")
+    found_subrepo = Git(str(tmpdir), "found_subrepo")
     found_subrepo.create(dev_files_path)
 
-    main_repo = create_repo("git", str(tmpdir))
+    main_repo = Git(str(tmpdir))
     main_mirror_ref = main_repo.create(bin_files_path)
     main_repo.add_submodule("defined", "file://" + defined_subrepo.repo)
     main_repo.add_submodule("found", "file://" + found_subrepo.repo)
@@ -438,7 +497,21 @@ def test_mirror_git_submodule_fetch(cli, tmpdir, datafiles):
         "min-version": "2.0",
         "element-path": "elements",
         "aliases": {alias: "http://www.example.com/"},
-        "mirrors": [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"],},},],
+        "plugins": [
+            {
+                "origin": "pip",
+                "package-name": "sample-plugins",
+                "sources": ["git"],
+            }
+        ],
+        "mirrors": [
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    alias: [mirror_map + "/"],
+                },
+            },
+        ],
     }
     project_file = os.path.join(project_dir, "project.conf")
     _yaml.roundtrip_dump(project, project_file)
@@ -448,6 +521,7 @@ def test_mirror_git_submodule_fetch(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
     # Main repo has no mirror or alias.
     # One submodule is overridden to use a mirror.
@@ -463,12 +537,12 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
 
     upstream_bin_repodir = os.path.join(str(tmpdir), "bin-upstream")
     mirror_bin_repodir = os.path.join(str(tmpdir), "bin-mirror")
-    upstream_bin_repo = create_repo("git", upstream_bin_repodir)
+    upstream_bin_repo = Git(upstream_bin_repodir)
     upstream_bin_repo.create(bin_files_path)
     mirror_bin_repo = upstream_bin_repo.copy(mirror_bin_repodir)
 
     dev_repodir = os.path.join(str(tmpdir), "dev-upstream")
-    dev_repo = create_repo("git", dev_repodir)
+    dev_repo = Git(dev_repodir)
     dev_repo.create(dev_files_path)
 
     main_files = os.path.join(str(tmpdir), "main-files")
@@ -476,7 +550,7 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
     with open(os.path.join(main_files, "README"), "w", encoding="utf-8") as f:
         f.write("TEST\n")
     main_repodir = os.path.join(str(tmpdir), "main-upstream")
-    main_repo = create_repo("git", main_repodir)
+    main_repo = Git(main_repodir)
     main_repo.create(main_files)
 
     upstream_url = "file://{}".format(upstream_bin_repo.repo)
@@ -510,7 +584,21 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
         "min-version": "2.0",
         "element-path": "elements",
         "aliases": {alias: upstream_map + "/"},
-        "mirrors": [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"],}}],
+        "plugins": [
+            {
+                "origin": "pip",
+                "package-name": "sample-plugins",
+                "sources": ["git"],
+            }
+        ],
+        "mirrors": [
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    alias: [mirror_map + "/"],
+                },
+            }
+        ],
     }
     project_file = os.path.join(project_dir, "project.conf")
     _yaml.roundtrip_dump(project, project_file)
@@ -532,6 +620,7 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
     # Main repo has mirror. But does not list submodules.
     #
@@ -542,11 +631,11 @@ def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
     dev_files_path = os.path.join(str(datafiles), "files", "dev-files", "usr")
 
     bin_repodir = os.path.join(str(tmpdir), "bin-repo")
-    bin_repo = create_repo("git", bin_repodir)
+    bin_repo = Git(bin_repodir)
     bin_repo.create(bin_files_path)
 
     dev_repodir = os.path.join(str(tmpdir), "dev-repo")
-    dev_repo = create_repo("git", dev_repodir)
+    dev_repo = Git(dev_repodir)
     dev_repo.create(dev_files_path)
 
     main_files = os.path.join(str(tmpdir), "main-files")
@@ -554,7 +643,7 @@ def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
     with open(os.path.join(main_files, "README"), "w", encoding="utf-8") as f:
         f.write("TEST\n")
     upstream_main_repodir = os.path.join(str(tmpdir), "main-upstream")
-    upstream_main_repo = create_repo("git", upstream_main_repodir)
+    upstream_main_repo = Git(upstream_main_repodir)
     upstream_main_repo.create(main_files)
 
     upstream_main_repo.add_submodule("bin", url="file://{}".format(bin_repo.repo))
@@ -596,7 +685,21 @@ def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
         "min-version": "2.0",
         "element-path": "elements",
         "aliases": {alias: upstream_map + "/"},
-        "mirrors": [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"],}}],
+        "plugins": [
+            {
+                "origin": "pip",
+                "package-name": "sample-plugins",
+                "sources": ["git"],
+            }
+        ],
+        "mirrors": [
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    alias: [mirror_map + "/"],
+                },
+            }
+        ],
     }
     project_file = os.path.join(project_dir, "project.conf")
     _yaml.roundtrip_dump(project, project_file)
@@ -634,11 +737,32 @@ def test_mirror_expand_project_and_toplevel_root(cli, tmpdir):
         "name": "test",
         "min-version": "2.0",
         "element-path": "elements",
-        "aliases": {"foo": "FOO/", "bar": "BAR/",},
+        "aliases": {
+            "foo": "FOO/",
+            "bar": "BAR/",
+        },
         "mirrors": [
-            {"name": "middle-earth", "aliases": {"foo": ["OOF/"], "bar": ["RAB/"],},},
-            {"name": "arrakis", "aliases": {"foo": ["%{project-root}/OFO/"], "bar": ["%{project-root}/RBA/"],},},
-            {"name": "oz", "aliases": {"foo": ["ooF/"], "bar": ["raB/"],}},
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    "foo": ["OOF/"],
+                    "bar": ["RAB/"],
+                },
+            },
+            {
+                "name": "arrakis",
+                "aliases": {
+                    "foo": ["%{project-root}/OFO/"],
+                    "bar": ["%{project-root}/RBA/"],
+                },
+            },
+            {
+                "name": "oz",
+                "aliases": {
+                    "foo": ["ooF/"],
+                    "bar": ["raB/"],
+                },
+            },
         ],
         "plugins": [{"origin": "local", "path": "sources", "sources": ["fetch_source"]}],
     }

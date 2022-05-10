@@ -5,7 +5,7 @@ import os
 import pytest
 
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import cli  # pylint: disable=unused-import
 
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -215,7 +215,12 @@ def test_scope_build_of_child(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
-    "target", ["merge-separate-lists.bst", "merge-single-list.bst",], ids=["separate-lists", "single-list"],
+    "target",
+    [
+        "merge-separate-lists.bst",
+        "merge-single-list.bst",
+    ],
+    ids=["separate-lists", "single-list"],
 )
 def test_merge(cli, datafiles, target):
     project = os.path.join(str(datafiles), "dependencies2")
@@ -241,7 +246,12 @@ def test_config_unsupported(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
-    "target,number", [("supported1.bst", 1), ("supported2.bst", 2),], ids=["one", "two"],
+    "target,number",
+    [
+        ("supported1.bst", 1),
+        ("supported2.bst", 2),
+    ],
+    ids=["one", "two"],
 )
 def test_config_supported(cli, datafiles, target, number):
     project = os.path.join(str(datafiles), "dependencies3")
@@ -264,7 +274,12 @@ def test_config_runtime_error(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
-    "target,number", [("shorthand-config.bst", 2), ("shorthand-junction.bst", 2),], ids=["config", "junction"],
+    "target,number",
+    [
+        ("shorthand-config.bst", 2),
+        ("shorthand-junction.bst", 2),
+    ],
+    ids=["config", "junction"],
 )
 def test_shorthand(cli, datafiles, target, number):
     project = os.path.join(str(datafiles), "dependencies3")

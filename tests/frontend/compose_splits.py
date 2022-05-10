@@ -3,10 +3,13 @@
 
 import os
 import pytest
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+from buildstream._testing.runcli import cli  # pylint: disable=unused-import
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 @pytest.mark.parametrize("target", [("compose-include-bin.bst"), ("compose-exclude-dev.bst")])

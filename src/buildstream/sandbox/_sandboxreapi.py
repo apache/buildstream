@@ -16,7 +16,7 @@
 import os
 import shlex
 
-from .sandbox import Sandbox, SandboxFlags, SandboxCommandError, _SandboxBatch
+from .sandbox import Sandbox, _SandboxFlags, SandboxCommandError, _SandboxBatch
 from .. import utils
 from .._exceptions import ImplError, SandboxError
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
@@ -33,7 +33,7 @@ class SandboxREAPI(Sandbox):
 
         self._output_node_properties = kwargs.get("output_node_properties")
 
-    def _run(self, command, flags, *, cwd, env):
+    def _run(self, command, *, flags, cwd, env):
         context = self._get_context()
         cascache = context.get_cascache()
 
@@ -48,12 +48,12 @@ class SandboxREAPI(Sandbox):
         # Ensure working directory exists
         if len(cwd) > 1:
             assert cwd.startswith("/")
-            vdir.descend(*cwd[1:].split(os.path.sep), create=True)
+            vdir.open_directory(cwd[1:], create=True)
 
         # Ensure directories required for sandboxed execution exist
         for directory in ["dev", "proc", "tmp"]:
-            vsubdir = vdir.descend(directory, create=True)
-            if flags & SandboxFlags.ROOT_READ_ONLY:
+            vsubdir = vdir.open_directory(directory, create=True)
+            if flags & _SandboxFlags.ROOT_READ_ONLY:
                 vsubdir._set_subtree_read_only(False)
 
         # Create directories for all marked directories. This emulates
@@ -61,32 +61,31 @@ class SandboxREAPI(Sandbox):
         # to use as mount points.
         read_write_directories = []
         mount_sources = self._get_mount_sources()
-        for mark in self._get_marked_directories():
-            directory = mark["directory"]
+        for directory in self._get_marked_directories():
 
             if directory in mount_sources:
                 # Bind mount
-                mount_point = directory
-                mount_source = mount_sources[mount_point]
+                mount_point = directory.lstrip(os.path.sep)
+                mount_source = mount_sources[directory]
 
                 # Ensure mount point exists in sandbox
-                mount_point_components = mount_point.split(os.path.sep)
-                if not vdir.exists(*mount_point_components):
+                if not vdir.exists(mount_point):
                     if os.path.isdir(mount_source):
                         # Mounting a directory, mount point must be a directory
-                        vdir.descend(*mount_point_components, create=True)
+                        vdir.open_directory(mount_point, create=True)
                     else:
                         # Mounting a file or device node, mount point must be a file
-                        parent_vdir = vdir.descend(*mount_point_components[:-1], create=True)
-                        parent_vdir._create_empty_file(mount_point_components[-1])
+                        split_mount_point = mount_point.rsplit(os.path.sep, 1)
+                        parent_vdir = vdir.open_directory(split_mount_point[0], create=True)
+                        parent_vdir._create_empty_file(split_mount_point[1])
             else:
                 # Read-write directory
-                marked_vdir = vdir.descend(*directory.split(os.path.sep), create=True)
+                marked_vdir = vdir.open_directory(directory.lstrip(os.path.sep), create=True)
                 read_write_directories.append(directory)
-                if flags & SandboxFlags.ROOT_READ_ONLY:
+                if flags & _SandboxFlags.ROOT_READ_ONLY:
                     marked_vdir._set_subtree_read_only(False)
 
-        if flags & SandboxFlags.ROOT_READ_ONLY:
+        if flags & _SandboxFlags.ROOT_READ_ONLY:
             vdir._set_subtree_read_only(True)
         else:
             # The whole sandbox is writable
@@ -125,7 +124,7 @@ class SandboxREAPI(Sandbox):
         platform_dict["OSFamily"] = config.build_os
         platform_dict["ISA"] = config.build_arch
 
-        if flags & SandboxFlags.INHERIT_UID:
+        if flags & _SandboxFlags.INHERIT_UID:
             uid = os.geteuid()
             gid = os.getegid()
         else:
@@ -136,7 +135,7 @@ class SandboxREAPI(Sandbox):
         if gid is not None:
             platform_dict["unixGID"] = str(gid)
 
-        if flags & SandboxFlags.NETWORK_ENABLED:
+        if flags & _SandboxFlags.NETWORK_ENABLED:
             platform_dict["network"] = "on"
 
         # Remove unsupported platform properties from the dict
@@ -184,10 +183,10 @@ class SandboxREAPI(Sandbox):
             dir_digest = utils._message_digest(root_directory)
 
             # Create a normalized absolute path (inside the input tree)
-            path = os.path.normpath(os.path.join(working_directory, output_directory.path))
+            path = os.path.normpath(os.path.join(working_directory, output_directory.path)).lstrip(os.path.sep)
 
             # Get virtual directory at the path of the output directory
-            vsubdir = vdir.descend(*path.split(os.path.sep), create=True)
+            vsubdir = vdir.open_directory(path, create=True)
 
             # Replace contents with returned output
             vsubdir._reset(digest=dir_digest)
@@ -228,7 +227,12 @@ class _SandboxREAPIBatch(_SandboxBatch):
                 detail=self.main_group.combined_label(),
                 element_name=self.sandbox._get_element_name(),
             ):
-                if self.sandbox.run(["sh", "-c", "-e", self.script], self.flags, cwd=first.cwd, env=first.env) != 0:
+                if (
+                    self.sandbox._run_with_flags(
+                        ["sh", "-c", "-e", self.script], flags=self.flags, cwd=first.cwd, env=first.env
+                    )
+                    != 0
+                ):
                     raise SandboxCommandError("Command failed", collect=self.collect)
 
     def execute_group(self, group):

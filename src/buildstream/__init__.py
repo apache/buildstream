@@ -28,9 +28,9 @@ if "_BST_COMPLETION" not in os.environ:
     del get_versions
 
     from .utils import UtilError, ProgramNotFoundError
-    from .sandbox import Sandbox, SandboxFlags, SandboxCommandError
-    from .storage import Directory
-    from .types import CoreWarnings, OverlapAction
+    from .sandbox import Sandbox, SandboxCommandError
+    from .storage import Directory, DirectoryError, FileType, FileStat
+    from .types import CoreWarnings, OverlapAction, FastEnum
     from .node import MappingNode, Node, ProvenanceInformation, ScalarNode, SequenceNode
     from .plugin import Plugin
     from .source import Source, SourceError, SourceFetcher
@@ -38,8 +38,3 @@ if "_BST_COMPLETION" not in os.environ:
     from .element import Element, ElementError, DependencyConfiguration
     from .buildelement import BuildElement
     from .scriptelement import ScriptElement
-
-    # XXX We are exposing a private member here as we expect it to move to a
-    # separate package soon. See the following discussion for more details:
-    # https://gitlab.com/BuildStream/buildstream/issues/739#note_124819869
-    from ._gitsourcebase import _GitSourceBase, _GitMirror

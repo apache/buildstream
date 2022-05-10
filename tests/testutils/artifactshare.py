@@ -47,7 +47,7 @@ class BaseArtifactShare:
         with ExitStack() as stack:
             try:
                 server = stack.enter_context(self._create_server())
-                port = server.add_insecure_port("localhost:0")
+                port = server.add_insecure_port("127.0.0.1:0")
                 server.start()
             except Exception:
                 q.put(None)
@@ -133,7 +133,12 @@ class ArtifactShare(BaseArtifactShare):
         super().__init__()
 
     def _create_server(self):
-        return create_server(self.repodir, quota=self.quota, enable_push=True, index_only=self.index_only,)
+        return create_server(
+            self.repodir,
+            quota=self.quota,
+            enable_push=True,
+            index_only=self.index_only,
+        )
 
     # has_object():
     #

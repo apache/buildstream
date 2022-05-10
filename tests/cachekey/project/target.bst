@@ -4,22 +4,12 @@ description: |
   This is the main entry point including cases in the cache key test.
 
 depends:
-- sources/bzr1.bst
-- sources/git1.bst
-- sources/git2.bst
-- sources/git3.bst
 - sources/local1.bst
 - sources/local2.bst
-- sources/patch1.bst
-- sources/patch2.bst
-- sources/patch3.bst
-- sources/pip1.bst
 - sources/remote1.bst
 - sources/remote2.bst
 - sources/tar1.bst
 - sources/tar2.bst
-- sources/zip1.bst
-- sources/zip2.bst
 - elements/build1.bst
 - elements/build2.bst
 - elements/build3.bst
@@ -32,3 +22,4 @@ depends:
 - elements/import2.bst
 - elements/import3.bst
 - elements/script1.bst
+- elements/variables1.bst

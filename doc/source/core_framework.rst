@@ -21,6 +21,6 @@ useful for working on BuildStream itself.
    buildstream.buildelement
    buildstream.scriptelement
    buildstream.sandbox.sandbox
+   buildstream.storage.directory
    buildstream.exceptions
    buildstream.utils
-   buildstream.testing

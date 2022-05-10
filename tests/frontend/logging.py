@@ -6,11 +6,11 @@ import re
 
 import pytest
 
-from buildstream.testing import create_repo
+from buildstream._testing import create_repo
 
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import cli  # pylint: disable=unused-import
 
 # Project directory
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -26,7 +26,7 @@ def test_default_logging(cli, tmpdir, datafiles):
     # Create our repo object of the given source type with
     # the bin files, and then collect the initial ref.
     #
-    repo = create_repo("git", str(tmpdir))
+    repo = create_repo("tar", str(tmpdir))
     ref = repo.create(bin_files_path)
 
     # Write out our test target
@@ -37,7 +37,7 @@ def test_default_logging(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=["source", "fetch", element_name])
     result.assert_success()
 
-    m = re.search(r"\[\d\d:\d\d:\d\d\]\[\s*\]\[.*\] SUCCESS Checking sources", result.stderr)
+    m = re.search(r"\[\d\d:\d\d:\d\d\]\[\s*\]\[.*\] SUCCESS Query cache", result.stderr)
     assert m is not None
 
 
@@ -55,7 +55,7 @@ def test_custom_logging(cli, tmpdir, datafiles):
     # Create our repo object of the given source type with
     # the bin files, and then collect the initial ref.
     #
-    repo = create_repo("git", str(tmpdir))
+    repo = create_repo("tar", str(tmpdir))
     ref = repo.create(bin_files_path)
 
     # Write out our test target
@@ -67,7 +67,7 @@ def test_custom_logging(cli, tmpdir, datafiles):
     result.assert_success()
 
     m = re.search(
-        r"\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6},\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6}\s*,.*" r",SUCCESS,Checking sources",
+        r"\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6},\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6}\s*,.*" r",SUCCESS,Query cache",
         result.stderr,
     )
     assert m is not None

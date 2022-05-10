@@ -2,8 +2,8 @@
 # pylint: disable=redefined-outer-name
 
 import os
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
+from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
 from buildstream import _yaml
 
 
@@ -23,7 +23,7 @@ def prepare_junction_project(cli, tmpdir):
 
     import_repo_dir = tmpdir.join("import_repo")
     os.makedirs(str(import_repo_dir))
-    import_repo = create_repo("git", str(import_repo_dir))
+    import_repo = create_repo("tar", str(import_repo_dir))
     import_ref = import_repo.create(str(import_dir))
 
     _yaml.roundtrip_dump(
@@ -32,7 +32,7 @@ def prepare_junction_project(cli, tmpdir):
 
     sub_repo_dir = tmpdir.join("sub_repo")
     os.makedirs(str(sub_repo_dir))
-    sub_repo = create_repo("git", str(sub_repo_dir))
+    sub_repo = create_repo("tar", str(sub_repo_dir))
     sub_ref = sub_repo.create(str(sub_project))
 
     _yaml.roundtrip_dump(

@@ -4,12 +4,15 @@
 import os
 
 import pytest
-from buildstream.testing import create_repo
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
+from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 # create_element()
@@ -24,7 +27,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
 def create_element(project, name, dependencies):
     dev_files_path = os.path.join(project, "files", "dev-files")
     element_path = os.path.join(project, "elements")
-    repo = create_repo("git", project, "{}-repo".format(name))
+    repo = create_repo("tar", project, "{}-repo".format(name))
     ref = repo.create(dev_files_path)
 
     element = {"kind": "import", "sources": [repo.source_config(ref=ref)], "depends": dependencies}

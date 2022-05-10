@@ -44,15 +44,18 @@ import os
 
 import pytest
 
-from buildstream.testing._cachekeys import check_cache_key_stability, _parse_output_keys
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_BZR, HAVE_GIT, IS_LINUX, MACHINE_ARCH
+from buildstream._testing._cachekeys import check_cache_key_stability, _parse_output_keys
+from buildstream._testing.runcli import cli  # pylint: disable=unused-import
+from buildstream._testing._utils.site import HAVE_BZR, HAVE_GIT, IS_LINUX, MACHINE_ARCH
 from buildstream.plugin import CoreWarnings
 from buildstream import _yaml
 
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 # The cache key test uses a project which exercises all plugins,

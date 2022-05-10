@@ -4,9 +4,9 @@
 import os
 import pytest
 
-from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing.integration import assert_contains
-from buildstream.testing._utils.site import IS_LINUX, MACHINE_ARCH, HAVE_SANDBOX
+from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream._testing.integration import assert_contains
+from buildstream._testing._utils.site import IS_LINUX, MACHINE_ARCH, HAVE_SANDBOX
 from tests.testutils import patch
 
 pytestmark = pytest.mark.integration
@@ -54,7 +54,17 @@ def test_open_workspace(cli, tmpdir, datafiles):
     project = str(datafiles)
     workspace_dir = os.path.join(str(tmpdir), "workspace_hello")
 
-    result = cli.run(project=project, args=["workspace", "open", "-f", "--directory", workspace_dir, "hello.bst",])
+    result = cli.run(
+        project=project,
+        args=[
+            "workspace",
+            "open",
+            "-f",
+            "--directory",
+            workspace_dir,
+            "hello.bst",
+        ],
+    )
     result.assert_success()
 
     result = cli.run(project=project, args=["workspace", "list"])

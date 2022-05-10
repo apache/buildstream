@@ -22,12 +22,15 @@ import pytest
 
 from buildstream.element import _get_normal_name
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import cli  # pylint: disable=unused-import
 from tests.testutils import create_artifact_share
 
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 # Test that we can delete the artifact of the element which corresponds

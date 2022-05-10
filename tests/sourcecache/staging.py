@@ -26,7 +26,7 @@ import pytest
 
 from buildstream._project import Project
 
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+from buildstream._testing.runcli import cli  # pylint: disable=unused-import
 
 from tests.testutils import dummy_context
 from tests.testutils.element_generators import create_element_size
@@ -153,14 +153,14 @@ def test_staged_source_build(tmpdir, datafiles, cli):
     # build and check that no fetching was done.
     res = cli.run(project=project_dir, args=["build", "target.bst"])
     res.assert_success()
-    assert "Fetching from" not in res.stderr
+    assert "Fetching" not in res.stderr
 
     # assert the source directory is still empty (though there may be
     # directories from staging etc.)
     files = []
     for _, _, filename in os.walk(source_dir):
         files.extend(filename)
-    assert files == []
+    assert not files, files
 
     # Now remove the source refs and check the state
     shutil.rmtree(source_protos)
@@ -172,4 +172,4 @@ def test_staged_source_build(tmpdir, datafiles, cli):
     # Check that it now fetches from when building the target
     res = cli.run(project=project_dir, args=["build", "target.bst"])
     res.assert_success()
-    assert "Fetching from" in res.stderr
+    assert "Fetching" in res.stderr

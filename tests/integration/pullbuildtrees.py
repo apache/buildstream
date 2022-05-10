@@ -6,8 +6,8 @@ import shutil
 
 import pytest
 
-from buildstream.testing import cli, cli_integration as cli2  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream._testing import cli, cli_integration as cli2  # pylint: disable=unused-import
+from buildstream._testing._utils.site import HAVE_SANDBOX
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 
 from tests.testutils import create_artifact_share
@@ -170,7 +170,13 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
 def test_invalid_cache_pullbuildtrees(cli, datafiles, value, success):
     project = str(datafiles)
 
-    cli.configure({"cache": {"pull-buildtrees": value,}})
+    cli.configure(
+        {
+            "cache": {
+                "pull-buildtrees": value,
+            }
+        }
+    )
 
     res = cli.run(project=project, args=["workspace", "list"])
     if success:

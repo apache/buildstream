@@ -8,7 +8,10 @@ import pytest
 
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+from buildstream._testing.runcli import cli  # pylint: disable=unused-import
+
+from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
+from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
 
 
 # Project directory
@@ -27,9 +30,11 @@ def print_warning(msg):
 #  Test proper loading of some default commands from plugins  #
 ###############################################################
 @pytest.mark.parametrize(
-    "target,varname,expected", [("autotools.bst", "make-install", 'make -j1 DESTDIR="/buildstream-install" install')],
+    "target,varname,expected",
+    [("autotools.bst", "make-install", 'make -j1 DESTDIR="/buildstream-install" install')],
 )
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "defaults"))
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_defaults(cli, datafiles, target, varname, expected):
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", target])
@@ -42,9 +47,11 @@ def test_defaults(cli, datafiles, target, varname, expected):
 #  Test overriding of variables to produce different commands  #
 ################################################################
 @pytest.mark.parametrize(
-    "target,varname,expected", [("autotools.bst", "make-install", 'make -j1 DESTDIR="/custom/install/root" install')],
+    "target,varname,expected",
+    [("autotools.bst", "make-install", 'make -j1 DESTDIR="/custom/install/root" install')],
 )
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "overrides"))
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_overrides(cli, datafiles, target, varname, expected):
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", target])
@@ -113,9 +120,11 @@ def test_circular_reference(cli, datafiles, element, provenances):
 # on a recursive algorithm limited by stack depth.
 #
 @pytest.mark.parametrize(
-    "maxvars", [50, 500, 5000],
+    "maxvars",
+    [50, 500, 5000],
 )
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "defaults"))
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_deep_references(cli, datafiles, maxvars):
     project = str(datafiles)
 

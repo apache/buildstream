@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2022 Codethink Limited
 #  Copyright (C) 2018 Bloomberg Finance LP
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,47 +48,6 @@ if TYPE_CHECKING:
     # pylint: enable=cyclic-import
 
 
-class SandboxFlags:
-    """Flags indicating how the sandbox should be run.
-    """
-
-    NONE = 0
-    """Use default sandbox configuration.
-    """
-
-    ROOT_READ_ONLY = 0x01
-    """The root filesystem is read only.
-
-    This is normally true except when running integration commands
-    on staged dependencies, where we have to update caches and run
-    things such as ldconfig.
-    """
-
-    NETWORK_ENABLED = 0x02
-    """Whether to expose host network.
-
-    This should not be set when running builds, but can
-    be allowed for running a shell in a sandbox.
-    """
-
-    INTERACTIVE = 0x04
-    """Whether to run the sandbox interactively
-
-    This determines if the sandbox should attempt to connect
-    the terminal through to the calling process, or detach
-    the terminal entirely.
-    """
-
-    INHERIT_UID = 0x08
-    """Whether to use the user id and group id from the host environment
-
-    This determines if processes in the sandbox should run with the
-    same user id and group id as BuildStream itself. By default,
-    processes run with user id and group id 0, protected by a user
-    namespace where available.
-    """
-
-
 class SandboxCommandError(SandboxError):
     """Raised by :class:`.Sandbox` implementations when a command fails.
 
@@ -112,13 +71,12 @@ class Sandbox:
     """
 
     # Minimal set of devices for the sandbox
-    DEVICES = ["/dev/urandom", "/dev/random", "/dev/zero", "/dev/null"]
     _dummy_reasons = []  # type: List[str]
 
     def __init__(self, context: "Context", project: "Project", directory: str, **kwargs):
         self.__context = context
         self.__project = project
-        self.__directories = []  # type: List[Dict[str, Union[int, str]]]
+        self.__directories = []  # type: List[str]
         self.__cwd = None  # type: Optional[str]
         self.__env = None  # type: Optional[Dict[str, str]]
         self.__mount_sources = {}  # type: Dict[str, str]
@@ -143,6 +101,20 @@ class Sandbox:
 
         # Pending command batch
         self.__batch = None
+
+    # __enter__()
+    #
+    # Called when entering the with-statement context.
+    #
+    def __enter__(self) -> "Sandbox":
+        return self
+
+    # __exit__()
+    #
+    # Called when exiting the with-statement context.
+    #
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self._cleanup()
 
     def get_virtual_directory(self) -> Directory:
         """Fetches the sandbox root directory as a virtual Directory.
@@ -177,13 +149,11 @@ class Sandbox:
 
         self.__cwd = directory
 
-    def mark_directory(self, directory: str, *, artifact: bool = False) -> None:
+    def mark_directory(self, directory: str) -> None:
         """Marks a sandbox directory and ensures it will exist
 
         Args:
            directory: An absolute path within the sandbox to mark
-           artifact: Whether the content staged at this location
-                     contains artifacts
 
         .. note::
            Any marked directories will be read-write in the sandboxed
@@ -191,13 +161,13 @@ class Sandbox:
         """
         assert directory.startswith("/"), "The directories marked in the sandbox must be absolute paths"
 
-        self.__directories.append({"directory": directory, "artifact": artifact})
+        self.__directories.append(directory)
 
     def run(
         self,
         command: List[str],
-        flags: int,
         *,
+        root_read_only: bool = False,
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
         label: str = None
@@ -214,7 +184,7 @@ class Sandbox:
         Args:
             command: The command to run in the sandboxed environment, as a list
                      of strings starting with the binary to run.
-            flags (:class:`.SandboxFlags`): The flags for running this command.
+            root_read_only: Whether the sandbox root should be readonly.
             cwd: The sandbox relative working directory in which to run the command.
             env: A dictionary of string key, value pairs to set as environment
                  variables inside the sandbox environment.
@@ -234,35 +204,17 @@ class Sandbox:
            function must make sure the directory will be created if it does
            not exist yet, even if a workspace is being used.
         """
-
-        if not self.__allow_run:
-            raise SandboxError("Sandbox.run() has been disabled")
-
-        # Fallback to the sandbox default settings for
-        # the cwd and env.
-        #
-        cwd = self._get_work_directory(cwd=cwd)
-        env = self._get_environment(cwd=cwd, env=env)
-
-        assert cwd.startswith("/"), "The working directory must be an absolute path"
-
-        # Convert single-string argument to a list
-        if isinstance(command, str):
-            command = [command]
-
-        if self.__batch:
-            assert flags == self.__batch.flags, "Inconsistent sandbox flags in single command batch"
-
-            batch_command = _SandboxBatchCommand(command, cwd=cwd, env=env, label=label)
-
-            current_group = self.__batch.current_group
-            current_group.append(batch_command)
-            return None
+        if root_read_only:
+            flags = _SandboxFlags.ROOT_READ_ONLY
         else:
-            return self._run(command, flags, cwd=cwd, env=env)
+            flags = _SandboxFlags.NONE
+
+        return self._run_with_flags(command, flags=flags, cwd=cwd, env=env, label=label)
 
     @contextmanager
-    def batch(self, flags: int, *, label: str = None, collect: str = None) -> Generator[None, None, None]:
+    def batch(
+        self, *, root_read_only: bool = False, label: str = None, collect: str = None
+    ) -> Generator[None, None, None]:
         """Context manager for command batching
 
         This provides a batch context that defers execution of commands until
@@ -273,7 +225,7 @@ class Sandbox:
         level batch context ends.
 
         Args:
-            flags (:class:`.SandboxFlags`): The flags for this command batch.
+            root_read_only: Whether the sandbox root should be readonly.
             label: An optional label for the batch group, used for logging.
             collect: An optional directory containing partial install contents
                            on command failure.
@@ -281,6 +233,10 @@ class Sandbox:
         Raises:
             (:class:`.SandboxCommandError`): If a command fails.
         """
+        if root_read_only:
+            flags = _SandboxFlags.ROOT_READ_ONLY
+        else:
+            flags = _SandboxFlags.NONE
 
         group = _SandboxBatchGroup(label=label)
 
@@ -311,6 +267,13 @@ class Sandbox:
     #    Abstract Methods for Sandbox implementations   #
     #####################################################
 
+    # _cleanup():
+    #
+    # Abstract method to release resources when the sandbox is discarded
+    #
+    def _cleanup(self):
+        pass
+
     # _run()
     #
     # Abstract method for running a single command
@@ -326,7 +289,7 @@ class Sandbox:
     # Returns:
     #    (int): The program exit code.
     #
-    def _run(self, command, flags, *, cwd, env):
+    def _run(self, command, *, flags, cwd, env):
         raise ImplError("Sandbox of type '{}' does not implement _run()".format(type(self).__name__))
 
     # _create_batch()
@@ -357,6 +320,58 @@ class Sandbox:
     ################################################
     #               Private methods                #
     ################################################
+
+    # _run_with_flags()
+    #
+    # An internal method for running commands, which exposes the private _SandboxFlags.
+    #
+    # Args:
+    #    command: The command to run in the sandboxed environment, as a list
+    #             of strings starting with the binary to run.
+    #    flags: The SandboxFlags for running this command.
+    #    cwd: The sandbox relative working directory in which to run the command.
+    #    env: A dictionary of string key, value pairs to set as environment
+    #         variables inside the sandbox environment.
+    #    label: An optional label for the command, used for logging.
+    #
+    # Returns:
+    #    (int): The program exit code, or None if running in batch context.
+    #
+    def _run_with_flags(
+        self,
+        command: List[str],
+        *,
+        flags: int,
+        cwd: Optional[str] = None,
+        env: Optional[Dict[str, str]] = None,
+        label: str = None
+    ) -> Optional[int]:
+        if not self.__allow_run:
+            raise SandboxError("Sandbox.run() has been disabled")
+
+        # Fallback to the sandbox default settings for
+        # the cwd and env.
+        #
+        cwd = self._get_work_directory(cwd=cwd)
+        env = self._get_environment(cwd=cwd, env=env)
+
+        assert cwd.startswith("/"), "The working directory must be an absolute path"
+
+        # Convert single-string argument to a list
+        if isinstance(command, str):
+            command = [command]
+
+        if self.__batch:
+            assert flags == self.__batch.flags, "Inconsistent sandbox flags in single command batch"
+
+            batch_command = _SandboxBatchCommand(command, cwd=cwd, env=env, label=label)
+
+            current_group = self.__batch.current_group
+            current_group.append(batch_command)
+            return None
+        else:
+            return self._run(command, flags=flags, cwd=cwd, env=env)
+
     # _get_context()
     #
     # Fetches the context BuildStream was launched with.
@@ -380,11 +395,7 @@ class Sandbox:
     # Fetches the marked directories in the sandbox
     #
     # Returns:
-    #    (list): A list of directory mark objects.
-    #
-    # The returned objects are dictionaries with the following attributes:
-    #    directory: The absolute path within the sandbox
-    #    artifact: Whether the path will contain artifacts or not
+    #    (List[str]): A list of marked directories.
     #
     def _get_marked_directories(self):
         return self.__directories
@@ -478,16 +489,15 @@ class Sandbox:
     #         (bool): Whether a command exists inside the sandbox.
     def _has_command(self, command, env=None):
         vroot = self.get_virtual_directory()
-        command_as_parts = command.lstrip(os.sep).split(os.sep)
         if os.path.isabs(command):
-            return vroot.exists(*command_as_parts, follow_symlinks=True)
+            return vroot.exists(command.lstrip(os.sep), follow_symlinks=True)
 
-        if len(command_as_parts) > 1:
+        if "/" in command:
             return False
 
         for path in env.get("PATH").split(":"):
-            path_as_parts = path.lstrip(os.sep).split(os.sep)
-            if vroot.exists(*path_as_parts, command, follow_symlinks=True):
+            try_path = os.path.join(path, command).lstrip(os.sep)
+            if vroot.exists(try_path, follow_symlinks=True):
                 return True
 
         return False
@@ -513,7 +523,7 @@ class Sandbox:
         else:
             vdir = self.get_virtual_directory()
             cwd = self._get_work_directory()
-            cwd_vdir = vdir.descend(*cwd.lstrip(os.sep).split(os.sep), create=True)
+            cwd_vdir = vdir.open_directory(cwd.lstrip(os.sep), create=True)
             cwd_vdir._create_empty_file(name)
 
     # _get_element_name()
@@ -547,6 +557,43 @@ class Sandbox:
         self._build_directory_always = always
 
 
+# SandboxFlags()
+#
+# Flags indicating how the sandbox should be run.
+#
+class _SandboxFlags:
+
+    # Use default sandbox configuration.
+    #
+    NONE = 0
+
+    # Whether the root filesystem should be readonly.
+    #
+    # Usually this is true except for when running integration commands
+    ROOT_READ_ONLY = 0x01
+
+    # Whether to expose host network.
+    #
+    # This should not be set when running builds, but can
+    # be allowed for running a shell in a sandbox.
+    NETWORK_ENABLED = 0x02
+
+    # Whether to run the sandbox interactively.
+    #
+    # This determines if the sandbox should attempt to connect
+    # the terminal through to the calling process, or detach
+    # the terminal entirely.
+    INTERACTIVE = 0x04
+
+    # Whether to use the user id and group id from the host environment.
+    #
+    # This determines if processes in the sandbox should run with the
+    # same user id and group id as BuildStream itself. By default,
+    # processes run with user id and group id 0, protected by a user
+    # namespace where available.
+    INHERIT_UID = 0x08
+
+
 # _SandboxBatch()
 #
 # A batch of sandbox commands.
@@ -576,10 +623,12 @@ class _SandboxBatch:
         if command.label:
             context = self.sandbox._get_context()
             context.messenger.status(
-                "Running command", detail=command.label, element_name=self.sandbox._get_element_name(),
+                "Running command",
+                detail=command.label,
+                element_name=self.sandbox._get_element_name(),
             )
 
-        exitcode = self.sandbox._run(command.command, self.flags, cwd=command.cwd, env=command.env)
+        exitcode = self.sandbox._run(command.command, flags=self.flags, cwd=command.cwd, env=command.env)
         if exitcode != 0:
             cmdline = " ".join(shlex.quote(cmd) for cmd in command.command)
             label = command.label or cmdline
@@ -590,7 +639,7 @@ class _SandboxBatch:
     def create_empty_file(self, name):
         vdir = self.sandbox.get_virtual_directory()
         cwd = self.sandbox._get_work_directory()
-        cwd_vdir = vdir.descend(*cwd.lstrip(os.sep).split(os.sep), create=True)
+        cwd_vdir = vdir.open_directory(cwd.lstrip(os.sep), create=True)
         cwd_vdir._create_empty_file(name)
 
 

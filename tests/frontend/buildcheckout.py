@@ -5,12 +5,13 @@ import os
 import tarfile
 import hashlib
 import re
+import shutil
 
 import pytest
 
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
-from buildstream.testing._utils.site import CASD_SEPARATE_USER
+from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
+from buildstream._testing._utils.site import CASD_SEPARATE_USER
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream import utils
@@ -20,7 +21,10 @@ from tests.testutils import generate_junction, create_artifact_share
 from . import configure_project
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
+)
 
 
 def strict_args(args, strict):
@@ -32,7 +36,12 @@ def strict_args(args, strict):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
     "strict,hardlinks",
-    [("strict", "copies"), ("strict", "hardlinks"), ("non-strict", "copies"), ("non-strict", "hardlinks"),],
+    [
+        ("strict", "copies"),
+        ("strict", "hardlinks"),
+        ("non-strict", "copies"),
+        ("non-strict", "hardlinks"),
+    ],
 )
 def test_build_checkout(datafiles, cli, strict, hardlinks):
     if CASD_SEPARATE_USER and hardlinks == "hardlinks":
@@ -728,20 +737,6 @@ def test_build_checkout_force_tarball(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_install_to_build(cli, datafiles):
-    project = str(datafiles)
-    element = "installed-to-build.bst"
-
-    # Attempt building the element
-    # We expect this to throw an ElementError, since the element will
-    # attempt to stage into /buildstream/build, which is not allowed.
-    result = cli.run(project=project, args=strict_args(["build", element], True))
-
-    result.assert_main_error(ErrorDomain.STREAM, None)
-    result.assert_task_error(ErrorDomain.ELEMENT, None)
-
-
-@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [("inline"), ("project.refs")])
 def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
     project = str(datafiles)
@@ -998,7 +993,15 @@ def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
 
     # Create a stack element to depend on a cross junction element, using
     # colon (:) as the separator
-    element = {"kind": "stack", "depends": [{"filename": "junction.bst:import-etc.bst", "junction": "junction.bst",}]}
+    element = {
+        "kind": "stack",
+        "depends": [
+            {
+                "filename": "junction.bst:import-etc.bst",
+                "junction": "junction.bst",
+            }
+        ],
+    }
     _yaml.roundtrip_dump(element, element_path)
 
     # Now try to build it, this should fail as filenames should not contain
@@ -1035,7 +1038,7 @@ def test_partial_artifact_checkout_fetch(cli, datafiles, tmpdir):
     project = str(datafiles)
     checkout_dir = os.path.join(str(tmpdir), "checkout")
 
-    repo = create_repo("git", str(tmpdir))
+    repo = create_repo("tar", str(tmpdir))
     repo.create(os.path.join(str(datafiles), "files"))
     element_dir = os.path.join(str(tmpdir), "elements")
     project = str(tmpdir)
@@ -1108,3 +1111,72 @@ def test_fail_no_args(datafiles, cli):
     result = cli.run(project=project, args=["artifact", "checkout"])
     result.assert_main_error(ErrorDomain.APP, None)
     assert "Missing argument" in result.stderr
+
+
+# This test reproduces a scenario where BuildStream can get confused
+# if the strictness of a dependency is not taken into account in the
+# strong artifact cache key, as reported in issue #1270.
+#
+# While we were unable to reproduce the exact experience, we can test
+# the expected behavior.
+#
+STRICT_DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "strict-scenario",
+)
+
+
+@pytest.mark.datafiles(STRICT_DATA_DIR)
+def test_changing_strict_dependency_scenario(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, "checkout")
+    target_path = os.path.join(project, "elements", "target.bst")
+
+    # Function to (re)write the target element so that it depends
+    # on the base.bst element strictly or non-strictly
+    #
+    def configure_target(strict):
+        dependency = {"filename": "base.bst"}
+        if strict:
+            dependency["strict"] = True
+        config = {
+            "kind": "import",
+            "depends": [dependency],
+            "sources": [{"kind": "local", "path": "files/target.txt"}],
+        }
+        _yaml.roundtrip_dump(config, target_path)
+
+    # First build where the target normally depends on the base element
+    configure_target(False)
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+
+    # Now configure the target to *strictly* depend on the base, try to check it out
+    #
+    # This will fail in both strict more or non-strict mode, as the strictness of the
+    # dependency will affect both keys.
+    configure_target(True)
+    result = cli.run(project=project, args=["artifact", "checkout", "--directory", checkout, "target.bst"])
+    result.assert_main_error(ErrorDomain.STREAM, "uncached-checkout-attempt")
+    shutil.rmtree(checkout)
+
+    result = cli.run(
+        project=project, args=["--no-strict", "artifact", "checkout", "--directory", checkout, "target.bst"]
+    )
+    result.assert_main_error(ErrorDomain.STREAM, "uncached-checkout-attempt")
+    shutil.rmtree(checkout)
+
+    # Now perform a build on the newly strict dependency, which should cause it to be
+    # available under both strict and non-strict checkout scenarios
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+
+    result = cli.run(project=project, args=["artifact", "checkout", "--directory", checkout, "target.bst"])
+    result.assert_success()
+    shutil.rmtree(checkout)
+
+    result = cli.run(
+        project=project, args=["--no-strict", "artifact", "checkout", "--directory", checkout, "target.bst"]
+    )
+    result.assert_success()
+    shutil.rmtree(checkout)

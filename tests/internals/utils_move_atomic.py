@@ -10,7 +10,7 @@ from buildstream.utils import (
     _set_file_mtime,
     _parse_timestamp,
 )
-from buildstream.testing._utils.site import have_subsecond_mtime
+from buildstream._testing._utils.site import have_subsecond_mtime
 
 
 @pytest.fixture

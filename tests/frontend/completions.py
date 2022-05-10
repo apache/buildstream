@@ -3,7 +3,7 @@
 
 import os
 import pytest
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._testing import cli  # pylint: disable=unused-import
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "completions")
@@ -334,13 +334,15 @@ def test_help_commands(cli, cmd, word_idx, expected):
 def test_argument_artifact(cli, datafiles):
     project = str(datafiles)
 
-    # Build an import element with no dependencies (as there will only be ONE cache key)
+    # Build an import element with no dependencies (this will generate one artifact with 2 keys)
     result = cli.run(project=project, args=["build", "import-bin.bst"])  # Has no dependencies
     result.assert_success()
 
-    # Get the key and the artifact ref ($project/$element_name/$key)
-    key = cli.get_element_key(project, "import-bin.bst")
-    artifact = os.path.join("test", "import-bin", key)
+    # Use hard coded artifact names, cache keys should be stable now
+    artifacts = [
+        "test/import-bin/cb0c8c2e1881b09338aa3f533d224f83f06bdf263523d04ee197232c74f09357",
+        "test/import-bin/edcfeda7d52c6bb77e632e31bd8ba40122125b2f50553b57c34947aa5fa709df",
+    ]
 
     # Test autocompletion of the artifact
     cmds = ["bst artifact log ", "bst artifact log t", "bst artifact log test/"]
@@ -357,11 +359,17 @@ def test_argument_artifact(cli, datafiles):
             words = result.output.splitlines()  # This leaves an extra space on each e.g. ['foo.bst ']
             words = [word.strip() for word in words]
 
+            # We should now be able to see the artifacts, but the order in which artifacts
+            # are displayed in the completion list is not guaranteed to be ordered, so we
+            # test for both orders.
             if i == 0:
-                expected = PROJECT_ELEMENTS + [artifact]  # We should now be able to see the artifact
+                expected1 = PROJECT_ELEMENTS + artifacts
+                expected2 = PROJECT_ELEMENTS + list(reversed(artifacts))
             elif i == 1:
-                expected = ["target.bst", artifact]
+                expected1 = ["target.bst"] + artifacts
+                expected2 = ["target.bst"] + list(reversed(artifacts))
             elif i == 2:
-                expected = [artifact]
+                expected1 = artifacts
+                expected2 = list(reversed(artifacts))
 
-            assert expected == words
+            assert words in (expected1, expected2)

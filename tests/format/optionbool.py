@@ -5,7 +5,7 @@ import os
 import pytest
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+from buildstream._testing.runcli import cli  # pylint: disable=unused-import
 
 # Project directory
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -48,7 +48,11 @@ def test_conditional_cli(cli, datafiles, target, option, expected):
 #
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
-    "target,option,expected", [("element.bst", True, "a pony"), ("element.bst", False, "not pony"),]
+    "target,option,expected",
+    [
+        ("element.bst", True, "a pony"),
+        ("element.bst", False, "not pony"),
+    ],
 )
 def test_conditional_config(cli, datafiles, target, option, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename, "option-bool")

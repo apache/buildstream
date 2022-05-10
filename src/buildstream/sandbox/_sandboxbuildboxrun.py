@@ -22,7 +22,7 @@ from contextlib import ExitStack
 import psutil
 
 from .. import utils, _signals
-from . import SandboxFlags
+from . import _SandboxFlags
 from .._exceptions import SandboxError
 from .._platform import Platform
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
@@ -104,8 +104,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
             marked_directories = self._get_marked_directories()
             mount_sources = self._get_mount_sources()
-            for mark in marked_directories:
-                mount_point = mark["directory"]
+            for mount_point in marked_directories:
                 mount_source = mount_sources.get(mount_point)
                 if not mount_source:
                     # Handled by the input tree in the action
@@ -121,7 +120,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
             # If we're interactive, we want to inherit our stdin,
             # otherwise redirect to /dev/null, ensuring process
             # disconnected from terminal.
-            if flags & SandboxFlags.INTERACTIVE:
+            if flags & _SandboxFlags.INTERACTIVE:
                 stdin = sys.stdin
 
                 if "bind-mount" in self._capabilities:
@@ -132,7 +131,11 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 stdin = subprocess.DEVNULL
 
             self._run_buildbox(
-                buildbox_command, stdin, stdout, stderr, interactive=(flags & SandboxFlags.INTERACTIVE),
+                buildbox_command,
+                stdin,
+                stdout,
+                stderr,
+                interactive=(flags & _SandboxFlags.INTERACTIVE),
             )
 
             return remote_execution_pb2.ActionResult().FromString(result_file.read())
@@ -173,7 +176,12 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 stack.enter_context(_signals.terminator(kill_proc))
 
             process = subprocess.Popen(  # pylint: disable=consider-using-with
-                argv, close_fds=True, stdin=stdin, stdout=stdout, stderr=stderr, start_new_session=new_session,
+                argv,
+                close_fds=True,
+                stdin=stdin,
+                stdout=stdout,
+                stderr=stderr,
+                start_new_session=new_session,
             )
 
             # Wait for the child process to finish, ensuring that

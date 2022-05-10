@@ -202,7 +202,7 @@ class Stream:
         # It doesn't make sense to combine these flags
         assert not sources_of_cached_elements or not only_sources
 
-        with self._context.messenger.timed_activity("Query cache", silent_nested=True):
+        with self._context.messenger.simple_task("Query cache", silent_nested=True) as task:
             # Enqueue complete build plan as this is required to determine `buildable` status.
             plan = list(_pipeline.dependencies(elements, _Scope.ALL))
 
@@ -213,6 +213,7 @@ class Stream:
                 self._enqueue_plan(plan)
                 self._run()
             else:
+                task.set_maximum_progress(len(plan))
                 for element in plan:
                     if element._can_query_cache():
                         # Cache status already available.
@@ -231,6 +232,8 @@ class Stream:
                             element._load_artifact_done()
                     elif element._has_all_sources_resolved():
                         element._query_source_cache()
+
+                    task.add_current_progress()
 
     # shell()
     #
@@ -725,9 +728,13 @@ class Stream:
             with target.timed_activity("Checking out files in '{}'".format(location)):
                 try:
                     if hardlinks:
-                        self._checkout_hardlinks(virdir, location)
+                        try:
+                            utils.safe_remove(location)
+                        except OSError as e:
+                            raise StreamError("Failed to remove checkout directory: {}".format(e)) from e
+                        virdir._export_files(location, can_link=True, can_destroy=True)
                     else:
-                        virdir.export_files(location)
+                        virdir._export_files(location)
                 except OSError as e:
                     raise StreamError("Failed to checkout files: '{}'".format(e)) from e
         else:
@@ -807,7 +814,7 @@ class Stream:
     #    targets (str): Targets to view the contents of
     #
     # Returns:
-    #    elements_to_files (list): A list of tuples of the artifact name and it's contents
+    #    elements_to_files (Dict[str, Directory]): A list of tuples of the artifact name and it's contents
     #
     def artifact_list_contents(self, targets):
         # Return list of Element and/or ArtifactElement objects
@@ -824,8 +831,12 @@ class Stream:
                 continue
             if isinstance(obj, ArtifactElement):
                 obj.name = ref
-            files = list(obj._walk_artifact_files())
+
+            # Just hand over a Directory here
+            artifact = obj._get_artifact()
+            files = artifact.get_files()
             elements_to_files[obj.name] = files
+
         return elements_to_files
 
     # artifact_delete()
@@ -1743,11 +1754,7 @@ class Stream:
     #
     def _enqueue_plan(self, plan, *, queue=None):
         queue = queue or self.queues[0]
-
-        with self._context.messenger.simple_task("Preparing work plan") as task:
-            task.set_maximum_progress(len(plan))
-            queue.enqueue(plan, task)
-
+        queue.enqueue(plan)
         self.session_elements += plan
 
     # _run()
@@ -1825,16 +1832,6 @@ class Stream:
                 raise StreamError("Output file '{}' not writable".format(location))
             if not force and os.path.exists(location):
                 raise StreamError("Output file '{}' already exists".format(location))
-
-    # Helper function for checkout()
-    #
-    def _checkout_hardlinks(self, sandbox_vroot, directory):
-        try:
-            utils.safe_remove(directory)
-        except OSError as e:
-            raise StreamError("Failed to remove checkout directory: {}".format(e)) from e
-
-        sandbox_vroot.export_files(directory, can_link=True, can_destroy=True)
 
     # Helper function for source_checkout()
     def _source_checkout(

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2020 Codethink Limited
+#  Copyright (C) 2016-2022 Codethink Limited
 #  Copyright (C) 2017-2020 Bloomberg Finance LP
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,13 +47,6 @@ explicitly stated otherwise.
   Stage dependencies and :class:`Sources <buildstream.source.Source>` into
   the sandbox.
 
-* :func:`Element.prepare() <buildstream.element.Element.prepare>`
-
-  Call preparation methods that should only be performed once in the
-  lifetime of a build directory (e.g. autotools' ./configure).
-
-  **Optional**: If left unimplemented, this step will be skipped.
-
 * :func:`Element.assemble() <buildstream.element.Element.assemble>`
 
   Perform the actual assembly of the element
@@ -77,7 +70,6 @@ import re
 import stat
 import copy
 import warnings
-import contextlib
 from contextlib import contextmanager, suppress
 from functools import partial
 from itertools import chain
@@ -98,7 +90,7 @@ from . import _cachekey
 from . import _site
 from .node import Node
 from .plugin import Plugin
-from .sandbox import SandboxFlags, SandboxCommandError
+from .sandbox import _SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
 from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey
@@ -108,9 +100,8 @@ from ._elementsources import ElementSources
 from ._loader import Symbol, DependencyType, MetaSource
 from ._overlapcollector import OverlapCollector
 
-from .storage.directory import Directory
+from .storage import Directory, DirectoryError
 from .storage._filebaseddirectory import FileBasedDirectory
-from .storage.directory import VirtualDirectoryError
 
 if TYPE_CHECKING:
     from typing import Tuple
@@ -301,11 +292,6 @@ class Element(Plugin):
         self.__dynamic_public = None
         self.__sandbox_config = None  # type: Optional[SandboxConfig]
 
-        self.__batch_prepare_assemble = False  # Whether batching across prepare()/assemble() is configured
-        self.__batch_prepare_assemble_flags = 0  # Sandbox flags for batching across prepare()/assemble()
-        # Collect dir for batching across prepare()/assemble()
-        self.__batch_prepare_assemble_collect = None  # type: Optional[str]
-
         # Callbacks
         self.__required_callback = None  # Callback to Queues
         self.__can_query_cache_callback = None  # Callback to PullQueue/FetchQueue
@@ -396,24 +382,6 @@ class Element(Plugin):
         on, or both.
         """
         raise ImplError("element plugin '{kind}' does not implement stage()".format(kind=self.get_kind()))
-
-    def prepare(self, sandbox: "Sandbox") -> None:
-        """Run one-off preparation commands.
-
-        This is run before assemble(), but is guaranteed to run only
-        the first time if we build incrementally - this makes it
-        possible to run configure-like commands without causing the
-        entire element to rebuild.
-
-        Args:
-           sandbox: The build sandbox
-
-        Raises:
-           (:class:`.ElementError`): When the element raises an error
-
-        By default, this method does nothing, but may be overriden to
-        allow configure-like commands.
-        """
 
     def assemble(self, sandbox: "Sandbox") -> str:
         """Assemble the output artifact
@@ -739,9 +707,9 @@ class Element(Plugin):
         environment = self.get_environment()
 
         if bstdata is not None:
-            with sandbox.batch(SandboxFlags.NONE):
+            with sandbox.batch():
                 for command in bstdata.get_str_list("integration-commands", []):
-                    sandbox.run(["sh", "-e", "-c", command], 0, env=environment, cwd="/", label=command)
+                    sandbox.run(["sh", "-e", "-c", command], env=environment, cwd="/", label=command)
 
     def stage_sources(self, sandbox: "Sandbox", directory: str) -> None:
         """Stage this element's sources to a directory in the sandbox
@@ -819,24 +787,6 @@ class Element(Plugin):
         assert self.__variables
         return self.__variables.get(varname)
 
-    def batch_prepare_assemble(self, flags: int, *, collect: Optional[str] = None) -> None:
-        """ Configure command batching across prepare() and assemble()
-
-        Args:
-           flags: The :class:`.SandboxFlags` for the command batch
-           collect: An optional directory containing partial install contents
-                    on command failure.
-
-        This may be called in :func:`Element.configure_sandbox() <buildstream.element.Element.configure_sandbox>`
-        to enable batching of all sandbox commands issued in prepare() and assemble().
-        """
-        if self.__batch_prepare_assemble:
-            raise ElementError("{}: Command batching for prepare/assemble is already configured".format(self))
-
-        self.__batch_prepare_assemble = True
-        self.__batch_prepare_assemble_flags = flags
-        self.__batch_prepare_assemble_collect = collect
-
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
@@ -864,7 +814,7 @@ class Element(Plugin):
         # containing element that have been visited for the `_Scope.BUILD` case
         # and the second one relating to the `_Scope.RUN` case.
         if not recurse:
-            result: Set[Element] = set()
+            result: Set["Element"] = set()
             if scope in (_Scope.BUILD, _Scope.ALL):
                 for dep in self.__build_dependencies:
                     if dep not in result:
@@ -990,14 +940,14 @@ class Element(Plugin):
         # `self.__artifact` can't be None at this stage.
         files_vdir = self.__artifact.get_files()  # type: ignore
 
-        # Hard link it into the staging area
+        # Import files into the staging area
         #
         vbasedir = sandbox.get_virtual_directory()
-        vstagedir = vbasedir if path is None else vbasedir.descend(*path.lstrip(os.sep).split(os.sep), create=True)
+        vstagedir = vbasedir if path is None else vbasedir.open_directory(path.lstrip(os.sep), create=True)
 
         split_filter = self.__split_filter_func(include, exclude, orphans)
 
-        result = vstagedir.import_files(files_vdir, filter_callback=split_filter, report_written=True, can_link=True)
+        result = vstagedir._import_files_internal(files_vdir, filter_callback=split_filter)
 
         owner._overlap_collector.collect_stage_result(self, result)
 
@@ -1446,7 +1396,7 @@ class Element(Plugin):
                 # Run any integration commands provided by the dependencies
                 # once they are all staged and ready
                 if integrate:
-                    with self.timed_activity("Integrating sandbox"), sandbox.batch(SandboxFlags.NONE):
+                    with self.timed_activity("Integrating sandbox"), sandbox.batch():
                         for dep in self._dependencies(scope):
                             dep.integrate(sandbox)
 
@@ -1464,7 +1414,7 @@ class Element(Plugin):
 
         # Stage all sources that need to be copied
         sandbox_vroot = sandbox.get_virtual_directory()
-        host_vdirectory = sandbox_vroot.descend(*directory.lstrip(os.sep).split(os.sep), create=True)
+        host_vdirectory = sandbox_vroot.open_directory(directory.lstrip(os.sep), create=True)
         self._stage_sources_at(host_vdirectory, usebuildtree=sandbox._usebuildtree)
 
     # _stage_sources_at():
@@ -1472,7 +1422,7 @@ class Element(Plugin):
     # Stage this element's sources to a directory
     #
     # Args:
-    #     vdirectory (:class:`.storage.Directory`): A virtual directory object to stage sources into.
+    #     vdirectory (Union[str, Directory]): A virtual directory object or local path to stage sources to.
     #     usebuildtree (bool): use a the elements build tree as its source.
     #
     def _stage_sources_at(self, vdirectory, usebuildtree=False):
@@ -1483,13 +1433,13 @@ class Element(Plugin):
 
             if not isinstance(vdirectory, Directory):
                 vdirectory = FileBasedDirectory(vdirectory)
-            if not vdirectory.is_empty():
+            if vdirectory:
                 raise ElementError("Staging directory '{}' is not empty".format(vdirectory))
 
             # Check if we have a cached buildtree to use
             if usebuildtree:
                 import_dir = self.__artifact.get_buildtree()
-                if import_dir.is_empty():
+                if not import_dir:
                     detail = "Element type either does not expect a buildtree or it was explictily cached without one."
                     self.warn("WARNING: {} Artifact contains an empty buildtree".format(self.name), detail=detail)
 
@@ -1508,10 +1458,10 @@ class Element(Plugin):
                     import_dir = staged_sources
 
             # Set update_mtime to ensure deterministic mtime of sources at build time
-            vdirectory.import_files(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP)
+            vdirectory._import_files_internal(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP)
 
         # Ensure deterministic owners of sources at build time
-        vdirectory.set_deterministic_user()
+        vdirectory._set_deterministic_user()
 
     # _set_required():
     #
@@ -1723,18 +1673,8 @@ class Element(Plugin):
                 # Step 2 - Stage
                 self.__stage(sandbox)
                 try:
-                    if self.__batch_prepare_assemble:
-                        cm = sandbox.batch(
-                            self.__batch_prepare_assemble_flags, collect=self.__batch_prepare_assemble_collect
-                        )
-                    else:
-                        cm = contextlib.suppress()
-
-                    with cm:
-                        # Step 3 - Prepare
-                        self.__prepare(sandbox)
-                        # Step 4 - Assemble
-                        collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
+                    # Step 3 - Assemble
+                    collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
 
                     self.__set_build_result(success=True, description="succeeded")
                 except (ElementError, SandboxCommandError) as e:
@@ -1771,11 +1711,9 @@ class Element(Plugin):
             cache_buildtrees == _CacheBuildTrees.AUTO and (not build_success or self._get_workspace())
         ):
             try:
-                sandbox_build_dir = sandbox_vroot.descend(
-                    *self.get_variable("build-root").lstrip(os.sep).split(os.sep)
-                )
+                sandbox_build_dir = sandbox_vroot.open_directory(self.get_variable("build-root").lstrip(os.sep))
                 sandbox._fetch_missing_blobs(sandbox_build_dir)
-            except VirtualDirectoryError:
+            except DirectoryError:
                 # Directory could not be found. Pre-virtual
                 # directory behaviour was to continue silently
                 # if the directory could not be found.
@@ -1785,9 +1723,9 @@ class Element(Plugin):
 
         if collect is not None:
             try:
-                collectvdir = sandbox_vroot.descend(*collect.lstrip(os.sep).split(os.sep))
+                collectvdir = sandbox_vroot.open_directory(collect.lstrip(os.sep))
                 sandbox._fetch_missing_blobs(collectvdir)
-            except VirtualDirectoryError:
+            except DirectoryError:
                 pass
 
         # We should always have cache keys already set when caching an artifact
@@ -2002,7 +1940,7 @@ class Element(Plugin):
         with self._prepare_sandbox(scope, shell=True, usebuildtree=usebuildtree) as sandbox:
             environment = self.get_environment()
             environment = copy.copy(environment)
-            flags = SandboxFlags.INTERACTIVE | SandboxFlags.ROOT_READ_ONLY
+            flags = _SandboxFlags.INTERACTIVE | _SandboxFlags.ROOT_READ_ONLY
 
             # Fetch the main toplevel project, in case this is a junctioned
             # subproject, we want to use the rules defined by the main one.
@@ -2018,7 +1956,7 @@ class Element(Plugin):
 
                 # Open the network, and reuse calling uid/gid
                 #
-                flags |= SandboxFlags.NETWORK_ENABLED | SandboxFlags.INHERIT_UID
+                flags |= _SandboxFlags.NETWORK_ENABLED | _SandboxFlags.INHERIT_UID
 
                 # Apply project defined environment vars to set for a shell
                 for key, value in shell_environment.items():
@@ -2044,7 +1982,7 @@ class Element(Plugin):
             self.status("Running command", detail=" ".join(argv))
 
             # Run shells with network enabled and readonly root.
-            return sandbox.run(argv, flags, env=environment)
+            return sandbox._run_with_flags(argv, flags=flags, env=environment)
 
     # _open_workspace():
     #
@@ -2185,7 +2123,7 @@ class Element(Plugin):
             try:
                 # Stage all element sources into CAS
                 self.__sources.stage_and_cache()
-            except (SourceCacheError, VirtualDirectoryError) as e:
+            except (SourceCacheError, DirectoryError) as e:
                 raise ElementError(
                     "Error trying to stage sources for {}: {}".format(self.name, e), reason="stage-sources-fail"
                 )
@@ -2197,13 +2135,15 @@ class Element(Plugin):
     # Args:
     #    dependencies (List[List[str]]): list of dependencies with project name,
     #                                    element name and optional cache key
+    #    weak_cache_key (Optional[str]): the weak cache key, required for calculating the
+    #                                    strict and strong cache keys
     #
     # Returns:
     #    (str): A hex digest cache key for this Element, or None
     #
     # None is returned if information for the cache key is missing.
     #
-    def _calculate_cache_key(self, dependencies):
+    def _calculate_cache_key(self, dependencies, weak_cache_key=None):
         # No cache keys for dependencies which have no cache keys
         if any(not all(dep) for dep in dependencies):
             return None
@@ -2232,6 +2172,8 @@ class Element(Plugin):
 
         cache_key_dict = self.__cache_key_dict.copy()
         cache_key_dict["dependencies"] = dependencies
+        if weak_cache_key is not None:
+            cache_key_dict["weak-cache-key"] = weak_cache_key
 
         return _cachekey.generate_key(cache_key_dict)
 
@@ -2382,17 +2324,6 @@ class Element(Plugin):
                             rdep.__buildable_callback(rdep)
                             rdep.__buildable_callback = None
 
-    # _walk_artifact_files()
-    #
-    # A generator which yields all of the files cached in the
-    # element's artifact.
-    #
-    # Yields:
-    #    (str): Filenames in the artifact
-    #
-    def _walk_artifact_files(self):
-        yield from self.__artifact.get_files().walk()
-
     # _get_artifact()
     #
     # Return the Element's Artifact object
@@ -2460,7 +2391,7 @@ class Element(Plugin):
             whitelist = bstdata.get_sequence("overlap-whitelist", default=[])
             whitelist_expressions = [utils._glob2re(self.__variables.subst(node)) for node in whitelist]
             expression = "^(?:" + "|".join(whitelist_expressions) + ")$"
-            self.__whitelist_regex = re.compile(expression)
+            self.__whitelist_regex = re.compile(expression, re.MULTILINE | re.DOTALL)
         return self.__whitelist_regex.match(os.path.join(os.sep, path))
 
     # _get_logs()
@@ -2613,7 +2544,6 @@ class Element(Plugin):
     # Internal method for calling public abstract configure_sandbox() method.
     #
     def __configure_sandbox(self, sandbox):
-        self.__batch_prepare_assemble = False
 
         self.configure_sandbox(sandbox)
 
@@ -2626,13 +2556,6 @@ class Element(Plugin):
         # Enable the overlap collector during the staging process
         with self.__collect_overlaps():
             self.stage(sandbox)
-
-    # __prepare():
-    #
-    # Internal method for calling public abstract prepare() method.
-    #
-    def __prepare(self, sandbox):
-        self.prepare(sandbox)
 
     # __preflight():
     #
@@ -2770,7 +2693,7 @@ class Element(Plugin):
 
             self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
 
-            sandbox = SandboxRemote(
+            with SandboxRemote(
                 context,
                 project,
                 directory,
@@ -2779,8 +2702,8 @@ class Element(Plugin):
                 stderr=stderr,
                 config=config,
                 output_node_properties=output_node_properties,
-            )
-            yield sandbox
+            ) as sandbox:
+                yield sandbox
 
         elif directory is not None and os.path.exists(directory):
             platform = context.platform
@@ -2796,7 +2719,8 @@ class Element(Plugin):
                 config=config,
                 output_node_properties=output_node_properties,
             )
-            yield sandbox
+            with sandbox:
+                yield sandbox
 
         else:
             os.makedirs(context.builddir, exist_ok=True)
@@ -3070,7 +2994,9 @@ class Element(Plugin):
         bstdata = self.get_public_data("bst")
         splits = bstdata.get_mapping("split-rules")
         self.__splits = {
-            domain: re.compile("^(?:" + "|".join([utils._glob2re(r) for r in rules.as_str_list()]) + ")$")
+            domain: re.compile(
+                "^(?:" + "|".join([utils._glob2re(r) for r in rules.as_str_list()]) + ")$", re.MULTILINE | re.DOTALL
+            )
             for domain, rules in splits.items()
         }
 
@@ -3216,36 +3142,39 @@ class Element(Plugin):
             # Tracking may still be pending
             return
 
+        # Calculate weak cache key first, as it is required for generating the other keys.
+        #
+        # This code can be run multiple times until the strict key can be calculated,
+        # so let's ensure we only ever calculate the weak key once, even though we need
+        # to resolve it before we can resolve the strict key.
+        if self.__weak_cache_key is None:
+            # Weak cache key includes names of direct build dependencies
+            # so as to only trigger rebuilds when the shape of the
+            # dependencies change.
+            #
+            # Some conditions cause dependencies to be strict, such
+            # that this element will be rebuilt anyway if the dependency
+            # changes even in non strict mode, for these cases we just
+            # encode the dependency's weak cache key instead of it's name.
+            #
+            dependencies = [
+                [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
+                if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
+                else [e.project_name, e.name]
+                for e in self._dependencies(_Scope.BUILD)
+            ]
+            self.__weak_cache_key = self._calculate_cache_key(dependencies)
+
         context = self._get_context()
 
         # Calculate the strict cache key
         dependencies = [[e.project_name, e.name, e.__strict_cache_key] for e in self._dependencies(_Scope.BUILD)]
-        self.__strict_cache_key = self._calculate_cache_key(dependencies)
+        self.__strict_cache_key = self._calculate_cache_key(dependencies, self.__weak_cache_key)
 
         if self.__strict_cache_key is None:
             # Cache keys cannot be calculated yet as a build dependency doesn't
             # have a cache key yet.
             return
-
-        # Calculate weak cache key
-        #
-        # Weak cache key includes names of direct build dependencies
-        # so as to only trigger rebuilds when the shape of the
-        # dependencies change.
-        #
-        # Some conditions cause dependencies to be strict, such
-        # that this element will be rebuilt anyway if the dependency
-        # changes even in non strict mode, for these cases we just
-        # encode the dependency's weak cache key instead of it's name.
-        #
-        dependencies = [
-            [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
-            if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
-            else [e.project_name, e.name]
-            for e in self._dependencies(_Scope.BUILD)
-        ]
-
-        self.__weak_cache_key = self._calculate_cache_key(dependencies)
 
         # As the strict cache key has already been calculated, it should always
         # be possible to calculate the weak cache key as well.
@@ -3284,9 +3213,11 @@ class Element(Plugin):
                 strong_key, _, _ = self.__artifact.get_metadata_keys()
                 self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
+                assert self.__weak_cache_key is not None
+
                 # Artifact will or has been built, not downloaded
                 dependencies = [[e.project_name, e.name, e._get_cache_key()] for e in self._dependencies(_Scope.BUILD)]
-                self.__cache_key = self._calculate_cache_key(dependencies)
+                self.__cache_key = self._calculate_cache_key(dependencies, self.__weak_cache_key)
 
             if self.__cache_key is None:
                 # Strong cache key could not be calculated yet
