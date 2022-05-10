@@ -29,6 +29,11 @@ class Git(Repo):
     def create(self, directory):
         self.copy_directory(directory, self.repo)
         subprocess.call(['git', 'init', '.'], env=GIT_ENV, cwd=self.repo)
+        subprocess.call(
+            ['git', 'checkout', '-b', 'master'],
+            env=GIT_ENV,
+            cwd=self.repo
+        )
         subprocess.call(['git', 'add', '.'], env=GIT_ENV, cwd=self.repo)
         subprocess.call(['git', 'commit', '-m', 'Initial commit'], env=GIT_ENV, cwd=self.repo)
         return self.latest_commit()
