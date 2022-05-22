@@ -175,8 +175,7 @@ class DownloadableFileSource(Source):
         # file to be already cached because Source.fetch() will
         # not be called if the source is already cached.
         #
-        if os.path.isfile(self._get_mirror_file()):
-            return  # pragma: nocover
+        assert not os.path.isfile(self._get_mirror_file())
 
         # Download the file, raise hell if the sha256sums don't match,
         # and mirror the file otherwise.
