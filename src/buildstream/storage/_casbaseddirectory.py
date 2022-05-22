@@ -50,7 +50,7 @@ class _IndexEntry:
         target: Optional[str] = None,
         is_executable: bool = False,
         directory: Optional["CasBasedDirectory"] = None,
-        mtime: Optional[timestamp_pb2.Timestamp] = None
+        mtime: Optional[timestamp_pb2.Timestamp] = None  # pylint: disable=no-member
     ) -> None:
         # The CAS cache
         self.cas_cache: CASCache = cas_cache
@@ -76,7 +76,7 @@ class _IndexEntry:
         self.directory: Optional["CasBasedDirectory"] = directory
 
         # The mtime of the file, if provided
-        self.mtime: Optional[timestamp_pb2.Timestamp] = mtime
+        self.mtime: Optional[timestamp_pb2.Timestamp] = mtime  # pylint: disable=no-member
 
     def get_directory(self, parent: "CasBasedDirectory") -> "CasBasedDirectory":
         if self.directory is None:
@@ -688,7 +688,7 @@ class CasBasedDirectory(Directory):
         is_executable = os.access(path, os.X_OK)
         mtime = None
         if properties and "mtime" in properties:
-            mtime = timestamp_pb2.Timestamp()
+            mtime = timestamp_pb2.Timestamp()  # pylint: disable=no-member
             utils._get_file_protobuf_mtimestamp(mtime, path)
 
         entry = _IndexEntry(

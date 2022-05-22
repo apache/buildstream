@@ -1312,6 +1312,7 @@ class Source(Plugin):
                         break
 
                 alias = fetcher._get_alias()
+                last_error = None
                 for uri in project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=False):
                     try:
                         fetcher.fetch(uri)
@@ -1370,6 +1371,7 @@ class Source(Plugin):
 
         # NOTE: We are assuming here that tracking only requires substituting the
         #       first alias used
+        last_error = None
         for uri in project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=True):
             new_source = self.__clone_for_uri(uri)
             try:
