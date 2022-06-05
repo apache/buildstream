@@ -67,8 +67,8 @@ set -e
 if [ -z "${test_names}" ]; then
     runTest "lint"
     runTest "debian-10"
-    runTest "fedora-34"
     runTest "fedora-35"
+    runTest "fedora-36"
 else
     for test_name in "${test_names}"; do
 	runTest "${test_name}"
