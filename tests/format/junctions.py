@@ -2,6 +2,7 @@
 # pylint: disable=redefined-outer-name
 
 import os
+import shutil
 
 import pytest
 
@@ -9,6 +10,7 @@ from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream._testing import create_repo
+from tests.testutils import generate_junction
 
 
 DATA_DIR = os.path.join(
@@ -107,6 +109,51 @@ def test_workspaced_junction_missing_project_conf(cli, datafiles):
 def test_nested(cli, tmpdir, datafiles, target, expected):
     project = os.path.join(str(datafiles), "nested")
     checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Build, checkout
+    result = cli.run(project=project, args=["build", target])
+    result.assert_success()
+    result = cli.run(project=project, args=["artifact", "checkout", target, "--directory", checkoutdir])
+    result.assert_success()
+
+    # Check that the checkout contains the expected files from all subprojects
+    for filename in expected:
+        assert os.path.exists(os.path.join(checkoutdir, filename))
+
+
+#
+# Test successful builds of deeply nested targets with both the top-level project
+# and a subproject configured to use `project.refs`
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target,expected",
+    [
+        ("target.bst", ["sub.txt", "subsub.txt"]),
+        ("deeptarget.bst", ["sub.txt", "subsub.txt", "subsubsub.txt"]),
+    ],
+    ids=["simple", "deep"],
+)
+def test_nested_ref_storage(cli, tmpdir, datafiles, target, expected):
+    project = os.path.join(str(datafiles), "nested")
+    subproject = os.path.join(project, "subproject")
+    subsubproject = os.path.join(subproject, "subsubproject")
+
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Configure both the top-level project and the subproject to use project.refs / junction.refs
+    update_project(project, {"ref-storage": "project.refs"})
+    update_project(subproject, {"ref-storage": "project.refs"})
+
+    # Move the subsubproject from a local directory to a repo to test `junction.refs` in the subproject
+    subsubref = generate_junction(
+        tmpdir, subsubproject, os.path.join(subproject, "subsubproject.bst"), store_ref=False
+    )
+    shutil.rmtree(subsubproject)
+
+    # Store ref to the subsubproject repo in the subproject's `junction.refs`
+    project_refs = {"projects": {"subtest": {"subsubproject.bst": [{"ref": subsubref}]}}}
+    _yaml.roundtrip_dump(project_refs, os.path.join(subproject, "junction.refs"))
 
     # Build, checkout
     result = cli.run(project=project, args=["build", target])
