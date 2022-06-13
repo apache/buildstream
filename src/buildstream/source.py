@@ -953,13 +953,14 @@ class Source(Plugin):
             ref_node = refs.lookup_ref(project.name, element_name, element_idx)
             if ref_node is not None:
                 do_load_ref(ref_node)
+                return redundant_ref
 
         # If the project itself uses project.refs, clear the ref which
         # was already loaded via Source.configure(), as this would
         # violate the rule of refs being either in project.refs or in
         # the elements themselves.
         #
-        elif project.ref_storage == ProjectRefStorage.PROJECT_REFS:
+        if project.ref_storage == ProjectRefStorage.PROJECT_REFS:
 
             # First warn if there is a ref already loaded, and reset it
             redundant_ref = self.get_ref()  # pylint: disable=assignment-from-no-return
