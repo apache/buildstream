@@ -140,6 +140,20 @@ following to your ``project.conf``:
 
   ref-storage: project.refs
 
+.. attention::
+
+   **Storing subproject source references in project.refs**
+
+   When using the ``project.refs`` file, it is possible to override the
+   references in subprojects by editing the ``project.refs`` file directly
+   or by using :ref:`bst source track --cross-junctions <invoking_source_track>`,
+   this can be practical to try out fresher versions of components which
+   are maintained in a subproject.
+
+   It should be noted however that overridden subproject source references listed
+   in your ``project.refs`` file will be ignored by projects which use your project
+   as a subproject.
+
 
 .. _configurable_warnings:
 
