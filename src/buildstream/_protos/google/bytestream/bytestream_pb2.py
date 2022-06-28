@@ -3,6 +3,7 @@
 # source: google/bytestream/bytestream.proto
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
+from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
@@ -15,260 +16,16 @@ from buildstream._protos.google.api import annotations_pb2 as google_dot_api_dot
 from google.protobuf import wrappers_pb2 as google_dot_protobuf_dot_wrappers__pb2
 
 
-DESCRIPTOR = _descriptor.FileDescriptor(
-  name='google/bytestream/bytestream.proto',
-  package='google.bytestream',
-  syntax='proto3',
-  serialized_options=b'\n\025com.google.bytestreamB\017ByteStreamProtoZ;google.golang.org/genproto/googleapis/bytestream;bytestream',
-  create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\"google/bytestream/bytestream.proto\x12\x11google.bytestream\x1a\x1cgoogle/api/annotations.proto\x1a\x1egoogle/protobuf/wrappers.proto\"M\n\x0bReadRequest\x12\x15\n\rresource_name\x18\x01 \x01(\t\x12\x13\n\x0bread_offset\x18\x02 \x01(\x03\x12\x12\n\nread_limit\x18\x03 \x01(\x03\"\x1c\n\x0cReadResponse\x12\x0c\n\x04\x64\x61ta\x18\n \x01(\x0c\"_\n\x0cWriteRequest\x12\x15\n\rresource_name\x18\x01 \x01(\t\x12\x14\n\x0cwrite_offset\x18\x02 \x01(\x03\x12\x14\n\x0c\x66inish_write\x18\x03 \x01(\x08\x12\x0c\n\x04\x64\x61ta\x18\n \x01(\x0c\"\'\n\rWriteResponse\x12\x16\n\x0e\x63ommitted_size\x18\x01 \x01(\x03\"0\n\x17QueryWriteStatusRequest\x12\x15\n\rresource_name\x18\x01 \x01(\t\"D\n\x18QueryWriteStatusResponse\x12\x16\n\x0e\x63ommitted_size\x18\x01 \x01(\x03\x12\x10\n\x08\x63omplete\x18\x02 \x01(\x08\x32\x92\x02\n\nByteStream\x12I\n\x04Read\x12\x1e.google.bytestream.ReadRequest\x1a\x1f.google.bytestream.ReadResponse0\x01\x12L\n\x05Write\x12\x1f.google.bytestream.WriteRequest\x1a .google.bytestream.WriteResponse(\x01\x12k\n\x10QueryWriteStatus\x12*.google.bytestream.QueryWriteStatusRequest\x1a+.google.bytestream.QueryWriteStatusResponseBe\n\x15\x63om.google.bytestreamB\x0f\x42yteStreamProtoZ;google.golang.org/genproto/googleapis/bytestream;bytestreamb\x06proto3'
-  ,
-  dependencies=[google_dot_api_dot_annotations__pb2.DESCRIPTOR,google_dot_protobuf_dot_wrappers__pb2.DESCRIPTOR,])
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"google/bytestream/bytestream.proto\x12\x11google.bytestream\x1a\x1cgoogle/api/annotations.proto\x1a\x1egoogle/protobuf/wrappers.proto\"M\n\x0bReadRequest\x12\x15\n\rresource_name\x18\x01 \x01(\t\x12\x13\n\x0bread_offset\x18\x02 \x01(\x03\x12\x12\n\nread_limit\x18\x03 \x01(\x03\"\x1c\n\x0cReadResponse\x12\x0c\n\x04\x64\x61ta\x18\n \x01(\x0c\"_\n\x0cWriteRequest\x12\x15\n\rresource_name\x18\x01 \x01(\t\x12\x14\n\x0cwrite_offset\x18\x02 \x01(\x03\x12\x14\n\x0c\x66inish_write\x18\x03 \x01(\x08\x12\x0c\n\x04\x64\x61ta\x18\n \x01(\x0c\"\'\n\rWriteResponse\x12\x16\n\x0e\x63ommitted_size\x18\x01 \x01(\x03\"0\n\x17QueryWriteStatusRequest\x12\x15\n\rresource_name\x18\x01 \x01(\t\"D\n\x18QueryWriteStatusResponse\x12\x16\n\x0e\x63ommitted_size\x18\x01 \x01(\x03\x12\x10\n\x08\x63omplete\x18\x02 \x01(\x08\x32\x92\x02\n\nByteStream\x12I\n\x04Read\x12\x1e.google.bytestream.ReadRequest\x1a\x1f.google.bytestream.ReadResponse0\x01\x12L\n\x05Write\x12\x1f.google.bytestream.WriteRequest\x1a .google.bytestream.WriteResponse(\x01\x12k\n\x10QueryWriteStatus\x12*.google.bytestream.QueryWriteStatusRequest\x1a+.google.bytestream.QueryWriteStatusResponseBe\n\x15\x63om.google.bytestreamB\x0f\x42yteStreamProtoZ;google.golang.org/genproto/googleapis/bytestream;bytestreamb\x06proto3')
 
 
 
-
-_READREQUEST = _descriptor.Descriptor(
-  name='ReadRequest',
-  full_name='google.bytestream.ReadRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='resource_name', full_name='google.bytestream.ReadRequest.resource_name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='read_offset', full_name='google.bytestream.ReadRequest.read_offset', index=1,
-      number=2, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='read_limit', full_name='google.bytestream.ReadRequest.read_limit', index=2,
-      number=3, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=119,
-  serialized_end=196,
-)
-
-
-_READRESPONSE = _descriptor.Descriptor(
-  name='ReadResponse',
-  full_name='google.bytestream.ReadResponse',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='data', full_name='google.bytestream.ReadResponse.data', index=0,
-      number=10, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"",
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=198,
-  serialized_end=226,
-)
-
-
-_WRITEREQUEST = _descriptor.Descriptor(
-  name='WriteRequest',
-  full_name='google.bytestream.WriteRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='resource_name', full_name='google.bytestream.WriteRequest.resource_name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='write_offset', full_name='google.bytestream.WriteRequest.write_offset', index=1,
-      number=2, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='finish_write', full_name='google.bytestream.WriteRequest.finish_write', index=2,
-      number=3, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='data', full_name='google.bytestream.WriteRequest.data', index=3,
-      number=10, type=12, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"",
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=228,
-  serialized_end=323,
-)
-
-
-_WRITERESPONSE = _descriptor.Descriptor(
-  name='WriteResponse',
-  full_name='google.bytestream.WriteResponse',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='committed_size', full_name='google.bytestream.WriteResponse.committed_size', index=0,
-      number=1, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=325,
-  serialized_end=364,
-)
-
-
-_QUERYWRITESTATUSREQUEST = _descriptor.Descriptor(
-  name='QueryWriteStatusRequest',
-  full_name='google.bytestream.QueryWriteStatusRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='resource_name', full_name='google.bytestream.QueryWriteStatusRequest.resource_name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=366,
-  serialized_end=414,
-)
-
-
-_QUERYWRITESTATUSRESPONSE = _descriptor.Descriptor(
-  name='QueryWriteStatusResponse',
-  full_name='google.bytestream.QueryWriteStatusResponse',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='committed_size', full_name='google.bytestream.QueryWriteStatusResponse.committed_size', index=0,
-      number=1, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='complete', full_name='google.bytestream.QueryWriteStatusResponse.complete', index=1,
-      number=2, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=416,
-  serialized_end=484,
-)
-
-DESCRIPTOR.message_types_by_name['ReadRequest'] = _READREQUEST
-DESCRIPTOR.message_types_by_name['ReadResponse'] = _READRESPONSE
-DESCRIPTOR.message_types_by_name['WriteRequest'] = _WRITEREQUEST
-DESCRIPTOR.message_types_by_name['WriteResponse'] = _WRITERESPONSE
-DESCRIPTOR.message_types_by_name['QueryWriteStatusRequest'] = _QUERYWRITESTATUSREQUEST
-DESCRIPTOR.message_types_by_name['QueryWriteStatusResponse'] = _QUERYWRITESTATUSRESPONSE
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
-
+_READREQUEST = DESCRIPTOR.message_types_by_name['ReadRequest']
+_READRESPONSE = DESCRIPTOR.message_types_by_name['ReadResponse']
+_WRITEREQUEST = DESCRIPTOR.message_types_by_name['WriteRequest']
+_WRITERESPONSE = DESCRIPTOR.message_types_by_name['WriteResponse']
+_QUERYWRITESTATUSREQUEST = DESCRIPTOR.message_types_by_name['QueryWriteStatusRequest']
+_QUERYWRITESTATUSRESPONSE = DESCRIPTOR.message_types_by_name['QueryWriteStatusResponse']
 ReadRequest = _reflection.GeneratedProtocolMessageType('ReadRequest', (_message.Message,), {
   'DESCRIPTOR' : _READREQUEST,
   '__module__' : 'google.bytestream.bytestream_pb2'
@@ -311,52 +68,23 @@ QueryWriteStatusResponse = _reflection.GeneratedProtocolMessageType('QueryWriteS
   })
 _sym_db.RegisterMessage(QueryWriteStatusResponse)
 
+_BYTESTREAM = DESCRIPTOR.services_by_name['ByteStream']
+if _descriptor._USE_C_DESCRIPTORS == False:
 
-DESCRIPTOR._options = None
-
-_BYTESTREAM = _descriptor.ServiceDescriptor(
-  name='ByteStream',
-  full_name='google.bytestream.ByteStream',
-  file=DESCRIPTOR,
-  index=0,
-  serialized_options=None,
-  create_key=_descriptor._internal_create_key,
-  serialized_start=487,
-  serialized_end=761,
-  methods=[
-  _descriptor.MethodDescriptor(
-    name='Read',
-    full_name='google.bytestream.ByteStream.Read',
-    index=0,
-    containing_service=None,
-    input_type=_READREQUEST,
-    output_type=_READRESPONSE,
-    serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-  ),
-  _descriptor.MethodDescriptor(
-    name='Write',
-    full_name='google.bytestream.ByteStream.Write',
-    index=1,
-    containing_service=None,
-    input_type=_WRITEREQUEST,
-    output_type=_WRITERESPONSE,
-    serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-  ),
-  _descriptor.MethodDescriptor(
-    name='QueryWriteStatus',
-    full_name='google.bytestream.ByteStream.QueryWriteStatus',
-    index=2,
-    containing_service=None,
-    input_type=_QUERYWRITESTATUSREQUEST,
-    output_type=_QUERYWRITESTATUSRESPONSE,
-    serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-  ),
-])
-_sym_db.RegisterServiceDescriptor(_BYTESTREAM)
-
-DESCRIPTOR.services_by_name['ByteStream'] = _BYTESTREAM
-
+  DESCRIPTOR._options = None
+  DESCRIPTOR._serialized_options = b'\n\025com.google.bytestreamB\017ByteStreamProtoZ;google.golang.org/genproto/googleapis/bytestream;bytestream'
+  _READREQUEST._serialized_start=119
+  _READREQUEST._serialized_end=196
+  _READRESPONSE._serialized_start=198
+  _READRESPONSE._serialized_end=226
+  _WRITEREQUEST._serialized_start=228
+  _WRITEREQUEST._serialized_end=323
+  _WRITERESPONSE._serialized_start=325
+  _WRITERESPONSE._serialized_end=364
+  _QUERYWRITESTATUSREQUEST._serialized_start=366
+  _QUERYWRITESTATUSREQUEST._serialized_end=414
+  _QUERYWRITESTATUSRESPONSE._serialized_start=416
+  _QUERYWRITESTATUSRESPONSE._serialized_end=484
+  _BYTESTREAM._serialized_start=487
+  _BYTESTREAM._serialized_end=761
 # @@protoc_insertion_point(module_scope)

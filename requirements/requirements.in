@@ -2,7 +2,7 @@ Click >= 7.0
 grpcio
 Jinja2 >= 2.10
 pluginbase
-protobuf >= 3.6
+protobuf >= 3.19
 psutil
 ruamel.yaml >= 0.16.7
 ruamel.yaml.clib >= 0.1.2
