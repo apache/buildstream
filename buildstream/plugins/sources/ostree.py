@@ -136,7 +136,7 @@ class OSTreeSource(Source):
             fail="Failed to compute checksum of '{}' on '{}'".format(
                 self.tracking, self.mirror
             ),
-        )[1]
+        )[1].strip()
 
 
     def fetch(self):
