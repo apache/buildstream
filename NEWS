@@ -1,4 +1,20 @@
 =================
+buildstream 1.6.6
+=================
+
+  o BuildStream git tests have always assumed default git branch is master.
+  This is now explicit with test helpers
+
+  o project.refs of subprojects are properly taken into account
+
+  o ostree regressed as part of migrating to command-line that it left
+  whitespace into ref when tracking. Any whitespace around ref is now removed.
+
+  o pb2 files are regenerated with protobuf 3.20.1 to mitigate forward
+  compatibility issues. This has the implication that protobuf 3.19.0 or higher
+  is now required.
+
+=================
 buildstream 1.6.5
 =================
 
