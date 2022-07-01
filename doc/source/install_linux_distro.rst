@@ -127,6 +127,7 @@ git repository and install it as a regular user::
 
   git clone https://gitlab.com/BuildStream/buildstream.git
   cd buildstream
+  git checkout <VERSION>
   pip3 install --user -e .
 
 This will install buildstream's pure python dependencies into
