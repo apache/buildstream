@@ -688,6 +688,7 @@ class Context:
                 remote_cache_spec=self.remote_cache_spec,
                 log_level=log_level,
                 log_directory=self.logdir,
+                messenger=self.messenger,
             )
         return self._cascache
 
