@@ -26,6 +26,7 @@ from . import _signals
 from ._exceptions import BstError
 from ._message import Message, MessageType, unconditional_messages
 from ._state import State, Task
+from ._version import get_versions
 
 
 _RENDER_INTERVAL: datetime.timedelta = datetime.timedelta(seconds=1)
@@ -105,6 +106,10 @@ class Messenger:
         #        as it uses a kwarg, we cannot declare it with Callable.
         #        We can use `Protocol` to strongly type this with python >= 3.8
         self._message_handler = None
+
+        # Save the bst version to record in log files
+        #
+        self._bst_version = get_versions()["version"]
 
     def setup_new_action_context(self, action_name: str, element_name: str, element_key: str) -> None:
         self._locals.silence_scope_depth = 0
@@ -413,6 +418,13 @@ class Messenger:
                     logfile.flush()
                 except RuntimeError:
                     os.fsync(logfile.fileno())
+
+            # Unconditionally record date and buildstream version at the beginning of any log file
+            #
+            starttime = datetime.datetime.now()
+            logfile.write(
+                "BuildStream {} - {}\n".format(self._bst_version, starttime.strftime("%A, %d-%m-%Y at %H:%M:%S"))
+            )
 
             self._locals.log_handle = logfile
             with _signals.terminator(flush_log):
