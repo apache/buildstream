@@ -127,6 +127,7 @@ git repository and install it as a regular user::
 
   git clone https://gitlab.com/BuildStream/buildstream.git
   cd buildstream
+  git checkout <VERSION_TAG>
   pip3 install --user -e .
 
 This will install buildstream's pure python dependencies into
@@ -143,6 +144,9 @@ command is in your ``PATH`` and to enable bash completions for it.
 
    If you want a full installation that is not linked to your
    git checkout, just omit the ``-e`` option from the above commands.
+
+   You can view available version tags `here <https://github.com/apache/buildstream/tags>`_
+   for example to install version 1.6.6 ``git checkout 1.6.6``
 
 
 Adjust PATH
