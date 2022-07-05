@@ -125,7 +125,7 @@ Installing
 Once you have the base system dependencies, you can clone the BuildStream
 git repository and install it as a regular user::
 
-  git clone https://gitlab.com/BuildStream/buildstream.git
+  git clone https://github.com/apache/buildstream.git
   cd buildstream
   git checkout <VERSION_TAG>
   pip3 install --user -e .
