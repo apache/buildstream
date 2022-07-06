@@ -93,9 +93,12 @@ class SandboxREAPI(Sandbox):
 
         # Generate Action proto
         input_root_digest = vdir._get_digest()
-        command_proto = self._create_command(command, cwd, env, read_write_directories, flags)
+        platform = self._create_platform(flags)
+        command_proto = self._create_command(command, cwd, env, read_write_directories, platform)
         command_digest = cascache.add_object(buffer=command_proto.SerializeToString())
-        action = remote_execution_pb2.Action(command_digest=command_digest, input_root_digest=input_root_digest)
+        action = remote_execution_pb2.Action(
+            command_digest=command_digest, input_root_digest=input_root_digest, platform=platform
+        )
 
         action_result = self._execute_action(action, flags)  # pylint: disable=assignment-from-no-return
 
@@ -108,15 +111,7 @@ class SandboxREAPI(Sandbox):
         # the remote execution system has worked correctly but the command failed.
         return action_result.exit_code
 
-    def _create_command(self, command, working_directory, environment, read_write_directories, flags):
-        # Creates a command proto
-        environment_variables = [
-            remote_execution_pb2.Command.EnvironmentVariable(name=k, value=v) for (k, v) in environment.items()
-        ]
-
-        # Request read-write directories as output
-        output_directories = [os.path.relpath(dir, start=working_directory) for dir in read_write_directories]
-
+    def _create_platform(self, flags):
         config = self._get_config()
 
         platform_dict = {}
@@ -146,6 +141,17 @@ class SandboxREAPI(Sandbox):
         platform = remote_execution_pb2.Platform()
         for key, value in sorted(platform_dict.items()):
             platform.properties.add(name=key, value=value)
+
+        return platform
+
+    def _create_command(self, command, working_directory, environment, read_write_directories, platform):
+        # Creates a command proto
+        environment_variables = [
+            remote_execution_pb2.Command.EnvironmentVariable(name=k, value=v) for (k, v) in environment.items()
+        ]
+
+        # Request read-write directories as output
+        output_directories = [os.path.relpath(dir, start=working_directory) for dir in read_write_directories]
 
         return remote_execution_pb2.Command(
             arguments=command,
