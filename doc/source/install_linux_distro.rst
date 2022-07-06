@@ -82,7 +82,7 @@ Debian
 Stretch
 ^^^^^^^
 With stretch, you first need to ensure that you have the backports repository
-setup as described `here <https://backports.debian.org/Instructions/>`_
+setup as described `here <https://backports.debian.org/Instructions/>`__
 
 By adding the following line to your sources.list::
 
@@ -145,7 +145,7 @@ command is in your ``PATH`` and to enable bash completions for it.
    If you want a full installation that is not linked to your
    git checkout, just omit the ``-e`` option from the above commands.
 
-   You can view available version tags `here <https://github.com/apache/buildstream/tags>`_
+   You can view available version tags `here <https://github.com/apache/buildstream/tags>`__
    for example to install version 1.6.6 ``git checkout 1.6.6``
 
 
