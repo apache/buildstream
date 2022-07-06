@@ -198,7 +198,7 @@ class _CapabilitiesServicer(remote_execution_pb2_grpc.CapabilitiesServicer):
         response = remote_execution_pb2.ServerCapabilities()
 
         cache_capabilities = response.cache_capabilities
-        cache_capabilities.digest_function.append(remote_execution_pb2.DigestFunction.SHA256)
+        cache_capabilities.digest_functions.append(remote_execution_pb2.DigestFunction.SHA256)
         cache_capabilities.action_cache_update_capabilities.update_enabled = False
         cache_capabilities.max_batch_total_size_bytes = _MAX_PAYLOAD_BYTES
         cache_capabilities.symlink_absolute_path_strategy = remote_execution_pb2.SymlinkAbsolutePathStrategy.ALLOWED
