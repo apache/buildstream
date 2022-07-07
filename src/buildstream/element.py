@@ -1651,9 +1651,8 @@ class Element(Plugin):
                 # download when it's not needed.
                 buildroot = self.get_variable("build-root")
                 cache_buildtrees = context.cache_buildtrees
-                if cache_buildtrees != _CacheBuildTrees.NEVER:
-                    always_cache_buildtrees = cache_buildtrees == _CacheBuildTrees.ALWAYS
-                    sandbox._set_build_directory(buildroot, always=always_cache_buildtrees)
+                always_cache_buildtrees = cache_buildtrees == _CacheBuildTrees.ALWAYS
+                sandbox._set_build_directory(buildroot, always=always_cache_buildtrees)
 
                 if not self.BST_RUN_COMMANDS:
                     # Element doesn't need to run any commands in the sandbox.

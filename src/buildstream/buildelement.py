@@ -334,6 +334,11 @@ class BuildElement(Element):
                 for cmd in commands:
                     self.__run_command(sandbox, cmd)
 
+            if not self._get_workspace():
+                # Empty the build directory after successful build to avoid overhead of
+                # capturing the build directory (unless buildtree caching has been configured).
+                sandbox._clean_build_directory()
+
             # Return the payload, this is configurable but is generally
             # always the /buildstream-install directory
             return self.get_variable("install-root")

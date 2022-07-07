@@ -526,6 +526,32 @@ class Sandbox:
             cwd_vdir = vdir.open_directory(cwd.lstrip(os.sep), create=True)
             cwd_vdir._create_empty_file(name)
 
+    # _clean_build_directory()
+    #
+    # Remove the contents of the build directory after a successful build to
+    # avoid the capture costs (CPU, I/O and buildbox-casd disk usage).
+    #
+    # This will be skipped if the `cache_buildtrees` configuration is set to `always`.
+    #
+    def _clean_build_directory(self):
+        assert self._build_directory
+
+        # Preserve build directory if it is to be stored in the artifact even for a successful build
+        if self._build_directory_always:
+            return
+
+        if self.__batch:
+            batch_clean = _SandboxBatchCleanDirectory(self._build_directory)
+
+            current_group = self.__batch.current_group
+            current_group.append(batch_clean)
+        else:
+            vdir = self.get_virtual_directory()
+            relative_path = self._build_directory.lstrip(os.sep)
+            if vdir.exists(relative_path):
+                vdir.remove(relative_path, recursive=True)
+                vdir.open_directory(relative_path, create=True)
+
     # _get_element_name()
     #
     # Get the plugin's element full name
@@ -642,6 +668,13 @@ class _SandboxBatch:
         cwd_vdir = vdir.open_directory(cwd.lstrip(os.sep), create=True)
         cwd_vdir._create_empty_file(name)
 
+    def clean_directory(self, name):
+        vdir = self.sandbox.get_virtual_directory()
+        relative_path = name.lstrip(os.sep)
+        if vdir.exists(relative_path):
+            vdir.remove(relative_path, recursive=True)
+            vdir.open_directory(relative_path, create=True)
+
 
 # _SandboxBatchItem()
 #
@@ -707,3 +740,17 @@ class _SandboxBatchFile(_SandboxBatchItem):
 
     def execute(self, batch):
         batch.create_empty_file(self.name)
+
+
+# _SandboxBatchCleanDirectory()
+#
+# A directory cleaning item in a command batch.
+#
+class _SandboxBatchCleanDirectory(_SandboxBatchItem):
+    def __init__(self, name):
+        super().__init__()
+
+        self.name = name
+
+    def execute(self, batch):
+        batch.clean_directory(self.name)
