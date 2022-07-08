@@ -258,10 +258,6 @@ class BuildElement(Element):
         sandbox.mark_directory(build_root)
         sandbox.mark_directory(install_root)
 
-        # Mark the artifact directories in the layout
-        for location in self.__layout:
-            sandbox.mark_directory(location)
-
         # Allow running all commands in a specified subdirectory
         if self._command_subdir:
             command_dir = os.path.join(build_root, self._command_subdir)
