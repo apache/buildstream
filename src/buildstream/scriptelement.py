@@ -207,10 +207,6 @@ class ScriptElement(Element):
         # Mark the install root
         sandbox.mark_directory(self.__install_root)
 
-        # Mark the artifact directories in the layout
-        for location in self.__layout:
-            sandbox.mark_directory(location)
-
     def stage(self, sandbox):
 
         # If self.layout_add() was never called, do the default staging of
