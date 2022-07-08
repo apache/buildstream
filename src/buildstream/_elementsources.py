@@ -459,7 +459,8 @@ class ElementSources:
     #   stop (Source): Only stage sources listed before this source
     #
     def _stage(self, *, stop=None):
-        vdir = CasBasedDirectory(self._context.get_cascache())
+        cas = self._context.get_cascache()
+        vdir = CasBasedDirectory(cas)
 
         for source in self._sources:
             if source == stop:
@@ -474,10 +475,9 @@ class ElementSources:
                 if source.BST_STAGE_VIRTUAL_DIRECTORY:
                     source._stage(vsubdir)
                 else:
-                    with utils._tempdir(dir=self._context.tmpdir, prefix="staging-temp") as tmpdir:
-                        # Stage previous sources
-                        vsubdir._export_files(tmpdir)
-
+                    # Stage previous sources
+                    with cas.stage_directory(vsubdir._get_digest()) as tmpdir:
+                        # Stage current source
                         source._stage(tmpdir)
 
                         # Capture modified tree
