@@ -787,6 +787,36 @@ class Element(Plugin):
         assert self.__variables
         return self.__variables.get(varname)
 
+    def run_cleanup_commands(self, sandbox: "Sandbox") -> None:
+        """Run commands to cleanup the build directory.
+
+        Args:
+           sandbox: The build sandbox
+
+        This may be called at the end of a command batch in
+        :func:`Element.assemble() <buildstream.element.Element.assemble>`
+        to avoid the costs of capturing the build directory after a successful
+        build.
+
+        This will have no effect if the build tree is required after the build.
+        """
+        context = self._get_context()
+
+        if self._get_workspace() or context.cache_buildtrees == _CacheBuildTrees.ALWAYS:
+            # Buildtree must be preserved even after a success build if this is a
+            # workspace build or the user has configured to always cache buildtrees.
+            return
+
+        build_root = self.get_variable("build-root")
+        install_root = self.get_variable("install-root")
+
+        assert build_root
+        if install_root and (build_root.startswith(install_root) or install_root.startswith(build_root)):
+            # Preserve the build directory if cleaning would affect the install directory
+            return
+
+        sandbox._clean_directory(build_root)
+
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
