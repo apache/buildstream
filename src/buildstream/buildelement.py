@@ -334,6 +334,10 @@ class BuildElement(Element):
                 for cmd in commands:
                     self.__run_command(sandbox, cmd)
 
+            # Empty the build directory after a successful build to avoid the
+            # overhead of capturing the build directory.
+            self.run_cleanup_commands(sandbox)
+
             # Return the payload, this is configurable but is generally
             # always the /buildstream-install directory
             return self.get_variable("install-root")
