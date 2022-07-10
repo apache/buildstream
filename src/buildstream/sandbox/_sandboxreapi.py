@@ -278,3 +278,11 @@ class _SandboxREAPIBatch(_SandboxBatch):
 
     def create_empty_file(self, name):
         self.script += "touch -- {}\n".format(shlex.quote(name))
+
+    def clean_directory(self, name):
+        # Do not treat error during cleanup as a fatal build error
+        self.script += "rm -rf -- {} || true\n".format(shlex.quote(name))
+        if self.first_command:
+            # Working directory may be a subdirectory of the build directory.
+            # Recreate it if necessary as output capture requires the working directory to exist.
+            self.script += "mkdir -p {} || true\n".format(shlex.quote(self.first_command.cwd))

@@ -524,6 +524,26 @@ class Sandbox:
             cwd_vdir = vdir.open_directory(cwd.lstrip(os.sep), create=True)
             cwd_vdir._create_empty_file(name)
 
+    # _clean_directory()
+    #
+    # Remove the contents of the specified directory.
+    #
+    # Args:
+    #    path (str): The path of the directory to be cleaned
+    #
+    def _clean_directory(self, path):
+        if self.__batch:
+            batch_clean = _SandboxBatchCleanDirectory(path)
+
+            current_group = self.__batch.current_group
+            current_group.append(batch_clean)
+        else:
+            vdir = self.get_virtual_directory()
+            relative_path = path.lstrip(os.sep)
+            if vdir.exists(relative_path):
+                vdir.remove(relative_path, recursive=True)
+                vdir.open_directory(relative_path, create=True)
+
     # _get_element_name()
     #
     # Get the plugin's element full name
@@ -626,6 +646,13 @@ class _SandboxBatch:
         cwd_vdir = vdir.open_directory(cwd.lstrip(os.sep), create=True)
         cwd_vdir._create_empty_file(name)
 
+    def clean_directory(self, name):
+        vdir = self.sandbox.get_virtual_directory()
+        relative_path = name.lstrip(os.sep)
+        if vdir.exists(relative_path):
+            vdir.remove(relative_path, recursive=True)
+            vdir.open_directory(relative_path, create=True)
+
 
 # _SandboxBatchItem()
 #
@@ -691,3 +718,17 @@ class _SandboxBatchFile(_SandboxBatchItem):
 
     def execute(self, batch):
         batch.create_empty_file(self.name)
+
+
+# _SandboxBatchCleanDirectory()
+#
+# A directory cleaning item in a command batch.
+#
+class _SandboxBatchCleanDirectory(_SandboxBatchItem):
+    def __init__(self, name):
+        super().__init__()
+
+        self.name = name
+
+    def execute(self, batch):
+        batch.clean_directory(self.name)
