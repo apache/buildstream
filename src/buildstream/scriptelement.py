@@ -252,6 +252,10 @@ class ScriptElement(Element):
                         # if any untested command fails.
                         sandbox.run(["sh", "-c", "-e", cmd + "\n"], root_read_only=self.__root_read_only, label=cmd)
 
+            # Empty the build directory after a successful build to avoid the
+            # overhead of capturing the build directory.
+            self.run_cleanup_commands(sandbox)
+
         # Return where the result can be collected from
         return self.__install_root
 
