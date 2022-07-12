@@ -112,13 +112,18 @@ def list_testing_datafiles():
 #
 # The patch was inspired from https://github.com/ninjaaron/fast-entry_points
 # which we believe was also inspired from the code from `setuptools` project.
+#
+# This also sets an environment variable to disable gRPC fork support as it
+# can cause problems in certain environments and BuildStream doesn't need it.
 TEMPLATE = """\
 # -*- coding: utf-8 -*-
+import os
 import sys
 
 from {0} import {1}
 
 if __name__ == '__main__':
+    os.environ['GRPC_ENABLE_FORK_SUPPORT'] = '0'
     sys.exit({2}())"""
 
 
