@@ -148,6 +148,7 @@ command is in your ``PATH`` and to enable bash completions for it.
    You can view available version tags `here <https://github.com/apache/buildstream/tags>`__
    for example to install version 1.6.6 ``git checkout 1.6.6``
 
+   You may require ``bst-external`` the install instructions can be found on the `bst-external gitlab <https://gitlab.com/BuildStream/bst-external>`__
 
 Adjust PATH
 ~~~~~~~~~~~
