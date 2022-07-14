@@ -18,14 +18,16 @@
 import contextlib
 import threading
 import os
+import re
 import random
 import shutil
 import stat
 import subprocess
 import tempfile
 import time
-import psutil
+from subprocess import CalledProcessError
 
+import psutil
 import grpc
 
 from .._protos.build.bazel.remote.asset.v1 import remote_asset_pb2_grpc
@@ -40,6 +42,14 @@ _CASD_MAX_LOGFILES = 10
 _CASD_TIMEOUT = 300  # in seconds
 
 
+#
+# Minimum required version of buildbox-casd
+#
+_REQUIRED_CASD_MAJOR = 0
+_REQUIRED_CASD_MINOR = 0
+_REQUIRED_CASD_MICRO = 58
+
+
 # CASDProcessManager
 #
 # This manages the subprocess that runs buildbox-casd.
@@ -51,13 +61,17 @@ _CASD_TIMEOUT = 300  # in seconds
 #     cache_quota (int): User configured cache quota
 #     remote_cache_spec (RemoteSpec): Optional remote cache server
 #     protect_session_blobs (bool): Disable expiry for blobs used in the current session
+#     messenger (Messenger): The messenger to report warnings through the UI
 #
 class CASDProcessManager:
-    def __init__(self, path, log_dir, log_level, cache_quota, remote_cache_spec, protect_session_blobs):
+    def __init__(self, path, log_dir, log_level, cache_quota, remote_cache_spec, protect_session_blobs, messenger):
         self._log_dir = log_dir
 
         self._socket_path = self._make_socket_path(path)
         self._connection_string = "unix:" + self._socket_path
+
+        # Early version check
+        self._check_casd_version(messenger)
 
         casd_args = [utils.get_host_tool("buildbox-casd")]
         casd_args.append("--bind=" + self._connection_string)
@@ -90,6 +104,60 @@ class CASDProcessManager:
             # Create a new process group for it such that SIGINT won't reach it.
             self.process = subprocess.Popen(  # pylint: disable=consider-using-with, subprocess-popen-preexec-fn
                 casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT, preexec_fn=os.setpgrp
+            )
+
+    # _check_casd_version()
+    #
+    # Check for minimal acceptable version of buildbox-casd.
+    #
+    # If the version is unacceptable, then an error is raised.
+    #
+    # If buildbox-casd was built without version information available (or has reported
+    # version information with a string which we are unprepared to parse), then
+    # a warning is produced to inform the user.
+    #
+    def _check_casd_version(self, messenger):
+        #
+        # We specify a trailing "path" argument because some versions of buildbox-casd
+        # require specifying the storage path even for invoking the --version option.
+        #
+        casd_args = [utils.get_host_tool("buildbox-casd")]
+        casd_args.append("--version")
+        casd_args.append("/")
+
+        try:
+            version_output = subprocess.check_output(casd_args)
+        except CalledProcessError as e:
+            raise CASCacheError("Error checking buildbox-casd version") from e
+
+        version_output = version_output.decode("utf-8")
+        version_match = re.match(r".*buildbox-casd (\d+).(\d+).(\d+).*", version_output)
+
+        if version_match:
+            version_major = int(version_match.group(1))
+            version_minor = int(version_match.group(2))
+            version_micro = int(version_match.group(3))
+
+            acceptable_version = True
+            if version_major < _REQUIRED_CASD_MAJOR:
+                acceptable_version = False
+            elif version_major == _REQUIRED_CASD_MAJOR:
+                if version_minor < _REQUIRED_CASD_MINOR:
+                    acceptable_version = False
+                elif version_minor == _REQUIRED_CASD_MINOR:
+                    if version_micro < _REQUIRED_CASD_MICRO:
+                        acceptable_version = False
+
+            if not acceptable_version:
+                raise CASCacheError(
+                    "BuildStream requires buildbox-casd >= {}.{}.{}".format(
+                        _REQUIRED_CASD_MAJOR, _REQUIRED_CASD_MINOR, _REQUIRED_CASD_MICRO
+                    ),
+                    detail="Currently installed: {}".format(version_output),
+                )
+        elif messenger:
+            messenger.warn(
+                "Unable to determine buildbox-casd version", detail="buildbox-casd reported: {}".format(version_output)
             )
 
     # _make_socket_path()

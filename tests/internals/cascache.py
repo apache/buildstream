@@ -7,9 +7,24 @@ from buildstream._cas import casdprocessmanager
 from buildstream._messenger import Messenger
 
 
+#
+# A dummy CASD script placeholder which supports the --version argument
+#
+DUMMY_CASD_SCRIPT_FMT = (
+    "#!/usr/bin/env sh\n"
+    + "\n"
+    + 'if test "$1" = "--version"; then\n'
+    + '  echo "buildbox-casd 2.0.0"\n'
+    + "  exit 0\n"
+    + "fi\n"
+    + "{}\n"
+    + "exit 0\n"
+)
+
+
 def test_report_when_cascache_dies_before_asked_to(tmp_path, monkeypatch):
     dummy_buildbox_casd = tmp_path.joinpath("buildbox-casd")
-    dummy_buildbox_casd.write_text("#!/usr/bin/env sh\nexit 0")
+    dummy_buildbox_casd.write_text(DUMMY_CASD_SCRIPT_FMT.format(""))
     dummy_buildbox_casd.chmod(0o777)
     monkeypatch.setenv("PATH", str(tmp_path), prepend=os.pathsep)
 
@@ -27,7 +42,7 @@ def test_report_when_cascache_dies_before_asked_to(tmp_path, monkeypatch):
 
 def test_report_when_cascache_exits_not_cleanly(tmp_path, monkeypatch):
     dummy_buildbox_casd = tmp_path.joinpath("buildbox-casd")
-    dummy_buildbox_casd.write_text("#!/usr/bin/env sh\nwhile :\ndo\nsleep 60\ndone")
+    dummy_buildbox_casd.write_text(DUMMY_CASD_SCRIPT_FMT.format("while :\ndo\nsleep 60\ndone"))
     dummy_buildbox_casd.chmod(0o777)
     monkeypatch.setenv("PATH", str(tmp_path), prepend=os.pathsep)
     # FIXME: this is a hack, we should instead have a socket be created nicely
@@ -49,7 +64,7 @@ def test_report_when_cascache_exits_not_cleanly(tmp_path, monkeypatch):
 
 def test_report_when_cascache_is_forcefully_killed(tmp_path, monkeypatch):
     dummy_buildbox_casd = tmp_path.joinpath("buildbox-casd")
-    dummy_buildbox_casd.write_text("#!/usr/bin/env sh\ntrap 'echo hello' TERM\nwhile :\ndo\nsleep 60\ndone")
+    dummy_buildbox_casd.write_text(DUMMY_CASD_SCRIPT_FMT.format("trap 'echo hello' TERM\nwhile :\ndo\nsleep 60\ndone"))
     dummy_buildbox_casd.chmod(0o777)
     monkeypatch.setenv("PATH", str(tmp_path), prepend=os.pathsep)
     # FIXME: this is a hack, we should instead have a socket be created nicely
@@ -72,7 +87,7 @@ def test_casd_redirects_stderr_to_file_and_rotate(tmp_path, monkeypatch):
     n_max_log_files = 10
 
     dummy_buildbox_casd = tmp_path.joinpath("buildbox-casd")
-    dummy_buildbox_casd.write_text("#!/usr/bin/env sh\nprintf '%s\n' hello")
+    dummy_buildbox_casd.write_text(DUMMY_CASD_SCRIPT_FMT.format("printf '%s\n' hello"))
     dummy_buildbox_casd.chmod(0o777)
     monkeypatch.setenv("PATH", str(tmp_path), prepend=os.pathsep)
 

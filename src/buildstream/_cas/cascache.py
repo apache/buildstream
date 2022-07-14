@@ -71,7 +71,8 @@ class CASCache:
         remote_cache_spec=None,
         protect_session_blobs=True,
         log_level=CASLogLevel.WARNING,
-        log_directory=None
+        log_directory=None,
+        messenger=None
     ):
         self.casdir = os.path.join(path, "cas")
         self.tmpdir = os.path.join(path, "tmp")
@@ -88,7 +89,7 @@ class CASCache:
             assert log_directory is not None, "log_directory is required when casd is True"
             log_dir = os.path.join(log_directory, "_casd")
             self._casd_process_manager = CASDProcessManager(
-                path, log_dir, log_level, cache_quota, remote_cache_spec, protect_session_blobs
+                path, log_dir, log_level, cache_quota, remote_cache_spec, protect_session_blobs, messenger
             )
 
             self._casd_channel = self._casd_process_manager.create_channel()
