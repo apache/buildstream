@@ -72,7 +72,7 @@ Arch Linux
 Install the dependencies with::
 
   sudo pacman -S fuse2 ostree bubblewrap git \
-                 python python-pip python-gobject python-psutil
+                 python python-pip python-gobject python-psutil lzip
 
 
 Debian
@@ -96,7 +96,7 @@ At this point you should be able to get the system requirements with::
 
   sudo apt-get install \
       fuse ostree gir1.2-ostree-1.0 bubblewrap git \
-      python3 python3-pip python3-gi python3-psutil
+      python3 python3-pip python3-gi python3-psutil lzip
   sudo apt-get install -t stretch-backports \
       gir1.2-ostree-1.0 ostree
 
@@ -108,7 +108,7 @@ to get the base system requirements installed::
 
   sudo apt-get install \
       fuse ostree gir1.2-ostree-1.0 bubblewrap git \
-      python3 python3-pip python3-gi python3-psutil
+      python3 python3-pip python3-gi python3-psutil lzip
 
 
 Fedora
@@ -117,7 +117,7 @@ For recent fedora systems, the following line should get you the system
 requirements you need::
 
   dnf install -y fuse ostree bubblewrap git \
-                 python3 python3-pip python3-gobject python3-psutil
+                 python3 python3-pip python3-gobject python3-psutil lzip
 
 
 Installing
