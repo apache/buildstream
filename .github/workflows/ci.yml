@@ -36,17 +36,7 @@ jobs:
         # The names here should map to a valid service defined in
         # "../compose/ci.docker-compose.yml"
         test-name:
-          - debian-10
-          - fedora-35
-          - fedora-36
-          - fedora-missing-deps
           - userchroot
-          - lint
-          - mypy
-
-        include:
-          - test-name: plugins-master
-            allow-failure: true
 
     steps:
       - name: Check out repository
@@ -58,54 +48,3 @@ jobs:
       - name: Run tests with Docker Compose
         run: |
           ${GITHUB_WORKSPACE}/.github/run-ci.sh ${{ matrix.test-name }}
-
-  # Matrix of tests which run against remote services which we bring up adjacently
-  service-tests:
-    runs-on: ubuntu-18.04
-
-    strategy:
-      matrix:
-
-        # The names here map to valid services defined in "../compose/ci.docker-compose.yml",
-        # and they also map to corresponding filenames of services which are expected
-        # to be run in the background
-        test-name:
-          - buildbarn
-          - buildgrid
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v2
-        # BuildStream requires tags to be able to find its version.
-        with:
-          fetch-depth: 0
-
-      - name: Bring up the RE cluster
-        run: |
-          ${GITHUB_WORKSPACE}/.github/run-ci.sh --service ${{ matrix.test-name }}
-
-  docs:
-    runs-on: ubuntu-18.04
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v2
-        # BuildStream requires tags to be able to find its version.
-        with:
-          fetch-depth: 0
-
-      - name: Give `testuser` ownership of the source directory
-        run: sudo chown -R 1000:1000 ${GITHUB_WORKSPACE}
-
-      - name: Build documentation using Docker Compose
-        run: |
-          docker-compose \
-            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.docker-compose.yml \
-            run \
-            docs
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: docs
-          path: doc/build/html
