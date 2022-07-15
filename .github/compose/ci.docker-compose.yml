@@ -42,6 +42,7 @@ services:
   userchroot:
     <<: *tests-template
     command: .github/run-userchroot-test.sh
+    user: root
     devices: []
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:36-${CI_IMAGE_VERSION:-latest}
 
