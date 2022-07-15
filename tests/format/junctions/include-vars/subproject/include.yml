@@ -1,0 +1,3 @@
+
+variables:
+  resolved: The animal is a %{animal}

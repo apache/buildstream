@@ -817,3 +817,18 @@ def test_internal(cli, tmpdir, datafiles, project_dir, expected_files):
     # Check that the checkout contains the expected file
     for expected in expected_files:
         assert os.path.exists(os.path.join(checkoutdir, expected))
+
+
+# This test verifies that variables declared in subproject include files
+# are resolved in their respective subproject, rather than being imported
+# literally and resolved in the including project.
+#
+@pytest.mark.datafiles(DATA_DIR)
+def test_include_vars(cli, datafiles):
+    project = os.path.join(str(datafiles), "include-vars")
+    result = cli.run(
+        project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "target.bst"]
+    )
+    result.assert_success()
+    result_vars = _yaml.load_data(result.output)
+    assert result_vars.get_str("resolved") == "The animal is a horsy"
