@@ -14,6 +14,9 @@ useradd -g testuser buildbox-casd
 chown buildbox-casd:testuser /usr/local/bin/buildbox-casd
 chmod u+s /usr/local/bin/buildbox-casd
 
+# buildbox-casd needs access to tox test directories
+chmod g+X /home/testuser /home/testuser/buildstream
+
 # Set up staging root with permissions required by userchroot,
 # must be on same filesystem as current directory to support hardlinks
 mkdir -p "${BST_CAS_STAGING_ROOT}"
