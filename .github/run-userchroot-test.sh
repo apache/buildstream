@@ -22,3 +22,7 @@ echo buildbox-casd:${BST_CAS_STAGING_ROOT} > /etc/userchroot.conf
 # Run as regular user after setting up the environment.
 # Use umask as created files must be writable by the group (i.e. both bst and buildbox-casd)
 su testuser -c "umask 002 && tox -vvvvv -- --color=yes --integration -x"
+
+cat .tox/*/tmp/*/cache/logs/_casd/*
+
+exit 1
