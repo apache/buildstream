@@ -17,7 +17,7 @@ mkdir -p "${BST_CAS_STAGING_ROOT}"
 chown -R buildbox-casd:testuser "${BST_CAS_STAGING_ROOT}"
 # userchroot doesn't allow group/world-writable base directory
 chmod go-w /builds
-echo buildbox-casd:${BST_CAS_STAGING_ROOT} | tee /etc/userchroot.conf
+echo buildbox-casd:${BST_CAS_STAGING_ROOT} > /etc/userchroot.conf
 
 # Run as regular user after setting up the environment.
 # Use umask as created files must be writable by the group (i.e. both bst and buildbox-casd)
