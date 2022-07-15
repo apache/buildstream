@@ -1,5 +1,8 @@
 #!/bin/bash
 
+ls -l /home
+ls -l /home/testuser
+
 export BST_CAS_STAGING_ROOT="/builds/userchroot"
 
 # Use buildbox-run-userchroot and hardlinking
