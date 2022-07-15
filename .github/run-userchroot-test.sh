@@ -17,6 +17,10 @@ chmod u+s /usr/local/bin/buildbox-casd
 # buildbox-casd needs access to tox test directories
 chmod g+X /home/testuser /home/testuser/buildstream
 
+ls -ld /home
+ls -ld /home/testuser
+ls -ld /home/testuser/buildstream
+
 # Set up staging root with permissions required by userchroot,
 # must be on same filesystem as current directory to support hardlinks
 mkdir -p "${BST_CAS_STAGING_ROOT}"
@@ -30,5 +34,14 @@ echo buildbox-casd:${BST_CAS_STAGING_ROOT} > /etc/userchroot.conf
 su testuser -c "umask 002 && tox -vvvvv -- --color=yes --integration -x"
 
 cat .tox/*/tmp/*/cache/logs/_casd/*
+
+ls -ld /home
+ls -ld /home/testuser
+ls -ld /home/testuser/buildstream
+ls -ld /home/testuser/buildstream/.tox
+ls -l /home/testuser/buildstream/.tox
+ls -ld /home/testuser/buildstream/.tox/*/tmp
+ls -ld /home/testuser/buildstream/.tox/*/tmp/*
+ls -ld /home/testuser/buildstream/.tox/*/tmp/*/cache
 
 exit 1
