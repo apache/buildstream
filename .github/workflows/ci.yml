@@ -40,6 +40,7 @@ jobs:
           - fedora-35
           - fedora-36
           - fedora-missing-deps
+          - userchroot
           - lint
           - mypy
 

@@ -39,6 +39,12 @@ services:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:minimal-${CI_IMAGE_VERSION:-latest}
 
+  userchroot:
+    <<: *tests-template
+    command: .github/run-userchroot-test.sh
+    devices: []
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:36-${CI_IMAGE_VERSION:-latest}
+
   # Test the master version of external plugins
   plugins-master:
     <<: *tests-template
