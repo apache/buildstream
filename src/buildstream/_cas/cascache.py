@@ -449,7 +449,9 @@ class CASCache:
     # A contextmanager to stage a CAS directory tree in the local filesystem.
     #
     # This makes the specified directory tree temporarily available for local
-    # filesystem access. This may use FUSE or hardlinking.
+    # filesystem access. This may use FUSE, hardlinks, reflinks or file copies,
+    # depending on the system. The implementation makes sure that BuildStream
+    # and subprocesses cannot corrupt the cache by modifying staged files.
     #
     # Args:
     #     directory_digest (Digest): The digest of a directory
@@ -463,6 +465,9 @@ class CASCache:
 
         request = local_cas_pb2.StageTreeRequest()
         request.root_digest.CopyFrom(directory_digest)
+
+        # Specify the credentials used to access the staged tree
+        request.access_credentials.uid = os.geteuid()
 
         done_event = threading.Event()
 
