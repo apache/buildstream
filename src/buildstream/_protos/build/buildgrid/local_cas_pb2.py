@@ -16,7 +16,7 @@ from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution
 from buildstream._protos.google.rpc import status_pb2 as google_dot_rpc_dot_status__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1f\x62uild/buildgrid/local_cas.proto\x12\x0f\x62uild.buildgrid\x1a\x36\x62uild/bazel/remote/execution/v2/remote_execution.proto\x1a\x17google/rpc/status.proto\"p\n\x18\x46\x65tchMissingBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12=\n\x0c\x62lob_digests\x18\x02 \x03(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\xcc\x01\n\x19\x46\x65tchMissingBlobsResponse\x12\x46\n\tresponses\x18\x01 \x03(\x0b\x32\x33.build.buildgrid.FetchMissingBlobsResponse.Response\x1ag\n\x08Response\x12\x37\n\x06\x64igest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x02 \x01(\x0b\x32\x12.google.rpc.Status\"q\n\x19UploadMissingBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12=\n\x0c\x62lob_digests\x18\x02 \x03(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\xce\x01\n\x1aUploadMissingBlobsResponse\x12G\n\tresponses\x18\x01 \x03(\x0b\x32\x34.build.buildgrid.UploadMissingBlobsResponse.Response\x1ag\n\x08Response\x12\x37\n\x06\x64igest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x02 \x01(\x0b\x32\x12.google.rpc.Status\"\x81\x01\n\x10\x46\x65tchTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x18\n\x10\x66\x65tch_file_blobs\x18\x03 \x01(\x08\"\x13\n\x11\x46\x65tchTreeResponse\"h\n\x11UploadTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\x14\n\x12UploadTreeResponse\"u\n\x10StageTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x0c\n\x04path\x18\x03 \x01(\t\"!\n\x11StageTreeResponse\x12\x0c\n\x04path\x18\x01 \x01(\t\"n\n\x12\x43\x61ptureTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x03(\t\x12\x1a\n\x12\x62ypass_local_cache\x18\x03 \x01(\x08\x12\x17\n\x0fnode_properties\x18\x04 \x03(\t\"\xd3\x01\n\x13\x43\x61ptureTreeResponse\x12@\n\tresponses\x18\x01 \x03(\x0b\x32-.build.buildgrid.CaptureTreeResponse.Response\x1az\n\x08Response\x12\x0c\n\x04path\x18\x01 \x01(\t\x12<\n\x0btree_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x03 \x01(\x0b\x32\x12.google.rpc.Status\"o\n\x13\x43\x61ptureFilesRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x03(\t\x12\x1a\n\x12\x62ypass_local_cache\x18\x03 \x01(\x08\x12\x17\n\x0fnode_properties\x18\x04 \x03(\t\"\xb8\x02\n\x14\x43\x61ptureFilesResponse\x12\x41\n\tresponses\x18\x01 \x03(\x0b\x32..build.buildgrid.CaptureFilesResponse.Response\x1a\xdc\x01\n\x08Response\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x03 \x01(\x0b\x32\x12.google.rpc.Status\x12\x15\n\ris_executable\x18\x04 \x01(\x08\x12H\n\x0fnode_properties\x18\x06 \x01(\x0b\x32/.build.bazel.remote.execution.v2.NodePropertiesJ\x04\x08\x05\x10\x06\"\x83\x01\n\x1fGetInstanceNameForRemoteRequest\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x15\n\rinstance_name\x18\x02 \x01(\t\x12\x13\n\x0bserver_cert\x18\x03 \x01(\x0c\x12\x12\n\nclient_key\x18\x04 \x01(\x0c\x12\x13\n\x0b\x63lient_cert\x18\x05 \x01(\x0c\"9\n GetInstanceNameForRemoteResponse\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"j\n\x06Remote\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x15\n\rinstance_name\x18\x02 \x01(\t\x12\x13\n\x0bserver_cert\x18\x03 \x01(\x0c\x12\x12\n\nclient_key\x18\x04 \x01(\x0c\x12\x13\n\x0b\x63lient_cert\x18\x05 \x01(\x0c\"\x8f\x01\n GetInstanceNameForRemotesRequest\x12<\n\x1b\x63ontent_addressable_storage\x18\x01 \x01(\x0b\x32\x17.build.buildgrid.Remote\x12-\n\x0cremote_asset\x18\x02 \x01(\x0b\x32\x17.build.buildgrid.Remote\":\n!GetInstanceNameForRemotesResponse\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"\x1a\n\x18GetLocalDiskUsageRequest\"D\n\x19GetLocalDiskUsageResponse\x12\x12\n\nsize_bytes\x18\x01 \x01(\x03\x12\x13\n\x0bquota_bytes\x18\x02 \x01(\x03\x32\xbc\x08\n\x1eLocalContentAddressableStorage\x12l\n\x11\x46\x65tchMissingBlobs\x12).build.buildgrid.FetchMissingBlobsRequest\x1a*.build.buildgrid.FetchMissingBlobsResponse\"\x00\x12o\n\x12UploadMissingBlobs\x12*.build.buildgrid.UploadMissingBlobsRequest\x1a+.build.buildgrid.UploadMissingBlobsResponse\"\x00\x12T\n\tFetchTree\x12!.build.buildgrid.FetchTreeRequest\x1a\".build.buildgrid.FetchTreeResponse\"\x00\x12W\n\nUploadTree\x12\".build.buildgrid.UploadTreeRequest\x1a#.build.buildgrid.UploadTreeResponse\"\x00\x12X\n\tStageTree\x12!.build.buildgrid.StageTreeRequest\x1a\".build.buildgrid.StageTreeResponse\"\x00(\x01\x30\x01\x12Z\n\x0b\x43\x61ptureTree\x12#.build.buildgrid.CaptureTreeRequest\x1a$.build.buildgrid.CaptureTreeResponse\"\x00\x12]\n\x0c\x43\x61ptureFiles\x12$.build.buildgrid.CaptureFilesRequest\x1a%.build.buildgrid.CaptureFilesResponse\"\x00\x12\x81\x01\n\x18GetInstanceNameForRemote\x12\x30.build.buildgrid.GetInstanceNameForRemoteRequest\x1a\x31.build.buildgrid.GetInstanceNameForRemoteResponse\"\x00\x12\x84\x01\n\x19GetInstanceNameForRemotes\x12\x31.build.buildgrid.GetInstanceNameForRemotesRequest\x1a\x32.build.buildgrid.GetInstanceNameForRemotesResponse\"\x00\x12l\n\x11GetLocalDiskUsage\x12).build.buildgrid.GetLocalDiskUsageRequest\x1a*.build.buildgrid.GetLocalDiskUsageResponse\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1f\x62uild/buildgrid/local_cas.proto\x12\x0f\x62uild.buildgrid\x1a\x36\x62uild/bazel/remote/execution/v2/remote_execution.proto\x1a\x17google/rpc/status.proto\"p\n\x18\x46\x65tchMissingBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12=\n\x0c\x62lob_digests\x18\x02 \x03(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\xcc\x01\n\x19\x46\x65tchMissingBlobsResponse\x12\x46\n\tresponses\x18\x01 \x03(\x0b\x32\x33.build.buildgrid.FetchMissingBlobsResponse.Response\x1ag\n\x08Response\x12\x37\n\x06\x64igest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x02 \x01(\x0b\x32\x12.google.rpc.Status\"q\n\x19UploadMissingBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12=\n\x0c\x62lob_digests\x18\x02 \x03(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\xce\x01\n\x1aUploadMissingBlobsResponse\x12G\n\tresponses\x18\x01 \x03(\x0b\x32\x34.build.buildgrid.UploadMissingBlobsResponse.Response\x1ag\n\x08Response\x12\x37\n\x06\x64igest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x02 \x01(\x0b\x32\x12.google.rpc.Status\"\x81\x01\n\x10\x46\x65tchTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x18\n\x10\x66\x65tch_file_blobs\x18\x03 \x01(\x08\"\x13\n\x11\x46\x65tchTreeResponse\"h\n\x11UploadTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\x14\n\x12UploadTreeResponse\"\xdc\x01\n\x10StageTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x0c\n\x04path\x18\x03 \x01(\t\x12I\n\x12\x61\x63\x63\x65ss_credentials\x18\x04 \x01(\x0b\x32-.build.buildgrid.StageTreeRequest.Credentials\x1a\x1a\n\x0b\x43redentials\x12\x0b\n\x03uid\x18\x01 \x01(\x03\"!\n\x11StageTreeResponse\x12\x0c\n\x04path\x18\x01 \x01(\t\"\x90\x01\n\x12\x43\x61ptureTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0c\n\x04root\x18\x06 \x01(\t\x12\x0c\n\x04path\x18\x02 \x03(\t\x12\x1a\n\x12\x62ypass_local_cache\x18\x03 \x01(\x08\x12\x17\n\x0fnode_properties\x18\x04 \x03(\t\x12\x12\n\nmove_files\x18\x05 \x01(\x08\"\xd3\x01\n\x13\x43\x61ptureTreeResponse\x12@\n\tresponses\x18\x01 \x03(\x0b\x32-.build.buildgrid.CaptureTreeResponse.Response\x1az\n\x08Response\x12\x0c\n\x04path\x18\x01 \x01(\t\x12<\n\x0btree_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x03 \x01(\x0b\x32\x12.google.rpc.Status\"\x91\x01\n\x13\x43\x61ptureFilesRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0c\n\x04root\x18\x06 \x01(\t\x12\x0c\n\x04path\x18\x02 \x03(\t\x12\x1a\n\x12\x62ypass_local_cache\x18\x03 \x01(\x08\x12\x17\n\x0fnode_properties\x18\x04 \x03(\t\x12\x12\n\nmove_files\x18\x05 \x01(\x08\"\xb8\x02\n\x14\x43\x61ptureFilesResponse\x12\x41\n\tresponses\x18\x01 \x03(\x0b\x32..build.buildgrid.CaptureFilesResponse.Response\x1a\xdc\x01\n\x08Response\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x03 \x01(\x0b\x32\x12.google.rpc.Status\x12\x15\n\ris_executable\x18\x04 \x01(\x08\x12H\n\x0fnode_properties\x18\x06 \x01(\x0b\x32/.build.bazel.remote.execution.v2.NodePropertiesJ\x04\x08\x05\x10\x06\"\x83\x01\n\x1fGetInstanceNameForRemoteRequest\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x15\n\rinstance_name\x18\x02 \x01(\t\x12\x13\n\x0bserver_cert\x18\x03 \x01(\x0c\x12\x12\n\nclient_key\x18\x04 \x01(\x0c\x12\x13\n\x0b\x63lient_cert\x18\x05 \x01(\x0c\"9\n GetInstanceNameForRemoteResponse\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"j\n\x06Remote\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x15\n\rinstance_name\x18\x02 \x01(\t\x12\x13\n\x0bserver_cert\x18\x03 \x01(\x0c\x12\x12\n\nclient_key\x18\x04 \x01(\x0c\x12\x13\n\x0b\x63lient_cert\x18\x05 \x01(\x0c\"\xd5\x01\n GetInstanceNameForRemotesRequest\x12\x15\n\rinstance_name\x18\x03 \x01(\t\x12<\n\x1b\x63ontent_addressable_storage\x18\x01 \x01(\x0b\x32\x17.build.buildgrid.Remote\x12-\n\x0cremote_asset\x18\x02 \x01(\x0b\x32\x17.build.buildgrid.Remote\x12-\n\x0c\x61\x63tion_cache\x18\x04 \x01(\x0b\x32\x17.build.buildgrid.Remote\":\n!GetInstanceNameForRemotesResponse\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"I\n\"GetInstanceNameForNamespaceRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0c\n\x04root\x18\x02 \x01(\t\"<\n#GetInstanceNameForNamespaceResponse\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"\x1a\n\x18GetLocalDiskUsageRequest\"D\n\x19GetLocalDiskUsageResponse\x12\x12\n\nsize_bytes\x18\x01 \x01(\x03\x12\x13\n\x0bquota_bytes\x18\x02 \x01(\x03\x32\xc9\t\n\x1eLocalContentAddressableStorage\x12l\n\x11\x46\x65tchMissingBlobs\x12).build.buildgrid.FetchMissingBlobsRequest\x1a*.build.buildgrid.FetchMissingBlobsResponse\"\x00\x12o\n\x12UploadMissingBlobs\x12*.build.buildgrid.UploadMissingBlobsRequest\x1a+.build.buildgrid.UploadMissingBlobsResponse\"\x00\x12T\n\tFetchTree\x12!.build.buildgrid.FetchTreeRequest\x1a\".build.buildgrid.FetchTreeResponse\"\x00\x12W\n\nUploadTree\x12\".build.buildgrid.UploadTreeRequest\x1a#.build.buildgrid.UploadTreeResponse\"\x00\x12X\n\tStageTree\x12!.build.buildgrid.StageTreeRequest\x1a\".build.buildgrid.StageTreeResponse\"\x00(\x01\x30\x01\x12Z\n\x0b\x43\x61ptureTree\x12#.build.buildgrid.CaptureTreeRequest\x1a$.build.buildgrid.CaptureTreeResponse\"\x00\x12]\n\x0c\x43\x61ptureFiles\x12$.build.buildgrid.CaptureFilesRequest\x1a%.build.buildgrid.CaptureFilesResponse\"\x00\x12\x81\x01\n\x18GetInstanceNameForRemote\x12\x30.build.buildgrid.GetInstanceNameForRemoteRequest\x1a\x31.build.buildgrid.GetInstanceNameForRemoteResponse\"\x00\x12\x84\x01\n\x19GetInstanceNameForRemotes\x12\x31.build.buildgrid.GetInstanceNameForRemotesRequest\x1a\x32.build.buildgrid.GetInstanceNameForRemotesResponse\"\x00\x12\x8a\x01\n\x1bGetInstanceNameForNamespace\x12\x33.build.buildgrid.GetInstanceNameForNamespaceRequest\x1a\x34.build.buildgrid.GetInstanceNameForNamespaceResponse\"\x00\x12l\n\x11GetLocalDiskUsage\x12).build.buildgrid.GetLocalDiskUsageRequest\x1a*.build.buildgrid.GetLocalDiskUsageResponse\"\x00\x62\x06proto3')
 
 
 
@@ -31,6 +31,7 @@ _FETCHTREERESPONSE = DESCRIPTOR.message_types_by_name['FetchTreeResponse']
 _UPLOADTREEREQUEST = DESCRIPTOR.message_types_by_name['UploadTreeRequest']
 _UPLOADTREERESPONSE = DESCRIPTOR.message_types_by_name['UploadTreeResponse']
 _STAGETREEREQUEST = DESCRIPTOR.message_types_by_name['StageTreeRequest']
+_STAGETREEREQUEST_CREDENTIALS = _STAGETREEREQUEST.nested_types_by_name['Credentials']
 _STAGETREERESPONSE = DESCRIPTOR.message_types_by_name['StageTreeResponse']
 _CAPTURETREEREQUEST = DESCRIPTOR.message_types_by_name['CaptureTreeRequest']
 _CAPTURETREERESPONSE = DESCRIPTOR.message_types_by_name['CaptureTreeResponse']
@@ -43,6 +44,8 @@ _GETINSTANCENAMEFORREMOTERESPONSE = DESCRIPTOR.message_types_by_name['GetInstanc
 _REMOTE = DESCRIPTOR.message_types_by_name['Remote']
 _GETINSTANCENAMEFORREMOTESREQUEST = DESCRIPTOR.message_types_by_name['GetInstanceNameForRemotesRequest']
 _GETINSTANCENAMEFORREMOTESRESPONSE = DESCRIPTOR.message_types_by_name['GetInstanceNameForRemotesResponse']
+_GETINSTANCENAMEFORNAMESPACEREQUEST = DESCRIPTOR.message_types_by_name['GetInstanceNameForNamespaceRequest']
+_GETINSTANCENAMEFORNAMESPACERESPONSE = DESCRIPTOR.message_types_by_name['GetInstanceNameForNamespaceResponse']
 _GETLOCALDISKUSAGEREQUEST = DESCRIPTOR.message_types_by_name['GetLocalDiskUsageRequest']
 _GETLOCALDISKUSAGERESPONSE = DESCRIPTOR.message_types_by_name['GetLocalDiskUsageResponse']
 FetchMissingBlobsRequest = _reflection.GeneratedProtocolMessageType('FetchMissingBlobsRequest', (_message.Message,), {
@@ -118,11 +121,19 @@ UploadTreeResponse = _reflection.GeneratedProtocolMessageType('UploadTreeRespons
 _sym_db.RegisterMessage(UploadTreeResponse)
 
 StageTreeRequest = _reflection.GeneratedProtocolMessageType('StageTreeRequest', (_message.Message,), {
+
+  'Credentials' : _reflection.GeneratedProtocolMessageType('Credentials', (_message.Message,), {
+    'DESCRIPTOR' : _STAGETREEREQUEST_CREDENTIALS,
+    '__module__' : 'build.buildgrid.local_cas_pb2'
+    # @@protoc_insertion_point(class_scope:build.buildgrid.StageTreeRequest.Credentials)
+    })
+  ,
   'DESCRIPTOR' : _STAGETREEREQUEST,
   '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.StageTreeRequest)
   })
 _sym_db.RegisterMessage(StageTreeRequest)
+_sym_db.RegisterMessage(StageTreeRequest.Credentials)
 
 StageTreeResponse = _reflection.GeneratedProtocolMessageType('StageTreeResponse', (_message.Message,), {
   'DESCRIPTOR' : _STAGETREERESPONSE,
@@ -210,6 +221,20 @@ GetInstanceNameForRemotesResponse = _reflection.GeneratedProtocolMessageType('Ge
   })
 _sym_db.RegisterMessage(GetInstanceNameForRemotesResponse)
 
+GetInstanceNameForNamespaceRequest = _reflection.GeneratedProtocolMessageType('GetInstanceNameForNamespaceRequest', (_message.Message,), {
+  'DESCRIPTOR' : _GETINSTANCENAMEFORNAMESPACEREQUEST,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
+  # @@protoc_insertion_point(class_scope:build.buildgrid.GetInstanceNameForNamespaceRequest)
+  })
+_sym_db.RegisterMessage(GetInstanceNameForNamespaceRequest)
+
+GetInstanceNameForNamespaceResponse = _reflection.GeneratedProtocolMessageType('GetInstanceNameForNamespaceResponse', (_message.Message,), {
+  'DESCRIPTOR' : _GETINSTANCENAMEFORNAMESPACERESPONSE,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
+  # @@protoc_insertion_point(class_scope:build.buildgrid.GetInstanceNameForNamespaceResponse)
+  })
+_sym_db.RegisterMessage(GetInstanceNameForNamespaceResponse)
+
 GetLocalDiskUsageRequest = _reflection.GeneratedProtocolMessageType('GetLocalDiskUsageRequest', (_message.Message,), {
   'DESCRIPTOR' : _GETLOCALDISKUSAGEREQUEST,
   '__module__' : 'build.buildgrid.local_cas_pb2'
@@ -248,36 +273,42 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _UPLOADTREEREQUEST._serialized_end=1035
   _UPLOADTREERESPONSE._serialized_start=1037
   _UPLOADTREERESPONSE._serialized_end=1057
-  _STAGETREEREQUEST._serialized_start=1059
-  _STAGETREEREQUEST._serialized_end=1176
-  _STAGETREERESPONSE._serialized_start=1178
-  _STAGETREERESPONSE._serialized_end=1211
-  _CAPTURETREEREQUEST._serialized_start=1213
-  _CAPTURETREEREQUEST._serialized_end=1323
-  _CAPTURETREERESPONSE._serialized_start=1326
-  _CAPTURETREERESPONSE._serialized_end=1537
-  _CAPTURETREERESPONSE_RESPONSE._serialized_start=1415
-  _CAPTURETREERESPONSE_RESPONSE._serialized_end=1537
-  _CAPTUREFILESREQUEST._serialized_start=1539
-  _CAPTUREFILESREQUEST._serialized_end=1650
-  _CAPTUREFILESRESPONSE._serialized_start=1653
-  _CAPTUREFILESRESPONSE._serialized_end=1965
-  _CAPTUREFILESRESPONSE_RESPONSE._serialized_start=1745
-  _CAPTUREFILESRESPONSE_RESPONSE._serialized_end=1965
-  _GETINSTANCENAMEFORREMOTEREQUEST._serialized_start=1968
-  _GETINSTANCENAMEFORREMOTEREQUEST._serialized_end=2099
-  _GETINSTANCENAMEFORREMOTERESPONSE._serialized_start=2101
-  _GETINSTANCENAMEFORREMOTERESPONSE._serialized_end=2158
-  _REMOTE._serialized_start=2160
-  _REMOTE._serialized_end=2266
-  _GETINSTANCENAMEFORREMOTESREQUEST._serialized_start=2269
-  _GETINSTANCENAMEFORREMOTESREQUEST._serialized_end=2412
-  _GETINSTANCENAMEFORREMOTESRESPONSE._serialized_start=2414
-  _GETINSTANCENAMEFORREMOTESRESPONSE._serialized_end=2472
-  _GETLOCALDISKUSAGEREQUEST._serialized_start=2474
-  _GETLOCALDISKUSAGEREQUEST._serialized_end=2500
-  _GETLOCALDISKUSAGERESPONSE._serialized_start=2502
-  _GETLOCALDISKUSAGERESPONSE._serialized_end=2570
-  _LOCALCONTENTADDRESSABLESTORAGE._serialized_start=2573
-  _LOCALCONTENTADDRESSABLESTORAGE._serialized_end=3657
+  _STAGETREEREQUEST._serialized_start=1060
+  _STAGETREEREQUEST._serialized_end=1280
+  _STAGETREEREQUEST_CREDENTIALS._serialized_start=1254
+  _STAGETREEREQUEST_CREDENTIALS._serialized_end=1280
+  _STAGETREERESPONSE._serialized_start=1282
+  _STAGETREERESPONSE._serialized_end=1315
+  _CAPTURETREEREQUEST._serialized_start=1318
+  _CAPTURETREEREQUEST._serialized_end=1462
+  _CAPTURETREERESPONSE._serialized_start=1465
+  _CAPTURETREERESPONSE._serialized_end=1676
+  _CAPTURETREERESPONSE_RESPONSE._serialized_start=1554
+  _CAPTURETREERESPONSE_RESPONSE._serialized_end=1676
+  _CAPTUREFILESREQUEST._serialized_start=1679
+  _CAPTUREFILESREQUEST._serialized_end=1824
+  _CAPTUREFILESRESPONSE._serialized_start=1827
+  _CAPTUREFILESRESPONSE._serialized_end=2139
+  _CAPTUREFILESRESPONSE_RESPONSE._serialized_start=1919
+  _CAPTUREFILESRESPONSE_RESPONSE._serialized_end=2139
+  _GETINSTANCENAMEFORREMOTEREQUEST._serialized_start=2142
+  _GETINSTANCENAMEFORREMOTEREQUEST._serialized_end=2273
+  _GETINSTANCENAMEFORREMOTERESPONSE._serialized_start=2275
+  _GETINSTANCENAMEFORREMOTERESPONSE._serialized_end=2332
+  _REMOTE._serialized_start=2334
+  _REMOTE._serialized_end=2440
+  _GETINSTANCENAMEFORREMOTESREQUEST._serialized_start=2443
+  _GETINSTANCENAMEFORREMOTESREQUEST._serialized_end=2656
+  _GETINSTANCENAMEFORREMOTESRESPONSE._serialized_start=2658
+  _GETINSTANCENAMEFORREMOTESRESPONSE._serialized_end=2716
+  _GETINSTANCENAMEFORNAMESPACEREQUEST._serialized_start=2718
+  _GETINSTANCENAMEFORNAMESPACEREQUEST._serialized_end=2791
+  _GETINSTANCENAMEFORNAMESPACERESPONSE._serialized_start=2793
+  _GETINSTANCENAMEFORNAMESPACERESPONSE._serialized_end=2853
+  _GETLOCALDISKUSAGEREQUEST._serialized_start=2855
+  _GETLOCALDISKUSAGEREQUEST._serialized_end=2881
+  _GETLOCALDISKUSAGERESPONSE._serialized_start=2883
+  _GETLOCALDISKUSAGERESPONSE._serialized_end=2951
+  _LOCALCONTENTADDRESSABLESTORAGE._serialized_start=2954
+  _LOCALCONTENTADDRESSABLESTORAGE._serialized_end=4179
 # @@protoc_insertion_point(module_scope)

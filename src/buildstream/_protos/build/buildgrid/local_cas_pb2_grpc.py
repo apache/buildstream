@@ -59,6 +59,11 @@ class LocalContentAddressableStorageStub(object):
                 request_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesRequest.SerializeToString,
                 response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesResponse.FromString,
                 )
+        self.GetInstanceNameForNamespace = channel.unary_unary(
+                '/build.buildgrid.LocalContentAddressableStorage/GetInstanceNameForNamespace',
+                request_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForNamespaceRequest.SerializeToString,
+                response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForNamespaceResponse.FromString,
+                )
         self.GetLocalDiskUsage = channel.unary_unary(
                 '/build.buildgrid.LocalContentAddressableStorage/GetLocalDiskUsage',
                 request_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetLocalDiskUsageRequest.SerializeToString,
@@ -170,6 +175,12 @@ class LocalContentAddressableStorageServicer(object):
         If a CAS remote is configured, the blobs are uploaded.
         The `bypass_local_cache` parameter is a hint to indicate whether the blobs
         shall be uploaded without first storing them in the local cache.
+
+        The `move_files` parameter is a hint to indicate that files could be
+        moved into the storage. This can make capturing more efficient by
+        avoiding copies when it is known that files will not be needed after they
+        are imported. If a server chooses not to move them, the source files will
+        still exist after this request.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -183,6 +194,12 @@ class LocalContentAddressableStorageServicer(object):
         If a CAS remote is configured, the blobs are uploaded.
         The `bypass_local_cache` parameter is a hint to indicate whether the blobs
         shall be uploaded without first storing them in the local cache.
+
+        The `move_files` parameter is a hint to indicate that the files could be
+        moved into the storage. This can make capturing more efficient by
+        avoiding copies when it is known that files will not be needed after they
+        are imported. If a server chooses not to move them, the source files will
+        still exist after this request.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -206,6 +223,17 @@ class LocalContentAddressableStorageServicer(object):
 
         This returns a string that can be used as instance_name to access the
         specified endpoints in further requests.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetInstanceNameForNamespace(self, request, context):
+        """Configure sandboxed clients.
+
+        This returns a string that can be used as instance_name to access
+        this service from clients running in the specified filesystem/mount
+        namespace or chroot environment
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -265,6 +293,11 @@ def add_LocalContentAddressableStorageServicer_to_server(servicer, server):
                     servicer.GetInstanceNameForRemotes,
                     request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesRequest.FromString,
                     response_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesResponse.SerializeToString,
+            ),
+            'GetInstanceNameForNamespace': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetInstanceNameForNamespace,
+                    request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForNamespaceRequest.FromString,
+                    response_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForNamespaceResponse.SerializeToString,
             ),
             'GetLocalDiskUsage': grpc.unary_unary_rpc_method_handler(
                     servicer.GetLocalDiskUsage,
@@ -431,6 +464,23 @@ class LocalContentAddressableStorage(object):
         return grpc.experimental.unary_unary(request, target, '/build.buildgrid.LocalContentAddressableStorage/GetInstanceNameForRemotes',
             build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesRequest.SerializeToString,
             build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetInstanceNameForNamespace(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/build.buildgrid.LocalContentAddressableStorage/GetInstanceNameForNamespace',
+            build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForNamespaceRequest.SerializeToString,
+            build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForNamespaceResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
