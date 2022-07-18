@@ -832,3 +832,28 @@ def test_include_vars(cli, datafiles):
     result.assert_success()
     result_vars = _yaml.load_data(result.output)
     assert result_vars.get_str("resolved") == "The animal is a horsy"
+
+
+# This test verifies that project option conditional statements made
+# in an include file are resolved in the context of the project where
+# the include file originates.
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "use_species,expected_result",
+    [
+        ("True", "The species is a horsy"),
+        ("False", "The animal is a horsy"),
+    ],
+    ids=["branch1", "branch2"],
+)
+def test_include_vars_optional(cli, datafiles, use_species, expected_result):
+    project = os.path.join(str(datafiles), "include-vars-optional")
+    result = cli.run(
+        project=project,
+        silent=True,
+        args=["--option", "use_species", use_species, "show", "--deps", "none", "--format", "%{vars}", "target.bst"],
+    )
+    result.assert_success()
+    result_vars = _yaml.load_data(result.output)
+    assert result_vars.get_str("resolved") == expected_result

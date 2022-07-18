@@ -1,0 +1,12 @@
+
+
+#
+# Test that conditional statements are resolved in the context
+# of the project from where the include originated.
+#
+variables:
+  (?):
+  - classifier == "species":
+      resolved: The species is a %{animal}
+  - classifier == "animal":
+      resolved: The animal is a %{animal}
