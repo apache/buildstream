@@ -554,6 +554,29 @@ def test_override_twice(cli, tmpdir, datafiles):
     assert os.path.exists(os.path.join(checkoutdir, "overridden-again.txt"))
 
 
+# Tests the case where we override an element in a self junction
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target,expected_result",
+    [
+        ("target.bst", "pony"),
+        ("self-junction.bst:target.bst", "horsy"),
+    ],
+    ids=["direct-target", "override-target"],
+)
+def test_override_self(cli, datafiles, target, expected_result):
+    project = os.path.join(str(datafiles), "override-self")
+    result = cli.run(
+        project=project,
+        silent=True,
+        args=["show", "--deps", "none", "--format", "%{vars}", target],
+    )
+    result.assert_success()
+    result_vars = _yaml.load_data(result.output)
+    assert result_vars.get_str("animal") == expected_result
+
+
 #
 # Test conflicting junction scenarios
 #
