@@ -1,6 +1,7 @@
 import os
 from . import _yaml
 from .node import MappingNode, ScalarNode, SequenceNode
+from ._variables import Variables
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
 
@@ -152,6 +153,15 @@ class Includes:
                 )
             except LoadError as e:
                 raise LoadError("{}: {}".format(include.get_provenance(), e), e.reason, detail=e.detail) from e
+
+            # If the include is from a subproject, we need to expand variables
+            # in the context of the subproject's variables, the subproject is
+            # guaranteed at this stage to be fully loaded.
+            #
+            if current_loader != loader:
+                variables_node = current_loader.project.base_variables.clone()
+                variables = Variables(variables_node)
+                variables.expand(self._loaded[key])
 
         return self._loaded[key], file_path, current_loader
 
