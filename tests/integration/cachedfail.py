@@ -17,6 +17,8 @@
 # pylint: disable=redefined-outer-name
 
 import os
+import glob
+from contextlib import ExitStack
 import pytest
 
 from buildstream import utils, _yaml
@@ -256,3 +258,127 @@ def test_host_tools_errors_are_not_cached(cli, datafiles, tmp_path):
     result2 = cli.run(project=project, args=["build", "element.bst"])
     result2.assert_success()
     assert cli.get_element_state(project, "element.bst") == "cached"
+
+
+# Tests that failed builds will be retried in strict mode when dependencies have changed.
+#
+# This test ensures:
+#   o Fixing a dependency such that the reverse dependency will succeed, gets automatically retried
+#   o A subsequent retry of the same failed build will not trigger a retry attempt
+#   o The same behavior is observed when a failed build artifact is downloaded from a remote cache
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.parametrize("use_share", (False, True), ids=["local-cache", "pull-failed-artifact"])
+@pytest.mark.parametrize("retry", (True, False), ids=["retry", "no-retry"])
+def test_nonstrict_retry_failed(cli, tmpdir, datafiles, use_share, retry):
+    project = str(datafiles)
+    intermediate_path = os.path.join(project, "elements", "intermediate.bst")
+    dep_path = os.path.join(project, "elements", "dep.bst")
+    target_path = os.path.join(project, "elements", "target.bst")
+
+    # Use separate cache directories for each iteration of this test
+    # even though we're using cli_integration
+    #
+    # Global nonstrict configuration ensures all commands will be non-strict
+    cli.configure({"cachedir": cli.directory, "projects": {"test": {"strict": False}}})
+
+    def generate_dep(filename, dependency):
+        return {
+            "kind": "manual",
+            "depends": [dependency],
+            "config": {
+                "install-commands": [
+                    "touch %{install-root}/" + filename,
+                ],
+            },
+        }
+
+    def generate_target():
+        return {
+            "kind": "manual",
+            "depends": [
+                "dep.bst",
+            ],
+            "config": {
+                "build-commands": [
+                    "test -e /foo",
+                ],
+            },
+        }
+
+    with ExitStack() as stack:
+
+        if use_share:
+            share = stack.enter_context(create_artifact_share(os.path.join(str(tmpdir), "artifactshare")))
+            cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
+
+        intermediate = generate_dep("pony", "base.bst")
+        dep = generate_dep("bar", "intermediate.bst")
+        target = generate_target()
+        _yaml.roundtrip_dump(intermediate, intermediate_path)
+        _yaml.roundtrip_dump(dep, dep_path)
+        _yaml.roundtrip_dump(target, target_path)
+
+        # First build the dep / intermediate elements
+        result = cli.run(project=project, args=["build", "dep.bst"])
+        result.assert_success()
+
+        # Remove the intermediate element from cache, rebuild the dep, such that only
+        # a weak key for the dep is possible
+        cli.remove_artifact_from_cache(project, "intermediate.bst")
+        intermediate = generate_dep("horsy", "base.bst")
+        _yaml.roundtrip_dump(intermediate, intermediate_path)
+
+        result = cli.run(project=project, args=["build", "dep.bst"])
+        result.assert_success()
+        assert "dep.bst" not in result.get_built_elements()
+
+        # Try to build it, this should result in caching a failure of the target
+        result = cli.run(project=project, args=["build", "target.bst"])
+        result.assert_main_error(ErrorDomain.STREAM, None)
+
+        # Assert that it's cached in a failed artifact
+        assert cli.get_element_state(project, "target.bst") == "failed"
+
+        if use_share:
+            # Ensure that the target.bst has been shared, this is needed because of:
+            #     https://github.com/apache/buildstream/issues/534
+            result = cli.run(project=project, args=["artifact", "push", "target.bst"])
+            result.assert_success()
+
+            # Delete the local cache, provoke pulling of the failed build
+            cli.remove_artifact_from_cache(project, "target.bst")
+
+            # Assert that the failed build has been removed
+            assert cli.get_element_state(project, "target.bst") == "buildable"
+
+        # Regenerate the dependency so that the target would succeed to build, if the
+        # test is configured to test a retry
+        if retry:
+            dep = generate_dep("foo", "intermediate.bst")
+            _yaml.roundtrip_dump(dep, dep_path)
+
+        # Even though we are in non-strict mode, the failed build should be retried
+        result = cli.run(project=project, args=["build", "target.bst"])
+
+        # If we did not modify the cache key, we want to assert that we did not
+        # in fact attempt to rebuild the failed artifact.
+        #
+        # Since the UX is very similar, we'll distinguish this by counting the number of
+        # build logs which were produced.
+        #
+        logdir = os.path.join(cli.directory, "logs", "test", "target")
+        build_logs = glob.glob("{}/*-build.*.log".format(logdir))
+        if retry:
+            result.assert_success()
+            assert len(build_logs) == 2
+        else:
+            result.assert_main_error(ErrorDomain.STREAM, None)
+            assert len(build_logs) == 1
+
+        if use_share:
+            # Assert that we did indeed go through the motions of downloading the failed
+            # build, and possibly discarded the failed artifact if the strong key did not match
+            #
+            assert "target.bst" in result.get_pulled_elements()
