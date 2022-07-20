@@ -1831,6 +1831,10 @@ class Element(Plugin):
     #
     # Load artifact from cache or pull it from remote artifact repository.
     #
+    # Args:
+    #    pull (bool): Whether to attempt to pull the artifact
+    #    strict (bool|None): Force strict/non-strict operation
+    #
     # Returns: True if the artifact has been downloaded, False otherwise
     #
     def _load_artifact(self, *, pull, strict=None):
@@ -1873,6 +1877,31 @@ class Element(Plugin):
 
         # Attempt to pull artifact with the weak cache key
         pulled = pull and artifact.pull(pull_buildtrees=pull_buildtrees)
+
+        # When building in non-strict mode, we ignore a failed artifact unless it has the
+        # expected strong key, this ensures that failed builds will be retried whenever
+        # dependencies have changed.
+        #
+        # When not building (e.g. `bst show`, `bst artifact push` etc), we do not drop
+        # the failed artifact, the retry only occurs at build time.
+        #
+        if context.build and artifact.cached():
+            success, _, _ = artifact.load_build_result()
+            if not success:
+
+                # Calculate what the cache key would be for this artifact, if we were going to build it
+                cache_key = self.__calculate_strong_cache_key()
+                assert cache_key is not None
+
+                if artifact.strong_key != cache_key:
+                    artifact = Artifact(
+                        self,
+                        context,
+                        strict_key=self.__strict_cache_key,
+                        weak_key=self.__weak_cache_key,
+                    )
+                    artifact._cached = False
+                    pulled = False
 
         self.__artifact = artifact
         return pulled
@@ -3126,6 +3155,19 @@ class Element(Plugin):
 
         self.__build_result = self.__artifact.load_build_result()
 
+    # __calculate_strong_cache_key():
+    #
+    # Convenience function for calculating the strong cache key
+    #
+    # This will return the strong cache key if all of the dependencies have cache
+    # keys available, otherwise it will return None.
+    #
+    def __calculate_strong_cache_key(self):
+        assert self.__weak_cache_key is not None
+
+        dependencies = [[e.project_name, e.name, e._get_cache_key()] for e in self._dependencies(_Scope.BUILD)]
+        return self._calculate_cache_key(dependencies, self.__weak_cache_key)
+
     # __update_cache_keys()
     #
     # Updates weak and strict cache keys
@@ -3233,11 +3275,8 @@ class Element(Plugin):
                 strong_key, _, _ = self.__artifact.get_metadata_keys()
                 self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
-                assert self.__weak_cache_key is not None
-
                 # Artifact will or has been built, not downloaded
-                dependencies = [[e.project_name, e.name, e._get_cache_key()] for e in self._dependencies(_Scope.BUILD)]
-                self.__cache_key = self._calculate_cache_key(dependencies, self.__weak_cache_key)
+                self.__cache_key = self.__calculate_strong_cache_key()
 
             if self.__cache_key is None:
                 # Strong cache key could not be calculated yet
