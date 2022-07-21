@@ -444,6 +444,51 @@ class CASCache:
 
         return utils._message_digest(root_directory)
 
+    # stage_directory():
+    #
+    # A contextmanager to stage a CAS directory tree in the local filesystem.
+    #
+    # This makes the specified directory tree temporarily available for local
+    # filesystem access. This may use FUSE or hardlinking.
+    #
+    # Args:
+    #     directory_digest (Digest): The digest of a directory
+    #
+    # Yields:
+    #     (str): The local filesystem path
+    #
+    @contextlib.contextmanager
+    def stage_directory(self, directory_digest):
+        local_cas = self.get_local_cas()
+
+        request = local_cas_pb2.StageTreeRequest()
+        request.root_digest.CopyFrom(directory_digest)
+
+        done_event = threading.Event()
+
+        def request_iterator():
+            yield request
+
+            # Wait until staged tree is no longer needed
+            done_event.wait()
+
+            # A second (empty) request indicates that the staging location can be cleaned up
+            yield local_cas_pb2.StageTreeRequest()
+
+        response_stream = local_cas.StageTree(request_iterator())
+
+        try:
+            # Read primary response and yield staging location
+            response = next(response_stream)
+            yield response.path
+
+            # Staged tree is no longer needed
+            done_event.set()
+            # Wait for cleanup to complete
+            next(response_stream)
+        except StopIteration as e:
+            raise CASCacheError("Unexpected end of response stream for StageTree") from e
+
     # missing_blobs_for_directory():
     #
     # Determine which blobs of a directory tree are missing on the remote.

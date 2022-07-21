@@ -18,7 +18,7 @@ import os
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Iterator
 
-from . import _cachekey, utils
+from . import _cachekey
 from ._exceptions import SkipJob
 from ._context import Context
 from ._protos.buildstream.v2 import source_pb2
@@ -459,7 +459,8 @@ class ElementSources:
     #   stop (Source): Only stage sources listed before this source
     #
     def _stage(self, *, stop=None):
-        vdir = CasBasedDirectory(self._context.get_cascache())
+        cas = self._context.get_cascache()
+        vdir = CasBasedDirectory(cas)
 
         for source in self._sources:
             if source == stop:
@@ -474,10 +475,9 @@ class ElementSources:
                 if source.BST_STAGE_VIRTUAL_DIRECTORY:
                     source._stage(vsubdir)
                 else:
-                    with utils._tempdir(dir=self._context.tmpdir, prefix="staging-temp") as tmpdir:
-                        # Stage previous sources
-                        vsubdir._export_files(tmpdir)
-
+                    # Stage previous sources
+                    with cas.stage_directory(vsubdir._get_digest()) as tmpdir:
+                        # Stage current source
                         source._stage(tmpdir)
 
                         # Capture modified tree
@@ -502,6 +502,6 @@ class ElementSources:
         if source.BST_STAGE_VIRTUAL_DIRECTORY:
             yield vdir
         else:
-            with source.tempdir() as tempdir:
-                vdir._export_files(tempdir)
+            cas = self._context.get_cascache()
+            with cas.stage_directory(vdir._get_digest()) as tempdir:
                 yield tempdir
