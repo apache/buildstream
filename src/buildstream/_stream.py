@@ -372,6 +372,9 @@ class Stream:
         ignore_project_source_remotes: bool = False,
     ):
 
+        # Flag the build state
+        self._context.build = True
+
         elements = self._load(
             targets,
             selection=selection,

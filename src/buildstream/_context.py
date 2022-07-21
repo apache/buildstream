@@ -102,6 +102,10 @@ class Context:
         # completion where casd is not required
         self.use_casd: bool = use_casd
 
+        # Whether we are going to build, this is required for some conditional
+        # functionality to take place only in the case that we are building.
+        self.build: bool = False
+
         # The directory for artifact protos
         self.artifactdir: Optional[str] = None
 
