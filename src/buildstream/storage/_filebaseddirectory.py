@@ -237,7 +237,8 @@ class FileBasedDirectory(Directory):
         *,
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
-        properties: Optional[List[str]] = None
+        properties: Optional[List[str]] = None,
+        collect_result: bool = True
     ) -> FileListResult:
 
         # See if we can get a source directory to copy from

@@ -359,9 +359,10 @@ class CasBasedDirectory(Directory):
         *,
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
-        properties: Optional[List[str]] = None
-    ) -> FileListResult:
-        result = FileListResult()
+        properties: Optional[List[str]] = None,
+        collect_result: bool = True
+    ) -> Optional[FileListResult]:
+        result = FileListResult() if collect_result else None
 
         # See if we can get a source directory to copy from
         source_directory: Optional[str] = None
@@ -722,7 +723,7 @@ class CasBasedDirectory(Directory):
     # fileListResult.overwritten and fileListResult.ignore are updated depending
     # on the result.
     #
-    def __check_replacement(self, name: str, relative_pathname: str, fileListResult: FileListResult) -> bool:
+    def __check_replacement(self, name: str, relative_pathname: str, fileListResult: Optional[FileListResult]) -> bool:
         existing_entry = self.__index.get(name)
         if existing_entry is None:
             return True
@@ -732,15 +733,18 @@ class CasBasedDirectory(Directory):
             subdir = existing_entry.get_directory(self)
             if not subdir:
                 self.remove(name)
-                fileListResult.overwritten.append(relative_pathname)
+                if fileListResult is not None:
+                    fileListResult.overwritten.append(relative_pathname)
                 return True
             else:
                 # We can't overwrite a non-empty directory, so we just ignore it.
-                fileListResult.ignored.append(relative_pathname)
+                if fileListResult is not None:
+                    fileListResult.ignored.append(relative_pathname)
                 return False
         else:
             self.remove(name)
-            fileListResult.overwritten.append(relative_pathname)
+            if fileListResult is not None:
+                fileListResult.overwritten.append(relative_pathname)
             return True
 
     # __partial_import_cas_into_cas()
@@ -754,7 +758,7 @@ class CasBasedDirectory(Directory):
         *,
         path_prefix: str = "",
         origin: "CasBasedDirectory" = None,
-        result: FileListResult
+        result: Optional[FileListResult]
     ) -> None:
         if origin is None:
             origin = self
@@ -790,7 +794,8 @@ class CasBasedDirectory(Directory):
                     else:
                         subdir = dest_entry.get_directory(self)
 
-                    subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
+                    if result is not None:
+                        subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
                 else:
                     src_subdir = source_directory.open_directory(name)
                     if src_subdir == origin:
@@ -823,7 +828,8 @@ class CasBasedDirectory(Directory):
                     else:
                         assert entry.type == FileType.SYMLINK
                         self.__add_new_link_direct(name=name, target=entry.target)
-                    result.files_written.append(relative_pathname)
+                    if result is not None:
+                        result.files_written.append(relative_pathname)
 
     # __list_prefixed_relative_paths()
     #

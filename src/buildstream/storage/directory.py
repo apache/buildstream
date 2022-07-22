@@ -171,7 +171,8 @@ class Directory:
         external_pathspec: Union["Directory", str],
         *,
         filter_callback: Optional[Callable[[str], bool]] = None,
-    ) -> FileListResult:
+        collect_result: bool = True
+    ) -> Optional[FileListResult]:
         """Imports some or all files from external_path into this directory.
 
         Args:
@@ -181,9 +182,11 @@ class Directory:
                             relative path as argument for every file in the source directory.
                             The file is imported only if the callable returns True.
                             If no filter callback is specified, all files will be imported.
+           collect_result: Whether to collect data for the :class:`.FileListResult`, defaults to True.
 
         Returns:
-           A :class:`.FileListResult` report of files imported and overwritten.
+           A :class:`.FileListResult` report of files imported and overwritten,
+           or `None` if `collect_result` is False.
 
         Raises:
            DirectoryError: if any system error occurs.
@@ -191,6 +194,7 @@ class Directory:
         return self._import_files_internal(
             external_pathspec,
             filter_callback=filter_callback,
+            collect_result=collect_result,
         )
 
     def import_single_file(self, external_pathspec: str) -> FileListResult:
@@ -390,9 +394,11 @@ class Directory:
     #                    If no filter callback is specified, all files will be imported.
     #                    update_mtime: Update the access and modification time of each file copied to the time specified in seconds.
     #   properties: Optional list of strings representing file properties to capture when importing.
+    #   collect_result: Whether to collect data for the :class:`.FileListResult`, defaults to True.
     #
     # Returns:
-    #    A :class:`.FileListResult` report of files imported and overwritten.
+    #    A :class:`.FileListResult` report of files imported and overwritten,
+    #    or `None` if `collect_result` is False.
     #
     # Raises:
     #    DirectoryError: if any system error occurs.
@@ -404,12 +410,14 @@ class Directory:
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
         properties: Optional[List[str]] = None,
-    ) -> FileListResult:
+        collect_result: bool = True
+    ) -> Optional[FileListResult]:
         return self._import_files(
             external_pathspec,
             filter_callback=filter_callback,
             update_mtime=update_mtime,
             properties=properties,
+            collect_result=collect_result,
         )
 
     # _import_files()
@@ -425,9 +433,11 @@ class Directory:
     #                    If no filter callback is specified, all files will be imported.
     #                    update_mtime: Update the access and modification time of each file copied to the time specified in seconds.
     #   properties: Optional list of strings representing file properties to capture when importing.
+    #   collect_result: Whether to collect data for the :class:`.FileListResult`, defaults to True.
     #
     # Returns:
-    #    A :class:`.FileListResult` report of files imported and overwritten.
+    #    A :class:`.FileListResult` report of files imported and overwritten,
+    #    or `None` if `collect_result` is False.
     #
     # Raises:
     #    DirectoryError: if any system error occurs.
@@ -439,7 +449,8 @@ class Directory:
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
         properties: Optional[List[str]] = None,
-    ) -> FileListResult:
+        collect_result: bool = True
+    ) -> Optional[FileListResult]:
         raise NotImplementedError()
 
     # _export_files()
