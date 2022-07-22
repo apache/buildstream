@@ -853,6 +853,8 @@ class Stream:
         # Return list of Element and/or ArtifactElement objects
         target_objects = self.load_selection(targets, selection=selection, load_artifacts=True)
 
+        self.query_cache(target_objects)
+
         # Some of the targets may refer to the same key, so first obtain a
         # set of the refs to be removed.
         remove_refs = set()

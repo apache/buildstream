@@ -382,3 +382,75 @@ def test_nonstrict_retry_failed(cli, tmpdir, datafiles, use_share, retry):
             # build, and possibly discarded the failed artifact if the strong key did not match
             #
             assert "target.bst" in result.get_pulled_elements()
+
+
+# Tests that failed build artifacts in non-strict mode can be deleted.
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_nonstrict_delete_failed(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    intermediate_path = os.path.join(project, "elements", "intermediate.bst")
+    dep_path = os.path.join(project, "elements", "dep.bst")
+    target_path = os.path.join(project, "elements", "target.bst")
+
+    # Global nonstrict configuration ensures all commands will be non-strict
+    cli.configure({"projects": {"test": {"strict": False}}})
+
+    def generate_dep(filename, dependency):
+        return {
+            "kind": "manual",
+            "depends": [dependency],
+            "config": {
+                "install-commands": [
+                    "touch %{install-root}/" + filename,
+                ],
+            },
+        }
+
+    def generate_target():
+        return {
+            "kind": "manual",
+            "depends": [
+                "dep.bst",
+            ],
+            "config": {
+                "build-commands": [
+                    "test -e /foo",
+                ],
+            },
+        }
+
+    intermediate = generate_dep("pony", "base.bst")
+    dep = generate_dep("bar", "intermediate.bst")
+    target = generate_target()
+    _yaml.roundtrip_dump(intermediate, intermediate_path)
+    _yaml.roundtrip_dump(dep, dep_path)
+    _yaml.roundtrip_dump(target, target_path)
+
+    # First build the dep / intermediate elements
+    result = cli.run(project=project, args=["build", "dep.bst"])
+    result.assert_success()
+
+    # Remove the intermediate element from cache, rebuild the dep, such that only
+    # a weak key for the dep is possible
+    cli.remove_artifact_from_cache(project, "intermediate.bst")
+    intermediate = generate_dep("horsy", "base.bst")
+    _yaml.roundtrip_dump(intermediate, intermediate_path)
+
+    result = cli.run(project=project, args=["build", "dep.bst"])
+    result.assert_success()
+    assert "dep.bst" not in result.get_built_elements()
+
+    # Try to build it, this should result in caching a failure of the target
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_main_error(ErrorDomain.STREAM, None)
+
+    # Assert that it's cached in a failed artifact
+    assert cli.get_element_state(project, "target.bst") == "failed"
+
+    # Delete it
+    result = cli.run(project=project, args=["artifact", "delete", "target.bst"])
+
+    # Assert that it's no longer cached, and returns to a buildable state
+    assert cli.get_element_state(project, "target.bst") == "buildable"
