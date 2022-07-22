@@ -83,7 +83,7 @@ class ImportElement(Element):
             raise ElementError("{}: No files were found inside directory '{}'".format(self, self.source))
 
         # Move it over
-        outputdir.import_files(inputdir)
+        outputdir.import_files(inputdir, collect_result=False)
 
         # And we're done
         return "/output"

@@ -482,10 +482,10 @@ class ElementSources:
 
                         # Capture modified tree
                         vsubdir._clear()
-                        vsubdir.import_files(tmpdir)
+                        vsubdir.import_files(tmpdir, collect_result=False)
             else:
                 source_dir = self._sourcecache.export(source)
-                vsubdir.import_files(source_dir)
+                vsubdir.import_files(source_dir, collect_result=False)
 
         return vdir
 
