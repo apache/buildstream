@@ -25,3 +25,20 @@ def test_resolve_project_root_conditional(cli, datafiles, value, expected):
     result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert loaded.get_str("result") == expected
+
+
+#
+# Test that project option conditionals can be resolved in element overrides
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("value,expected", [("pony", "a pony"), ("horsy", "a horsy")], ids=["pony", "horsy"])
+def test_resolve_element_override_conditional(cli, datafiles, value, expected):
+    project = os.path.join(datafiles.dirname, datafiles.basename, "option-element-override")
+    result = cli.run(
+        project=project,
+        silent=True,
+        args=["--option", "animal", value, "show", "--deps", "none", "--format", "%{vars}", "element.bst"],
+    )
+    result.assert_success()
+    loaded = _yaml.load_data(result.output)
+    assert loaded.get_str("result") == expected
