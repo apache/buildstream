@@ -36,7 +36,6 @@ class PluginOriginJunction(PluginOrigin):
         #
         loader = self.project.loader.get_loader(self._junction, self.provenance_node)
         project = loader.project
-        project.ensure_fully_loaded()
 
         # Now get the appropriate PluginFactory object
         #
