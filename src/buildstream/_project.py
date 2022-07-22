@@ -646,6 +646,7 @@ class Project:
                 "source-caches",
                 "junctions",
                 "(@)",
+                "(?)",
             ]
         )
 
