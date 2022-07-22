@@ -173,8 +173,13 @@ class OptionPool:
     #
     # Args:
     #    node (node): A YAML Loaded dictionary
+    #    restricted (List[str]): A list of restricted keys
     #
-    def process_node(self, node):
+    # Restricted keys, if found in a conditional block, will raise
+    # an error if specified such that they would be composited at the
+    # root of "node",
+    #
+    def process_node(self, node, *, restricted=None):
 
         # A conditional will result in composition, which can
         # in turn add new conditionals to the root.
@@ -182,7 +187,7 @@ class OptionPool:
         # Keep processing conditionals on the root node until
         # all directly nested conditionals are resolved.
         #
-        while self._process_one_node(node):
+        while self._process_one_node(node, restricted=restricted):
             pass
 
         # Now recurse into nested dictionaries and lists
@@ -254,7 +259,7 @@ class OptionPool:
     #
     # Return true if a conditional was processed.
     #
-    def _process_one_node(self, node):
+    def _process_one_node(self, node, *, restricted=None):
         conditions = node.get_sequence("(?)", default=None)
         assertion = node.get_str("(!)", default=None)
 
@@ -291,6 +296,15 @@ class OptionPool:
                         "{}: Only values of type 'dict' can be composed.".format(provenance),
                         LoadErrorReason.ILLEGAL_COMPOSITE,
                     )
+
+                # Observe restricted keys that are not allowed to be conditional
+                for key in restricted or []:
+                    if key in value:
+                        provenance = value.get_node(key).get_provenance()
+                        raise LoadError(
+                            "{}: The '{}' key cannot be specified conditionally.".format(provenance, key),
+                            LoadErrorReason.ILLEGAL_COMPOSITE,
+                        )
 
                 # Apply the yaml fragment if its condition evaluates to true
                 if apply_fragment:
