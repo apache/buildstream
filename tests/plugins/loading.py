@@ -12,8 +12,10 @@ import pytest
 
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
 from buildstream import _yaml
 
+from tests.testutils.repo.git import Git
 from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
 from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
 
@@ -823,3 +825,74 @@ def test_junction_invalid_full_path(cli, datafiles, plugin_type, provenance):
     result = cli.run(project=project, args=["show", "element.bst"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
     assert provenance in result.stderr
+
+
+# Test scenario for junction plugin origins
+# =========================================
+#
+# This is a regression test which ensures that cross junction includes
+# at the project.conf level continues to work even in conjunction with
+# complex cross junction plugin loading scenarios.
+#
+#         main project
+#         /           \
+#        |             |
+#  junction (tar)      |
+#        |             | include a file across this junction
+#        |             |
+#        /             |
+#  git plugin           \
+#                        \
+#                  junction (git)
+#                         |
+#                         |
+#                     subproject
+#
+#
+# `bst source track subproject.bst`
+#
+#
+JUNCTION_DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+
+
+@pytest.mark.datafiles(JUNCTION_DATA_DIR)
+def test_load_junction_via_junctioned_plugin(cli, datafiles, tmpdir):
+    sample_plugins_dir = os.path.join(str(datafiles), "sample-plugins")
+    project = os.path.join(str(datafiles), "junction-with-junction")
+    subproject = os.path.join(str(datafiles), "junction-with-junction", "subproject")
+
+    # Create a tar repo containing the sample plugins
+    #
+    repo = create_repo("tar", str(tmpdir))
+    ref = repo.create(sample_plugins_dir)
+
+    # Generate the junction to the sample plugins
+    #
+    element = {"kind": "junction", "sources": [repo.source_config(ref=ref)]}
+    _yaml.roundtrip_dump(element, os.path.join(project, "sample-plugins.bst"))
+
+    # Create a git repo containing the subproject
+    #
+    subproject_repo = Git(str(tmpdir))
+    subproject_repo.create(subproject)
+
+    # Generate the subproject junction pointing to the git repo with the subproject
+    #
+    element = {"kind": "junction", "sources": [subproject_repo.source_config()]}
+    _yaml.roundtrip_dump(element, os.path.join(project, "subproject.bst"))
+
+    # Track the subproject
+    #
+    result = cli.run(project=project, args=["source", "track", "subproject.bst"])
+    result.assert_success()
+
+    # Check the included variable resolves in the element
+    #
+    result = cli.run(
+        project=project,
+        silent=True,
+        args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"],
+    )
+    result.assert_success()
+    loaded = _yaml.load_data(result.output)
+    assert loaded.get_str("animal") == "pony"
