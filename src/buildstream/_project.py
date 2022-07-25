@@ -646,6 +646,7 @@ class Project:
                 "source-caches",
                 "junctions",
                 "(@)",
+                "(?)",
             ]
         )
 
@@ -945,7 +946,24 @@ class Project:
         # Now resolve any conditionals in the remaining configuration,
         # any conditionals specified for project option declarations,
         # or conditionally specifying the project name; will be ignored.
-        output.options.process_node(config)
+        #
+        # Specify any options that would be ignored in the restrict list
+        # so as to raise an appropriate error.
+        #
+        output.options.process_node(
+            config,
+            restricted=[
+                "min-version",
+                "name",
+                "element-path",
+                "junctions",
+                "defaults",
+                "fatal-warnings",
+                "ref-storage",
+                "options",
+                "plugins",
+            ],
+        )
 
         # Element and Source  type configurations will be composited later onto
         # element/source types, so we delete it from here and run our final
