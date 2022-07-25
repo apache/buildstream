@@ -76,7 +76,6 @@ class ProjectConfig:
 #    parent_loader: The parent loader
 #    provenance_node: The YAML provenance causing this project to be loaded
 #    search_for_project: Whether to search for a project directory, e.g. from workspace metadata or parent directories
-#    load_project: Whether to attempt to load a project.conf
 #
 class Project:
     def __init__(
@@ -90,7 +89,6 @@ class Project:
         parent_loader: Optional[Loader] = None,
         provenance_node: Optional[ProvenanceInformation] = None,
         search_for_project: bool = True,
-        load_project: bool = True,
     ):
         #
         # Public members
@@ -171,7 +169,7 @@ class Project:
 
         self._context.add_project(self)
 
-        if self.directory and load_project:
+        if self.directory:
             with PROFILER.profile(Topics.LOAD_PROJECT, self.directory.replace(os.sep, "-")):
                 self._load(parent_loader=parent_loader, provenance_node=provenance_node)
         else:
