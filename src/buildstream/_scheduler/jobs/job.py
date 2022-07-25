@@ -32,7 +32,7 @@ from ...types import FastEnum
 from ..._signals import TerminateException
 
 
-# Return code values shutdown of job handling child processes
+# Return code values of child tasks of a job
 #
 class _ReturnCode(FastEnum):
     OK = 0
@@ -61,25 +61,8 @@ class JobStatus(FastEnum):
 # Job()
 #
 # The Job object represents a task that will run in parallel to the main
-# process. It has some methods that are not implemented - they are meant for
+# thread. It has some methods that are not implemented - they are meant for
 # you to implement in a subclass.
-#
-# It has a close relationship with the ChildJob class, and it can be considered
-# a two part solution:
-#
-# 1. A Job instance, which will create a ChildJob instance and arrange for
-#    childjob.child_process() to be executed in another process.
-# 2. The created ChildJob instance, which does the actual work.
-#
-# This split makes it clear what data is passed to the other process and what
-# is executed in which process.
-#
-# To set up a minimal new kind of Job, e.g. YourJob:
-#
-# 1. Create a YourJob class, inheriting from Job.
-# 2. Create a YourChildJob class, inheriting from ChildJob.
-# 3. Implement YourJob.create_child_job() and YourJob.parent_complete().
-# 4. Implement YourChildJob.child_process().
 #
 # Args:
 #    scheduler (Scheduler): The scheduler
@@ -120,7 +103,10 @@ class Job:
         self._element = None  # The Element() passed to the Job() constructor, if applicable
 
         self._task = None  # The task that is run
-        self._child = None
+
+        self._thread_id = None  # Thread in which the child executes its action
+        self._should_terminate = False
+        self._terminate_lock = threading.Lock()
 
     # set_name()
     #
@@ -134,26 +120,14 @@ class Job:
     #
     def start(self):
 
-        assert not self._terminated, "Attempted to start process which was already terminated"
+        assert not self._terminated, "Attempted to start a job which was already terminated"
 
         self._tries += 1
-
-        # FIXME: remove the parent/child separation, it's not needed anymore.
-        self._child = self.create_child_job(  # pylint: disable=assignment-from-no-return
-            self.action_name,
-            self._messenger,
-            self._scheduler.context.logdir,
-            self._logfile,
-            self._max_retries,
-            self._tries,
-            self._message_element_name,
-            self._message_element_key,
-        )
 
         loop = asyncio.get_event_loop()
 
         async def execute():
-            ret_code, self._result = await loop.run_in_executor(None, self._child.child_action)
+            ret_code, self._result = await loop.run_in_executor(None, self.child_action)
             await self._parent_child_completed(ret_code)
 
         self._task = loop.create_task(execute())
@@ -168,8 +142,17 @@ class Job:
         self.message(MessageType.STATUS, "{} terminating".format(self.action_name))
 
         if self._task:
-            self._child.terminate()
+            assert utils._is_in_main_thread(), "Terminating the job's thread should only be done from the scheduler"
 
+            if self._should_terminate:
+                return
+
+            with self._terminate_lock:
+                self._should_terminate = True
+                if self._thread_id is None:
+                    return
+
+            terminate_thread(self._thread_id)
         self._terminated = True
 
     # get_terminated()
@@ -177,7 +160,7 @@ class Job:
     # Check if a job has been terminated.
     #
     # Returns:
-    #     (bool): True in the main process if Job.terminate() was called.
+    #     (bool): True in the main thread if Job.terminate() was called.
     #
     def get_terminated(self):
         return self._terminated
@@ -241,9 +224,22 @@ class Job:
     #                  Abstract Methods                   #
     #######################################################
 
+    # child_process()
+    #
+    # This will be executed in a thread, and is intended to perform the job's task.
+    #
+    # Returns:
+    #    (any): A simple object (must be pickle-able, i.e. strings, lists,
+    #           dicts, numbers, but not Element instances). It is returned to
+    #           the parent Job running in the main process. This is taken as
+    #           the result of the Job.
+    #
+    def child_process(self):
+        raise ImplError("Job '{kind}' does not implement child_process()".format(kind=type(self).__name__))
+
     # parent_complete()
     #
-    # This will be executed in the main process after the job finishes, and is
+    # This will be executed in the main thread after the job finishes, and is
     # expected to pass the result to the main thread.
     #
     # Args:
@@ -252,24 +248,6 @@ class Job:
     #
     def parent_complete(self, status, result):
         raise ImplError("Job '{kind}' does not implement parent_complete()".format(kind=type(self).__name__))
-
-    # create_child_job()
-    #
-    # Called by a Job instance to create a child job.
-    #
-    # The child job object is an instance of a subclass of ChildJob.
-    #
-    # The child job object's child_process() method will be executed in another
-    # process, so that work is done in parallel. See the documentation for the
-    # Job class for more information on this relationship.
-    #
-    # This method must be overridden by Job subclasses.
-    #
-    # Returns:
-    #    (ChildJob): An instance of a subclass of ChildJob.
-    #
-    def create_child_job(self, *args, **kwargs):
-        raise ImplError("Job '{kind}' does not implement create_child_job()".format(kind=type(self).__name__))
 
     #######################################################
     #                  Local Private Methods              #
@@ -323,92 +301,6 @@ class Job:
         self._scheduler.job_completed(self, status)
         self._task = None
 
-
-# ChildJob()
-#
-# The ChildJob object represents the part of a parallel task that will run in a
-# separate process. It has a close relationship with the parent Job that
-# created it.
-#
-# See the documentation of the Job class for more on their relationship, and
-# how to set up a (Job, ChildJob pair).
-#
-# The args below are passed from the parent Job to the ChildJob.
-#
-# Args:
-#    scheduler (Scheduler): The scheduler.
-#    action_name (str): The queue action name.
-#    logfile (str): A template string that points to the logfile
-#                   that should be used - should contain {pid}.
-#    max_retries (int): The maximum number of retries.
-#    tries (int): The number of retries so far.
-#    message_element_name (str): None, or the plugin instance element name
-#                                to be supplied to the Message() constructor.
-#    message_element_key (tuple): None, or the element display key tuple
-#                                to be supplied to the Message() constructor.
-#
-class ChildJob:
-    def __init__(
-        self, action_name, messenger, logdir, logfile, max_retries, tries, message_element_name, message_element_key
-    ):
-
-        self.action_name = action_name
-
-        self._messenger = messenger
-        self._logdir = logdir
-        self._logfile = logfile
-        self._max_retries = max_retries
-        self._tries = tries
-        self._message_element_name = message_element_name
-        self._message_element_key = message_element_key
-
-        self._thread_id = None  # Thread in which the child executes its action
-        self._should_terminate = False
-        self._terminate_lock = threading.Lock()
-
-    # message():
-    #
-    # Logs a message, this will be logged in the task's logfile and
-    # conditionally also be sent to the frontend.
-    #
-    # Args:
-    #    message_type (MessageType): The type of message to send
-    #    message (str): The message
-    #    kwargs: Remaining Message() constructor arguments, note
-    #            element_key is set in _child_message_handler
-    #            for front end display if not already set or explicitly
-    #            overriden here.
-    #
-    def message(self, message_type, message, **kwargs):
-        kwargs["scheduler"] = True
-        self._messenger.message(
-            Message(
-                message_type,
-                message,
-                element_name=self._message_element_name,
-                element_key=self._message_element_key,
-                **kwargs
-            )
-        )
-
-    #######################################################
-    #                  Abstract Methods                   #
-    #######################################################
-
-    # child_process()
-    #
-    # This will be executed after starting the child process, and is intended
-    # to perform the job's task.
-    #
-    # Returns:
-    #    (any): A simple object (must be pickle-able, i.e. strings, lists,
-    #           dicts, numbers, but not Element instances). It is returned to
-    #           the parent Job running in the main process. This is taken as
-    #           the result of the Job.
-    #
-    def child_process(self):
-        raise ImplError("ChildJob '{kind}' does not implement child_process()".format(kind=type(self).__name__))
-
     # child_action()
     #
     # Perform the action in the child process, this calls the action_cb.
@@ -423,7 +315,7 @@ class ChildJob:
         # Time, log and and run the action function
         #
         with self._messenger.timed_suspendable() as timeinfo, self._messenger.recorded_messages(
-            self._logfile, self._logdir
+            self._logfile, self._scheduler.context.logdir
         ) as filename:
             try:
                 self.message(MessageType.START, self.action_name, logfile=filename)
@@ -496,22 +388,3 @@ class ChildJob:
             except TerminateException:
                 self._thread_id = None
                 return _ReturnCode.TERMINATED, None
-
-    # terminate()
-    #
-    # Ask the the current child thread to terminate
-    #
-    # This should only ever be called from the main thread.
-    #
-    def terminate(self):
-        assert utils._is_in_main_thread(), "Terminating the job's thread should only be done from the scheduler"
-
-        if self._should_terminate:
-            return
-
-        with self._terminate_lock:
-            self._should_terminate = True
-            if self._thread_id is None:
-                return
-
-        terminate_thread(self._thread_id)
