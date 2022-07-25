@@ -1,0 +1,4 @@
+kind: stack
+
+(@):
+- include.yml

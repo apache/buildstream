@@ -880,3 +880,43 @@ def test_include_vars_optional(cli, datafiles, use_species, expected_result):
     result.assert_success()
     result_vars = _yaml.load_data(result.output)
     assert result_vars.get_str("resolved") == expected_result
+
+
+# This test verifies that project option conditional statements made
+# in an include file are resolved in the context of the project where
+# the include file originates.
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target",
+    ["target.bst", "subproject.bst:target.bst"],
+    ids=["toplevel-target", "subproject-target"],
+)
+@pytest.mark.parametrize(
+    "animal,expected_result",
+    [
+        ("pony", "target pony"),
+        ("horsy", "target horsy"),
+    ],
+    ids=["branch1", "branch2"],
+)
+def test_include_vars_cross_junction_element(cli, datafiles, target, animal, expected_result):
+    project = os.path.join(str(datafiles), "include-complex")
+    result = cli.run(
+        project=project,
+        silent=True,
+        args=[
+            "--option",
+            "animal",
+            animal,
+            "show",
+            "--deps",
+            "none",
+            "--format",
+            "%{vars}",
+            target,
+        ],
+    )
+    result.assert_success()
+    result_vars = _yaml.load_data(result.output)
+    assert result_vars.get_str("target_animal_variable") == expected_result
