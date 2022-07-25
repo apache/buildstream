@@ -192,6 +192,14 @@ class Loader:
         junction_path = name.split(":")
         loader = self
 
+        #
+        # In this case we are attempting to load a subproject element via the
+        # command line instead of referencing the subproject through a project
+        # element or otherwise.
+        #
+        if provenance_node is None and load_subprojects:
+            self.project.ensure_fully_loaded()
+
         circular_provenance_node = self._loader_search_provenances.get(name, None)
         if circular_provenance_node and load_subprojects:
 
@@ -206,13 +214,13 @@ class Loader:
                 detail=detail,
             )
 
-        if load_subprojects:
+        if load_subprojects and provenance_node:
             self._loader_search_provenances[name] = provenance_node
 
         for junction_name in junction_path:
             loader = loader._get_loader(junction_name, provenance_node, load_subprojects=load_subprojects)
 
-        if load_subprojects:
+        if load_subprojects and provenance_node:
             del self._loader_search_provenances[name]
 
         return loader
