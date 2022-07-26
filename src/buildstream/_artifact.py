@@ -28,6 +28,7 @@ artifact composite interaction away from Element class
 """
 
 import os
+import tempfile
 from typing import Dict, Tuple
 
 from ._protos.buildstream.v2.artifact_pb2 import Artifact as ArtifactProto
@@ -237,40 +238,50 @@ class Artifact:
             artifact.files.CopyFrom(filesvdir._get_digest())
             size += filesvdir._get_size()
 
-        # Store public data
-        with utils._tempnamedfile_name(dir=self._tmpdir) as tmpname:
-            _yaml.roundtrip_dump(publicdata, tmpname)
-            public_data_digest = self._cas.add_object(path=tmpname)
-            artifact.public_data.CopyFrom(public_data_digest)
-            size += public_data_digest.size_bytes
+        with tempfile.TemporaryDirectory() as tmpdir:
+            files_to_capture = []
 
-        # Store low diversity metadata, this metadata must have a high
-        # probability of deduplication, such as environment variables
-        # and SandboxConfig.
-        #
-        with utils._tempnamedfile_name(dir=self._tmpdir) as tmpname:
+            # Store public data
+            tmpname = os.path.join(tmpdir, "public_data")
+            _yaml.roundtrip_dump(publicdata, tmpname)
+            files_to_capture.append((tmpname, artifact.public_data))
+
+            # Store low diversity metadata, this metadata must have a high
+            # probability of deduplication, such as environment variables
+            # and SandboxConfig.
+            #
             sandbox_dict = sandboxconfig.to_dict()
             low_diversity_dict = {"environment": environment, "sandbox-config": sandbox_dict}
             low_diversity_node = Node.from_dict(low_diversity_dict)
 
+            tmpname = os.path.join(tmpdir, "low_diversity_meta")
             _yaml.roundtrip_dump(low_diversity_node, tmpname)
-            low_diversity_meta_digest = self._cas.add_object(path=tmpname)
-            artifact.low_diversity_meta.CopyFrom(low_diversity_meta_digest)
-            size += low_diversity_meta_digest.size_bytes
+            files_to_capture.append((tmpname, artifact.low_diversity_meta))
 
-        # Store high diversity metadata, this metadata is expected to diverge
-        # for every element and as such cannot be deduplicated.
-        #
-        with utils._tempnamedfile_name(dir=self._tmpdir) as tmpname:
+            # Store high diversity metadata, this metadata is expected to diverge
+            # for every element and as such cannot be deduplicated.
+            #
             # The Variables object supports being converted directly to a dictionary
             variables_dict = dict(variables)
             high_diversity_dict = {"variables": variables_dict}
             high_diversity_node = Node.from_dict(high_diversity_dict)
 
+            tmpname = os.path.join(tmpdir, "high_diversity_meta")
             _yaml.roundtrip_dump(high_diversity_node, tmpname)
-            high_diversity_meta_digest = self._cas.add_object(path=tmpname)
-            artifact.high_diversity_meta.CopyFrom(high_diversity_meta_digest)
-            size += high_diversity_meta_digest.size_bytes
+            files_to_capture.append((tmpname, artifact.high_diversity_meta))
+
+            # Store log file
+            log_filename = context.messenger.get_log_filename()
+            if log_filename:
+                log = artifact.logs.add()
+                log.name = os.path.basename(log_filename)
+                files_to_capture.append((log_filename, log.digest))
+
+            # Capture queued files and store returned digests
+            digests = self._cas.add_objects(paths=[entry[0] for entry in files_to_capture])
+            for entry, digest in zip(files_to_capture, digests, strict=True):
+                entry[1].CopyFrom(digest)
+                size += digest.size_bytes
 
         # store build dependencies
         for e in element._dependencies(_Scope.BUILD):
@@ -279,15 +290,6 @@ class Artifact:
             new_build.element_name = e.name
             new_build.cache_key = e._get_cache_key()
             new_build.was_workspaced = bool(e._get_workspace())
-
-        # Store log file
-        log_filename = context.messenger.get_log_filename()
-        if log_filename:
-            digest = self._cas.add_object(path=log_filename)
-            log = artifact.logs.add()
-            log.name = os.path.basename(log_filename)
-            log.digest.CopyFrom(digest)
-            size += log.digest.size_bytes
 
         # Store build tree
         if sandbox_build_dir is not None:
