@@ -1,0 +1,8 @@
+
+variables:
+  target_animal_variable: "no target animal"
+  (?):
+  - target_animal == "pony":
+      target_animal_variable: "target pony"
+  - target_animal == "horsy":
+      target_animal_variable: "target horsy"

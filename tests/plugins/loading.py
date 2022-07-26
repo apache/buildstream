@@ -896,3 +896,9 @@ def test_load_junction_via_junctioned_plugin(cli, datafiles, tmpdir):
     result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert loaded.get_str("animal") == "pony"
+
+    # Try a subproject element access on the command line, as this project
+    # has the potential to make this break.
+    #
+    result = cli.run(project=project, args=["show", "subproject.bst:target.bst"])
+    result.assert_success()
