@@ -100,6 +100,12 @@ service LocalContentAddressableStorage {
   // If a CAS remote is configured, the blobs are uploaded.
   // The `bypass_local_cache` parameter is a hint to indicate whether the blobs
   // shall be uploaded without first storing them in the local cache.
+  //
+  // The `move_files` parameter is a hint to indicate that files could be
+  // moved into the storage. This can make capturing more efficient by
+  // avoiding copies when it is known that files will not be needed after they
+  // are imported. If a server chooses not to move them, the source files will
+  // still exist after this request.
   rpc CaptureTree(CaptureTreeRequest) returns (CaptureTreeResponse) {}
 
   // Capture files from the local filesystem.
@@ -109,6 +115,12 @@ service LocalContentAddressableStorage {
   // If a CAS remote is configured, the blobs are uploaded.
   // The `bypass_local_cache` parameter is a hint to indicate whether the blobs
   // shall be uploaded without first storing them in the local cache.
+  //
+  // The `move_files` parameter is a hint to indicate that the files could be
+  // moved into the storage. This can make capturing more efficient by
+  // avoiding copies when it is known that files will not be needed after they
+  // are imported. If a server chooses not to move them, the source files will
+  // still exist after this request.
   rpc CaptureFiles(CaptureFilesRequest) returns (CaptureFilesResponse) {}
 
   // Configure remote CAS endpoint.
@@ -125,6 +137,13 @@ service LocalContentAddressableStorage {
   // This returns a string that can be used as instance_name to access the
   // specified endpoints in further requests.
   rpc GetInstanceNameForRemotes(GetInstanceNameForRemotesRequest) returns (GetInstanceNameForRemotesResponse) {}
+
+  // Configure sandboxed clients.
+  //
+  // This returns a string that can be used as instance_name to access
+  // this service from clients running in the specified filesystem/mount
+  // namespace or chroot environment
+  rpc GetInstanceNameForNamespace(GetInstanceNameForNamespaceRequest) returns (GetInstanceNameForNamespaceResponse) {}
 
   // Query total space used by the local cache.
   rpc GetLocalDiskUsage(GetLocalDiskUsageRequest) returns (GetLocalDiskUsageResponse) {}
@@ -264,6 +283,15 @@ message StageTreeRequest {
   // this staged tree will in that case be limited to the lifetime of the
   // parent.
   string path = 3;
+
+  message Credentials {
+    int64 uid = 1;
+  }
+
+  // The UNIX credentials of the processes that will access the staged tree.
+  // This will be used to ensure that the files have the right permissions
+  // for access without risking corruption of files in the local cache.
+  Credentials access_credentials = 4;
 }
 
 // A response message for
@@ -283,6 +311,11 @@ message CaptureTreeRequest {
   // omitted.
   string instance_name = 1;
 
+  // The optional root path to restrict capture to a subtree.
+  // If specified, `path` will be resolved inside this root.
+  // No files outside the root will be captured.
+  string root = 6;
+
   // The path(s) in the local filesystem to capture.
   repeated string path = 2;
 
@@ -292,6 +325,11 @@ message CaptureTreeRequest {
 
   // The properties of path(s) in the local filesystem to capture.
   repeated string node_properties = 4;
+
+  // Hints whether files can be moved into the storage.
+  // If enabled, they MUST NOT be modified after issuing this request in order
+  // to guarantee consistency.
+  bool move_files = 5;
 }
 
 // A response message for
@@ -325,6 +363,11 @@ message CaptureFilesRequest {
   // omitted.
   string instance_name = 1;
 
+  // The optional root path to restrict capture to a subtree.
+  // If specified, `path` will be resolved inside this root.
+  // No files outside the root will be captured.
+  string root = 6;
+
   // The path(s) in the local filesystem to capture.
   repeated string path = 2;
 
@@ -334,6 +377,11 @@ message CaptureFilesRequest {
 
   // The properties of path(s) in the local filesystem to capture.
   repeated string node_properties = 4;
+
+  // Hints whether the files can be moved into the storage.
+  // If enabled, they MUST NOT be modified after issuing this request in order
+  // to guarantee consistency.
+  bool move_files = 5;
 }
 
 // A response message for
@@ -425,13 +473,43 @@ message Remote {
 // A request message for
 // [LocalContentAddressableStorage.GetInstanceNameForRemotes][build.buildgrid.v2.LocalContentAddressableStorage.GetInstanceNameForRemotes].
 message GetInstanceNameForRemotesRequest {
+  // The instance of the execution system to operate against. A server may
+  // support multiple instances of the execution system (with their own workers,
+  // storage, caches, etc.). The server MAY require use of this field to select
+  // between them in an implementation-defined fashion, otherwise it can be
+  // omitted.
+  string instance_name = 3;
+
   Remote content_addressable_storage = 1;
   Remote remote_asset = 2;
+  Remote action_cache = 4;
 }
 
 // A response message for
 // [LocalContentAddressableStorage.GetInstanceNameForRemotes][build.buildgrid.v2.LocalContentAddressableStorage.GetInstanceNameForRemotes].
 message GetInstanceNameForRemotesResponse {
+  string instance_name = 1;
+}
+
+
+// A request message for
+// [LocalContentAddressableStorage.GetInstanceNameForRemote][build.buildgrid.v2.LocalContentAddressableStorage.GetInstanceNameForNamespace].
+message GetInstanceNameForNamespaceRequest {
+  // The instance of the execution system to operate against. A server may
+  // support multiple instances of the execution system (with their own workers,
+  // storage, caches, etc.). The server MAY require use of this field to select
+  // between them in an implementation-defined fashion, otherwise it can be
+  // omitted.
+  string instance_name = 1;
+
+  // The root path of the mount namespace to restrict capture and staging.
+  // All paths in requests to the new instance will be resolved inside this root.
+  string root = 2;
+}
+
+// A response message for
+// [LocalContentAddressableStorage.GetInstanceNameForRemote][build.buildgrid.v2.LocalContentAddressableStorage.GetInstanceNameForNamespace].
+message GetInstanceNameForNamespaceResponse {
   string instance_name = 1;
 }
 
