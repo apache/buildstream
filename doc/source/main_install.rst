@@ -31,14 +31,6 @@ BuildStream also depends on the host tools for the :mod:`Source <buildstream.sou
 Refer to the respective :ref:`source plugin <plugins_sources>` documentation for host tool
 requirements of specific plugins.
 
-The default plugins with extra host dependencies are:
-
-- bzr
-- git
-- patch
-- pip
-- tar
-
 
 Arch Linux
 ~~~~~~~~~~
@@ -48,12 +40,6 @@ Install the dependencies with::
     sudo pacman -S python python-pip
 
 
-For the default plugins::
-
-
-    sudo pacman -S bzr git lzip patch
-
-
 Debian
 ~~~~~~
 Install the dependencies with::
@@ -61,11 +47,6 @@ Install the dependencies with::
 
     sudo apt-get install \
         python3 python3-pip python3-dev
-
-For the default plugins:
-
-    sudo apt-get install \
-        lzip git bzr patch
 
 
 Fedora
@@ -77,30 +58,14 @@ requirements you need::
     dnf install -y \
         python3 python3-pip python3-devel
 
-For the default plugins::
-
-
-    dnf install -y \
-        bzr git lzip patch
-
 
 Ubuntu
 ~~~~~~
-
-Ubuntu 18.04 LTS or later
-+++++++++++++++++++++++++
 Install the dependencies with::
 
 
     sudo apt install \
         python3 python3-pip python3-dev
-
-For the default plugins::
-
-
-    sudo apt install \
-        bzr git lzip patch
-
 
 
 .. _install-buildbox:
