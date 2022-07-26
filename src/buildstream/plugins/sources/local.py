@@ -100,7 +100,7 @@ class LocalSource(Source):
         assert isinstance(directory, Directory)
         assert self.__digest is not None
         with self._cache_directory(digest=self.__digest) as cached_directory:
-            directory.import_files(cached_directory)
+            directory.import_files(cached_directory, collect_result=False)
 
     def init_workspace_directory(self, directory):
         #

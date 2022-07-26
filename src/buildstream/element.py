@@ -978,6 +978,7 @@ class Element(Plugin):
         split_filter = self.__split_filter_func(include, exclude, orphans)
 
         result = vstagedir._import_files_internal(files_vdir, filter_callback=split_filter)
+        assert result is not None
 
         owner._overlap_collector.collect_stage_result(self, result)
 
@@ -1488,7 +1489,7 @@ class Element(Plugin):
                     import_dir = staged_sources
 
             # Set update_mtime to ensure deterministic mtime of sources at build time
-            vdirectory._import_files_internal(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP)
+            vdirectory._import_files_internal(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP, collect_result=False)
 
         # Ensure deterministic owners of sources at build time
         vdirectory._set_deterministic_user()

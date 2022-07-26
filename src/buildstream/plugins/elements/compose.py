@@ -170,7 +170,7 @@ class ComposeElement(Element):
 
         with self.timed_activity("Creating composition", detail=detail, silent_nested=True):
             self.info("Composing {} files".format(len(manifest)))
-            installdir.import_files(vbasedir, filter_callback=import_filter)
+            installdir.import_files(vbasedir, filter_callback=import_filter, collect_result=False)
 
         # And we're done
         return os.path.join(os.sep, "buildstream", "install")
