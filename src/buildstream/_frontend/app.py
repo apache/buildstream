@@ -624,6 +624,9 @@ class App:
     def _job_failed(self, task_id, element=None):
         task = self._state.tasks[task_id]
 
+        # Flush any pending messages when handling a failure
+        self._render(message_text=self._message_text)
+
         # Dont attempt to handle a failure if the user has already opted to
         # terminate
         if not self.stream.terminated:
