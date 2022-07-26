@@ -965,7 +965,7 @@ class Source(Plugin):
             # First warn if there is a ref already loaded, and reset it
             redundant_ref = self.get_ref()  # pylint: disable=assignment-from-no-return
             if redundant_ref is not None:
-                self.set_ref(None, {})
+                self.set_ref(None, MappingNode.from_dict({}))
 
             # Try to load the ref
             refs = self._project_refs(project)
@@ -1015,14 +1015,18 @@ class Source(Plugin):
         #
         # Step 2 - Set the ref in memory, and determine changed state
         #
-        # TODO: we are working on dictionaries here, would be nicer to just work on the nodes themselves
         clean = node.strip_node_info()
-        to_modify = node.strip_node_info()
 
         # Set the ref regardless of whether it changed, the
         # TrackQueue() will want to update a specific node with
         # the ref, regardless of whether the original has changed.
-        self.set_ref(new_ref, to_modify)
+        #
+        # In the following add/del/mod merge algorithm we are working with
+        # dictionaries, but the plugin API calls for a MappingNode.
+        #
+        modify = node.clone()
+        self.set_ref(new_ref, modify)
+        to_modify = modify.strip_node_info()
 
         # FIXME: this will save things too often, as a ref might not have
         #        changed. We should optimize this to detect it differently
