@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2022 Codethink Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -18,6 +18,9 @@
 
 import datetime
 import os
+from typing import Optional
+
+from .types import _DisplayKey
 
 
 # Types of status messages.
@@ -48,33 +51,33 @@ unconditional_messages = [MessageType.INFO, MessageType.WARN, MessageType.FAIL, 
 class Message:
     def __init__(
         self,
-        message_type,
-        message,
+        message_type: str,
+        message: str,
         *,
-        task_element_name=None,
-        task_element_key=None,
-        element_name=None,
-        element_key=None,
-        detail=None,
-        action_name=None,
-        elapsed=None,
-        logfile=None,
-        sandbox=False,
-        scheduler=False
+        task_element_name: Optional[str] = None,
+        task_element_key: Optional[_DisplayKey] = None,
+        element_name: Optional[str] = None,
+        element_key: Optional[_DisplayKey] = None,
+        detail: str = None,
+        action_name: str = None,
+        elapsed: Optional[datetime.timedelta] = None,
+        logfile: str = None,
+        sandbox: bool = False,
+        scheduler: bool = False
     ):
-        self.message_type = message_type  # Message type
-        self.message = message  # The message string
-        self.task_element_name = task_element_name  # The name of the issuing task element
-        self.task_element_key = task_element_key  # The DisplayKey of the issuing task element
-        self.element_name = element_name  # The name of the issuing element
-        self.element_key = element_key  # The DisplayKey of the issuing element
-        self.detail = detail  # An additional detail string
-        self.action_name = action_name  # Name of the task queue (fetch, refresh, build, etc)
-        self.elapsed = elapsed  # The elapsed time, in timed messages
-        self.logfile = logfile  # The log file path where commands took place
-        self.sandbox = sandbox  # Whether the error that caused this message used a sandbox
-        self.pid = os.getpid()  # The process pid
-        self.scheduler = scheduler  # Whether this is a scheduler level message
-        self.creation_time = datetime.datetime.now()
+        self.message_type: str = message_type  # Message type
+        self.message: str = message  # The message string
+        self.task_element_name: Optional[str] = task_element_name  # The name of the issuing task element
+        self.task_element_key: Optional[_DisplayKey] = task_element_key  # The DisplayKey of the issuing task element
+        self.element_name: Optional[str] = element_name  # The name of the issuing element
+        self.element_key: Optional[_DisplayKey] = element_key  # The DisplayKey of the issuing element
+        self.detail: Optional[str] = detail  # An additional detail string
+        self.action_name: Optional[str] = action_name  # Name of the task queue (fetch, refresh, build, etc)
+        self.elapsed: Optional[datetime.timedelta] = elapsed  # The elapsed time, in timed messages
+        self.logfile: Optional[str] = logfile  # The log file path where commands took place
+        self.sandbox: bool = sandbox  # Whether the error that caused this message used a sandbox
+        self.pid: int = os.getpid()  # The process pid
+        self.scheduler: bool = scheduler  # Whether this is a scheduler level message
+        self.creation_time: datetime.datetime = datetime.datetime.now()
         if message_type in (MessageType.SUCCESS, MessageType.FAIL):
             assert elapsed is not None
