@@ -3,7 +3,7 @@ from io import StringIO
 
 import pytest
 
-from buildstream import _yaml, Node, ProvenanceInformation, SequenceNode
+from buildstream import _yaml, Node, MappingNode, ProvenanceInformation, SequenceNode
 from buildstream.exceptions import LoadErrorReason
 from buildstream._exceptions import LoadError
 
@@ -521,3 +521,31 @@ def test_get_str_list_default_none(datafiles):
     # There is no "pony" key here, assert that the default return is smooth
     strings = base.get_str_list("pony", None)
     assert strings is None
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_mapping_node_assign_none(datafiles):
+    conf_file = os.path.join(datafiles.dirname, datafiles.basename, "dictionary.yaml")
+    dump_file = os.path.join(datafiles.dirname, datafiles.basename, "dictionary-dump.yaml")
+
+    base = _yaml.load(conf_file, shortname=None)
+    nested = base.get_mapping("nested")
+    nested["ref"] = None
+
+    # Check that we have successfully set the ref to None
+    value = nested.get_scalar("ref")
+    assert value.is_none()
+
+    # Without saving and loading, our None value is retained in memory
+    stripped = base.strip_node_info()
+    assert stripped["nested"]["ref"] is None
+
+    # Save and load
+    _yaml.roundtrip_dump(base, dump_file)
+    loaded = _yaml.load(dump_file, shortname=None)
+    loaded_nested = loaded.get_mapping("nested")
+    value = loaded_nested.get_scalar("ref")
+
+    # The loaded value will be an empty string, because we don't recognize None
+    # value representations in YAML
+    assert value.as_str() == ""
