@@ -22,6 +22,7 @@ import threading
 from contextlib import contextmanager
 from typing import Optional, Callable, Iterator, TextIO
 
+from .types import _DisplayKey
 from . import _signals
 from ._exceptions import BstError
 from ._message import Message, MessageType, unconditional_messages
@@ -48,8 +49,13 @@ class _TimeData:
         self.start_time: datetime.datetime = start_time
 
 
+# _JobInfo
+#
+# Information about a job, used as a part of thread local storage
+# in order to fill in some Message parameters automatically.
+#
 class _JobInfo:
-    def __init__(self, action_name: str, element_name: str, element_key: str) -> None:
+    def __init__(self, action_name: str, element_name: str, element_key: _DisplayKey) -> None:
         self.action_name = action_name
         self.element_name = element_name
         self.element_key = element_key
@@ -111,7 +117,17 @@ class Messenger:
         #
         self._bst_version = get_versions()["version"]
 
-    def setup_new_action_context(self, action_name: str, element_name: str, element_key: str) -> None:
+    # setup_new_action_context()
+    #
+    # Setup the thread local context for a new task, some message
+    # components are filled in automatically based on the action context.
+    #
+    # Args:
+    #    action_name: The action name
+    #    element_name: The element name
+    #    element_key: The element's DisplayKey
+    #
+    def setup_new_action_context(self, action_name: str, element_name: str, element_key: _DisplayKey) -> None:
         self._locals.silence_scope_depth = 0
         self._locals.job = _JobInfo(action_name, element_name, element_key)
 
@@ -529,6 +545,7 @@ class Messenger:
 
         timecode = EMPTYTIME
         if message.message_type in (MessageType.SUCCESS, MessageType.FAIL):
+            assert message.elapsed is not None
             hours, remainder = divmod(int(message.elapsed.total_seconds()), 60**2)
             minutes, seconds = divmod(remainder, 60)
             timecode = "{0:02d}:{1:02d}:{2:02d}".format(hours, minutes, seconds)
