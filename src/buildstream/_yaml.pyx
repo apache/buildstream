@@ -338,6 +338,9 @@ def represent_mapping(self, MappingNode mapping):
     return self.represent_dict(mapping.value)
 
 def represent_scalar(self, ScalarNode scalar):
+    # We load None values as strings, and also save them as strings
+    if scalar.value is None:
+        return self.represent_str("")
     return self.represent_str(scalar.value)
 
 def represent_sequence(self, SequenceNode sequence):

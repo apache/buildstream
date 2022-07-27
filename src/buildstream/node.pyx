@@ -1663,7 +1663,7 @@ cdef Node __create_node_recursive(object value, Node ref_node):
 
     if value_type is list:
         node = __new_node_from_list(value, ref_node)
-    elif value_type in [int, str, bool]:
+    elif value_type in [int, str, bool, type(None)]:
         node = ScalarNode.__new__(ScalarNode, ref_node.file_index, ref_node.line, __next_synthetic_counter(), value)
     elif value_type is dict:
         node = __new_node_from_dict(value, ref_node)
