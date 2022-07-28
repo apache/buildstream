@@ -391,4 +391,18 @@ class _SourceMirror:
 ########################################
 
 # Internal reference for a given Source
-SourceRef = Union[None, int, List[Any], Dict[str, Any]]
+SourceRef = Union[None, int, str, List[Any], Dict[str, Any]]
+"""
+A simple python object used to describe and exact set of sources
+
+This can be ``None`` in order to represent an absense of a source reference,
+otherwise it can be ``int``, ``str``, or a complex ``list`` or ``dict`` consisting
+of ``int``, ``str``, ``list`` and ``dict`` types.
+
+The order of elements in ``list`` objects is meaningful and should be produced
+deterministically by :class:`.Source` implementations, as this order will effect
+:ref:`cache keys <cachekeys>`.
+
+See the :ref:`source documentation <core_source_ref>` for more detils on how
+:class:`.Source` implementations are expected to handle the source ref.
+"""

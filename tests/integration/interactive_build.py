@@ -5,6 +5,7 @@ import os
 import pexpect
 import pytest
 
+from buildstream._testing import integration_cache  # pylint: disable=unused-import
 from buildstream._testing import runcli
 from buildstream._testing._utils.site import HAVE_SANDBOX
 from tests.testutils.constants import PEXPECT_TIMEOUT_SHORT, PEXPECT_TIMEOUT_LONG
@@ -19,12 +20,12 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 # This fixture launches a `bst build` of given element, and returns a
 # `pexpect.spawn` object for the interactive session.
 @pytest.fixture
-def build_session(datafiles, element_name):
+def build_session(integration_cache, datafiles, element_name):
     project = str(datafiles)
 
     # Spawn interactive session using `configured()` context manager in order
     # to get the same config file as the `cli` fixture.
-    with runcli.configured(project) as config_file:
+    with runcli.configured(project, config={"sourcedir": integration_cache.sources}) as config_file:
         session = pexpect.spawn(
             "bst",
             [

@@ -573,14 +573,14 @@ class Element(Plugin):
         """Compute and return this element's full artifact name
 
         Generate a full name for an artifact, including the project
-        namespace, element name and cache key.
+        namespace, element name and :ref:`cache key <cachekeys>`.
 
         This can also be used as a relative path safely, and
         will normalize parts of the element name such that only
         digits, letters and some select characters are allowed.
 
         Args:
-           key: The element's cache key. Defaults to None
+           key: The element's :ref:`cache key <cachekeys>`. Defaults to None
 
         Returns:
            The relative path for the artifact

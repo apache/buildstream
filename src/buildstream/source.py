@@ -105,6 +105,68 @@ these methods are mandatory to implement.
   **Optional**: This is completely optional and will do nothing if left unimplemented.
 
 
+.. _core_source_ref:
+
+Working with the source ref
+---------------------------
+The :attr:`~buildstream.types.SourceRef` is used to determine the exact
+version of data to be addressed by the source.
+
+The various responsibilities involving the source reference are described here.
+
+
+Loading and saving
+~~~~~~~~~~~~~~~~~~
+The source reference is expected to be loaded at
+:func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` and
+and :func:`Source.load_ref() <buildstream.source.Source.load_ref>` time
+from the provided :class:`.MappingNode`.
+
+The :attr:`~buildstream.types.SourceRef` should be loaded from a `single key`
+in that node, the recommended name for that key is `ref`, but is ultimately up
+to the implementor to decide.
+
+When :func:`Source.set_ref() <buildstream.source.Source.set_ref>` is called,
+the source reference should be assigned to the `same single key` in the
+provided :class:`.MappingNode`, this will be used to serialize changed
+source references to YAML as a result of :ref:`tracking <invoking_source_track>`.
+
+
+Tracking new references
+~~~~~~~~~~~~~~~~~~~~~~~
+When the user :ref:`tracks <invoking_source_track>` for new versions of the source,
+then the new :attr:`~buildstream.types.SourceRef` should be returned from
+the :func:`Source.track() <buildstream.source.Source.track>` implementation.
+
+
+Managing internal state
+~~~~~~~~~~~~~~~~~~~~~~~
+Internally the source implementation is expected to keep track of its
+:attr:`~buildstream.types.SourceRef`. The internal state should be
+updated when :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`,
+:func:`Source.load_ref() <buildstream.source.Source.load_ref>` or
+:func:`Source.set_ref() <buildstream.source.Source.set_ref>` is called.
+
+The internal state should not be updated when
+:func:`Source.track() <buildstream.source.Source.track>` is called.
+
+The internal source ref must be returned on demand whenever
+:func:`Source.get_ref() <buildstream.source.Source.get_ref>` is called.
+
+
+Generating the unique key
+~~~~~~~~~~~~~~~~~~~~~~~~~
+When :func:`Plugin.get_unique_key() <buildstream.plugin.Plugin.get_unique_key>`
+is called, the source's :attr:`~buildstream.types.SourceRef` must be considered
+as a part of that key.
+
+The unique key will be used to generate the cache key of :ref:`cache keys <cachekeys>`
+of elements using this source, and so the unique key should be comprised of every
+configuration which may effect how the source is :func:`staged <buildstream.source.Source.stage>`,
+as well as any configuration which uniquely identifies the source, which of course
+includes the :attr:`~buildstream.types.SourceRef`.
+
+
 Accessing previous sources
 --------------------------
 In the general case, all sources are fetched and tracked independently of one
@@ -374,14 +436,16 @@ class Source(Plugin):
     #############################################################
 
     def load_ref(self, node: MappingNode) -> None:
-        """Loads the *ref* for this Source from the specified *node*.
+        """Loads the :attr:`~buildstream.types.SourceRef` for this Source from the specified *node*.
 
         Args:
            node: The YAML node to load the ref from
 
+        Working with the :ref:`source ref is discussed here <core_source_ref>`.
+
         .. note::
 
-           The *ref* for the Source is expected to be read at
+           The :attr:`~buildstream.types.SourceRef` for the Source is expected to be read at
            :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` time,
            this will only be used for loading refs from alternative locations
            than in the `element.bst` file where the given Source object has
@@ -390,20 +454,12 @@ class Source(Plugin):
         raise ImplError("Source plugin '{}' does not implement load_ref()".format(self.get_kind()))
 
     def get_ref(self) -> SourceRef:
-        """Fetch the internal ref, however it is represented
+        """Fetch the :attr:`~buildstream.types.SourceRef`
 
         Returns:
-           (simple object): The internal source reference, or ``None``
+           The internal :attr:`~buildstream.types.SourceRef`, or ``None``
 
-        .. note::
-
-           The reference is the user provided (or track resolved) value
-           the plugin uses to represent a specific input, like a commit
-           in a VCS or a tarball's checksum. Usually the reference is a string,
-           but the plugin may choose to represent it with a tuple or such.
-
-           Implementations *must* return a ``None`` value in the case that
-           the ref was not loaded. E.g. a ``(None, None)`` tuple is not acceptable.
+        Working with the :ref:`source ref is discussed here <core_source_ref>`.
         """
         raise ImplError("Source plugin '{}' does not implement get_ref()".format(self.get_kind()))
 
@@ -411,9 +467,10 @@ class Source(Plugin):
         """Applies the internal ref, however it is represented
 
         Args:
-           ref (simple object): The internal source reference to set, or ``None``
-           node: The same dictionary which was previously passed
-                to :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
+           ref: The internal :attr:`~buildstream.types.SourceRef` to set, or ``None``
+           node: The same node which was previously passed
+                 to :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
+                 and :func:`Source.load_ref() <buildstream.source.Source.load_ref>`
 
         The implementor must update the *node* parameter to reflect the new *ref*,
         and it should store the passed *ref* so that it will be returned in any
@@ -438,6 +495,8 @@ class Source(Plugin):
                # next time this source plugin is configured with this node.
                #
                node["ref"] = self.ref
+
+        Working with the :ref:`source ref is discussed here <core_source_ref>`.
         """
         raise ImplError("Source plugin '{}' does not implement set_ref()".format(self.get_kind()))
 
@@ -451,7 +510,7 @@ class Source(Plugin):
                                        is set to True.
 
         Returns:
-           (simple object): A new internal source reference, or None
+           A new :attr:`~buildstream.types.SourceRef`, or None
 
         If the backend in question supports resolving references from
         a symbolic tracking branch or tag, then this should be implemented
@@ -463,8 +522,7 @@ class Source(Plugin):
         backend store allows one to query for a new ref from a symbolic
         tracking data without downloading then that is desirable.
 
-        See :func:`Source.get_ref() <buildstream.source.Source.get_ref>`
-        for a discussion on the *ref* parameter.
+        Working with the :ref:`source ref is discussed here <core_source_ref>`.
         """
         # Allow a non implementation
         return None
@@ -965,7 +1023,7 @@ class Source(Plugin):
             # First warn if there is a ref already loaded, and reset it
             redundant_ref = self.get_ref()  # pylint: disable=assignment-from-no-return
             if redundant_ref is not None:
-                self.set_ref(None, {})
+                self.set_ref(None, MappingNode.from_dict({}))
 
             # Try to load the ref
             refs = self._project_refs(project)
@@ -1015,14 +1073,18 @@ class Source(Plugin):
         #
         # Step 2 - Set the ref in memory, and determine changed state
         #
-        # TODO: we are working on dictionaries here, would be nicer to just work on the nodes themselves
         clean = node.strip_node_info()
-        to_modify = node.strip_node_info()
 
         # Set the ref regardless of whether it changed, the
         # TrackQueue() will want to update a specific node with
         # the ref, regardless of whether the original has changed.
-        self.set_ref(new_ref, to_modify)
+        #
+        # In the following add/del/mod merge algorithm we are working with
+        # dictionaries, but the plugin API calls for a MappingNode.
+        #
+        modify = node.clone()
+        self.set_ref(new_ref, modify)
+        to_modify = modify.strip_node_info()
 
         # FIXME: this will save things too often, as a ref might not have
         #        changed. We should optimize this to detect it differently
