@@ -413,18 +413,26 @@ class Plugin:
         Returns:
            A string, list or dictionary which uniquely identifies the input
 
-        This is used to construct unique cache keys for elements and sources,
-        sources should return something which uniquely identifies the payload,
+        This is used to construct unique :ref:`cache keys <cachekeys>` for elements
+        and sources, sources should return something which uniquely identifies the payload,
         such as an sha256 sum of a tarball content.
 
         Elements and Sources should implement this by collecting any configurations
         which could possibly affect the output and return a dictionary of these settings.
 
         For Sources, this is guaranteed to only be called if
-        :func:`Source.is_resolved() <buildstream.source.Source.is_resolved>`
-        has returned `True`
-        which is to say that the Source is expected to have an exact *ref* indicating
-        exactly what source is going to be staged.
+        :func:`Source.is_resolved() <buildstream.source.Source.is_resolved>` has returned
+        ``True`` which is to say that the :class:`.Source` is expected to have an exact
+        :ref:`source ref <core_source_ref>` indicating exactly what source is going to be staged.
+
+        .. note::
+
+           If your plugin is concerned with API stability, then future extensions of your
+           plugin YAML configuration which affect the unique key returned here should be added
+           to this key with care.
+
+           A good rule of thumb is to only compute the new value in the returned key if
+           the value of the newly added YAML key is not equal to it's default value.
         """
         raise ImplError(
             "{tag} plugin '{kind}' does not implement get_unique_key()".format(
