@@ -1639,9 +1639,6 @@ class Element(Plugin):
     #   - Call the public abstract methods for the build phase
     #   - Cache the resulting artifact
     #
-    # Returns:
-    #    (int): The size of the newly cached artifact
-    #
     def _assemble(self):
 
         # Only do this the first time around (i.e. __assemble_done is False)
@@ -1708,7 +1705,7 @@ class Element(Plugin):
 
                     raise
                 else:
-                    return self._cache_artifact(sandbox, collect)
+                    self._cache_artifact(sandbox, collect)
 
     def _cache_artifact(self, sandbox, collect):
 
@@ -1755,7 +1752,7 @@ class Element(Plugin):
         assert self.__artifact._cache_key is not None
 
         with self.timed_activity("Caching artifact"):
-            artifact_size = self.__artifact.cache(
+            self.__artifact.cache(
                 sandbox_build_dir=sandbox_build_dir,
                 collectvdir=collectvdir,
                 sourcesvdir=sourcesvdir,
@@ -1771,8 +1768,6 @@ class Element(Plugin):
                 "Directory '{}' was not found inside the sandbox, "
                 "unable to collect artifact contents".format(collect)
             )
-
-        return artifact_size
 
     # _fetch_done()
     #

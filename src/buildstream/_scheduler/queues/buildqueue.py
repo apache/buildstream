@@ -54,4 +54,4 @@ class BuildQueue(Queue):
 
     @staticmethod
     def _assemble_element(element):
-        return element._assemble()
+        element._assemble()

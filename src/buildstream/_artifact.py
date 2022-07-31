@@ -191,9 +191,6 @@ class Artifact:
     #    environment (dict): dict of the element's environment variables
     #    sandboxconfig (SandboxConfig): The element's SandboxConfig
     #
-    # Returns:
-    #    (int): The size of the newly cached artifact
-    #
     def cache(
         self,
         *,
@@ -284,7 +281,6 @@ class Artifact:
             assert len(files_to_capture) == len(digests)
             for entry, digest in zip(files_to_capture, digests):
                 entry[1].CopyFrom(digest)
-                size += digest.size_bytes
 
         # store build dependencies
         for e in element._dependencies(_Scope.BUILD):
@@ -299,12 +295,10 @@ class Artifact:
             buildtreevdir = CasBasedDirectory(cas_cache=self._cas)
             buildtreevdir._import_files_internal(sandbox_build_dir, properties=properties, collect_result=False)
             artifact.buildtree.CopyFrom(buildtreevdir._get_digest())
-            size += buildtreevdir._get_size()
 
         # Store sources
         if sourcesvdir is not None:
             artifact.sources.CopyFrom(sourcesvdir._get_digest())
-            size += sourcesvdir._get_size()
 
         os.makedirs(os.path.dirname(os.path.join(self._artifactdir, element.get_artifact_name())), exist_ok=True)
         keys = utils._deduplicate([self._cache_key, self._weak_cache_key])
@@ -312,8 +306,6 @@ class Artifact:
             path = os.path.join(self._artifactdir, element.get_artifact_name(key=key))
             with utils.save_file_atomic(path, mode="wb") as f:
                 f.write(artifact.SerializeToString())
-
-        return size
 
     # cached_buildtree()
     #
