@@ -1416,8 +1416,13 @@ class Element(Plugin):
             # Configure always comes first, and we need it.
             self.__configure_sandbox(sandbox)
 
-            # Stage what we need
-            if shell and scope == _Scope.BUILD:
+            if usebuildtree:
+                # Use the cached buildroot directly
+                buildrootvdir = self.__artifact.get_buildroot()
+                sandbox_vroot = sandbox.get_virtual_directory()
+                sandbox_vroot._import_files_internal(buildrootvdir, collect_result=False)
+            elif shell and scope == _Scope.BUILD:
+                # Stage what we need
                 self.__stage(sandbox)
             else:
                 # Stage deps in the sandbox root
@@ -1716,6 +1721,7 @@ class Element(Plugin):
         collectvdir = None
         sandbox_build_dir = None
         sourcesvdir = None
+        buildrootvdir = None
 
         cache_buildtrees = context.cache_buildtrees
         build_success = buildresult[0]
@@ -1738,6 +1744,7 @@ class Element(Plugin):
                 # if the directory could not be found.
                 pass
 
+            buildrootvdir = sandbox_vroot
             sourcesvdir = self.__sources.get_files()
 
         if collect is not None:
@@ -1753,6 +1760,7 @@ class Element(Plugin):
 
         with self.timed_activity("Caching artifact"):
             self.__artifact.cache(
+                buildrootvdir=buildrootvdir,
                 sandbox_build_dir=sandbox_build_dir,
                 collectvdir=collectvdir,
                 sourcesvdir=sourcesvdir,
@@ -1942,6 +1950,8 @@ class Element(Plugin):
                 return True
             if not self._cached_buildtree() and self._buildtree_exists():
                 return True
+            if not self._cached_buildroot() and self._buildroot_exists():
+                return True
 
         return False
 
@@ -1961,6 +1971,9 @@ class Element(Plugin):
         # unless element type is expected to have an an empty buildtree directory
         if not self._cached_buildtree() and self._buildtree_exists():
             raise ElementError("Push failed: buildtree of {} is not cached".format(self.name))
+
+        if not self._cached_buildroot() and self._buildroot_exists():
+            raise ElementError("Push failed: buildroot of {} is not cached".format(self.name))
 
         if self.__get_tainted():
             self.warn("Not pushing tainted artifact.")
@@ -2147,6 +2160,39 @@ class Element(Plugin):
             return False
 
         return self.__artifact.buildtree_exists()
+
+    # _cached_buildroot()
+    #
+    # Check if element artifact contains expected buildroot. An
+    # element's buildroot artifact will not be present if the rest
+    # of the partial artifact is not cached.
+    #
+    # Returns:
+    #     (bool): True if artifact cached with buildroot, False if
+    #             element not cached or missing expected buildroot.
+    #             Note this only confirms if a buildroot is present,
+    #             not its contents.
+    #
+    def _cached_buildroot(self):
+        if not self._cached():
+            return False
+
+        return self.__artifact.cached_buildroot()
+
+    # _buildroot_exists()
+    #
+    # Check if artifact was created with a buildroot. This does not check
+    # whether the buildroot is present in the local cache.
+    #
+    # Returns:
+    #     (bool): True if artifact was created with buildroot, False if
+    #             element not cached or not created with a buildroot.
+    #
+    def _buildroot_exists(self):
+        if not self._cached():
+            return False
+
+        return self.__artifact.buildroot_exists()
 
     # _cached_logs()
     #

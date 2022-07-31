@@ -127,6 +127,18 @@ class Artifact:
         files_digest = self._get_field_digest("files")
         return CasBasedDirectory(self._cas, digest=files_digest)
 
+    # get_buildroot():
+    #
+    # Get a virtual directory for the artifact buildroot content
+    #
+    # Returns:
+    #    (Directory): The virtual directory object
+    #
+    def get_buildroot(self):
+        buildroot_digest = self._get_field_digest("buildroot")
+
+        return CasBasedDirectory(self._cas, digest=buildroot_digest)
+
     # get_buildtree():
     #
     # Get a virtual directory for the artifact buildtree content
@@ -182,6 +194,7 @@ class Artifact:
     # Create the artifact and commit to cache
     #
     # Args:
+    #    buildrootvdir (Directory): The root directory of the build sandbox
     #    sandbox_build_dir (Directory): Virtual Directory object for the sandbox build-root
     #    collectvdir (Directory): Virtual Directoy object from within the sandbox for collection
     #    sourcesvdir (Directory): Virtual Directoy object for the staged sources
@@ -194,6 +207,7 @@ class Artifact:
     def cache(
         self,
         *,
+        buildrootvdir,
         sandbox_build_dir,
         collectvdir,
         sourcesvdir,
@@ -300,12 +314,50 @@ class Artifact:
         if sourcesvdir is not None:
             artifact.sources.CopyFrom(sourcesvdir._get_digest())
 
+        # Store build root
+        if buildrootvdir is not None:
+            rootvdir = CasBasedDirectory(cas_cache=self._cas)
+            rootvdir._import_files_internal(buildrootvdir, properties=properties, collect_result=False)
+            artifact.buildroot.CopyFrom(rootvdir._get_digest())
+
         os.makedirs(os.path.dirname(os.path.join(self._artifactdir, element.get_artifact_name())), exist_ok=True)
         keys = utils._deduplicate([self._cache_key, self._weak_cache_key])
         for key in keys:
             path = os.path.join(self._artifactdir, element.get_artifact_name(key=key))
             with utils.save_file_atomic(path, mode="wb") as f:
                 f.write(artifact.SerializeToString())
+
+    # cached_buildroot()
+    #
+    # Check if artifact is cached with expected buildroot. A
+    # buildroot will not be present if the rest of the partial artifact
+    # is not cached.
+    #
+    # Returns:
+    #     (bool): True if artifact cached with buildroot, False if
+    #             missing expected buildroot. Note this only confirms
+    #             if a buildroot is present, not its contents.
+    #
+    def cached_buildroot(self):
+
+        buildroot_digest = self._get_field_digest("buildroot")
+        if buildroot_digest:
+            return self._cas.contains_directory(buildroot_digest, with_files=True)
+        else:
+            return False
+
+    # buildroot_exists()
+    #
+    # Check if artifact was created with a buildroot. This does not check
+    # whether the buildroot is present in the local cache.
+    #
+    # Returns:
+    #     (bool): True if artifact was created with buildroot
+    #
+    def buildroot_exists(self):
+
+        artifact = self._get_proto()
+        return bool(str(artifact.buildroot))
 
     # cached_buildtree()
     #

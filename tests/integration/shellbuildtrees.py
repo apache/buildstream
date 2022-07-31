@@ -228,15 +228,26 @@ def maybe_pull_deps(cli, project, element_name, pull_deps, pull_buildtree):
     "pull_deps,pull_buildtree,expect_error",
     [
         # Don't pull at all
-        (None, False, "shell-missing-deps"),
+        (None, False, "missing-buildtree-artifact-not-cached"),
         # Pull only dependencies
         ("build", False, "missing-buildtree-artifact-not-cached"),
         # Pull all elements including the shell element, but without the buildtree
         ("all", False, "missing-buildtree-artifact-buildtree-not-cached"),
         # Pull all elements including the shell element, and pull buildtrees
         ("all", True, None),
+        # Pull only the artifact, but without the buildtree
+        ("none", False, "missing-buildtree-artifact-buildtree-not-cached"),
+        # Pull only the artifact with its buildtree
+        ("none", True, None),
     ],
-    ids=["no-pull", "pull-only-deps", "pull-without-buildtree", "pull-with-buildtree"],
+    ids=[
+        "no-pull",
+        "pull-only-deps",
+        "pull-without-buildtree",
+        "pull-with-buildtree",
+        "pull-target-without-buildtree",
+        "pull-target-with-buildtree",
+    ],
 )
 def test_shell_use_cached_buildtree(share_with_buildtrees, datafiles, cli, pull_deps, pull_buildtree, expect_error):
     project = str(datafiles)
