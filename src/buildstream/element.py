@@ -1411,7 +1411,6 @@ class Element(Plugin):
 
         # bst shell and bst artifact checkout require a local sandbox.
         with self.__sandbox(None, config=self.__sandbox_config, allow_remote=False) as sandbox:
-            sandbox._usebuildtree = usebuildtree
 
             # Configure always comes first, and we need it.
             self.__configure_sandbox(sandbox)
@@ -1451,7 +1450,7 @@ class Element(Plugin):
         # Stage all sources that need to be copied
         sandbox_vroot = sandbox.get_virtual_directory()
         host_vdirectory = sandbox_vroot.open_directory(directory.lstrip(os.sep), create=True)
-        self._stage_sources_at(host_vdirectory, usebuildtree=sandbox._usebuildtree)
+        self._stage_sources_at(host_vdirectory)
 
     # _stage_sources_at():
     #
@@ -1459,9 +1458,8 @@ class Element(Plugin):
     #
     # Args:
     #     vdirectory (Union[str, Directory]): A virtual directory object or local path to stage sources to.
-    #     usebuildtree (bool): use a the elements build tree as its source.
     #
-    def _stage_sources_at(self, vdirectory, usebuildtree=False):
+    def _stage_sources_at(self, vdirectory):
 
         # It's advantageous to have this temporary directory on
         # the same file system as the rest of our cache.
@@ -1472,26 +1470,18 @@ class Element(Plugin):
             if vdirectory:
                 raise ElementError("Staging directory '{}' is not empty".format(vdirectory))
 
-            # Check if we have a cached buildtree to use
-            if usebuildtree:
-                import_dir = self.__artifact.get_buildtree()
-                if not import_dir:
-                    detail = "Element type either does not expect a buildtree or it was explictily cached without one."
-                    self.warn("Artifact contains an empty buildtree", detail=detail)
+            # stage sources from source cache
+            staged_sources = self.__sources.get_files()
 
-            # No cached buildtree, stage source from source cache
+            # incremental builds should merge the source into the last artifact before staging
+            last_build_artifact = self.__get_last_build_artifact()
+            if last_build_artifact:
+                self.info("Incremental build")
+                last_sources = last_build_artifact.get_sources()
+                import_dir = last_build_artifact.get_buildtree()
+                import_dir._apply_changes(last_sources, staged_sources)
             else:
-                staged_sources = self.__sources.get_files()
-
-                # incremental builds should merge the source into the last artifact before staging
-                last_build_artifact = self.__get_last_build_artifact()
-                if last_build_artifact:
-                    self.info("Incremental build")
-                    last_sources = last_build_artifact.get_sources()
-                    import_dir = last_build_artifact.get_buildtree()
-                    import_dir._apply_changes(last_sources, staged_sources)
-                else:
-                    import_dir = staged_sources
+                import_dir = staged_sources
 
             # Set update_mtime to ensure deterministic mtime of sources at build time
             vdirectory._import_files_internal(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP, collect_result=False)

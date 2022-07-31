@@ -95,7 +95,6 @@ class Sandbox:
         self.__stderr = kwargs["stderr"]
 
         self._vdir = None  # type: Optional[Directory]
-        self._usebuildtree = False
 
         # Pending command batch
         self.__batch = None
