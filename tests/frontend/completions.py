@@ -340,8 +340,8 @@ def test_argument_artifact(cli, datafiles):
 
     # Use hard coded artifact names, cache keys should be stable now
     artifacts = [
-        "test/import-bin/cb0c8c2e1881b09338aa3f533d224f83f06bdf263523d04ee197232c74f09357",
-        "test/import-bin/edcfeda7d52c6bb77e632e31bd8ba40122125b2f50553b57c34947aa5fa709df",
+        "test/import-bin/0b769809a4e12dd5060df8e8bb1cd960f6c93d1ed2a6a34350eac9272ea71e81",
+        "test/import-bin/67844557f63f985ef38ba68d68e3dfdeda02f4b40a90f53707f0fc643245ccb8",
     ]
 
     # Test autocompletion of the artifact

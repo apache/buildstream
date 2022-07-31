@@ -52,7 +52,7 @@ from ._variables import Variables
 #
 class Artifact:
 
-    version = 1
+    version = 2
 
     def __init__(self, element, context, *, strong_key=None, strict_key=None, weak_key=None):
         self._element = element
