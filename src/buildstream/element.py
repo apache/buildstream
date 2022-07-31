@@ -1472,7 +1472,7 @@ class Element(Plugin):
                 import_dir = self.__artifact.get_buildtree()
                 if not import_dir:
                     detail = "Element type either does not expect a buildtree or it was explictily cached without one."
-                    self.warn("WARNING: {} Artifact contains an empty buildtree".format(self.name), detail=detail)
+                    self.warn("Artifact contains an empty buildtree", detail=detail)
 
             # No cached buildtree, stage source from source cache
             else:
