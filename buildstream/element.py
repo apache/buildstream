@@ -1551,9 +1551,9 @@ class Element(Plugin):
                                                     self.__staged_sources_directory.lstrip(os.sep))
                         try:
                             utils.copy_files(workspace.get_absolute_path(), sandbox_path)
-                        except UtilError as e:
+                        except UtilError as err:
                             self.warn("Failed to preserve workspace state for failed build sysroot: {}"
-                                      .format(e))
+                                      .format(err))
 
                     raise
 

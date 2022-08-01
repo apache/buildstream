@@ -1023,7 +1023,7 @@ class Source(Plugin):
                     success = True
                     break
                 if not success:
-                    raise last_error
+                    raise last_error  # pylint: disable=used-before-assignment
         else:
             alias = self._get_alias()
             if self.__first_pass:
@@ -1070,7 +1070,7 @@ class Source(Plugin):
                 last_error = e
                 continue
             return ref
-        raise last_error
+        raise last_error  # pylint: disable=used-before-assignment
 
     # Ensures a fully constructed path and returns it
     def __ensure_directory(self, directory):
