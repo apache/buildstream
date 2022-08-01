@@ -365,3 +365,49 @@ def test_shell_script_element(datafiles, cli_integration):
 
     result.assert_success()
     assert "Hi" in result.output
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.parametrize(
+    "element_name,expect_success",
+    [
+        # Build shell into a compose element which succeeded
+        ("build-shell/compose-success.bst", True),
+        # Build shell into a compose element with failed integration commands
+        ("build-shell/compose-fail.bst", False),
+    ],
+    ids=["integration-success", "integration-fail"],
+)
+def test_shell_compose_element(datafiles, cli_integration, element_name, expect_success):
+    project = str(datafiles)
+
+    # Build the element so it's in the local cache, ensure caching of buildtrees at build time
+    result = cli_integration.run(project=project, args=["--cache-buildtrees", "always", "build", element_name])
+    if expect_success:
+        result.assert_success()
+    else:
+        result.assert_main_error(ErrorDomain.STREAM, None)
+
+    # Ensure that the shell works regardless of success expectations
+    #
+    result = cli_integration.run(
+        project=project, args=["shell", "--build", element_name, "--use-buildtree", "--", "echo", "Hi"]
+    )
+    result.assert_success()
+    assert "Hi" in result.output
+
+    # Check the file created with integration commands
+    #
+    result = cli_integration.run(
+        project=project,
+        args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", "/integration-success"],
+    )
+    if expect_success:
+        result.assert_success()
+        assert "Hi" in result.output
+    else:
+        # Here the exit code is determined by `cat`, and will be non-zero.
+        #
+        # We cannot use result.assert_main_error() because that explicitly expects -1
+        assert result.exit_code != 0
