@@ -347,3 +347,21 @@ def test_shell_use_uncached_buildtree(share_without_buildtrees, datafiles, cli):
 
     # Sorry, a buildtree was never cached for this element
     result.assert_main_error(ErrorDomain.APP, "missing-buildtree-artifact-created-without-buildtree")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_shell_script_element(datafiles, cli_integration):
+    project = str(datafiles)
+    element_name = "build-shell/script.bst"
+
+    result = cli_integration.run(project=project, args=["--cache-buildtrees", "always", "build", element_name])
+    result.assert_success()
+
+    # Run the shell and use the cached buildtree on this script element
+    result = cli_integration.run(
+        project=project, args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", "/test"]
+    )
+
+    result.assert_success()
+    assert "Hi" in result.output
