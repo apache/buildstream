@@ -1,11 +1,11 @@
 coverage==4.5.4
 pytest-cov==2.10.1
 ## The following requirements were added by pip freeze:
-attrs==21.4.0
+attrs==22.1.0
 iniconfig==1.1.1
 packaging==21.3
 pluggy==1.0.0
 py==1.11.0
-pyparsing==3.0.7
-pytest==7.0.1
+pyparsing==3.0.9
+pytest==7.1.2
 tomli==2.0.1
