@@ -73,7 +73,7 @@ class CASDProcessManager:
         # Early version check
         self._check_casd_version(messenger)
 
-        casd_args = [utils.get_host_tool("buildbox-casd")]
+        casd_args = [self.__buildbox_casd()]
         casd_args.append("--bind=" + self._connection_string)
         casd_args.append("--log-level=" + log_level.value)
 
@@ -106,6 +106,9 @@ class CASDProcessManager:
                 casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT, preexec_fn=os.setpgrp
             )
 
+    def __buildbox_casd(self):
+        return utils._get_host_tool_internal("buildbox-casd", search_subprojects_dir="buildbox")
+
     # _check_casd_version()
     #
     # Check for minimal acceptable version of buildbox-casd.
@@ -121,7 +124,7 @@ class CASDProcessManager:
         # We specify a trailing "path" argument because some versions of buildbox-casd
         # require specifying the storage path even for invoking the --version option.
         #
-        casd_args = [utils.get_host_tool("buildbox-casd")]
+        casd_args = [self.__buildbox_casd()]
         casd_args.append("--version")
         casd_args.append("/")
 

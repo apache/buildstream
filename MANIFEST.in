@@ -47,3 +47,6 @@ include versioneer.py
 
 # setuptools.build_meta don't include setup.py by default. Add it
 include setup.py
+
+# bundled binaries should only be in the bdist packages
+recursive-exclude src/buildstream/subprojects *

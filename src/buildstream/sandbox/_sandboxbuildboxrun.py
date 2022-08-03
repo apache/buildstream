@@ -35,9 +35,13 @@ from ._sandboxreapi import SandboxREAPI
 #
 class SandboxBuildBoxRun(SandboxREAPI):
     @classmethod
+    def __buildbox_run(cls):
+        return utils._get_host_tool_internal("buildbox-run", search_subprojects_dir="buildbox")
+
+    @classmethod
     def check_available(cls):
         try:
-            path = utils.get_host_tool("buildbox-run")
+            path = cls.__buildbox_run()
         except utils.ProgramNotFoundError as Error:
             cls._dummy_reasons += ["buildbox-run not found"]
             raise SandboxError(" and ".join(cls._dummy_reasons), reason="unavailable-local-sandbox") from Error
@@ -92,7 +96,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
             action_file.flush()
 
             buildbox_command = [
-                utils.get_host_tool("buildbox-run"),
+                self.__buildbox_run(),
                 "--remote={}".format(casd_process_manager._connection_string),
                 "--action={}".format(action_file.name),
                 "--action-result={}".format(result_file.name),
