@@ -24,3 +24,16 @@ exclude = '''
   | src/buildstream/_protos
 )
 '''
+
+[tool.cibuildwheel]
+skip = [
+  # BuildStream supports Python >= 3.7
+  "cp36-*",
+  # PyPy may work, but nobody is testing it so avoid distributing prebuilt binaries.
+  "pp*",
+  # Skipping this niche archicture ~halves overall build time.
+  "*_i686",
+  # This one fails to build with "NOTE: Shared object (.so) files found in this project.".
+  # possibly https://github.com/pypa/cibuildwheel/issues/901.
+  "cp310-musllinux_x86_64",
+]

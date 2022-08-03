@@ -1,0 +1,25 @@
+# Action adapted from https://cibuildwheel.readthedocs.io/en/stable/setup/
+
+name: Build wheels
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Build wheels
+        run: pipx run cibuildwheel==2.8.1
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ./wheelhouse/*.whl
