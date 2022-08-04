@@ -66,6 +66,10 @@ class ComposeElement(Element):
         self.exclude = node.get_str_list("exclude")
         self.include_orphans = node.get_bool("include-orphans")
 
+        # Inform the core that we will not need to run any commands in the sandbox
+        if not self.integration:
+            self.BST_RUN_COMMANDS = False
+
     def preflight(self):
         pass
 
