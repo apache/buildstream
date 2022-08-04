@@ -223,7 +223,7 @@ def test_host_tools_errors_are_not_cached(cli, datafiles, tmp_path):
     # Create symlink to buildbox-casd to work with custom PATH
     buildbox_casd = tmp_path.joinpath("bin/buildbox-casd")
     buildbox_casd.parent.mkdir()
-    os.symlink(utils.get_host_tool("buildbox-casd"), str(buildbox_casd))
+    os.symlink(utils._get_host_tool_internal("buildbox-casd", search_subprojects_dir="buildbox"), str(buildbox_casd))
 
     project = str(datafiles)
     element_path = os.path.join(project, "elements", "element.bst")
