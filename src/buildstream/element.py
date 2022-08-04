@@ -1669,11 +1669,12 @@ class Element(Plugin):
                 rootdir, output_file, output_file, self.__sandbox_config
             ) as sandbox:  # noqa
 
+                # Ensure that the plugin does not run commands if it said that it wouldn't
+                #
+                # We only disable commands here in _assemble() instead of __sandbox() because
+                # the user might still run a shell on an element which itself does not run commands.
+                #
                 if not self.BST_RUN_COMMANDS:
-                    # Element doesn't need to run any commands in the sandbox.
-                    #
-                    # Disable Sandbox.run() to allow CasBasedDirectory for all
-                    # sandboxes.
                     sandbox._disable_run()
 
                 # By default, the dynamic public data is the same as the static public data.

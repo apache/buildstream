@@ -64,6 +64,13 @@ class SandboxCommandError(SandboxError):
         self.collect = collect
 
 
+# An internal exception which can be used to explicitly trigger a bug / exception
+# which will be reported with a stack trace instead of reporting a user facing error
+#
+class _SandboxBug(Exception):
+    pass
+
+
 class Sandbox:
     """Sandbox()
 
@@ -344,7 +351,7 @@ class Sandbox:
         label: str = None
     ) -> Optional[int]:
         if not self.__allow_run:
-            raise SandboxError("Sandbox.run() has been disabled")
+            raise _SandboxBug("Element specified BST_RUN_COMMANDS as False but called Sandbox.run()")
 
         # Fallback to the sandbox default settings for
         # the cwd and env.
@@ -552,9 +559,11 @@ class Sandbox:
 
     # _disable_run()
     #
-    # Raise exception if `Sandbox.run()` is called. This enables use of
-    # CasBasedDirectory for faster staging when command execution is not
-    # required.
+    # Raise exception if `Sandbox.run()` is called.
+    #
+    # This enforces an invariant by raising an exception if an element
+    # plugin ever set BST_RUN_COMMANDS to False but then proceeded to
+    # attempt to run the sandbox at assemble time.
     #
     def _disable_run(self):
         self.__allow_run = False
