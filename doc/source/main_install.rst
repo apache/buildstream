@@ -25,6 +25,7 @@ BuildStream requires the following base system requirements:
 
 - python3 >= 3.7
 - pip
+- lzip (optional, for ``.tar.lz`` support)
 - :ref:`buildbox-casd<install-buildbox>`
 
 BuildStream also depends on the host tools for the :mod:`Source <buildstream.source>` plugins.
