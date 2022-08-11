@@ -1551,9 +1551,9 @@ class Element(Plugin):
                                                     self.__staged_sources_directory.lstrip(os.sep))
                         try:
                             utils.copy_files(workspace.get_absolute_path(), sandbox_path)
-                        except UtilError as e:
+                        except UtilError as err:
                             self.warn("Failed to preserve workspace state for failed build sysroot: {}"
-                                      .format(e))
+                                      .format(err))
 
                     raise
 
@@ -2498,7 +2498,7 @@ class Element(Plugin):
         # Parse the expensive yaml now and cache the result
         meta_file = os.path.join(artifact_base, 'meta', 'workspaced.yaml')
         meta = _yaml.load(meta_file)
-        workspaced = meta['workspaced']
+        workspaced = _yaml.node_get(meta, bool, 'workspaced')
 
         # Cache it under both strong and weak keys
         strong_key, weak_key = self.__get_artifact_metadata_keys(key)
@@ -2528,7 +2528,7 @@ class Element(Plugin):
         # Parse the expensive yaml now and cache the result
         meta_file = os.path.join(artifact_base, 'meta', 'workspaced-dependencies.yaml')
         meta = _yaml.load(meta_file)
-        workspaced = meta['workspaced-dependencies']
+        workspaced = _yaml.node_get(meta, list, 'workspaced-dependencies')
 
         # Cache it under both strong and weak keys
         strong_key, weak_key = self.__get_artifact_metadata_keys(key)

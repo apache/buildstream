@@ -24,7 +24,6 @@ from mmap import mmap
 import re
 import textwrap
 import click
-from ruamel import yaml
 
 from . import Profile
 from .. import Element, Consistency
@@ -381,30 +380,22 @@ class LogLine(Widget):
             # Element configuration
             if "%{config" in format_:
                 config = _yaml.node_sanitize(element._Element__config)
-                line = p.fmt_subst(
-                    line, 'config',
-                    yaml.round_trip_dump(config, default_flow_style=False, allow_unicode=True))
+                line = p.fmt_subst(line, 'config', _yaml.dump_string(config))
 
             # Variables
             if "%{vars" in format_:
                 variables = dict(element._Element__variables)
-                line = p.fmt_subst(
-                    line, 'vars',
-                    yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
+                line = p.fmt_subst(line, 'vars', _yaml.dump_string(variables))
 
             # Environment
             if "%{env" in format_:
                 environment = _yaml.node_sanitize(element._Element__environment)
-                line = p.fmt_subst(
-                    line, 'env',
-                    yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
+                line = p.fmt_subst(line, 'env', _yaml.dump_string(environment))
 
             # Public
             if "%{public" in format_:
                 environment = _yaml.node_sanitize(element._Element__public)
-                line = p.fmt_subst(
-                    line, 'public',
-                    yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
+                line = p.fmt_subst(line, 'public', _yaml.dump_string(environment))
 
             # Workspaced
             if "%{workspaced" in format_:

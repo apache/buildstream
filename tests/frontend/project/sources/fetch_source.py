@@ -42,8 +42,10 @@ class FetchSource(Source):
         self.original_urls = self.node_get_member(node, list, 'urls')
         self.output_file = self.node_get_member(node, str, 'output-text')
         self.fetch_succeeds = {}
-        if 'fetch-succeeds' in node:
-            self.fetch_succeeds = {x[0]: x[1] for x in self.node_items(node['fetch-succeeds'])}
+
+        fetch_succeeds_node = self.node_get_member(node, dict, 'fetch-succeeds', {})
+        for key, _ in self.node_items(fetch_succeeds_node):
+            self.fetch_succeeds[key] = self.node_get_member(fetch_succeeds_node, bool, key)
 
         # First URL is the primary one for this test
         #

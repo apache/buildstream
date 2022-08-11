@@ -338,12 +338,12 @@ def safe_remove(path):
 
             try:
                 os.rmdir(path)
-            except OSError as e:
-                if e.errno == errno.ENOTEMPTY:
+            except OSError as err:
+                if err.errno == errno.ENOTEMPTY:
                     return False
                 else:
                     raise UtilError("Failed to remove '{}': {}"
-                                    .format(path, e)) from e
+                                    .format(path, err)) from err
 
     return True
 

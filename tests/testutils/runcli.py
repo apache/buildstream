@@ -7,7 +7,6 @@ import itertools
 import traceback
 import subprocess
 from contextlib import contextmanager, ExitStack
-from ruamel import yaml
 import pytest
 
 # XXX Using pytest private internals here
@@ -398,7 +397,8 @@ class Cli():
         ])
 
         result.assert_success()
-        return yaml.safe_load(result.output)
+        yml = _yaml.prepare_roundtrip_yaml()
+        return yml.load(result.output)
 
     # Fetch the elements that would be in the pipeline with the given
     # arguments.
@@ -463,10 +463,8 @@ class CliIntegration(Cli):
             # dictionaries need to be loaded via _yaml.load_data() first
             #
             with tempfile.TemporaryDirectory(dir=project_directory) as scratchdir:
-
                 temp_project = os.path.join(scratchdir, 'project.conf')
-                with open(temp_project, 'w') as f:
-                    yaml.safe_dump(project_config, f)
+                _yaml.dump(project_config, temp_project)
 
                 project_config = _yaml.load(temp_project)
 
