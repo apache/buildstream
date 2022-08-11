@@ -7,7 +7,7 @@ on:
 
 jobs:
   build_docs:
-    name: Build documentation
+    name: "Build documentation tarball"
     runs-on: ubuntu-18.04
     steps:
     - name: Checkout code
@@ -41,29 +41,6 @@ jobs:
         path: |
           doc/build/html
           docs.tgz
-
-  build_wheels:
-    name: Build Python wheel packages on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-20.04]
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Fetch latest BuildBox release
-        run: ${GITHUB_WORKSPACE}/.github/wheel-helpers/fetch-latest-buildbox-release.sh
-
-      - name: Build wheels
-        run: pipx run cibuildwheel==2.8.1
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: wheels
-          path: ./wheelhouse/*.whl
 
   publish_docs:
     needs: build
