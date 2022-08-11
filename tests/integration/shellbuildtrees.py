@@ -228,15 +228,26 @@ def maybe_pull_deps(cli, project, element_name, pull_deps, pull_buildtree):
     "pull_deps,pull_buildtree,expect_error",
     [
         # Don't pull at all
-        (None, False, "shell-missing-deps"),
+        (None, False, "missing-buildtree-artifact-not-cached"),
         # Pull only dependencies
         ("build", False, "missing-buildtree-artifact-not-cached"),
         # Pull all elements including the shell element, but without the buildtree
         ("all", False, "missing-buildtree-artifact-buildtree-not-cached"),
         # Pull all elements including the shell element, and pull buildtrees
         ("all", True, None),
+        # Pull only the artifact, but without the buildtree
+        ("none", False, "missing-buildtree-artifact-buildtree-not-cached"),
+        # Pull only the artifact with its buildtree
+        ("none", True, None),
     ],
-    ids=["no-pull", "pull-only-deps", "pull-without-buildtree", "pull-with-buildtree"],
+    ids=[
+        "no-pull",
+        "pull-only-deps",
+        "pull-without-buildtree",
+        "pull-with-buildtree",
+        "pull-target-without-buildtree",
+        "pull-target-with-buildtree",
+    ],
 )
 def test_shell_use_cached_buildtree(share_with_buildtrees, datafiles, cli, pull_deps, pull_buildtree, expect_error):
     project = str(datafiles)
@@ -336,3 +347,67 @@ def test_shell_use_uncached_buildtree(share_without_buildtrees, datafiles, cli):
 
     # Sorry, a buildtree was never cached for this element
     result.assert_main_error(ErrorDomain.APP, "missing-buildtree-artifact-created-without-buildtree")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_shell_script_element(datafiles, cli_integration):
+    project = str(datafiles)
+    element_name = "build-shell/script.bst"
+
+    result = cli_integration.run(project=project, args=["--cache-buildtrees", "always", "build", element_name])
+    result.assert_success()
+
+    # Run the shell and use the cached buildtree on this script element
+    result = cli_integration.run(
+        project=project, args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", "/test"]
+    )
+
+    result.assert_success()
+    assert "Hi" in result.output
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.parametrize(
+    "element_name,expect_success",
+    [
+        # Build shell into a compose element which succeeded
+        ("build-shell/compose-success.bst", True),
+        # Build shell into a compose element with failed integration commands
+        ("build-shell/compose-fail.bst", False),
+    ],
+    ids=["integration-success", "integration-fail"],
+)
+def test_shell_compose_element(datafiles, cli_integration, element_name, expect_success):
+    project = str(datafiles)
+
+    # Build the element so it's in the local cache, ensure caching of buildtrees at build time
+    result = cli_integration.run(project=project, args=["--cache-buildtrees", "always", "build", element_name])
+    if expect_success:
+        result.assert_success()
+    else:
+        result.assert_main_error(ErrorDomain.STREAM, None)
+
+    # Ensure that the shell works regardless of success expectations
+    #
+    result = cli_integration.run(
+        project=project, args=["shell", "--build", element_name, "--use-buildtree", "--", "echo", "Hi"]
+    )
+    result.assert_success()
+    assert "Hi" in result.output
+
+    # Check the file created with integration commands
+    #
+    result = cli_integration.run(
+        project=project,
+        args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", "/integration-success"],
+    )
+    if expect_success:
+        result.assert_success()
+        assert "Hi" in result.output
+    else:
+        # Here the exit code is determined by `cat`, and will be non-zero.
+        #
+        # We cannot use result.assert_main_error() because that explicitly expects -1
+        assert result.exit_code != 0

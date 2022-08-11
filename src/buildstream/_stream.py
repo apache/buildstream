@@ -278,7 +278,12 @@ class Stream:
         if unique_id and target is None:
             element = Plugin._lookup(unique_id)
         else:
-            selection = _PipelineSelection.BUILD if scope == _Scope.BUILD else _PipelineSelection.RUN
+            if usebuildtree:
+                selection = _PipelineSelection.NONE
+            elif scope == _Scope.BUILD:
+                selection = _PipelineSelection.BUILD
+            else:
+                selection = _PipelineSelection.RUN
 
             elements = self.load_selection(
                 (target,),
@@ -308,21 +313,23 @@ class Stream:
             self.query_cache(pull_elements)
             self._pull_missing_artifacts(pull_elements)
 
-        missing_deps = [dep for dep in _pipeline.dependencies([element], scope) if not dep._cached()]
-        if missing_deps:
-            raise StreamError(
-                "Elements need to be built or downloaded before staging a shell environment",
-                detail="\n".join(list(map(lambda x: x._get_full_name(), missing_deps))),
-                reason="shell-missing-deps",
-            )
+        # We dont need dependency artifacts to shell into a cached build tree
+        if not usebuildtree:
+            missing_deps = [dep for dep in _pipeline.dependencies([element], scope) if not dep._cached()]
+            if missing_deps:
+                raise StreamError(
+                    "Elements need to be built or downloaded before staging a shell environment",
+                    detail="\n".join(list(map(lambda x: x._get_full_name(), missing_deps))),
+                    reason="shell-missing-deps",
+                )
 
         # Check if we require a pull queue attempt, with given artifact state and context
         if usebuildtree:
-            if not element._cached_buildtree():
+            if not element._cached_buildroot():
                 if not element._cached():
                     message = "Artifact not cached locally or in available remotes"
                     reason = "missing-buildtree-artifact-not-cached"
-                elif element._buildtree_exists():
+                elif element._buildroot_exists():
                     message = "Buildtree is not cached locally or in available remotes"
                     reason = "missing-buildtree-artifact-buildtree-not-cached"
                 else:
@@ -1960,31 +1967,6 @@ class Stream:
             parts.append(element.normal_name)
 
         return os.path.join(directory, *reversed(parts))
-
-    # _buildtree_pull_required()
-    #
-    # Check if current task, given config, requires element buildtree artifact
-    #
-    # Args:
-    #    elements (list): elements to check if buildtrees are required
-    #
-    # Returns:
-    #    (list): elements requiring buildtrees
-    #
-    def _buildtree_pull_required(self, elements):
-        required_list = []
-
-        # If context is set to not pull buildtrees, or no fetch remotes, return empty list
-        if not self._context.pull_buildtrees or not self._artifacts.has_fetch_remotes():
-            return required_list
-
-        for element in elements:
-            # Check if element is partially cached without its buildtree, as the element
-            # artifact may not be cached at all
-            if element._cached() and not element._cached_buildtree() and element._buildtree_exists():
-                required_list.append(element)
-
-        return required_list
 
     # _expand_and_classify_targets()
     #

@@ -1411,13 +1411,17 @@ class Element(Plugin):
 
         # bst shell and bst artifact checkout require a local sandbox.
         with self.__sandbox(None, config=self.__sandbox_config, allow_remote=False) as sandbox:
-            sandbox._usebuildtree = usebuildtree
 
             # Configure always comes first, and we need it.
             self.__configure_sandbox(sandbox)
 
-            # Stage what we need
-            if shell and scope == _Scope.BUILD:
+            if usebuildtree:
+                # Use the cached buildroot directly
+                buildrootvdir = self.__artifact.get_buildroot()
+                sandbox_vroot = sandbox.get_virtual_directory()
+                sandbox_vroot._import_files_internal(buildrootvdir, collect_result=False)
+            elif shell and scope == _Scope.BUILD:
+                # Stage what we need
                 self.__stage(sandbox)
             else:
                 # Stage deps in the sandbox root
@@ -1446,7 +1450,7 @@ class Element(Plugin):
         # Stage all sources that need to be copied
         sandbox_vroot = sandbox.get_virtual_directory()
         host_vdirectory = sandbox_vroot.open_directory(directory.lstrip(os.sep), create=True)
-        self._stage_sources_at(host_vdirectory, usebuildtree=sandbox._usebuildtree)
+        self._stage_sources_at(host_vdirectory)
 
     # _stage_sources_at():
     #
@@ -1454,9 +1458,8 @@ class Element(Plugin):
     #
     # Args:
     #     vdirectory (Union[str, Directory]): A virtual directory object or local path to stage sources to.
-    #     usebuildtree (bool): use a the elements build tree as its source.
     #
-    def _stage_sources_at(self, vdirectory, usebuildtree=False):
+    def _stage_sources_at(self, vdirectory):
 
         # It's advantageous to have this temporary directory on
         # the same file system as the rest of our cache.
@@ -1467,26 +1470,18 @@ class Element(Plugin):
             if vdirectory:
                 raise ElementError("Staging directory '{}' is not empty".format(vdirectory))
 
-            # Check if we have a cached buildtree to use
-            if usebuildtree:
-                import_dir = self.__artifact.get_buildtree()
-                if not import_dir:
-                    detail = "Element type either does not expect a buildtree or it was explictily cached without one."
-                    self.warn("WARNING: {} Artifact contains an empty buildtree".format(self.name), detail=detail)
+            # stage sources from source cache
+            staged_sources = self.__sources.get_files()
 
-            # No cached buildtree, stage source from source cache
+            # incremental builds should merge the source into the last artifact before staging
+            last_build_artifact = self.__get_last_build_artifact()
+            if last_build_artifact:
+                self.info("Incremental build")
+                last_sources = last_build_artifact.get_sources()
+                import_dir = last_build_artifact.get_buildtree()
+                import_dir._apply_changes(last_sources, staged_sources)
             else:
-                staged_sources = self.__sources.get_files()
-
-                # incremental builds should merge the source into the last artifact before staging
-                last_build_artifact = self.__get_last_build_artifact()
-                if last_build_artifact:
-                    self.info("Incremental build")
-                    last_sources = last_build_artifact.get_sources()
-                    import_dir = last_build_artifact.get_buildtree()
-                    import_dir._apply_changes(last_sources, staged_sources)
-                else:
-                    import_dir = staged_sources
+                import_dir = staged_sources
 
             # Set update_mtime to ensure deterministic mtime of sources at build time
             vdirectory._import_files_internal(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP, collect_result=False)
@@ -1639,9 +1634,6 @@ class Element(Plugin):
     #   - Call the public abstract methods for the build phase
     #   - Cache the resulting artifact
     #
-    # Returns:
-    #    (int): The size of the newly cached artifact
-    #
     def _assemble(self):
 
         # Only do this the first time around (i.e. __assemble_done is False)
@@ -1708,7 +1700,7 @@ class Element(Plugin):
 
                     raise
                 else:
-                    return self._cache_artifact(sandbox, collect)
+                    self._cache_artifact(sandbox, collect)
 
     def _cache_artifact(self, sandbox, collect):
 
@@ -1719,6 +1711,7 @@ class Element(Plugin):
         collectvdir = None
         sandbox_build_dir = None
         sourcesvdir = None
+        buildrootvdir = None
 
         cache_buildtrees = context.cache_buildtrees
         build_success = buildresult[0]
@@ -1741,6 +1734,7 @@ class Element(Plugin):
                 # if the directory could not be found.
                 pass
 
+            buildrootvdir = sandbox_vroot
             sourcesvdir = self.__sources.get_files()
 
         if collect is not None:
@@ -1755,7 +1749,8 @@ class Element(Plugin):
         assert self.__artifact._cache_key is not None
 
         with self.timed_activity("Caching artifact"):
-            artifact_size = self.__artifact.cache(
+            self.__artifact.cache(
+                buildrootvdir=buildrootvdir,
                 sandbox_build_dir=sandbox_build_dir,
                 collectvdir=collectvdir,
                 sourcesvdir=sourcesvdir,
@@ -1771,8 +1766,6 @@ class Element(Plugin):
                 "Directory '{}' was not found inside the sandbox, "
                 "unable to collect artifact contents".format(collect)
             )
-
-        return artifact_size
 
     # _fetch_done()
     #
@@ -1947,6 +1940,8 @@ class Element(Plugin):
                 return True
             if not self._cached_buildtree() and self._buildtree_exists():
                 return True
+            if not self._cached_buildroot() and self._buildroot_exists():
+                return True
 
         return False
 
@@ -1966,6 +1961,9 @@ class Element(Plugin):
         # unless element type is expected to have an an empty buildtree directory
         if not self._cached_buildtree() and self._buildtree_exists():
             raise ElementError("Push failed: buildtree of {} is not cached".format(self.name))
+
+        if not self._cached_buildroot() and self._buildroot_exists():
+            raise ElementError("Push failed: buildroot of {} is not cached".format(self.name))
 
         if self.__get_tainted():
             self.warn("Not pushing tainted artifact.")
@@ -2152,6 +2150,39 @@ class Element(Plugin):
             return False
 
         return self.__artifact.buildtree_exists()
+
+    # _cached_buildroot()
+    #
+    # Check if element artifact contains expected buildroot. An
+    # element's buildroot artifact will not be present if the rest
+    # of the partial artifact is not cached.
+    #
+    # Returns:
+    #     (bool): True if artifact cached with buildroot, False if
+    #             element not cached or missing expected buildroot.
+    #             Note this only confirms if a buildroot is present,
+    #             not its contents.
+    #
+    def _cached_buildroot(self):
+        if not self._cached():
+            return False
+
+        return self.__artifact.cached_buildroot()
+
+    # _buildroot_exists()
+    #
+    # Check if artifact was created with a buildroot. This does not check
+    # whether the buildroot is present in the local cache.
+    #
+    # Returns:
+    #     (bool): True if artifact was created with buildroot, False if
+    #             element not cached or not created with a buildroot.
+    #
+    def _buildroot_exists(self):
+        if not self._cached():
+            return False
+
+        return self.__artifact.buildroot_exists()
 
     # _cached_logs()
     #

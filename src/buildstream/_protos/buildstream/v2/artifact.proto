@@ -83,4 +83,7 @@ message Artifact {
 
   // Strict key is a later addition to the core metadata
   string strict_key = 16;
+
+  // digest of a directory
+  build.bazel.remote.execution.v2.Digest buildroot = 17;  // optional
 }

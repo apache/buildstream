@@ -395,6 +395,12 @@ class ArtifactCache(AssetCache):
                 except FileNotFoundError:
                     pass
 
+            if str(artifact_proto.buildroot):
+                try:
+                    self.cas._send_directory(remote, artifact_proto.buildroot)
+                except FileNotFoundError:
+                    pass
+
             digests = [artifact_digest, artifact_proto.low_diversity_meta, artifact_proto.high_diversity_meta]
 
             if str(artifact_proto.public_data):
@@ -451,6 +457,8 @@ class ArtifactCache(AssetCache):
             referenced_directories.append(artifact_proto.buildtree)
         if artifact_proto.sources:
             referenced_directories.append(artifact_proto.sources)
+        if artifact_proto.buildroot:
+            referenced_directories.append(artifact_proto.buildroot)
 
         referenced_blobs = [artifact_proto.low_diversity_meta, artifact_proto.high_diversity_meta] + [
             log_file.digest for log_file in artifact_proto.logs
@@ -504,8 +512,11 @@ class ArtifactCache(AssetCache):
             if str(artifact.files):
                 self.cas._fetch_directory(remote, artifact.files)
 
-            if pull_buildtrees and str(artifact.buildtree):
-                self.cas._fetch_directory(remote, artifact.buildtree)
+            if pull_buildtrees:
+                if str(artifact.buildtree):
+                    self.cas._fetch_directory(remote, artifact.buildtree)
+                if str(artifact.buildroot):
+                    self.cas._fetch_directory(remote, artifact.buildroot)
 
             digests = [artifact.low_diversity_meta, artifact.high_diversity_meta]
             if str(artifact.public_data):
