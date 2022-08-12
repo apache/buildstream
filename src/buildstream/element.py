@@ -1669,11 +1669,12 @@ class Element(Plugin):
                 rootdir, output_file, output_file, self.__sandbox_config
             ) as sandbox:  # noqa
 
+                # Ensure that the plugin does not run commands if it said that it wouldn't
+                #
+                # We only disable commands here in _assemble() instead of __sandbox() because
+                # the user might still run a shell on an element which itself does not run commands.
+                #
                 if not self.BST_RUN_COMMANDS:
-                    # Element doesn't need to run any commands in the sandbox.
-                    #
-                    # Disable Sandbox.run() to allow CasBasedDirectory for all
-                    # sandboxes.
                     sandbox._disable_run()
 
                 # By default, the dynamic public data is the same as the static public data.
@@ -2239,9 +2240,6 @@ class Element(Plugin):
 
         # Generate dict that is used as base for all cache keys
         if self.__cache_key_dict is None:
-            # Filter out nocache variables from the element's environment
-            cache_env = {key: value for key, value in self.__environment.items() if key not in self.__env_nocache}
-
             project = self._get_project()
 
             self.__cache_key_dict = {
@@ -2250,14 +2248,18 @@ class Element(Plugin):
                 "element-plugin-key": self.get_unique_key(),
                 "element-plugin-name": self.get_kind(),
                 "element-plugin-version": self.BST_ARTIFACT_VERSION,
-                "sandbox": self.__sandbox_config.to_dict(),
-                "environment": cache_env,
                 "public": self.__public.strip_node_info(),
             }
 
             self.__cache_key_dict["sources"] = self.__sources.get_unique_key()
-
             self.__cache_key_dict["fatal-warnings"] = sorted(project._fatal_warnings)
+
+            # Calculate sandbox related factors if this element runs the sandbox at assemble time.
+            if self.BST_RUN_COMMANDS:
+                # Filter out nocache variables from the element's environment
+                cache_env = {key: value for key, value in self.__environment.items() if key not in self.__env_nocache}
+                self.__cache_key_dict["sandbox"] = self.__sandbox_config.to_dict()
+                self.__cache_key_dict["environment"] = cache_env
 
         cache_key_dict = self.__cache_key_dict.copy()
         cache_key_dict["dependencies"] = dependencies
