@@ -1,4 +1,56 @@
 ==================
+buildstream 1.95.1
+==================
+
+  o Fixed issue loading refs from project.refs files in subprojects (#1655)
+
+  o Fixed `bst artifact checkout` on machines which do not support the
+    artifact's build architecture (#1352)
+
+  o Rebuild protos to support newer grpc versions (#1665)
+
+  o Support the RISC-V machine architecture name (#1577)
+
+  o Record date and buildstream version in all build logs (#184)
+
+  o Updated internals to be compliant with REAPI v2.2 (#1676)
+
+  o Avoid adding unnecessary data to CAS (#1677, #1678)
+
+  o Disable unneeded gRPC fork support which sometimes causes crashes (#1679)
+
+  o Added runtime version checks against buildbox-casd (#1189)
+
+  o Resolve variables in include files in the context of their project (#1485)
+
+  o Retry failed builds in non-strict mode (#1460)
+
+  o Optimize staging of sources (#1680)
+
+  o Fixed `bst artifact delete` in non-strict mode (#1461)
+
+  o Allow conditional statements in toplevel of project.conf (#1683)
+
+  o Fix crashes related to cross-project includes / plugin loading (#1686)
+
+  o Fix addressing of subproject elements on command line (#1455)
+
+  o Ensure CAS does not get corrupted on systems without buildbox-fuse (#1700)
+
+  o Optimization when importing files to/from CAS (#1697, #1698)
+
+  o Print errors in advance of the interactive prompt (#1394)
+
+  o Fixed Source.set_ref() code to behave as documented (#1685)
+
+  o Updated installation instructions (#1705, #1710)
+
+  o Support interactive build shells with all elements (#1263)
+
+  o Reduce information encoded in cache keys for elements which do not use the sandbox (#1687)
+
+
+==================
 buildstream 1.95.0
 ==================
 
