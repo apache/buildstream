@@ -23,6 +23,8 @@ from pathlib import Path
 import re
 import sys
 
+import packaging.version
+
 
 ###################################
 # Ensure we have a version number #
@@ -32,11 +34,49 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 import versioneer  # pylint: disable=wrong-import-position
 
+
+def mark_unstable_version(version_string):
+    # When publishing to PyPI we must be sure that unstable releases are
+    # marked as such, so `pip install` doesn't install them by default.
+
+    v = packaging.version.parse(version_string)
+
+    # BuildStream version scheme: if MINOR version is odd, then
+    # this is an unstable release.
+    is_unstable_release = v.minor % 2 != 0
+
+    # Python PEP440 version scheme: use an explicit postfix to mark development
+    # and prereleases.
+    if is_unstable_release:
+        if v.local or v.is_devrelease or v.is_prerelease:
+            # PyPI will ignore these without us marking them.
+            return version_string
+        else:
+            return version_string + ".dev0"
+
+    return version_string
+
+
+# Extend versioneer to support our custom version style.
+_render = versioneer.render
+
+
+def render_version(pieces, style):
+    if style == "pep440_buildstream":
+        result = _render(pieces, "pep440")
+        result["version"] = mark_unstable_version(result["version"])
+    else:
+        result = _render(pieces, style)
+    return result
+
+
+versioneer.render = render_version
+
 version = versioneer.get_version()
 
 if version.startswith("0+untagged"):
     print(
-        "Your git repository has no tags - BuildStream can't " "determine its version. Please run `git fetch --tags`.",
+        "Your git repository has no tags - BuildStream can't determine its version. Please run `git fetch --tags`.",
         file=sys.stderr,
     )
     sys.exit(1)

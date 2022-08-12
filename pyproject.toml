@@ -4,7 +4,8 @@ requires = [
     "setuptools>=36.6.0",
     # In order to build wheels, and as required by PEP 517
     "wheel",
-    "Cython"
+    "Cython",
+    "packaging",
 ]
 build-backend = "setuptools.build_meta"
 
