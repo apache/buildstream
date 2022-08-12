@@ -36,7 +36,7 @@ version = versioneer.get_version()
 
 if version.startswith("0+untagged"):
     print(
-        "Your git repository has no tags - BuildStream can't " "determine its version. Please run `git fetch --tags`.",
+        "Your git repository has no tags - BuildStream can't determine its version. Please run `git fetch --tags`.",
         file=sys.stderr,
     )
     sys.exit(1)
