@@ -67,7 +67,7 @@ def test_custom_logging(cli, tmpdir, datafiles):
     result.assert_success()
 
     m = re.search(
-        r"\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6},\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6}\s*,.*" r",SUCCESS,Query cache",
+        r"\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6},\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6}\s*,.*,SUCCESS,Query cache",
         result.stderr,
     )
     assert m is not None
