@@ -1,5 +1,5 @@
 pexpect==4.8.0
-pylint==2.13.8
+pylint==2.14.5
 # Pytest 6.0.0 doesn't play well with pylint
 pytest==7.1.2
 pytest-datafiles==2.0.1
@@ -8,9 +8,9 @@ pytest-xdist==2.5.0
 pytest-timeout==2.1.0
 pyftpdlib==1.5.6
 ## The following requirements were added by pip freeze:
-astroid==2.11.4
-attrs==21.4.0
-dill==0.3.4
+astroid==2.11.7
+attrs==22.1.0
+dill==0.3.5.1
 execnet==1.9.0
 iniconfig==1.1.1
 isort==5.10.1
@@ -21,8 +21,8 @@ platformdirs==2.5.2
 pluggy==1.0.0
 ptyprocess==0.7.0
 py==1.11.0
-pyparsing==3.0.8
+pyparsing==3.0.9
 pytest-forked==1.4.0
 tomli==2.0.1
-typing-extensions==4.2.0
+tomlkit==0.11.3
 wrapt==1.14.1

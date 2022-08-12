@@ -1,6 +1,7 @@
 Click >= 7.0
 grpcio
 Jinja2 >= 2.10
+packaging
 pluginbase
 protobuf >= 3.19
 psutil
