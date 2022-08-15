@@ -288,6 +288,7 @@ class Stream:
             elements = self.load_selection(
                 (target,),
                 selection=selection,
+                load_artifacts=True,
                 connect_artifact_cache=True,
                 connect_source_cache=True,
                 artifact_remotes=artifact_remotes,
