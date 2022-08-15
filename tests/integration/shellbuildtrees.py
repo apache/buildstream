@@ -327,6 +327,40 @@ def test_shell_pull_cached_buildtree(share_with_buildtrees, datafiles, cli, pull
 
 
 #
+# Test behavior of shelling into a buildtree by its artifact name
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_shell_pull_artifact_cached_buildtree(share_with_buildtrees, datafiles, cli):
+    project = str(datafiles)
+    artifact_name = "test/build-shell-buildtree/4a47c98a10df39e65e99d471f96edc5b58d4ea5b9b1f221d0be832a8124b8099"
+
+    cli.configure({"artifacts": {"servers": [{"url": share_with_buildtrees.repo}]}})
+
+    # Run the shell and request that required artifacts and buildtrees should be pulled
+    result = cli.run(
+        project=project,
+        args=[
+            "--pull-buildtrees",
+            "shell",
+            "--build",
+            "--use-buildtree",
+            artifact_name,
+            "--",
+            "cat",
+            # We don't preserve the working directory in artifacts, so we will be executing at /
+            "/buildstream/test/build-shell/buildtree.bst/test",
+        ],
+    )
+
+    # In this case, we should succeed every time, regardless of what was
+    # originally available in the local cache.
+    #
+    result.assert_success()
+    assert "Hi" in result.output
+
+
+#
 # Test behavior of launching a shell and requesting to use a buildtree.
 #
 # In this case we download everything we need first, but the buildtree was never cached at build time
