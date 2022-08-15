@@ -1,11 +1,8 @@
 About
 -----
-.. image:: https://gitlab.com/BuildStream/buildstream/badges/master/pipeline.svg
-   :target: https://gitlab.com/BuildStream/buildstream/commits/master
-
-.. image:: https://gitlab.com/BuildStream/buildstream/badges/master/coverage.svg?job=coverage
-   :target: https://gitlab.com/BuildStream/buildstream/commits/master
-
+.. image:: https://img.shields.io/github/workflow/status/apache/buildstream/PR%20Checks/bst-1
+   :alt: GitHub Workflow Status
+   :target: https://github.com/apache/buildstream/actions/workflows/ci.yml?query=branch%3Abst-1
 
 What is BuildStream?
 ====================
