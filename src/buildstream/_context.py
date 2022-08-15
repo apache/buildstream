@@ -273,8 +273,7 @@ class Context:
             # trying a (major point) version specific configuration file
             # and then falling back to buildstream.conf.
             #
-            major_version, _ = utils._get_bst_api_version()
-            for config_filename in ("buildstream{}.conf".format(major_version), "buildstream.conf"):
+            for config_filename in ("buildstream2.conf", "buildstream.conf"):
                 default_config = os.path.join(os.environ["XDG_CONFIG_HOME"], config_filename)
                 if os.path.exists(default_config):
                     config = default_config
