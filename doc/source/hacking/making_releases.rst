@@ -173,6 +173,11 @@ Release process
      git tag -s 1.1.1
      git push origin 1.1.1
 
+  This will trigger the "Release actions" workflow which also takes care of:
+
+    * uploading Github release artifacts
+    * uploading Python source and binary packages to PyPI
+
 * Upload the release tarball
 
   First get yourself into a clean repository state, ensure that you
@@ -213,16 +218,9 @@ Post-release activities
 Once the release has been published, there are some activities
 which need to be done to ensure everything is up to date.
 
-* If this is a stable release, then the tarball should also be
-  uploaded to PyPI.
-
-  Make sure you have ``twine`` installed and upload the tarball
-  like so:
-
-  .. code:: shell
-
-     pip3 install --user twine
-     twine upload -r pypi dist/BuildStream-1.0.1.tar.gz
+* Check that the release was successfully uploaded to PyPI. If
+  it is an unstable release, make sure the version on PyPI has
+  the correct "dev0" postfix so to avoid being treated as stable.
 
 * Update the topic line in the #buildstream IRC channel if needed
 
