@@ -285,17 +285,26 @@ class Stream:
             else:
                 selection = _PipelineSelection.RUN
 
-            elements = self.load_selection(
-                (target,),
-                selection=selection,
-                load_artifacts=True,
-                connect_artifact_cache=True,
-                connect_source_cache=True,
-                artifact_remotes=artifact_remotes,
-                source_remotes=source_remotes,
-                ignore_project_artifact_remotes=ignore_project_artifact_remotes,
-                ignore_project_source_remotes=ignore_project_source_remotes,
-            )
+            try:
+                elements = self.load_selection(
+                    (target,),
+                    selection=selection,
+                    load_artifacts=True,
+                    connect_artifact_cache=True,
+                    connect_source_cache=True,
+                    artifact_remotes=artifact_remotes,
+                    source_remotes=source_remotes,
+                    ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+                    ignore_project_source_remotes=ignore_project_source_remotes,
+                )
+            except StreamError as e:
+                if e.reason == "deps-not-supported":
+                    raise StreamError(
+                        "Only buildtrees are supported with artifact names",
+                        detail="Use the --build and --use-buildtree options to shell into a cached build tree",
+                        reason="only-buildtrees-supported",
+                    ) from e
+                raise
 
             # Get element to stage from `targets` list.
             # If scope is BUILD, it will not be in the `elements` list.
