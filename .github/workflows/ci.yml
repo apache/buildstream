@@ -83,7 +83,7 @@ jobs:
         run: |
           ${GITHUB_WORKSPACE}/.github/run-ci.sh --service ${{ matrix.test-name }}
 
-  docs:
+  build_docs:
     runs-on: ubuntu-18.04
     steps:
       - name: Check out repository
@@ -108,3 +108,55 @@ jobs:
         with:
           name: docs
           path: doc/build/html
+
+  build_wheels:
+    name: Build Python wheel packages on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Fetch latest BuildBox release
+        run: ${GITHUB_WORKSPACE}/.github/wheel-helpers/fetch-latest-buildbox-release.sh
+
+      - name: Build wheels
+        run: pipx run cibuildwheel==2.8.1
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: ./wheelhouse/*.whl
+
+  test_wheels:
+    name: "Test Python packages: ${{ matrix.test-name }}"
+    needs: [build_wheels]
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        # The names here should map to a valid service defined in
+        # "../compose/ci.docker-compose.yml"
+        test-name:
+          - wheels-manylinux_2_28-cp37
+          - wheels-manylinux_2_28-cp38
+          - wheels-manylinux_2_28-cp39
+          - wheels-manylinux_2_28-cp310
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: wheels
+          path: ./wheelhouse
+
+      - name: Run tests with Docker Compose
+        run: |
+          ${GITHUB_WORKSPACE}/.github/run-ci.sh ${{ matrix.test-name }}
