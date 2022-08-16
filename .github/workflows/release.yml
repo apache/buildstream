@@ -1,4 +1,4 @@
-name: Upload Release Asset
+name: Release actions
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
     - '*.*.*'
 
 jobs:
-  build:
-    name: Upload Release Asset
+  build_docs:
+    name: "Build documentation tarball"
     runs-on: ubuntu-18.04
     steps:
       - name: Checkout code
@@ -32,9 +32,82 @@ jobs:
 
           tar -C doc/build/html -zcf docs.tgz .
 
+      - uses: actions/upload-artifact@v3
+        with:
+          name: docs
+          path: docs.tgz
+
+  build_sdist:
+    name: "Build Python source distribution tarball"
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Build sdist
+      run: pipx run build --sdist
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: sdist
+        path: dist/*.tar.gz
+
+  build_wheels:
+    name: Build Python wheel packages on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Build wheels
+        run: pipx run cibuildwheel==2.8.1
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: ./wheelhouse/*.whl
+
+  upload_github_release:
+    name: Upload GitHub release assets
+    needs: [build_docs]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: docs
+
       - name: Upload release assets
         run: |
           tag_name="${GITHUB_REF##*/}"
           hub release create -a "docs.tgz" -m "$tag_name" "$tag_name"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  upload_pypi_release:
+    name: Upload PyPI release assets
+    needs: [build_docs, build_sdist, build_wheels]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: sdist
+          path: dist
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: wheels
+          path: dist
+
+      - name: Upload to PyPI
+        run: |
+          pipx run twine upload --repository pypi --username __token__ --password "${{ secrets.PYPI_TOKEN }}" dist/*
