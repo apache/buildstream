@@ -35,8 +35,7 @@ we strongly recommend proposing your new feature in advance of commencing work.
 
 Once consensus has been reached on the mailing list, then the proposing
 party should :ref:`file an issue <contributing_filing_issues>` to track the
-work. Please use the *bst_task* template for issues which represent
-feature additions.
+work.
 
 New features must be well documented and tested in our test suite.
 
