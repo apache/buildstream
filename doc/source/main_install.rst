@@ -84,12 +84,13 @@ These components can be installed from binaries, or built from source.
 
 Install binaries
 ~~~~~~~~~~~~~~~~
-| Linux x86-64 users can download statically linked binaries: `buildbox-x86_64-linux.tar.xz <https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-x86_64-linux-0.0.38-c91dd9b9.tar.xz>`_
-| ``sha256sum c91dd9b9dcfafe985c7a46d62b6da135f2f5ff65188477328990ecd643ba4fa9``
+Linux x86-64 users can download the `latest statically linked binaries here
+<https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases/permalink/latest/downloads/binaries.tgz>`_,
+or browse the `release history of static binaries here
+<https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases>`_.
 
-The tarball contains the binaries ``buildbox-casd``, ``buildbox-fuse``,
-``buildbox-run-bubblewrap`` and the symlink ``buildbox-run``, which should be
-extracted into a directory in ``PATH``, e.g., ``~/.local/bin``.
+The contents of the ``binaries.tgz`` tarball should be extracted into a directory
+in ``PATH``, e.g., ``~/.local/bin``.
 
 
 Build from source
