@@ -668,12 +668,12 @@ def show(app, elements, deps, except_, order, format_):
 @click.option(
     "--ignore-project-source-remotes", is_flag=True, help="Ignore remote source cache servers recommended by projects"
 )
-@click.argument("element", required=False, type=click.Path(readable=False))
+@click.argument("target", required=False, type=click.Path(readable=False))
 @click.argument("command", type=click.STRING, nargs=-1)
 @click.pass_obj
 def shell(
     app,
-    element,
+    target,
     command,
     mount,
     isolate,
@@ -713,16 +713,16 @@ def shell(
     scope = _Scope.BUILD if build_ else _Scope.RUN
 
     with app.initialized():
-        if not element:
-            element = app.project.get_default_target()
-            if not element:
-                raise AppError('Missing argument "ELEMENT".')
+        if not target:
+            target = app.project.get_default_target()
+            if not target:
+                raise AppError('Missing argument "TARGET".')
 
         mounts = [_HostMount(path, host_path) for host_path, path in mount]
 
         try:
             exitcode = app.stream.shell(
-                element,
+                target,
                 scope,
                 app.shell_prompt,
                 mounts=mounts,

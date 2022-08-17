@@ -436,3 +436,16 @@ def test_build_shell_fetch(cli, datafiles):
     result = cli.run(project=project, args=["shell", "--build", element_name, "cat", "hello.txt"])
     result.assert_success()
     assert result.output == test_message
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_shell_artifact_failure(cli, datafiles):
+    project = str(datafiles)
+
+    # This happens to be the artifact name of "autotools/amhello.bst" if we built it, but we don't
+    # need to build it for this test.
+    artifact_name = "test/autotools-amhello/847d23cd0e61c54a6beca9071b64643388ad2ab783191358b2a499fe77e86563"
+
+    result = cli.run(project=project, args=["shell", artifact_name, "--", "hello"])
+    result.assert_main_error(ErrorDomain.APP, "only-buildtrees-supported")
