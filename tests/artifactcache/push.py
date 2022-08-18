@@ -164,7 +164,9 @@ def test_push_message(tmpdir, datafiles):
             )
 
             # Push the message object
-            command_digest = artifactcache.push_message(project, command)
+            _, remotes = artifactcache.get_remotes(project.name, True)
+            assert len(remotes) == 1
+            command_digest = remotes[0].push_message(command)
             message_hash, message_size = command_digest.hash, command_digest.size_bytes
 
         assert message_hash and message_size

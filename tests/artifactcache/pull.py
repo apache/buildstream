@@ -171,7 +171,9 @@ def test_pull_tree(cli, tmpdir, datafiles):
             tree_maker(cas, tree, directory)
 
             # Push the Tree as a regular message
-            tree_digest = artifactcache.push_message(project, tree)
+            _, remotes = artifactcache.get_remotes(project.name, True)
+            assert len(remotes) == 1
+            tree_digest = remotes[0].push_message(tree)
             tree_hash, tree_size = tree_digest.hash, tree_digest.size_bytes
             assert tree_hash and tree_size
 
@@ -187,7 +189,9 @@ def test_pull_tree(cli, tmpdir, datafiles):
             tree_digest = remote_execution_pb2.Digest(hash=tree_hash, size_bytes=tree_size)
 
             # Pull the artifact using the Tree object
-            directory_digest = artifactcache.pull_tree(project, artifact_digest)
+            _, remotes = artifactcache.get_remotes(project.name, False)
+            assert len(remotes) == 1
+            directory_digest = cas.pull_tree(remotes[0], tree_digest)
             directory_hash, directory_size = directory_digest.hash, directory_digest.size_bytes
 
         # Directory size now zero with AaaP and stack element commit #1cbc5e63dc
