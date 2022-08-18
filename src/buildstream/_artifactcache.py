@@ -222,49 +222,6 @@ class ArtifactCache(AssetCache):
 
         return False
 
-    # pull_tree():
-    #
-    # Pull a single Tree rather than an artifact.
-    # Does not update local refs.
-    #
-    # Args:
-    #     project (Project): The current project
-    #     digest (Digest): The digest of the tree
-    #
-    def pull_tree(self, project, digest):
-        _, storage_remotes = self.get_remotes(project.name, False)
-        for remote in storage_remotes:
-            digest = self.cas.pull_tree(remote, digest)
-
-            if digest:
-                # no need to pull from additional remotes
-                return digest
-
-        return None
-
-    # push_message():
-    #
-    # Push the given protobuf message to all remotes.
-    #
-    # Args:
-    #     project (Project): The current project
-    #     message (Message): A protobuf message to push.
-    #
-    # Raises:
-    #     (ArtifactError): if there was an error
-    #
-    def push_message(self, project, message):
-        _, push_remotes = self.get_remotes(project.name, True)
-        if not push_remotes:
-            raise ArtifactError(
-                "push_message was called, but no remote artifact " + "servers are configured as push remotes."
-            )
-
-        for remote in push_remotes:
-            message_digest = remote.push_message(message)
-
-        return message_digest
-
     # link_key():
     #
     # Add a key for an existing artifact.
