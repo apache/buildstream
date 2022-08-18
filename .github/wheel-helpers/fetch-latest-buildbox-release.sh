@@ -6,10 +6,15 @@
 
 set -eux
 
-curl -L -O https://gitlab.com/buildgrid/buildbox/buildbox-integration/-/releases/permalink/latest/downloads/binaries.tgz
+#
+# For now we only support building wheels for linux x86_64 linked against glibc
+#
+tarball="buildbox-x86_64-linux-gnu.tgz"
+
+curl -L -O "https://gitlab.com/buildgrid/buildbox/buildbox-integration/-/releases/permalink/latest/downloads/${tarball}"
 
 mkdir -p src/buildstream/subprojects/buildbox
-tar --extract --file ./binaries.tgz --directory src/buildstream/subprojects/buildbox
+tar --extract --file "./${tarball}" --directory src/buildstream/subprojects/buildbox
 
 cd src/buildstream/subprojects/buildbox
 rm buildbox-run
