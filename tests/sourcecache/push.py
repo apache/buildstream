@@ -280,9 +280,8 @@ def test_source_push_build_fail(cli, tmpdir, datafiles):
         res.assert_main_error(ErrorDomain.STREAM, None)
         res.assert_task_error(ErrorDomain.ELEMENT, None)
 
-        # Sources are not pushed as the build queue is before the source push
-        # queue.
-        assert "Pushed source " not in res.stderr
+        # Sources are still pushed after failing a build
+        assert "Pushed source " in res.stderr
 
 
 # Test that source push succeeds if the source needs to be fetched
