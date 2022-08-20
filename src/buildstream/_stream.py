@@ -1062,7 +1062,7 @@ class Stream:
         # Now it does the bits that can not be made atomic.
         targetGenerator = zip(elements, expanded_directories)
         for target, directory in targetGenerator:
-            self._context.messenger.info("Creating workspace for element {}".format(target.name))
+            self._context.messenger.status("Creating workspace for element {}".format(target.name))
 
             workspace = workspaces.get_workspace(target._get_full_name())
             if workspace and not no_checkout:
@@ -1083,7 +1083,7 @@ class Stream:
                 ) from e
 
             workspaces.create_workspace(target, directory, checkout=not no_checkout)
-            self._context.messenger.info("Created a workspace for element: {}".format(target._get_full_name()))
+            self._context.messenger.info("Created a workspace for element {}".format(target._get_full_name()))
 
     # workspace_close
     #
