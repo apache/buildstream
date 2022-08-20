@@ -138,9 +138,6 @@ def test_build_depend_on_cached_fail(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("on_error", ("continue", "quit"))
 def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
-    if on_error == "quit":
-        pytest.xfail("https://gitlab.com/BuildStream/buildstream/issues/534")
-
     project = str(datafiles)
     element_path = os.path.join(project, "elements", "element.bst")
 
@@ -185,9 +182,6 @@ def test_push_failed_missing_shell(cli, tmpdir, datafiles, on_error):
     When we don't have a valid shell, the artifact will be empty, not even the root directory.
     This ensures we handle the case of an entirely empty artifact correctly.
     """
-    if on_error == "quit":
-        pytest.xfail("https://gitlab.com/BuildStream/buildstream/issues/534")
-
     project = str(datafiles)
     element_path = os.path.join(project, "elements", "element.bst")
 
@@ -342,11 +336,6 @@ def test_nonstrict_retry_failed(cli, tmpdir, datafiles, use_share, retry):
         assert cli.get_element_state(project, "target.bst") == "failed"
 
         if use_share:
-            # Ensure that the target.bst has been shared, this is needed because of:
-            #     https://github.com/apache/buildstream/issues/534
-            result = cli.run(project=project, args=["artifact", "push", "target.bst"])
-            result.assert_success()
-
             # Delete the local cache, provoke pulling of the failed build
             cli.remove_artifact_from_cache(project, "target.bst")
 

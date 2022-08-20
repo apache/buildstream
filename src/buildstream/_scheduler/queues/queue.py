@@ -64,7 +64,7 @@ class Queue:
     # Resources this queues' jobs want
     resources = []  # type: List[int]
 
-    def __init__(self, scheduler):
+    def __init__(self, scheduler, *, imperative=False):
 
         #
         # Private members
@@ -77,6 +77,11 @@ class Queue:
         self._queued_elements = 0  # Number of elements queued
 
         self._required_element_check = False  # Whether we should check that elements are required before enqueuing
+
+        #
+        # Public members
+        #
+        self.imperative = imperative
 
         # Assert the subclass has setup class data
         assert self.action_name is not None

@@ -266,8 +266,8 @@ class Scheduler:
 
     # stop()
     #
-    # Stop queueing additional jobs, causes Scheduler.run()
-    # to return once all currently processing jobs are finished.
+    # Stop queueing additional imperative jobs, causes Scheduler.run()
+    # to return once all post-imperative jobs are finished.
     #
     def stop(self):
         self._queue_jobs = False
@@ -354,11 +354,27 @@ class Scheduler:
         ready = []
         process_queues = True
 
-        while self._queue_jobs and process_queues:
+        if self._queue_jobs:
+            # Scheduler.stop() was not called, consider all queues.
+            queues = self.queues
+        else:
+            # Limit processing to post-imperative queues
+            for queue in self.queues:
+                if queue.imperative:
+                    # Here the `queues` list will consists of the imperative queue along with
+                    # any subsequent queues, this means elements will be carried only from the
+                    # imerative queue onwards, and only post-imperative jobs will be processed.
+                    queues = self.queues[self.queues.index(queue) :]
+                    break
+            else:
+                # No imperative queue was marked, stop queueing any jobs
+                queues = []
+
+        while process_queues:
 
             # Pull elements forward through queues
             elements = []
-            for queue in self.queues:
+            for queue in queues:
                 queue.enqueue(elements)
                 elements = list(queue.dequeue())
 
@@ -373,13 +389,13 @@ class Scheduler:
             # to fetch tasks for elements which failed to pull, and
             # thus need all the pulls to complete before ever starting
             # a build
-            ready.extend(chain.from_iterable(q.harvest_jobs() for q in reversed(self.queues)))
+            ready.extend(chain.from_iterable(q.harvest_jobs() for q in reversed(queues)))
 
             # harvest_jobs() may have decided to skip some jobs, making
             # them eligible for promotion to the next queue as a side effect.
             #
             # If that happens, do another round.
-            process_queues = any(q.dequeue_ready() for q in self.queues)
+            process_queues = any(q.dequeue_ready() for q in queues)
 
         # Start the jobs
         #

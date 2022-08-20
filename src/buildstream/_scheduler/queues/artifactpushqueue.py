@@ -31,8 +31,8 @@ class ArtifactPushQueue(Queue):
     complete_name = "Artifacts Pushed"
     resources = [ResourceType.UPLOAD]
 
-    def __init__(self, scheduler, *, skip_uncached=False):
-        super().__init__(scheduler)
+    def __init__(self, scheduler, *, imperative=False, skip_uncached=False):
+        super().__init__(scheduler, imperative=imperative)
 
         self._skip_uncached = skip_uncached
 

@@ -423,7 +423,7 @@ class Stream:
 
         self._add_queue(FetchQueue(self._scheduler, skip_cached=True))
 
-        self._add_queue(BuildQueue(self._scheduler))
+        self._add_queue(BuildQueue(self._scheduler, imperative=True))
 
         if self._artifacts.has_push_remotes():
             self._add_queue(ArtifactPushQueue(self._scheduler, skip_uncached=True))
@@ -553,7 +553,7 @@ class Stream:
 
         self._add_queue(FetchQueue(self._scheduler))
 
-        self._add_queue(SourcePushQueue(self._scheduler))
+        self._add_queue(SourcePushQueue(self._scheduler, imperative=True))
 
         self._enqueue_plan(elements)
         self._run(announce_session=True)
@@ -652,7 +652,7 @@ class Stream:
 
         self._reset()
         self._add_queue(PullQueue(self._scheduler))
-        self._add_queue(ArtifactPushQueue(self._scheduler))
+        self._add_queue(ArtifactPushQueue(self._scheduler, imperative=True))
         self._enqueue_plan(elements)
         self._run(announce_session=True)
 
