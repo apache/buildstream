@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2018 Codethink Limited
+#  Copyright (C) 2022 Codethink Limited
 #  Copyright (C) 2019 Bloomberg LLP
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,7 @@
 
 import datetime
 import sys
+from io import StringIO
 from contextlib import ExitStack
 from collections import OrderedDict
 from collections.abc import Mapping
@@ -477,3 +478,19 @@ def roundtrip_dump(contents, file=None):
         else:
             f = sys.stdout
         yml.dump(contents, f)
+
+
+# roundtrip_dump_string()
+#
+# Helper to call roundtrip_dump() but get the content in a string.
+#
+# Args:
+#    contents (Mapping or list): The content to write out as YAML.
+#
+# Returns:
+#    (str): The generated string
+#
+def roundtrip_dump_string(node):
+    with StringIO() as f:
+        roundtrip_dump(node, f)
+        return f.getvalue()
