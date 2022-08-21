@@ -77,7 +77,6 @@ import string
 from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, Iterable, List, Optional, Set, Sequence
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
-from ruamel import yaml
 
 from . import _yaml
 from ._variables import Variables
@@ -1654,7 +1653,8 @@ class Element(Plugin):
         assert not self._cached_success()
 
         # Print the environment at the beginning of the log file.
-        env_dump = yaml.round_trip_dump(self.get_environment(), default_flow_style=False, allow_unicode=True)
+        env_dump = _yaml.roundtrip_dump_string(self.get_environment())
+
         self.log("Build environment for element {}".format(self.name), detail=env_dump)
 
         context = self._get_context()

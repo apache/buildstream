@@ -22,11 +22,11 @@ from contextlib import ExitStack
 from mmap import mmap
 import re
 import textwrap
-from ruamel import yaml
 import click
 
 from .profile import Profile
 from ..types import _Scope
+from .. import _yaml
 from .. import __version__ as bst_version
 from .. import FileType
 from .._exceptions import BstError, ImplError
@@ -384,29 +384,23 @@ class LogLine(Widget):
                 line = p.fmt_subst(
                     line,
                     "config",
-                    yaml.round_trip_dump(element._Element__config, default_flow_style=False, allow_unicode=True),
+                    _yaml.roundtrip_dump_string(element._Element__config),
                 )
 
             # Variables
             if "%{vars" in format_:
                 variables = dict(element._Element__variables)
-                line = p.fmt_subst(
-                    line, "vars", yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True)
-                )
+                line = p.fmt_subst(line, "vars", _yaml.roundtrip_dump_string(variables))
 
             # Environment
             if "%{env" in format_:
                 environment = element._Element__environment
-                line = p.fmt_subst(
-                    line, "env", yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True)
-                )
+                line = p.fmt_subst(line, "env", _yaml.roundtrip_dump_string(environment))
 
             # Public
             if "%{public" in format_:
-                environment = element._Element__public
-                line = p.fmt_subst(
-                    line, "public", yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True)
-                )
+                public = element._Element__public
+                line = p.fmt_subst(line, "public", _yaml.roundtrip_dump_string(public))
 
             # Workspaced
             if "%{workspaced" in format_:
@@ -426,19 +420,17 @@ class LogLine(Widget):
             # Dependencies
             if "%{deps" in format_:
                 deps = [e._get_full_name() for e in element._dependencies(_Scope.ALL, recurse=False)]
-                line = p.fmt_subst(line, "deps", yaml.safe_dump(deps, default_style=None).rstrip("\n"))
+                line = p.fmt_subst(line, "deps", _yaml.roundtrip_dump_string(deps).rstrip("\n"))
 
             # Build Dependencies
             if "%{build-deps" in format_:
                 build_deps = [e._get_full_name() for e in element._dependencies(_Scope.BUILD, recurse=False)]
-                line = p.fmt_subst(line, "build-deps", yaml.safe_dump(build_deps, default_style=False).rstrip("\n"))
+                line = p.fmt_subst(line, "build-deps", _yaml.roundtrip_dump_string(build_deps).rstrip("\n"))
 
             # Runtime Dependencies
             if "%{runtime-deps" in format_:
                 runtime_deps = [e._get_full_name() for e in element._dependencies(_Scope.RUN, recurse=False)]
-                line = p.fmt_subst(
-                    line, "runtime-deps", yaml.safe_dump(runtime_deps, default_style=False).rstrip("\n")
-                )
+                line = p.fmt_subst(line, "runtime-deps", _yaml.roundtrip_dump_string(runtime_deps).rstrip("\n"))
 
             report += line + "\n"
 

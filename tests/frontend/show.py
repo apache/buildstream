@@ -422,20 +422,19 @@ def test_exceed_max_recursion_depth(cli, tmpdir, dependency_depth):
 @pytest.mark.parametrize(
     "dep_kind, expected_deps",
     [
-        ("%{deps}", "[import-dev.bst, import-links.bst, import-bin.bst]"),
-        ("%{build-deps}", "[import-dev.bst, import-links.bst]"),
-        ("%{runtime-deps}", "[import-links.bst, import-bin.bst]"),
+        ("%{deps}", "- import-dev.bst\n- import-links.bst\n- import-bin.bst"),
+        ("%{build-deps}", "- import-dev.bst\n- import-links.bst"),
+        ("%{runtime-deps}", "- import-links.bst\n- import-bin.bst"),
     ],
+    ids=["deps", "build-deps", "runtime-deps"],
 )
 def test_format_deps(cli, datafiles, dep_kind, expected_deps):
     project = str(datafiles)
     target = "format-deps.bst"
-    result = cli.run(
-        project=project, silent=True, args=["show", "--deps", "none", "--format", "%{name}: " + dep_kind, target]
-    )
+    result = cli.run(project=project, silent=True, args=["show", "--deps", "none", "--format", dep_kind, target])
     result.assert_success()
 
-    expected = "{name}: {deps}".format(name=target, deps=expected_deps)
+    expected = "{deps}".format(deps=expected_deps)
     if result.output.strip() != expected:
         raise AssertionError("Expected output:\n{}\nInstead received output:\n{}".format(expected, result.output))
 
