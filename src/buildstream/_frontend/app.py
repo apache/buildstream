@@ -19,6 +19,7 @@
 from contextlib import contextmanager
 import os
 import sys
+import threading
 import traceback
 import datetime
 from textwrap import TextWrapper
@@ -88,7 +89,8 @@ class App:
         self._detail_profile = Profile(dim=True)
 
         # Cached messages
-        self._message_text = ""
+        self._cached_message_lock = threading.Lock()
+        self._cached_message_text = ""
         self._cache_messages = None
 
         #
@@ -215,7 +217,7 @@ class App:
                 self._session_start,
                 session_start_callback=self.session_start_cb,
                 interrupt_callback=self._interrupt_handler,
-                ticker_callback=self._tick,
+                ticker_callback=self._render_cached_messages,
             )
 
             self._state = self.stream.get_state()
@@ -242,7 +244,7 @@ class App:
             self._cache_messages = self.context.log_throttle_updates
 
             # Allow the Messenger to write status messages
-            self.context.messenger.set_render_status_cb(self._render)
+            self.context.messenger.set_render_status_cb(self._render_status)
 
             # Preflight the artifact cache after initializing logging,
             # this can cause messages to be emitted.
@@ -305,6 +307,8 @@ class App:
             try:
                 yield
             except BstError as e:
+                # Check that any cached messages are printed
+                self._render_cached_messages()
 
                 # Print a nice summary if this is a session
                 if session_name:
@@ -320,31 +324,29 @@ class App:
 
                     if self._started:
                         self._print_summary()
-                else:
-                    # Check that any cached messages are printed
-                    self._render(message_text=self._message_text)
 
                 # Exit with the error
                 self._error_exit(e)
             except RecursionError:
                 # Check that any cached messages are printed
-                self._render(message_text=self._message_text)
+                self._render_cached_messages()
                 click.echo(
                     "RecursionError: Dependency depth is too large. Maximum recursion depth exceeded.", err=True
                 )
                 sys.exit(-1)
             else:
+                # Check that any cached messages are printed
+                self._render_cached_messages()
+
                 # No exceptions occurred, print session time and summary
                 if session_name:
                     self._message(MessageType.SUCCESS, session_name, elapsed=self._state.elapsed_time())
+
                     if self._started:
                         self._print_summary()
 
                     # Notify session success
                     self._notify("{} succeeded".format(session_name), "")
-                else:
-                    # Check that any cached messages are printed
-                    self._render(message_text=self._message_text)
 
     # init_project()
     #
@@ -521,6 +523,9 @@ class App:
     def _message(self, message_type, message, **kwargs):
         self.context.messenger.message(Message(message_type, message, **kwargs))
 
+        # Flush any potentially cached messages immediately
+        self._render_cached_messages()
+
     # Exception handler
     #
     def _global_exception_handler(self, etype, value, tb, exc=True):
@@ -540,18 +545,44 @@ class App:
             sys.exit(-1)
 
     #
-    # Render message & status area, conditional on some internal state. This
-    # is driven by the tick rate by default if applicable. Internal tasks
-    # using the simple_task context manager, i.e resolving pipeline elements, that
-    # use this as callback should not drive the message printing by default.
+    # Cache messages
     #
-    def _render(self, message_text=None):
+    # Args:
+    #    message (Message): The message to cache
+    #
+    # Returns:
+    #    (str): The rendered text of only this message
+    #
+    def _cache_message(self, message):
+        text = self.logger.render(message)
 
-        if self._status and message_text:
+        with self._cached_message_lock:
+            self._cached_message_text += text
+
+        return text
+
+    #
+    # Render cached messages in case throttling messages during regular sessions
+    #
+    def _render_cached_messages(self):
+        # First clear the status area
+        if self._status:
             self._status.clear()
-            click.echo(message_text, nl=False, err=True)
-            self._message_text = ""
 
+        # Render pending messages
+        with self._cached_message_lock:
+            if self._cached_message_text:
+                click.echo(self._cached_message_text, nl=False, err=True)
+                self._cached_message_text = ""
+
+        # Render the status area again
+        self._render_status()
+
+    #
+    # Render status, this is used in some timed messages while not running the scheduler,
+    # and also used to render the status bar in regular sessions.
+    #
+    def _render_status(self):
         # If we're suspended or terminating, then dont render the status area
         if self._status and self.stream and not (self.stream.suspended or self.stream.terminated):
             self._status.render()
@@ -608,9 +639,6 @@ class App:
                 elif choice == "continue":
                     click.echo("\nContinuing\n", err=True)
 
-    def _tick(self):
-        self._render(message_text=self._message_text)
-
     # Callback that a job has failed
     #
     # XXX: This accesses the core directly, which is discouraged.
@@ -625,7 +653,7 @@ class App:
         task = self._state.tasks[task_id]
 
         # Flush any pending messages when handling a failure
-        self._render(message_text=self._message_text)
+        self._render_cached_messages()
 
         # Dont attempt to handle a failure if the user has already opted to
         # terminate
@@ -756,7 +784,7 @@ class App:
     #
     def _print_summary(self):
         # Ensure all status & messages have been processed
-        self._render(message_text=self._message_text)
+        self._render_cached_messages()
         click.echo("", err=True)
 
         try:
@@ -817,13 +845,12 @@ class App:
         if is_silenced and (message.message_type not in unconditional_messages):
             return
 
-        # Format the message & cache it
-        text = self.logger.render(message)
-        self._message_text += text
+        # Cache the message
+        text = self._cache_message(message)
 
         # If we're not rate limiting messaging, or the scheduler tick isn't active then render
         if not self._cache_messages or not self.stream.running:
-            self._render(message_text=self._message_text)
+            self._render_cached_messages()
 
         # Additionally log to a file
         if self._main_options["log_file"]:
@@ -836,7 +863,7 @@ class App:
             with self.stream.suspend():
                 yield
         finally:
-            self._render(message_text=self._message_text)
+            self._render_cached_messages()
 
     # Some validation routines for project initialization
     #
