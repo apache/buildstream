@@ -17,7 +17,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 import datetime
 import os
-from collections import defaultdict
 from contextlib import ExitStack
 from mmap import mmap
 import re
@@ -298,7 +297,7 @@ class LogLine(Widget):
         super().__init__(context, content_profile, format_profile)
 
         self._columns = []
-        self._failure_messages = defaultdict(list)
+        self._failure_messages = {}
         self._success_profile = success_profile
         self._err_profile = err_profile
         self._detail_profile = detail_profile
@@ -612,12 +611,12 @@ class LogLine(Widget):
         if self._failure_messages:
             values = {}
 
-            for element_name, messages in sorted(self._failure_messages.items()):
+            for element_name, message in sorted(self._failure_messages.items()):
                 for group in self._state.task_groups.values():
                     # Exclude the failure messages if the job didn't ultimately fail
                     # (e.g. succeeded on retry)
                     if element_name in group.failed_tasks:
-                        values[element_name] = "".join(self._render(v) for v in messages)
+                        values[element_name] = self._render(message)
 
             if values:
                 text += self.content_profile.fmt("Failure Summary\n", bold=True)
@@ -678,7 +677,7 @@ class LogLine(Widget):
         # Track logfiles for later use
         element_name = message.element_name
         if message.message_type in ERROR_MESSAGES and element_name is not None:
-            self._failure_messages[element_name].append(message)
+            self._failure_messages[element_name] = message
 
         return self._render(message)
 
