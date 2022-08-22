@@ -17,7 +17,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 import datetime
 import os
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 from contextlib import ExitStack
 from mmap import mmap
 import re
@@ -462,7 +462,7 @@ class LogLine(Widget):
         # Main invocation context
         text += "\n"
         text += self.content_profile.fmt("BuildStream Version {}\n".format(bst_version), bold=True)
-        values = OrderedDict()
+        values = {}
         values["Session Start"] = starttime.strftime("%A, %d-%m-%Y at %H:%M:%S")
         if toplevel_project:
             values["Project"] = "{} ({})".format(toplevel_project.name, toplevel_project.directory)
@@ -472,7 +472,7 @@ class LogLine(Widget):
         # User configurations
         text += "\n"
         text += self.content_profile.fmt("User Configuration\n", bold=True)
-        values = OrderedDict()
+        values = {}
         values["Configuration File"] = "Default Configuration" if not context.config_origin else context.config_origin
         values["Cache Directory"] = context.cachedir
         values["Log Files"] = context.logdir
@@ -494,7 +494,7 @@ class LogLine(Widget):
 
             text += "\n"
             text += self.content_profile.fmt("Remote Execution Configuration\n", bold=True)
-            values = OrderedDict()
+            values = {}
             values["Execution Service"] = format_spec(specs.exec_spec)
             re_storage_spec = specs.storage_spec or context.remote_cache_spec
             values["Storage Service"] = format_spec(re_storage_spec)
@@ -523,7 +523,7 @@ class LogLine(Widget):
 
             # Details on how the project was loaded
             #
-            values = OrderedDict()
+            values = {}
             if project.junction:
                 values["Junction path"] = project_info.project.junction._get_full_name()
             if project_info.provenance:
@@ -545,7 +545,7 @@ class LogLine(Widget):
             text += "\n"
 
             # Project Options
-            values = OrderedDict()
+            values = {}
             project.options.printable_variables(values)
             if values:
                 text += self.format_profile.fmt("{}Project Options\n".format(self._indent))
@@ -610,7 +610,7 @@ class LogLine(Widget):
             text += "\n\n"
 
         if self._failure_messages:
-            values = OrderedDict()
+            values = {}
 
             for element_name, messages in sorted(self._failure_messages.items()):
                 for group in self._state.task_groups.values():
@@ -624,7 +624,7 @@ class LogLine(Widget):
                 text += self._format_values(values, style_value=False)
 
         text += self.content_profile.fmt("Pipeline Summary\n", bold=True)
-        values = OrderedDict()
+        values = {}
 
         values["Total"] = self.content_profile.fmt(str(len(stream.total_elements)))
         values["Session"] = self.content_profile.fmt(str(len(stream.session_elements)))
@@ -838,7 +838,7 @@ class LogLine(Widget):
     # the values are aligned.
     #
     # Args:
-    #    values (dict): A dictionary, usually an OrderedDict()
+    #    values (dict): A dictionary
     #    style_key (bool): Whether to use the content profile for the keys
     #    style_value (bool): Whether to use the content profile for the values
     #    indent (number): Number of initial indentation levels
