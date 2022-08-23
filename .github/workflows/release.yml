@@ -77,7 +77,7 @@ jobs:
           path: ./wheelhouse/*.whl
 
   test_wheels:
-    name: Test Python wheel packages on ${{ matrix.os }}
+    name: "Test Python packages: ${{ matrix.test-name }}"
     needs: [build_wheels]
     runs-on: ubuntu-20.04
 
