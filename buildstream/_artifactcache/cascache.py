@@ -1157,7 +1157,7 @@ class CASRemote():
                     if e.code() == grpc.StatusCode.INVALID_ARGUMENT:
                         # Expected error as the request doesn't specify any URIs.
                         self.asset_push_supported = True
-                    if (e.code() != grpc.StatusCode.UNIMPLEMENTED and
+                    elif (e.code() != grpc.StatusCode.UNIMPLEMENTED and
                         e.code() != grpc.StatusCode.PERMISSION_DENIED):
                         raise
 
