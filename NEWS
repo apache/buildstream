@@ -1,4 +1,29 @@
 ==================
+buildstream 1.95.2
+==================
+
+  o Fix stack traces in tab completion of `bst artifact` commands (#1718)
+
+  o Document new link to obtain latest static buildbox binaries (#1721)
+
+  o Allow `bst shell --build` directly on artifacts without needing a project (#1711)
+
+  o Refactor out some unused methods (#781)
+
+  o Continue pushing build results if builds fail when --on-error=quit (#534)
+
+  o Fix issue which sometimes caused messages to get lost in the master log (#1728)
+
+  o Fix remaining ruamel.yaml deprecation warnings (#1731)
+
+  o Only print the last failure for retried failed elements (#517)
+
+  o Enhance BuildElement documentation (#1734)
+
+  o Automatically publish binary wheels which contain static BuildBox binaries when releasing (#1712)
+
+
+==================
 buildstream 1.95.1
 ==================
 
