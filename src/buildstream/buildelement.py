@@ -81,35 +81,58 @@ an alternative location while staging some elements in the sandbox root.
 
 Location for running commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The ``command-subdir`` variable sets where the build commands will be executed,
-if the directory does not exist it will be created, it is defined relative to
-the buildroot.
+The ``command-subdir`` variable sets where commands will be executed,
+and the directory will be created automatically if it does not exist.
+
+The ``command-subdir`` is a relative path from ``%{build-root}``, and
+cannot be a parent or adjacent directory, it must expand to a subdirectory
+of ``${build-root}``.
 
 
 Location for configuring the project
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The ``conf-root`` is defined by default as ``.`` and is the location that
-specific build element can use to look for build configuration files. This is
-used by elements such as autotools, cmake, distutils, meson, pip and qmake.
+The ``conf-root`` is the location that specific build elements can use to look for build configuration files.
+This is used by elements such as `autotools <https://apache.github.io/buildstream-plugins/elements/autotools.html>`_,
+`cmake <https://apache.github.io/buildstream-plugins/elements/cmake.html>`_,
+`meson <https://apache.github.io/buildstream-plugins/elements/meson.html>`_,
+`setuptools <https://apache.github.io/buildstream-plugins/elements/setuptools.html>`_ and
+`pip <https://apache.github.io/buildstream-plugins/elements/pip.html>`_.
 
-The configuration commands are run in ``command-subdir`` and by default
-``conf-root`` is ``.`` so if ``conf-root`` is not set the configuration files
-in ``command-subdir`` will be used.
+The default value of ``conf-root`` is defined by default as ``.``. This means that if
+the ``conf-root`` is not explicitly set to another directory, the configuration
+files are expected to be found in ``command-subdir``.
 
-By setting ``conf-root`` to ``"%{build-root}/Source/conf_location"`` and your
-source elements ``directory`` variable to ``Source`` then the configuration
-files in the directory ``conf_location`` with in your Source will be used.
-The current working directory when your configuration command is run will still
-be wherever you set your ``command-subdir`` to be, regardless of where the
-configure scripts are set with ``conf-root``.
+
+Separating source and build directories
+'''''''''''''''''''''''''''''''''''''''
+A typical example of using ``conf-root`` is when performing
+`autotools <https://apache.github.io/buildstream-plugins/elements/autotools.html>`_ builds
+where your source directory is separate from your build directory.
+
+This can be achieved in build elements which use ``conf-root`` as follows:
+
+.. code:: yaml
+
+   variables:
+     # Specify that build configuration scripts are found in %{build-root}
+     conf-root: "%{build-root}"
+
+     # The build will run in the `_build` subdirectory
+     command-subdir: _build
 
 
 Install Location
 ~~~~~~~~~~~~~~~~
-You should not change the ``install-root`` variable as it is a special
-writeable location in the sandbox but it is useful when writing custom
-install instructions as it may need to be supplied as the ``DESTDIR``, please
-see the :mod:`cmake <elements.cmake>` build element for example.
+Build elements must install the build output to the directory defined by ``install-root``.
+
+You need not set or change the ``install-root`` variable as it will be defined
+automatically on your behalf, and it is used to collect build output when creating
+the resulting artifacts.
+
+It is important to know about ``install-root`` in order to write your own
+custom install instructions, for example the
+`cmake <https://apache.github.io/buildstream-plugins/elements/cmake.html>`_
+element will use it to specify the ``DESTDIR``.
 
 
 Abstract method implementations
