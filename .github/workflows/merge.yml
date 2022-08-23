@@ -43,7 +43,7 @@ jobs:
           docs.tgz
 
   publish_docs:
-    needs: build
+    needs: build_docs
     runs-on: ubuntu-18.04
     steps:
 
