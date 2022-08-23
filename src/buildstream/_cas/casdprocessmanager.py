@@ -35,6 +35,7 @@ from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2_grpc
 from .._protos.build.buildgrid import local_cas_pb2_grpc
 from .._protos.google.bytestream import bytestream_pb2_grpc
 
+from .. import _site
 from .. import utils
 from .._exceptions import CASCacheError
 
@@ -73,7 +74,7 @@ class CASDProcessManager:
         # Early version check
         self._check_casd_version(messenger)
 
-        casd_args = [utils.get_host_tool("buildbox-casd")]
+        casd_args = [self.__buildbox_casd()]
         casd_args.append("--bind=" + self._connection_string)
         casd_args.append("--log-level=" + log_level.value)
 
@@ -103,8 +104,28 @@ class CASDProcessManager:
             # The frontend will take care of terminating buildbox-casd.
             # Create a new process group for it such that SIGINT won't reach it.
             self.process = subprocess.Popen(  # pylint: disable=consider-using-with, subprocess-popen-preexec-fn
-                casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT, preexec_fn=os.setpgrp
+                casd_args,
+                cwd=path,
+                stdout=logfile_fp,
+                stderr=subprocess.STDOUT,
+                preexec_fn=os.setpgrp,
+                env=self.__buildbox_casd_env(),
             )
+
+    def __buildbox_casd(self):
+        return utils._get_host_tool_internal("buildbox-casd", search_subprojects_dir="buildbox")
+
+    def __buildbox_casd_env(self):
+        env = os.environ.copy()
+
+        # buildbox-casd needs to have buildbox-fuse in its PATH at runtime,
+        # otherwise it will fallback to the HardLinkStager backend.
+        bundled_buildbox_dir = os.path.join(_site.subprojects, "buildbox")
+        if os.path.exists(bundled_buildbox_dir):
+            path = env.get("PATH", "").split(os.pathsep)
+            path = [bundled_buildbox_dir] + path
+            env["PATH"] = os.pathsep.join(path)
+        return env
 
     # _check_casd_version()
     #
@@ -121,7 +142,7 @@ class CASDProcessManager:
         # We specify a trailing "path" argument because some versions of buildbox-casd
         # require specifying the storage path even for invoking the --version option.
         #
-        casd_args = [utils.get_host_tool("buildbox-casd")]
+        casd_args = [self.__buildbox_casd()]
         casd_args.append("--version")
         casd_args.append("/")
 

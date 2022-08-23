@@ -54,6 +54,7 @@ from . import _signals
 from ._exceptions import BstError
 from .exceptions import ErrorDomain
 from ._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+from . import _site
 
 # Contains utils that have been rewritten in Cython for speed benefits
 # This makes them available when importing from utils
@@ -575,7 +576,9 @@ def link_files(
     return result
 
 
-def get_host_tool(name: str) -> str:
+def get_host_tool(
+    name: str,
+) -> str:
     """Get the full path of a host tool
 
     Args:
@@ -587,13 +590,7 @@ def get_host_tool(name: str) -> str:
     Raises:
        :class:`.ProgramNotFoundError`
     """
-    search_path = os.environ.get("PATH")
-    program_path = shutil.which(name, path=search_path)
-
-    if not program_path:
-        raise ProgramNotFoundError("Did not find '{}' in PATH: {}".format(name, search_path))
-
-    return program_path
+    return _get_host_tool_internal(name)
 
 
 def get_bst_version() -> Tuple[int, int]:
@@ -747,6 +744,35 @@ def save_file_atomic(
 #
 def get_umask():
     return _UMASK
+
+
+# _get_host_tool_internal():
+#
+# Get the full path of a host tool, including tools bundled inside the Python package.
+#
+# Args:
+#   name (str): The name of the program to search for
+#   search_subprojects_dir (str): Optionally search in bundled subprojects directory
+#
+# Returns:
+#   The full path to the program, if found
+#
+# Raises:
+#   :class:`.ProgramNotFoundError`
+def _get_host_tool_internal(
+    name: str,
+    search_subprojects_dir: Optional[str] = None,
+) -> str:
+    search_path = os.environ.get("PATH", "").split(os.pathsep)
+    if search_subprojects_dir:
+        search_path.insert(0, os.path.join(_site.subprojects, search_subprojects_dir))
+
+    program_path = shutil.which(name, path=os.pathsep.join(search_path))
+
+    if not program_path:
+        raise ProgramNotFoundError("Did not find '{}' in PATH: {}".format(name, search_path))
+
+    return program_path
 
 
 # _get_dir_size():

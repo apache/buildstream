@@ -85,3 +85,27 @@ services:
   mypy:
     <<: *tests-template
     command: tox -e mypy
+
+  # Test that each BuildStream+BuildBox wheel package can install and run.
+  # on the PyPA official 'manylinux' images that define the base ABI for
+  # Python binary packages.
+
+  wheels-manylinux_2_28-cp37:
+    <<: *tests-template
+    image: quay.io/pypa/manylinux_2_28_x86_64
+    command: .github/wheel-helpers/test-wheel-manylinux.sh cp37-cp37m-manylinux_2_28_x86_64 /opt/python/cp37-cp37m/bin/python3
+
+  wheels-manylinux_2_28-cp38:
+    <<: *tests-template
+    image: quay.io/pypa/manylinux_2_28_x86_64
+    command: .github/wheel-helpers/test-wheel-manylinux.sh cp38-cp38-manylinux_2_28_x86_64 /opt/python/cp38-cp38/bin/python3
+
+  wheels-manylinux_2_28-cp39:
+    <<: *tests-template
+    image: quay.io/pypa/manylinux_2_28_x86_64
+    command: .github/wheel-helpers/test-wheel-manylinux.sh cp39-cp39-manylinux_2_28_x86_64 /opt/python/cp39-cp39/bin/python3
+
+  wheels-manylinux_2_28-cp310:
+    <<: *tests-template
+    image: quay.io/pypa/manylinux_2_28_x86_64
+    command: .github/wheel-helpers/test-wheel-manylinux.sh cp310-cp310-manylinux_2_28_x86_64 /opt/python/cp310-cp310/bin/python3

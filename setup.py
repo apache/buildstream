@@ -23,6 +23,8 @@ from pathlib import Path
 import re
 import sys
 
+import packaging.version
+
 
 ###################################
 # Ensure we have a version number #
@@ -32,11 +34,49 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 import versioneer  # pylint: disable=wrong-import-position
 
+
+def mark_unstable_version(version_string):
+    # When publishing to PyPI we must be sure that unstable releases are
+    # marked as such, so `pip install` doesn't install them by default.
+
+    v = packaging.version.parse(version_string)
+
+    # BuildStream version scheme: if MINOR version is odd, then
+    # this is an unstable release.
+    is_unstable_release = v.minor % 2 != 0
+
+    # Python PEP440 version scheme: use an explicit postfix to mark development
+    # and prereleases.
+    if is_unstable_release:
+        if v.local or v.is_devrelease or v.is_prerelease:
+            # PyPI will ignore these without us marking them.
+            return version_string
+        else:
+            return version_string + ".dev0"
+
+    return version_string
+
+
+# Extend versioneer to support our custom version style.
+_render = versioneer.render
+
+
+def render_version(pieces, style):
+    if style == "pep440_buildstream":
+        result = _render(pieces, "pep440")
+        result["version"] = mark_unstable_version(result["version"])
+    else:
+        result = _render(pieces, style)
+    return result
+
+
+versioneer.render = render_version
+
 version = versioneer.get_version()
 
 if version.startswith("0+untagged"):
     print(
-        "Your git repository has no tags - BuildStream can't " "determine its version. Please run `git fetch --tags`.",
+        "Your git repository has no tags - BuildStream can't determine its version. Please run `git fetch --tags`.",
         file=sys.stderr,
     )
     sys.exit(1)
@@ -62,6 +102,63 @@ except ImportError:
         " install setuptools)."
     )
     sys.exit(1)
+
+
+############################################################
+# List the BuildBox binaries to ship in the wheel packages #
+############################################################
+#
+# BuildBox isn't widely available in OS distributions. To enable a "one click"
+# install for BuildStream, we bundle prebuilt BuildBox binaries in our binary
+# wheel packages.
+#
+# The binaries are provided by the buildbox-integration Gitlab project:
+# https://gitlab.com/BuildGrid/buildbox/buildbox-integration
+#
+# If you want to build a wheel with the BuildBox binaries included, set the
+# env var "BST_BUNDLE_BUILDBOX=1" when running setup.py.
+
+try:
+    BUNDLE_BUILDBOX = int(os.environ.get("BST_BUNDLE_BUILDBOX", "0"))
+except ValueError:
+    print("BST_BUNDLE_BUILDBOX must be an integer. Please set it to '1' to enable, '0' to disable", file=sys.stderr)
+    raise SystemExit(1)
+
+
+def list_buildbox_binaries():
+    expected_binaries = [
+        "buildbox-casd",
+        "buildbox-fuse",
+        "buildbox-run",
+    ]
+
+    if BUNDLE_BUILDBOX:
+        bst_package_dir = Path(__file__).parent.joinpath("src/buildstream")
+        buildbox_dir = bst_package_dir.joinpath("subprojects", "buildbox")
+        buildbox_binaries = [buildbox_dir.joinpath(name) for name in expected_binaries]
+
+        missing_binaries = [path for path in buildbox_binaries if not path.is_file()]
+        if missing_binaries:
+            paths_text = "\n".join(["  * {}".format(path) for path in missing_binaries])
+            print(
+                "Expected BuildBox binaries were not found. "
+                "Set BST_BUNDLE_BUILDBOX=0 or provide:\n\n"
+                "{}\n".format(paths_text),
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
+
+        for path in buildbox_binaries:
+            if path.is_symlink():
+                print(
+                    "Bundled BuildBox binaries must not be symlinks. Please fix {}".format(path),
+                    file=sys.stderr,
+                )
+                raise SystemExit(1)
+
+        return [str(path.relative_to(bst_package_dir)) for path in buildbox_binaries]
+    else:
+        return []
 
 
 ###########################################
@@ -351,7 +448,7 @@ setup(
     },
     python_requires="~={}.{}".format(REQUIRED_PYTHON_MAJOR, REQUIRED_PYTHON_MINOR),
     package_dir={"": "src"},
-    packages=find_packages(where="src", exclude=("tests", "tests.*")),
+    packages=find_packages(where="src", exclude=("subprojects", "tests", "tests.*")),
     package_data={
         "buildstream": [
             "py.typed",
@@ -359,6 +456,7 @@ setup(
             "plugins/*/*.yaml",
             "data/*.yaml",
             "data/*.sh.in",
+            *list_buildbox_binaries(),
             *list_testing_datafiles(),
         ]
     },

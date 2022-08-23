@@ -55,7 +55,7 @@ try:
 except ProgramNotFoundError:
     HAVE_LZIP = False
 
-casd_path = utils.get_host_tool("buildbox-casd")
+casd_path = utils._get_host_tool_internal("buildbox-casd", search_subprojects_dir="buildbox")
 CASD_SEPARATE_USER = bool(os.stat(casd_path).st_mode & stat.S_ISUID)
 del casd_path
 
@@ -68,7 +68,7 @@ HAVE_SANDBOX = None
 BUILDBOX_RUN = None
 
 try:
-    path = utils.get_host_tool("buildbox-run")
+    path = utils._get_host_tool_internal("buildbox-run", search_subprojects_dir="buildbox")
     subprocess.run([path, "--capabilities"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     BUILDBOX_RUN = os.path.basename(os.readlink(path))
     HAVE_SANDBOX = "buildbox-run"

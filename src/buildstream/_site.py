@@ -43,3 +43,6 @@ build_all_template = os.path.join(root, "data", "build-all.sh.in")
 
 # Module building script template
 build_module_template = os.path.join(root, "data", "build-module.sh.in")
+
+# The bundled subprojects directory
+subprojects = os.path.join(root, "subprojects")
