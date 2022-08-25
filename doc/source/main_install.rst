@@ -285,13 +285,23 @@ A regular way to do this is to add the following line to the end of your ``~/.ba
 
 .. _install-container:
 
-
 Buildstream Inside a Container
 -------------------------------
-If your system cannot provide the base requirements, it is possible to run
-BuildStream within a container. This gives you an easy way to get started
-using BuildStream on any Unix-like platform where containers are available,
-including macOS. 
 
-For details, see the `Buildstream Docker documentation
-<https://gitlab.com/BuildStream/buildstream-docker-images/-/blob/master/USING.md>`_
+It is possible to run BuildStream in an OCI container tool such as Docker.
+This gives you an easy way to get started using BuildStream on any Unix-like
+platform where containers are available, including macOS.
+
+Prebuilt images are available, see the documentation
+`here <https://gitlab.com/BuildStream/buildstream-docker-images/-/blob/master/USING.md>`_
+
+You can also produce your own container images, either by adapting the
+`buildstream-docker-images project <https://gitlab.com/BuildStream/buildstream-docker-images/>`_,
+or by following the full installation instructions above.
+
+Note that some special configuration is often needed to run BuildStream in a container:
+
+  * User namespaces are used to isolate and control builds. This requires the
+    Docker ``--privileged`` mode.
+  * FUSE should be available in the container, achieved via the Docker
+    ``--device /dev/fuse`` option.
