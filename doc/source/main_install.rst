@@ -1,16 +1,19 @@
 Installing
 ==========
 
-Until BuildStream is available in your distro, you may need to install
-it yourself from source. The necessary steps are:
+BuildStream is packaged in some Linux distributions. If your distro has an
+up-to-date package we recommend using that. The table at
+`repology.org <https://repology.org/project/buildstream/versions>`_ may be
+useful.
+
+For full install instructions, read on:
 
 * :ref:`Install dependencies<install-dependencies>`
-* :ref:`Install BuildBox<install-buildbox>`
 * :ref:`Install BuildStream<install-buildstream>` (from a git checkout, or from PyPi)
+* :ref:`Install BuildBox<install-buildbox>` (if needed)
 * :ref:`Update PATH<post-install>`
 
-Alternatively, BuildStream can be run in :ref:`a container<install-container>`.
-
+BuildStream can also be run in :ref:`a container<install-container>`.
 
 .. _install-dependencies:
 
