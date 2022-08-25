@@ -109,60 +109,6 @@ If needed, get the additional install-time dependencies with::
     sudo apt-get install g++ python3-dev
 
 
-.. _install-buildbox:
-
-Installing BuildBox
--------------------
-
-BuildStream master now depends on buildbox-casd to manage the local CAS cache
-and communicate with CAS servers. buildbox-run is used for sandboxing. BuildBox
-components are still in development and there are no stable releases yet.
-Thus, they're not available yet in Linux distros and they have to be manually
-installed.
-
-These components can be installed from binaries, or built from source.
-
-Install binaries
-~~~~~~~~~~~~~~~~
-Linux x86-64 users can download the `latest statically linked binaries here
-<https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases/permalink/latest/downloads/binaries.tgz>`_,
-or browse the `release history of static binaries here
-<https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases>`_.
-
-The contents of the ``binaries.tgz`` tarball should be extracted into a directory
-in ``PATH``, e.g., ``~/.local/bin``.
-
-
-Build from source
-~~~~~~~~~~~~~~~~~
-
-Each of the 4 buildbox components can be installed separately from their
-respective git repositiories, and each respository has individual install
-instructions. Make sure that you're installing the correct version of
-each component.
-
-| **Buildbox-common:** See the installation section in:
-| https://gitlab.com/BuildGrid/buildbox/buildbox-common/-/blob/0.0.38/README.rst
-| (Be sure to install from the 0.0.38 tag.)
-
-| **Buildbox-casd:** See the installation section in:
-| https://gitlab.com/BuildGrid/buildbox/buildbox-casd/-/blob/0.0.38/README.rst \
-| (Be sure to install from the 0.0.38 tag.)
-
-| **Buildbox-fuse:** See
-| https://gitlab.com/BuildGrid/buildbox/buildbox-fuse/-/blob/0.0.14/INSTALL.rst
-| (Be sure to install from the 0.0.14 tag.)
-
-| **Buildbox-run-bublewrap:** See the installation section in:
-| https://gitlab.com/BuildGrid/buildbox/buildbox-run-bubblewrap/-/blob/master/README.rst
-| (Be sure to install from the 0.0.8 tag.)
-
-Finally, configure buildbox-run-bubblewrap as the default buildbox-run
-implementation::
-
-    ln -sv buildbox-run-bubblewrap /usr/local/bin/buildbox-run
-
-
 .. _install-buildstream:
 
 Installing BuildStream
@@ -170,28 +116,23 @@ Installing BuildStream
 
 Installing from PyPI
 ~~~~~~~~~~~~~~~~~~~~
-Once you have the base system dependencies, you can install the BuildStream
-python package as a regular user.
 
-To install from PyPI, you will additionally require:
-
- - pip for python3 (only required for setup)
- - Python 3 development libraries and headers
-
-
-For the latest dev snapshot of BuildStream 2, simply run the following command::
+For the latest pre-release of BuildStream 2, including the necessary Python
+dependencies and BuildBox tools, run the following command::
 
     pip3 install --user --pre BuildStream
 
-This will install latest dev snapshot of BuildStream and its pure python
-dependencies into your user's homedir in ``~/.local``.
+This will install BuildStream and its dependencies into your user's homedir in
+``~/.local``.  Pip will use binary "wheel" packages from PyPI where these are
+available for your platform. Otherwise it will build bundled C++ and Cython
+code from source, which requires the additional install-time only dependencies
+documented in the previous section.
 
 .. note::
 
-   At time of writing, BuildStream 2 is only available as dev snapshots; this
-   is why the ``--pre`` option is required.  Running
-   ``pip3 install --user BuildStream`` (without the ``--pre`` option)
-   will install Buildsteam 1.
+   At time of writing, BuildStream 2 is in beta; this is why the ``--pre``
+   option is required.  Running ``pip3 install --user BuildStream`` (without
+   the ``--pre`` option) will install Buildsteam 1.
 
 You can also install a specific dev snapshot of Buildstream by specifying the
 version. eg ``pip3 install --user BuildStream==1.93.2.dev0``.
@@ -215,11 +156,8 @@ to the latest dev snapshot like so::
 Installing from a git checkout
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 To install directly from the `git repository <https://github.com/apache/buildstream>`_
-using python's ``pip`` package manager, you will additionally require:
-
-- pip for python3 (only required for setup)
-- Python 3 development libraries and headers
-- git (to checkout BuildStream)
+using python's ``pip`` package manager, you will require the extra install-time
+dependencies documented above.
 
 Before installing, please check the existing tags in the git repository
 and determine which version you want to install.
@@ -232,9 +170,12 @@ Run the following commands::
     git checkout <desired release tag>
     pip3 install --user .
 
-This will install BuildStream's pure python dependencies into
-your user's homedir in ``~/.local`` and will run BuildStream directly
-from the git checkout directory.
+This will install BuildStream into your user's homedir in ``~/.local``, along
+with neccessary Python dependencies fetched from PyPI.
+
+You can optionally use Pip's
+`editable mode <https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs>`_
+(the ``-e`` flag) in this case.
 
 Keep following the instructions below to ensure that the ``bst``
 command is in your ``PATH`` and to enable bash completions for it.
@@ -242,8 +183,9 @@ command is in your ``PATH`` and to enable bash completions for it.
 
 Upgrading from a git checkout
 +++++++++++++++++++++++++++++
-If you installed BuildStream from a local git checkout using ``-e`` option, all
-you need to do to upgrade BuildStream is to update your local git checkout::
+If you installed BuildStream from a local git checkout using the ``-e``
+option, all you need to do to upgrade BuildStream is to update your local git
+checkout::
 
     cd /path/to/buildstream
     git pull --rebase
@@ -297,6 +239,60 @@ and set up other necessary environment variables::
 
 If you do not want to manage your virtual environments manually, you can
 consider using `pipx <https://docs.python.org/3/tutorial/venv.html>`_.
+
+
+.. _install-buildbox:
+
+Installing BuildBox
+-------------------
+
+BuildStream master now depends on buildbox-casd to manage the local CAS cache
+and communicate with CAS servers. buildbox-run is used for sandboxing. BuildBox
+components are still in development and there are no stable releases yet.
+Thus, they're not available yet in Linux distros and they have to be manually
+installed.
+
+These components can be installed from binaries, or built from source.
+
+Install binaries
+~~~~~~~~~~~~~~~~
+Linux x86-64 users can download the `latest statically linked binaries here
+<https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases/permalink/latest/downloads/binaries.tgz>`_,
+or browse the `release history of static binaries here
+<https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases>`_.
+
+The contents of the ``binaries.tgz`` tarball should be extracted into a directory
+in ``PATH``, e.g., ``~/.local/bin``.
+
+
+Build from source
+~~~~~~~~~~~~~~~~~
+
+Each of the 4 buildbox components can be installed separately from their
+respective git repositiories, and each respository has individual install
+instructions. Make sure that you're installing the correct version of
+each component.
+
+| **Buildbox-common:** See the installation section in:
+| https://gitlab.com/BuildGrid/buildbox/buildbox-common/-/blob/0.0.38/README.rst
+| (Be sure to install from the 0.0.38 tag.)
+
+| **Buildbox-casd:** See the installation section in:
+| https://gitlab.com/BuildGrid/buildbox/buildbox-casd/-/blob/0.0.38/README.rst \
+| (Be sure to install from the 0.0.38 tag.)
+
+| **Buildbox-fuse:** See
+| https://gitlab.com/BuildGrid/buildbox/buildbox-fuse/-/blob/0.0.14/INSTALL.rst
+| (Be sure to install from the 0.0.14 tag.)
+
+| **Buildbox-run-bublewrap:** See the installation section in:
+| https://gitlab.com/BuildGrid/buildbox/buildbox-run-bubblewrap/-/blob/master/README.rst
+| (Be sure to install from the 0.0.8 tag.)
+
+Finally, configure buildbox-run-bubblewrap as the default buildbox-run
+implementation::
+
+    ln -sv buildbox-run-bubblewrap /usr/local/bin/buildbox-run
 
 
 .. _post-install:
