@@ -246,23 +246,32 @@ consider using `pipx <https://docs.python.org/3/tutorial/venv.html>`_.
 Installing BuildBox
 -------------------
 
-BuildStream master now depends on buildbox-casd to manage the local CAS cache
-and communicate with CAS servers. buildbox-run is used for sandboxing. BuildBox
-components are still in development and there are no stable releases yet.
-Thus, they're not available yet in Linux distros and they have to be manually
-installed.
+The BuildStream binary packages from PyPI contain working BuildBox binaries.
+If these are installed on your system, the following command will tell you::
+
+    pip3 show --files buildstream | grep subprojects/buildbox
+
+If you see no output here, you will need to follow the below instructions to
+obtain BuildBox.
+
+BuildStream depends on the following tools from
+`BuildBox <https://gitlab.com/BuildGrid/buildbox/>`_:
+
+  * ``buildbox-casd`` (to manage local and remote content-addressed storage)
+  * ``buildbox-fuse`` (to check out content from the local CAS)
+  * ``buildbox-run-bubblewrap`` (to run element commands in a controlled sandbox)
 
 These components can be installed from binaries, or built from source.
 
 Install binaries
 ~~~~~~~~~~~~~~~~
-Linux x86-64 users can download the `latest statically linked binaries here
-<https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases/permalink/latest/downloads/binaries.tgz>`_,
-or browse the `release history of static binaries here
+Browse the `release history of static binaries here
 <https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases>`_.
 
-The contents of the ``binaries.tgz`` tarball should be extracted into a directory
-in ``PATH``, e.g., ``~/.local/bin``.
+Linux x86-64 users can download the `latest statically linked binaries here
+<https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases/permalink/latest/downloads/buildbox-x86_64-linux-gnu.tgz>`_,
+The contents of the tarball should be extracted into a directory in ``PATH``,
+e.g., ``~/.local/bin``.
 
 
 Build from source
@@ -270,24 +279,24 @@ Build from source
 
 Each of the 4 buildbox components can be installed separately from their
 respective git repositiories, and each respository has individual install
-instructions. Make sure that you're installing the correct version of
-each component.
+instructions. We recommend installing the latest release tag of each
+component.
 
 | **Buildbox-common:** See the installation section in:
-| https://gitlab.com/BuildGrid/buildbox/buildbox-common/-/blob/0.0.38/README.rst
-| (Be sure to install from the 0.0.38 tag.)
+| https://gitlab.com/BuildGrid/buildbox/buildbox-common/-/blob/master/README.rst
+| (Be sure to install from the latest stable release tag.)
 
 | **Buildbox-casd:** See the installation section in:
-| https://gitlab.com/BuildGrid/buildbox/buildbox-casd/-/blob/0.0.38/README.rst \
-| (Be sure to install from the 0.0.38 tag.)
+| https://gitlab.com/BuildGrid/buildbox/buildbox-casd/-/blob/master/README.rst \
+| (Be sure to install from the latest stable release tag.)
 
 | **Buildbox-fuse:** See
-| https://gitlab.com/BuildGrid/buildbox/buildbox-fuse/-/blob/0.0.14/INSTALL.rst
-| (Be sure to install from the 0.0.14 tag.)
+| https://gitlab.com/BuildGrid/buildbox/buildbox-fuse/-/blob/master/INSTALL.rst
+| (Be sure to install from the latest stable release tag.)
 
 | **Buildbox-run-bublewrap:** See the installation section in:
 | https://gitlab.com/BuildGrid/buildbox/buildbox-run-bubblewrap/-/blob/master/README.rst
-| (Be sure to install from the 0.0.8 tag.)
+| (Be sure to install from the latest stable release tag.)
 
 Finally, configure buildbox-run-bubblewrap as the default buildbox-run
 implementation::
