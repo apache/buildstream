@@ -20,38 +20,64 @@ BuildStream can also be run in :ref:`a container<install-container>`.
 Installing Dependencies
 -----------------------
 
-Before installing BuildStream from source, it is necessary to first install
-the system dependencies. Below are some linux distribution specific instructions
-for installing these dependencies.
-
-BuildStream requires the following base system requirements:
+BuildStream has the following base system requirements:
 
 - python3 >= 3.7
-- pip
-- lzip (optional, for ``.tar.lz`` support)
-- :ref:`buildbox-casd<install-buildbox>`
+- pip (during installation only)
 
-BuildStream also depends on the host tools for the :mod:`Source <buildstream.source>` plugins.
-Refer to the respective :ref:`source plugin <plugins_sources>` documentation for host tool
-requirements of specific plugins.
+Some :mod:`Source <buildstream.source>` plugins require additional host tools.
+Here is a useful subset based on the :ref:`core source plugins <plugins_sources>`
+and `buildstream-plugins <https://apache.github.io/buildstream-plugins/>`_.
 
+- git (for ``git`` sources)
+- lzip (for ``.tar.lz`` support in ``tar`` sources)
+- patch (for ``patch`` sources)
+
+Some BuildBox tools used by BuildStream require additional host tools
+for full functionality and performance:
+
+- bubblewrap (for ``buildbox-run-bubblewrap``)
+- fusermount3 (for ``buildbox-fuse``)
+
+Additional Python dependencies will be installed via Pip in the next stage.
+Several of these include some Cython code and/or bundled C++ source code.
+Prebuilt binary "wheel" packages are provided for some platforms and in this
+case there are no extra requirements on the host.
+
+In the case that no binary package is available, Pip will try to install from
+source. This implies extra install-time requirements:
+
+- C and C++ toolchain
+- Python development headers
 
 Arch Linux
 ~~~~~~~~~~
-Install the dependencies with::
+
+Install the recommended dependencies with::
 
 
-    sudo pacman -S python python-pip
+    sudo pacman -S bubblewrap fuse3 git lzip patch python python-pip
+
+
+If needed, get the additional install-time dependencies with::
+
+
+    sudo pacman -S gcc
 
 
 Debian
 ~~~~~~
-Install the dependencies with::
+Install the recommended dependencies with::
 
 
     sudo apt-get install \
-        python3 python3-pip python3-dev
+        git lzip patch bubblewrap fuse3 python3-pip python3
 
+
+If needed, get the additional install-time dependencies with::
+
+
+    sudo apt-get install g++ python3-dev
 
 Fedora
 ~~~~~~
@@ -60,16 +86,27 @@ requirements you need::
 
 
     dnf install -y \
-        python3 python3-pip python3-devel
+        python3 python3-pip bubblewrap fuse3 lzip git patch
+
+
+If needed, get the additional install-time dependencies with::
+
+    dnf install -y gcc-c++ python3-devel
 
 
 Ubuntu
 ~~~~~~
-Install the dependencies with::
+Install the recommended dependencies with::
 
 
-    sudo apt install \
-        python3 python3-pip python3-dev
+    sudo apt-get install \
+        git lzip patch bubblewrap fuse3 python3-pip python3
+
+
+If needed, get the additional install-time dependencies with::
+
+
+    sudo apt-get install g++ python3-dev
 
 
 .. _install-buildbox:
