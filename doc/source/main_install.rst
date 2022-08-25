@@ -117,22 +117,16 @@ Installing BuildStream
 Installing from PyPI
 ~~~~~~~~~~~~~~~~~~~~
 
-For the latest pre-release of BuildStream 2, including the necessary Python
+For the latest release of BuildStream 2, including the necessary Python
 dependencies and BuildBox tools, run the following command::
 
-    pip3 install --user --pre BuildStream
+    pip3 install --user BuildStream
 
 This will install BuildStream and its dependencies into your user's homedir in
 ``~/.local``.  Pip will use binary "wheel" packages from PyPI where these are
 available for your platform. Otherwise it will build bundled C++ and Cython
 code from source, which requires the additional install-time only dependencies
 documented in the previous section.
-
-.. note::
-
-   At time of writing, BuildStream 2 is in beta; this is why the ``--pre``
-   option is required.  Running ``pip3 install --user BuildStream`` (without
-   the ``--pre`` option) will install Buildsteam 1.
 
 You can also install a specific dev snapshot of Buildstream by specifying the
 version. eg ``pip3 install --user BuildStream==1.93.2.dev0``.
@@ -146,10 +140,10 @@ command is in your ``PATH``.
 Upgrading from PyPI
 +++++++++++++++++++
 Once you have already installed BuildStream from PyPI, you can later update
-to the latest dev snapshot like so::
+to the latest release like so::
 
 
-    pip3 install --user --upgrade --pre BuildStream
+    pip3 install --user --upgrade BuildStream
 
 
 
@@ -210,28 +204,26 @@ Here is how to install BuildStream stable and development snapshot releases in
 virtual environments of their own::
 
 
-    # Install BuildStream stable in an environment called "venv-bst-stable"
-    # (At time of writing, this will be BuildStream 1)
-    python3 -m venv venv-bst-stable
+    # Install BuildStream 2.0 in an environment called "venv-bst2"
+    python3 -m venv venv-bst2
     venv-bst-stable/bin/pip install BuildStream
 
-    # Install BuildStream latest development snapshot in an environment
-    # called "venv-bst-latest"
-    # (At time of writing, this will be Buildstream 2)
-    python3 -m venv venv-bst-latest
-    venv-bst-latest/bin/pip install --pre BuildStream
+    # Install BuildStream 1.0 in an environment called "venv-bst1"
+    # (At time of writing, this will be Buildstream 1)
+    python3 -m venv venv-bst1
+    venv-bst-latest/bin/pip install BuildStream==1
 
 To start using BuildStream from the desired environment, you will need to
 activate it first. Activating it will automatically add ``bst`` to your ``PATH``
 and set up other necessary environment variables::
 
 
-    # Use BuildStream stable from venv-bst-stable
-    source venv-bst-stable/bin/activate
+    # Use BuildStream 2.0 from venv-bst2
+    source venv-bst2/bin/activate
     bst --version
 
-    # Use BuildStream latest from venv-bst-latest
-    source venv-bst-latest/bin/activate
+    # Use BuildStream 1.0 from venv-bst1
+    source venv-bst1/bin/activate
     bst --version
 
     # Once you are done, remember to deactivate the virtual environment
