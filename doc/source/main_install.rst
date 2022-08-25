@@ -310,13 +310,13 @@ Post-install setup
 ------------------
 
 After having installed from source using any of the above methods, some
-setup will be required to use BuildStream.
+setup may be required to use BuildStream.
 
 
 
 Adjust ``PATH``
 ~~~~~~~~~~~~~~~
-Since BuildStream is now installed under your local user's install directories,
+If BuildStream is now installed under your local user's install directories,
 you need to ensure that ``PATH`` is adjusted.
 
 A regular way to do this is to add the following line to the end of your ``~/.bashrc``::
