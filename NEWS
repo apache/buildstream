@@ -1,4 +1,15 @@
 =================
+buildstream 1.6.8
+=================
+
+  o Only test remote CAS push capabilities if push is enabled.
+  This improves compatibility with new grpcio releases.
+  o Dummy sandbox for checking out from dirrefernt arches.
+  Ability to check out build artifacts with incompatible arch
+  assuming no commands need to be run.
+  o Backport regex flags fix to support newer versions of Python
+
+=================
 buildstream 1.6.7
 =================
 
