@@ -1,96 +1,104 @@
-Installing
-==========
+Installing from Source
+======================
 
-Until BuildStream is available in your distro, you may need to install
-it yourself from source. The necessary steps are:
+This page explains how to build and install this version of BuildStream from
+source. For general purpose installation instructions consult the
+`website <https://buildstream.build/install.html>`_.
+
+For full install instructions, read on:
 
 * :ref:`Install dependencies<install-dependencies>`
 * :ref:`Install BuildBox<install-buildbox>`
-* :ref:`Install BuildStream<install-buildstream>` (from a git checkout, or from PyPi)
-* :ref:`Update PATH<post-install>`
-
-Alternatively, BuildStream can be run in :ref:`a container<install-container>`.
-
+* :ref:`Install BuildStream<install-buildstream>`
+* :ref:`Install completions<install-completions>`
 
 .. _install-dependencies:
 
 Installing Dependencies
 -----------------------
 
-Before installing BuildStream from source, it is necessary to first install
-the system dependencies. Below are some linux distribution specific instructions
-for installing these dependencies.
+Runtime requirements
+~~~~~~~~~~~~~~~~~~~~
 
-BuildStream requires the following base system requirements:
+BuildStream requires the following Python environment to run:
 
 - python3 >= 3.7
-- pip
-- lzip (optional, for ``.tar.lz`` support)
-- :ref:`buildbox-casd<install-buildbox>`
+- PyPI packages as specified in
+  `requirements.txt <https://github.com/apache/buildstream/blob/master/requirements/requirements.txt>`_.
 
-BuildStream also depends on the host tools for the :mod:`Source <buildstream.source>` plugins.
-Refer to the respective :ref:`source plugin <plugins_sources>` documentation for host tool
-requirements of specific plugins.
+Some :mod:`Source <buildstream.source>` plugins require specific tools installed
+on the host. Here is a commonly used subset based on the
+:ref:`core source plugins <plugins_sources>`
+and `buildstream-plugins <https://apache.github.io/buildstream-plugins/>`_.
 
+- git (for ``git`` sources)
+- lzip (for ``.tar.lz`` support in ``tar`` sources)
+- patch (for ``patch`` sources)
 
-Arch Linux
-~~~~~~~~~~
-Install the dependencies with::
+Some BuildBox tools used by BuildStream require additional host tools:
 
+- bubblewrap (for ``buildbox-run-bubblewrap``)
+- fusermount3 (for ``buildbox-fuse``)
 
-    sudo pacman -S python python-pip
+Install-time requirements
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
+BuildStream contains Cython code which implies the following extra
+dependencies at install-time only:
 
-Debian
-~~~~~~
-Install the dependencies with::
+- C and C++ toolchain
+- Python development headers
 
+These instructions use ``pip3`` to install necessary PyPI packages.
+Packagers and integrators may use a different tool and can ignore
+the `pip` dependency below.
 
-    sudo apt-get install \
-        python3 python3-pip python3-dev
+Distribution-specific guides
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+This table gives you a list of packages for specific distros:
 
-Fedora
-~~~~~~
-For recent fedora systems, the following line should get you the system
-requirements you need::
+.. list-table::
 
-
-    dnf install -y \
-        python3 python3-pip python3-devel
-
-
-Ubuntu
-~~~~~~
-Install the dependencies with::
-
-
-    sudo apt install \
-        python3 python3-pip python3-dev
-
+  * - **Distribution**
+    - **Runtime requires**
+    - **Install requires**
+  * - Arch Linux
+    - bubblewrap fuse3 git lzip patch python
+    - gcc python-pip
+  * - Debian
+    - bubblewrap fuse3 git lzip patch python3
+    - g++ python3-dev python3-pip
+  * - Fedora
+    - bubblewrap fuse3 git lzip patch python3
+    - gcc-c++ python3-devel python3-pip
+  * - Ubuntu
+    - bubblewrap fuse3 git lzip patch python3
+    - g++ python3-dev python3-pip
 
 .. _install-buildbox:
 
 Installing BuildBox
 -------------------
 
-BuildStream master now depends on buildbox-casd to manage the local CAS cache
-and communicate with CAS servers. buildbox-run is used for sandboxing. BuildBox
-components are still in development and there are no stable releases yet.
-Thus, they're not available yet in Linux distros and they have to be manually
-installed.
+BuildStream depends on the following tools from
+`BuildBox <https://gitlab.com/BuildGrid/buildbox/>`_:
+
+  * ``buildbox-casd`` (to manage local and remote content-addressed storage)
+  * ``buildbox-fuse`` (to check out content from the local CAS)
+  * ``buildbox-run-bubblewrap`` (to run element commands in a controlled sandbox)
 
 These components can be installed from binaries, or built from source.
 
 Install binaries
 ~~~~~~~~~~~~~~~~
-Linux x86-64 users can download the `latest statically linked binaries here
-<https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases/permalink/latest/downloads/binaries.tgz>`_,
-or browse the `release history of static binaries here
+Browse the `release history of static binaries here
 <https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases>`_.
 
-The contents of the ``binaries.tgz`` tarball should be extracted into a directory
-in ``PATH``, e.g., ``~/.local/bin``.
+Linux x86-64 users can download the `latest statically linked binaries here
+<https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases/permalink/latest/downloads/buildbox-x86_64-linux-gnu.tgz>`_,
+The contents of the tarball should be extracted into a directory in ``PATH``,
+e.g., ``~/.local/bin``.
 
 
 Build from source
@@ -98,24 +106,24 @@ Build from source
 
 Each of the 4 buildbox components can be installed separately from their
 respective git repositiories, and each respository has individual install
-instructions. Make sure that you're installing the correct version of
-each component.
+instructions. We recommend installing the latest release tag of each
+component.
 
 | **Buildbox-common:** See the installation section in:
-| https://gitlab.com/BuildGrid/buildbox/buildbox-common/-/blob/0.0.38/README.rst
-| (Be sure to install from the 0.0.38 tag.)
+| https://gitlab.com/BuildGrid/buildbox/buildbox-common/-/blob/master/README.rst
+| (Be sure to install from the latest stable release tag.)
 
 | **Buildbox-casd:** See the installation section in:
-| https://gitlab.com/BuildGrid/buildbox/buildbox-casd/-/blob/0.0.38/README.rst \
-| (Be sure to install from the 0.0.38 tag.)
+| https://gitlab.com/BuildGrid/buildbox/buildbox-casd/-/blob/master/README.rst \
+| (Be sure to install from the latest stable release tag.)
 
 | **Buildbox-fuse:** See
-| https://gitlab.com/BuildGrid/buildbox/buildbox-fuse/-/blob/0.0.14/INSTALL.rst
-| (Be sure to install from the 0.0.14 tag.)
+| https://gitlab.com/BuildGrid/buildbox/buildbox-fuse/-/blob/master/INSTALL.rst
+| (Be sure to install from the latest stable release tag.)
 
 | **Buildbox-run-bublewrap:** See the installation section in:
 | https://gitlab.com/BuildGrid/buildbox/buildbox-run-bubblewrap/-/blob/master/README.rst
-| (Be sure to install from the 0.0.8 tag.)
+| (Be sure to install from the latest stable release tag.)
 
 Finally, configure buildbox-run-bubblewrap as the default buildbox-run
 implementation::
@@ -123,99 +131,52 @@ implementation::
     ln -sv buildbox-run-bubblewrap /usr/local/bin/buildbox-run
 
 
+
 .. _install-buildstream:
 
-Installing BuildStream
-----------------------
+Installing BuildStream from a git checkout
+------------------------------------------
 
-Installing from PyPI
-~~~~~~~~~~~~~~~~~~~~
-Once you have the base system dependencies, you can install the BuildStream
-python package as a regular user.
-
-To install from PyPI, you will additionally require:
-
- - pip for python3 (only required for setup)
- - Python 3 development libraries and headers
-
-
-For the latest dev snapshot of BuildStream 2, simply run the following command::
-
-    pip3 install --user --pre BuildStream
-
-This will install latest dev snapshot of BuildStream and its pure python
-dependencies into your user's homedir in ``~/.local``.
-
-.. note::
-
-   At time of writing, BuildStream 2 is only available as dev snapshots; this
-   is why the ``--pre`` option is required.  Running
-   ``pip3 install --user BuildStream`` (without the ``--pre`` option)
-   will install Buildsteam 1.
-
-You can also install a specific dev snapshot of Buildstream by specifying the
-version. eg ``pip3 install --user BuildStream==1.93.2.dev0``.
-Available versions can be found on the BuildStream history page `on PyPi 
-<https://pypi.org/project/BuildStream/#history>`_.
-Note that some of the oldest versions are not available on PyPI.
-
-Keep following the :ref:`instructions below<post-install>` to ensure that the ``bst``
-command is in your ``PATH``.
-
-Upgrading from PyPI
-+++++++++++++++++++
-Once you have already installed BuildStream from PyPI, you can later update
-to the latest dev snapshot like so::
-
-
-    pip3 install --user --upgrade --pre BuildStream
-
-
-
-Installing from a git checkout
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-To install directly from the `git repository <https://github.com/apache/buildstream>`_
-using python's ``pip`` package manager, you will additionally require:
-
-- pip for python3 (only required for setup)
-- Python 3 development libraries and headers
-- git (to checkout BuildStream)
-
-Before installing, please check the existing tags in the git repository
-and determine which version you want to install.
-
-Run the following commands::
+First, clone the repository. Please check the existing tags in the git
+repository and determine which version you want to install::
 
 
     git clone https://github.com/apache/buildstream.git
     cd buildstream
     git checkout <desired release tag>
+
+We recommend ``pip`` as a frontend to the underlying ``setuptools`` build
+system.  The following command will build and install BuildStream into your
+user's homedir in ``~/.local``, and will attempt to fetch and install any
+required PyPI dependencies from the internet at the same time::
+
+
     pip3 install --user .
 
-This will install BuildStream's pure python dependencies into
-your user's homedir in ``~/.local`` and will run BuildStream directly
-from the git checkout directory.
+You can optionally use Pip's
+`editable mode <https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs>`_
+(the ``-e`` flag) as a developer convenience.
 
-Keep following the instructions below to ensure that the ``bst``
-command is in your ``PATH`` and to enable bash completions for it.
+If you want to stop Pip from fetching missing dependencies, use the
+``--no-index`` and ``--no-deps`` options.
+
+Finally, check that the ``PATH`` variable contains the ``~/.local/bin`` directory.
+If it doesn't, you could add this to the end of your Bash configuration ``~/.bashrc``
+and restart Bash::
+
+  export PATH="${PATH}:${HOME}/.local/bin"
+
+Note for packagers
+~~~~~~~~~~~~~~~~~~
+
+Distro packaging standards may recommend a specific installation method
+for Python packages.  BuildStream can be installed with any build frontend that
+supports the `PEP517 standard <https://peps.python.org/pep-0517/>`_. You are
+also welcome to use the underlying
+`setuptools <https://setuptools.pypa.io/en/latest/>`_ build backend directly.
 
 
-Upgrading from a git checkout
-+++++++++++++++++++++++++++++
-If you installed BuildStream from a local git checkout using ``-e`` option, all
-you need to do to upgrade BuildStream is to update your local git checkout::
-
-    cd /path/to/buildstream
-    git pull --rebase
-
-If you did not specify the ``-e`` option at install time, you will
-need to cleanly reinstall BuildStream::
-
-    pip3 uninstall buildstream
-    cd /path/to/buildstream
-    git pull --rebase
-    pip3 install --user .
-
+.. _install-virtual-environment:
 
 Installing in virtual environments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -258,40 +219,23 @@ and set up other necessary environment variables::
 If you do not want to manage your virtual environments manually, you can
 consider using `pipx <https://docs.python.org/3/tutorial/venv.html>`_.
 
+.. _install-completions:
 
-.. _post-install:
+Installing completions
+----------------------
 
-Post-install setup
-------------------
+BuildStream integrates with Bash to provide helpful tab-completion. These
+are provided by the script ``src/buildstream/data/bst`` which requires
+separate installation.
 
-After having installed from source using any of the above methods, some
-setup will be required to use BuildStream.
+To install for the current user, copy it into
+``share/bash-completion/completions/`` inside the user's ``$XDG_DATA_HOME``
+directory (the path is usually: ``$HOME/.local/share/bash-completion/completions``).
 
-
-
-Adjust ``PATH``
-~~~~~~~~~~~~~~~
-Since BuildStream is now installed under your local user's install directories,
-you need to ensure that ``PATH`` is adjusted.
-
-A regular way to do this is to add the following line to the end of your ``~/.bashrc``::
-
-  export PATH="${PATH}:${HOME}/.local/bin"
-
-.. note::
-
-   You will have to restart your terminal in order for these changes to take effect.
+To install completions system-wide, get the installation path as follows::
 
 
-.. _install-container:
+    pkg-config --variable=completionsdir bash-completion
 
-
-Buildstream Inside a Container
--------------------------------
-If your system cannot provide the base requirements, it is possible to run
-BuildStream within a container. This gives you an easy way to get started
-using BuildStream on any Unix-like platform where containers are available,
-including macOS. 
-
-For details, see the `Buildstream Docker documentation
-<https://gitlab.com/BuildStream/buildstream-docker-images/-/blob/master/USING.md>`_
+See the `bash-completion FAQ <https://github.com/scop/bash-completion#faq>`_
+for more information.
