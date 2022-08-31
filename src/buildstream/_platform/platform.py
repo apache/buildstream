@@ -19,9 +19,8 @@ import platform
 
 import psutil
 
-from .._exceptions import PlatformError, SandboxError
+from .._exceptions import PlatformError, SandboxUnavailableError
 from ..sandbox import SandboxDummy
-from .. import utils
 
 
 class Platform:
@@ -31,26 +30,19 @@ class Platform:
     # sandbox factory as well as platform helpers.
     #
     def __init__(self):
-        self._local_sandbox = None
-        self.dummy_reasons = []
+        self._use_dummy_sandbox = False
+        self._use_dummy_sandbox_reason = None
+
         self._setup_sandbox()
 
     def _setup_sandbox(self):
         from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun  # pylint: disable=cyclic-import
 
-        # Try to setup buildbox-run sandbox, otherwise fallback to the dummy sandbox.
         try:
-            self._check_sandbox(SandboxBuildBoxRun)
-        except (SandboxError, utils.ProgramNotFoundError):
-            pass
-
-    def _check_sandbox(self, Sandbox):
-        Sandbox._dummy_reasons = []
-        try:
-            Sandbox.check_available()
-        except SandboxError as Error:
-            self.dummy_reasons += Sandbox._dummy_reasons
-            raise Error
+            SandboxBuildBoxRun._setup()
+        except SandboxUnavailableError as e:
+            self._use_dummy_sandbox = True
+            self._use_dummy_sandbox_reason = str(e)
 
     @classmethod
     def create_instance(cls) -> "Platform":
@@ -164,14 +156,13 @@ class Platform:
     def create_sandbox(self, *args, **kwargs):  # pylint: disable=method-hidden
         from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun  # pylint: disable=cyclic-import
 
-        if self.dummy_reasons:
-            dummy_reasons = " and ".join(self.dummy_reasons)
+        if self._use_dummy_sandbox:
+            kwargs["dummy_reason"] = self._use_dummy_sandbox_reason
         else:
             try:
                 SandboxBuildBoxRun.check_sandbox_config(kwargs["config"])
                 return SandboxBuildBoxRun(*args, **kwargs)
-            except SandboxError as e:
-                dummy_reasons = str(e)
+            except SandboxUnavailableError as e:
+                kwargs["dummy_reason"] = str(e)
 
-        kwargs["dummy_reason"] = dummy_reasons
         return SandboxDummy(*args, **kwargs)

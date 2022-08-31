@@ -168,6 +168,15 @@ class SandboxError(BstError):
         super().__init__(message, detail=detail, domain=ErrorDomain.SANDBOX, reason=reason)
 
 
+# SandboxUnavailableError
+#
+# Raised when a specific sandbox backend is unsupported on the current host.
+#
+class SandboxUnavailableError(BstError):
+    def __init__(self, message, detail=None, reason=None):
+        super().__init__(message, detail=detail, domain=ErrorDomain.SANDBOX, reason=reason)
+
+
 # AssetCacheError
 #
 # Raised when errors are encountered in either type of cache
