@@ -89,11 +89,11 @@ class CASDProcessManager:
             casd_args.append("--cas-remote={}".format(remote_cache_spec.url))
             if remote_cache_spec.instance_name:
                 casd_args.append("--cas-instance={}".format(remote_cache_spec.instance_name))
-            if remote_cache_spec.server_cert:
-                casd_args.append("--cas-server-cert={}".format(remote_cache_spec.server_cert))
-            if remote_cache_spec.client_key:
-                casd_args.append("--cas-client-key={}".format(remote_cache_spec.client_key))
-                casd_args.append("--cas-client-cert={}".format(remote_cache_spec.client_cert))
+            if remote_cache_spec.server_cert_file:
+                casd_args.append("--cas-server-cert={}".format(remote_cache_spec.server_cert_file))
+            if remote_cache_spec.client_key_file:
+                casd_args.append("--cas-client-key={}".format(remote_cache_spec.client_key_file))
+                casd_args.append("--cas-client-cert={}".format(remote_cache_spec.client_cert_file))
 
         casd_args.append(path)
 
