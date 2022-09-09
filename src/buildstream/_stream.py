@@ -209,7 +209,12 @@ class Stream:
             if self._context.remote_cache_spec:
                 # Parallelize cache queries if a remote cache is configured
                 self._reset()
-                self._add_queue(CacheQueryQueue(self._scheduler, sources=only_sources), track=True)
+                self._add_queue(
+                    CacheQueryQueue(
+                        self._scheduler, sources=only_sources, sources_if_cached=sources_of_cached_elements
+                    ),
+                    track=True,
+                )
                 self._enqueue_plan(plan)
                 self._run()
             else:
