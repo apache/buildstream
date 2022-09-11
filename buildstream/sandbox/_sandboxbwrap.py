@@ -49,50 +49,11 @@ class SandboxBwrap(Sandbox):
         '/dev/zero'
     ]
 
-    ARCHITECTURES = {
-        'amd64': 'x86_64',
-        'arm64': 'aarch64',
-        'i386': 'i686',
-        'armhf': 'armv7l',
-        'ppc64el': 'ppc64le',
-    }
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user_ns_available = kwargs['user_ns_available']
         self.die_with_parent_available = kwargs['die_with_parent_available']
-        self._linux32 = False
-
-        host_os, _, _, _, host_arch = os.uname()
-        config = self._get_config()
-
-        # We can't do builds for another host OS
-        if config.build_os != host_os:
-            raise SandboxError("Configured and host OS don't match.")
-
-        if config.build_arch != host_arch:
-            try:
-                archtest = utils.get_host_tool('arch-test')
-                supported = subprocess.getoutput(archtest).splitlines()
-                supported_architectures = map(self.ARCHITECTURES.get, supported, supported)
-            except utils.ProgramNotFoundError:
-                supported_architectures = []
-                if host_arch == "x86_64":
-                    supported_architectures = ["i686"]
-                elif host_arch == "aarch64":
-                    supported_architectures = ["armv7l"]
-
-            if config.build_arch not in supported_architectures:
-                raise SandboxError("Configured and host architecture don't match.")
-
-            if ((config.build_arch == "i686" and host_arch == "x86_64") or
-                (config.build_arch == "armv7l" and host_arch == "aarch64")):
-                # check whether linux32 is available
-                try:
-                    utils.get_host_tool('linux32')
-                    self._linux32 = True
-                except utils.ProgramNotFoundError as e:
-                    raise SandboxError("Configured and host architecture don't match.") from e
+        self._linux32 = kwargs['linux32']
 
     def run(self, command, flags, *, cwd=None, env=None):
         stdout, stderr = self._get_output()
