@@ -31,6 +31,7 @@ import errno
 import hashlib
 import math
 import os
+import sys
 import re
 import shutil
 import signal
@@ -1330,14 +1331,18 @@ def _call(*popenargs, terminate=False, **kwargs):
 
     process = None
 
-    old_preexec_fn = kwargs.get("preexec_fn")
-    if "preexec_fn" in kwargs:
-        del kwargs["preexec_fn"]
+    if (sys.version_info.major, sys.version_info.minor) < (3, 9):
+        # Old Python versions are missing umask support and need this workaround
+        old_preexec_fn = kwargs.pop("preexec_fn", None)
 
-    def preexec_fn():
-        os.umask(stat.S_IWGRP | stat.S_IWOTH)
-        if old_preexec_fn is not None:
-            old_preexec_fn()
+        def preexec_fn():
+            os.umask(stat.S_IWGRP | stat.S_IWOTH)
+            if old_preexec_fn is not None:
+                old_preexec_fn()
+
+    else:
+        kwargs["umask"] = stat.S_IWGRP | stat.S_IWOTH
+        preexec_fn = kwargs.pop("preexec_fn", None)
 
     # Handle termination, suspend and resume
     def kill_proc():
