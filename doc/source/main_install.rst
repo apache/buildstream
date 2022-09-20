@@ -153,9 +153,8 @@ required PyPI dependencies from the internet at the same time::
 
     pip3 install --user .
 
-You can optionally use Pip's
-`editable mode <https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs>`_
-(the ``-e`` flag) as a developer convenience.
+We do not recommend using Pip's `editable mode <https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs>`_
+(the ``-e`` flag). See `this issue <https://github.com/apache/buildstream/issues/1760>`_ for discussion.
 
 If you want to stop Pip from fetching missing dependencies, use the
 ``--no-index`` and ``--no-deps`` options.
