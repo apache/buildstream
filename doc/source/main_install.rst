@@ -224,15 +224,16 @@ Installing completions
 ----------------------
 
 BuildStream integrates with Bash to provide helpful tab-completion. These
-are provided by the script ``src/buildstream/data/bst`` which requires
-separate installation.
+are provided by the `bst` completion script, available online
+`here <https://raw.githubusercontent.com/apache/buildstream/master/src/buildstream/data/bst>`_
+and in your local Git clone at ``src/buildstream/data/bst``. The completion
+script requires manaul installation.
 
-To install for the current user, copy it into
-``share/bash-completion/completions/`` inside the user's ``$XDG_DATA_HOME``
-directory (the path is usually: ``$HOME/.local/share/bash-completion/completions``).
+To install for the current user, paste the contents of the completion script
+into the file ``~/.bash_completion``.
 
-To install completions system-wide, get the installation path as follows::
-
+To install completions system-wide, copy the completion script to the system-wide
+bash-completion installation path, which you can discover as follows::
 
     pkg-config --variable=completionsdir bash-completion
 
