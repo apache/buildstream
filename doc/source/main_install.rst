@@ -24,7 +24,7 @@ BuildStream requires the following Python environment to run:
 
 - python3 >= 3.7
 - PyPI packages as specified in
-  `requirements.txt <https://github.com/apache/buildstream/blob/master/requirements/requirements.txt>`_.
+  `requirements.in <https://github.com/apache/buildstream/blob/master/requirements/requirements.in>`_.
 
 Some :mod:`Source <buildstream.source>` plugins require specific tools installed
 on the host. Here is a commonly used subset based on the
