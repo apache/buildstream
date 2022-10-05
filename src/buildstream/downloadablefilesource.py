@@ -113,7 +113,8 @@ def _download_file(opener, url, etag, directory):
         filename = os.path.basename(filename)
         local_file = os.path.join(directory, filename)
         with open(local_file, "wb") as dest:
-            shutil.copyfileobj(response, dest)
+            # Use megabyte chunk size to avoid hogging GIL
+            shutil.copyfileobj(response, dest, 1024 * 1024)
 
     return local_file, etag
 
@@ -220,9 +221,8 @@ class DownloadableFileSource(Source):
                 else:
                     etag = None
 
-                local_file, new_etag = self.blocking_activity(
-                    _download_file, (self.__get_urlopener(), self.url, etag, td), activity_name
-                )
+                with self.timed_activity(activity_name):
+                    local_file, new_etag = _download_file(self.__get_urlopener(), self.url, etag, td)
 
                 if local_file is None:
                     return self.ref
