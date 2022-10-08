@@ -1138,7 +1138,7 @@ def _call(*popenargs, terminate=False, **kwargs):
 #
 def _glob2re(pat):
     i, n = 0, len(pat)
-    res = ''
+    res = '(?ms)'
     while i < n:
         c = pat[i]
         i = i + 1
@@ -1175,7 +1175,7 @@ def _glob2re(pat):
                 res = '{}[{}]'.format(res, stuff)
         else:
             res = res + re.escape(c)
-    return res + r'\Z(?ms)'
+    return res + r'\Z'
 
 
 # _deduplicate()
