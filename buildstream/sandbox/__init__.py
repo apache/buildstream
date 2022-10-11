@@ -20,3 +20,4 @@
 from .sandbox import Sandbox, SandboxFlags
 from ._sandboxchroot import SandboxChroot
 from ._sandboxbwrap import SandboxBwrap
+from ._sandboxdummy import SandboxDummy
