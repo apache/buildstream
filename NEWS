@@ -1,4 +1,19 @@
 ==================
+buildstream 1.95.3
+==================
+
+  o Some fixes to the CI (#1736, #1737)
+
+  o Fix errors passing certs/keys to casd (#1748)
+
+  o Update installation instructions for 2.0 (#1741)
+
+  o Fix issues using `storage-service` (#1750)
+
+  o Revert to previous mirror ordering behavior when tracking (#1765)
+
+
+==================
 buildstream 1.95.2
 ==================
 
