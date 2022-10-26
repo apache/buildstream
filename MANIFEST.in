@@ -16,7 +16,8 @@
 include BuildStream.doap
 include COMMITTERS.rst
 include CONTRIBUTING.rst
-include COPYING
+include LICENSE
+include NOTICE
 include NEWS
 include README.rst
 
