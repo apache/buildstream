@@ -73,7 +73,6 @@ def test_remote_autotools_build(cli, datafiles):
 @pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_remote_autotools_build_no_cache(cli, datafiles):
     project = str(datafiles)
-    checkout = os.path.join(cli.directory, "checkout")
     element_name = "autotools/amhello.bst"
 
     cli.configure({"artifacts": {"servers": [{"url": "http://fake.url.service", "push": True}]}})
