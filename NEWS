@@ -1,4 +1,19 @@
 ==================
+buildstream 1.95.4
+==================
+
+  o Fixed license headers in source files
+
+  o Attribute third party licenses etc properly in the LICENCE
+    and NOTICE files and ensure they are included in source distributions
+
+  o Removed obsolete update_committers.py script in contrib
+
+  o Require at least the first cython version which properly supported python 3.10
+
+  o Update copyright year and attribution in generated documentation
+
+==================
 buildstream 1.95.3
 ==================
 
