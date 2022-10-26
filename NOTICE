@@ -1,5 +1,5 @@
 Apache BuildStream
-Copyright 2021 The Apache Software Foundation
+Copyright 2022 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
@@ -17,3 +17,23 @@ Software deriving from third parties:
 
     This file is forked from the click library which is under BSD license
     and as such is acceptable to redistribute under the Apache License.
+
+  * versioneer.py / src/_version.py
+
+    These files are distributed under public domain and originate from
+    the versioneer project at: https://github.com/python-versioneer/python-versioneer/
+
+  * src/buildstream/_protos/google
+
+    This directory contains software developed by google:
+    https://github.com/googleapis/googleapis/
+
+  * src/buildstream/_protos/build/bazel
+
+    This directory contains software developed by the Bazel authors:
+    https://github.com/bazelbuild/remote-apis/
+
+  * src/buildstream/_protos/build/buildgrid
+
+    This directory contains software developed by the BuildGrid authors:
+    https://gitlab.com/BuildGrid/buildgrid
