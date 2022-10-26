@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 #
 # Copyright (c) 2013 German M. Bravo (Kronuz)
-# Copyright (c) 2018 Codethink Limited
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal

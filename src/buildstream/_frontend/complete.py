@@ -1,7 +1,4 @@
 #
-#  Copyright (c) 2014 by Armin Ronacher.
-#  Copyright (C) 2016 Codethink Limited
-#
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
@@ -17,6 +14,8 @@
 #  This module was forked from the python click library, Included
 #  original copyright notice from the Click library and following disclaimer
 #  as per their LICENSE requirements.
+#
+#  Copyright (c) 2014 by Armin Ronacher.
 #
 #  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 #  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
