@@ -9,5 +9,5 @@ setuptools==44.1.1
 ujson==5.4.0
 ## The following requirements were added by pip freeze:
 MarkupSafe==2.1.1
-ruamel.yaml.clib==0.2.6
+ruamel.yaml.clib==0.2.7
 six==1.16.0
