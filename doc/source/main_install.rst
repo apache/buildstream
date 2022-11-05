@@ -251,7 +251,18 @@ Zsh completions are provided by the ``_bst`` completion script, available online
 (`src/buildstream/data/zsh/_bst <https://raw.githubusercontent.com/apache/buildstream/master/src/buildstream/data/zsh/_bst>`_)
 and in your local Git clone at ``src/buildstream/data/zsh/_bst``.
 
-Copy the above file to the completions location for your Zsh framework:
+Copy the above file to your Zsh completions location. Here are some instructions
+for vanilla Zsh, as well as the *Prezto* and *Oh My Zsh* frameworks:
+
+**Zsh**::
+
+    cp src/buildstream/data/zsh/_bst ~/.zfunc/_bst
+
+You must then add the following lines in your ``~/.zshrc``, if they do not already exist::
+
+    fpath+=~/.zfunc
+    autoload -Uz compinit && compinit
+
 
 **Prezto**::
 
@@ -272,12 +283,3 @@ You must then add ``bst`` to your plugins array in ``~/.zshrc``::
       bst
       ...
     )
-
-**None**::
-
-    cp src/buildstream/data/zsh/_bst ~/.zfunc/_bst
-
-You must then add the following lines in your ``~/.zshrc``, if they do not already exist::
-
-    fpath+=~/.zfunc
-    autoload -Uz compinit && compinit
