@@ -223,6 +223,18 @@ class SandboxBuildBoxRun(SandboxREAPI):
             except psutil.NoSuchProcess:
                 pass
 
+            if interactive:
+                # Make this process the foreground process again, otherwise the
+                # next read() on stdin will trigger SIGTTIN and stop the process.
+                # This is required because the sandboxed process does not have
+                # permission to do this on its own (running in separate PID namespace).
+                #
+                # tcsetpgrp() will trigger SIGTTOU when called from a background
+                # process, so ignore it temporarily.
+                handler = signal.signal(signal.SIGTTOU, signal.SIG_IGN)
+                os.tcsetpgrp(0, os.getpid())
+                signal.signal(signal.SIGTTOU, handler)
+
             if returncode != 0:
                 raise SandboxError("buildbox-run failed with returncode {}".format(returncode))
 
