@@ -419,7 +419,7 @@ setup(
     name="BuildStream",
     version=version,
     cmdclass=get_cmdclass(),
-    author="BuildStream Developers",
+    author="The Apache Software Foundation",
     author_email="dev@buildstream.apache.org",
     classifiers=[
         "Environment :: Console",
@@ -439,9 +439,9 @@ setup(
     long_description_content_type="text/x-rst; charset=UTF-8",
     url="https://buildstream.build",
     project_urls={
-        "Source": "https://gitlab.com/BuildStream/buildstream",
+        "Source": "https://github.com/apache/buildstream",
         "Documentation": "https://docs.buildstream.build",
-        "Tracker": "https://gitlab.com/BuildStream/buildstream/issues",
+        "Tracker": "https://github.com/apache/buildstream/issues",
         "Mailing List": "https://lists.apache.org/list.html?dev@buildstream.apache.org",
     },
     python_requires="~={}.{}".format(REQUIRED_PYTHON_MAJOR, REQUIRED_PYTHON_MINOR),
