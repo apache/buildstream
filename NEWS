@@ -1,4 +1,16 @@
 ==================
+buildstream 1.95.5
+==================
+
+  o Fixed remaining license header issues (in sources and also docs)
+
+  o Documenting how to prepare BuildStream for new python versions
+
+  o Remove generated GPL files from autotools test tarballs
+
+  o Update package metadata urls and author
+
+==================
 buildstream 1.95.4
 ==================
 
