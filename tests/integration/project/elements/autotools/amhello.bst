@@ -7,4 +7,4 @@ depends:
 sources:
 - kind: tar
   url: project_dir:/files/amhello.tar.gz
-  ref: 9ba123fa4e660929e9a0aa99f0c487b7eee59c5e7594f3284d015640b90f5590
+  ref: 534a884bc1974ffc539a9c215e35c4217b6f666a134cd729e786b9c84af99650

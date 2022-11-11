@@ -13,7 +13,6 @@
 #
 
 # Basic toplevel package includes
-include BuildStream.doap
 include COMMITTERS.rst
 include CONTRIBUTING.rst
 include LICENSE
