@@ -21,15 +21,15 @@ file::
 
    make -C requirements
 
+
 Adding support for a new Python release
 ---------------------------------------
-
 When a new stable release of Python 3 appears, we must explicitly declare
 our support for it in the following places.
 
+
 tox.ini
 ~~~~~~~
-
 The ``tox.ini`` file defines the environments where the BuildStream test suite
 runs.  Every ``py{3.x,3.y}`` list must be updated to contain the new version
 number such as ``311`` for CPython 3.11.
@@ -37,9 +37,23 @@ number such as ``311`` for CPython 3.11.
 Use ``tox -e py311-nocover`` to run the test suite with the new version of
 Python.
 
+
 pyproject.toml
 ~~~~~~~~~~~~~~
 
+
+Bump cython version
+'''''''''''''''''''
+New releases of Cython must be depended on with new versions of Python
+in lock step.
+
+When supporting a new Python version, it is important to bump the minimal
+dependency on Cython to a new enough version which also supports the new
+version of Python.
+
+
+Wheel details
+'''''''''''''
 We produce binary "wheel" packages for each supported version of Python.
 The cibuildwheel build tool will build for all released versions of Python
 so no change is needed in the config.
@@ -48,54 +62,55 @@ However, if you want to test wheel building with a prerelease version of Python
 you will need to set ``CIBW_PRERELEASE_PYTHONS=1`` in the cibuildwheel
 environment.
 
+
 .github/compose/ci.docker-compose.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 Each binary package is tested in a container, using the
 `pypa/manylinux <https://github.com/pypa/manylinux>`_ images.
 
 You need to add a new docker-compose service here -- copy the
 latest one and update the version number where it appears.
 
+
 .github/workflows/ci.yml and .github/workflows/release.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 There is a separate CI job to run each of the above tests. Update the
 matrix config for the ``test_wheels`` jobs in ``ci.yml`` and ``release.yml``
 to add the new Python version.
 
+
 Removing support for a Python release
 -------------------------------------
 
+
 tox.ini
 ~~~~~~~
-
 You will need to update the ``py{3.x,3.y}`` lists to remove the old version. In
 the ``envlist`` section, make sure the oldest version still has coverage
 enabled while the other versions are marked ``-nocover``.
 
+
 pyproject.toml
 ~~~~~~~~~~~~~~
-
 The cibuildwheel tool will produce wheels for all versions of Python supported
 upstream.. If we drop support for a version before upstream do, update the
 ``tool.cibuildwheel.skip`` list to skip all platform tags for that version.
 The glob ``cp36-*`` would skip all CPython 3.6 builds, for example.
 
+
 .github/compose/ci.docker-compose.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 Remove the corresponding service.
+
 
 .github/workflows/ci.yml and .github/workflows/release.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 Update the matrix config for the `test_wheels` jobs in `ci.yml` and
 `release.yml` to remove the old Python version.
 
+
 ABI compatibility for binary Python packages
 --------------------------------------------
-
 The Python binary packages declare system requirements using
 `platform compatibility tags <https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/>`_.
 
