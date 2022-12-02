@@ -70,6 +70,10 @@ _URI_SCHEMES = ["http", "https", "ftp", "file", "git", "sftp", "ssh"]
 _UMASK = os.umask(0o777)
 os.umask(_UMASK)
 
+# Only some operating systems have os.copy_file_range and even when present
+# it might not work
+_USE_CP_FILE_RANGE = hasattr(os, "copy_file_range")
+
 
 class UtilError(BstError):
     """Raised by utility functions when system calls fail.
@@ -357,6 +361,26 @@ def sha256sum(filename: str) -> str:
     return h.hexdigest()
 
 
+def _copy_file_range(src, dest):
+    global _USE_CP_FILE_RANGE  # pylint: disable=global-statement
+    if not _USE_CP_FILE_RANGE:
+        return False
+    with open(src, "rb") as src_file, open(dest, "wb") as dest_file:
+        num_bytes = os.fstat(src_file.fileno()).st_size
+        while num_bytes > 0:
+            try:
+                bytes_read = os.copy_file_range(src_file.fileno(), dest_file.fileno(), num_bytes)
+                if not bytes_read:
+                    return True
+                num_bytes -= bytes_read
+            except OSError as error:
+                if error.errno in (errno.ENOSYS, errno.EXDEV):
+                    _USE_CP_FILE_RANGE = False
+                    return False
+                raise error from None
+    return True
+
+
 def safe_copy(src: str, dest: str, *, copystat: bool = True, result: Optional[FileListResult] = None) -> None:
     """Copy a file while optionally preserving attributes
 
@@ -381,7 +405,9 @@ def safe_copy(src: str, dest: str, *, copystat: bool = True, result: Optional[Fi
             raise UtilError("Failed to remove destination file '{}': {}".format(dest, e)) from e
 
     try:
-        shutil.copyfile(src, dest)
+        ret = _copy_file_range(src, dest)
+        if not ret:
+            shutil.copyfile(src, dest)
     except (OSError, shutil.Error) as e:
         raise UtilError("Failed to copy '{} -> {}': {}".format(src, dest, e)) from e
 
