@@ -1,4 +1,10 @@
 ==================
+buildstream 1.95.6
+==================
+
+  o Adding missing license headers to some files in the _testing module
+
+==================
 buildstream 1.95.5
 ==================
 
