@@ -247,14 +247,16 @@ class Sandbox:
         if self.__batch:
             # Nested batch
             assert flags == self.__batch.flags, "Inconsistent sandbox flags in single command batch"
+            if label or collect:
+                parent_group = self.__batch.current_group
 
-            parent_group = self.__batch.current_group
-            parent_group.append(group)
-            self.__batch.current_group = group
-            try:
+                try:
+                    yield
+                finally:
+                    self.__batch.current_group = parent_group
+            else:
+                # We optimize here to collect into main group
                 yield
-            finally:
-                self.__batch.current_group = parent_group
         else:
             # Top-level batch
             batch = self._create_batch(group, flags, collect=collect)
