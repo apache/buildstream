@@ -31,41 +31,18 @@ class Result():
 
     def __init__(self,
                  exit_code=None,
-                 exception=None,
-                 exc_info=None,
                  output=None,
                  stderr=None):
         self.exit_code = exit_code
-        self.exc = exception
-        self.exc_info = exc_info
+        self.exc = None
+        self.exc_info = None
         self.output = output
         self.stderr = stderr
         self.unhandled_exception = False
 
-        # The last exception/error state is stored at exception
-        # creation time in BstError(), but this breaks down with
-        # recoverable errors where code blocks ignore some errors
-        # and fallback to alternative branches.
-        #
-        # For this reason, we just ignore the exception and errors
-        # in the case that the exit code reported is 0 (success).
-        #
-        if self.exit_code != 0:
-
-            # Check if buildstream failed to handle an
-            # exception, topevel CLI exit should always
-            # be a SystemExit exception.
-            #
-            if not isinstance(exception, SystemExit):
-                self.unhandled_exception = True
-
-            self.exception = get_last_exception()
-            self.task_error_domain, \
-                self.task_error_reason = get_last_task_error()
-        else:
-            self.exception = None
-            self.task_error_domain = None
-            self.task_error_reason = None
+        self.exception = None
+        self.task_error_domain = None
+        self.task_error_reason = None
 
     # assert_success()
     #
@@ -263,21 +240,21 @@ class Cli():
 
             bst_args += args
 
-            if cwd is not None:
-                stack.enter_context(chdir(cwd))
-
-            if env is not None:
-                stack.enter_context(environment(env))
-
-            # Ensure we have a working stdout - required to work
-            # around a bug that appears to cause AIX to close
-            # sys.__stdout__ after setup.py
-            try:
-                sys.__stdout__.fileno()
-            except ValueError:
-                sys.__stdout__ = open('/dev/stdout', 'w')
-
-            result = self.invoke(bst_cli, bst_args)
+            cmd = ["bst"] + bst_args
+            process = subprocess.Popen(
+                cmd,
+                env=env,
+                cwd=cwd,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            out, err = process.communicate()
+            result = Result(
+                exit_code=process.poll(),
+                output=out,
+                stderr=err
+            )
 
         # Some informative stdout we can observe when anything fails
         if self.verbose:
@@ -294,49 +271,6 @@ class Cli():
 
         return result
 
-    def invoke(self, cli, args=None, color=False, **extra):
-        exc_info = None
-        exception = None
-        exit_code = 0
-
-        # Temporarily redirect sys.stdin to /dev/null to ensure that
-        # Popen doesn't attempt to read pytest's dummy stdin.
-        old_stdin = sys.stdin
-        with open(os.devnull) as devnull:
-            sys.stdin = devnull
-            capture = MultiCapture(out=FDCapture(1), err=FDCapture(2), in_=None)
-            capture.start_capturing()
-
-            try:
-                cli.main(args=args or (), prog_name=cli.name, **extra)
-            except SystemExit as e:
-                if e.code != 0:
-                    exception = e
-
-                exc_info = sys.exc_info()
-
-                exit_code = e.code
-                if not isinstance(exit_code, int):
-                    sys.stdout.write('Program exit code was not an integer: ')
-                    sys.stdout.write(str(exit_code))
-                    sys.stdout.write('\n')
-                    exit_code = 1
-            except Exception as e:
-                exception = e
-                exit_code = -1
-                exc_info = sys.exc_info()
-            finally:
-                sys.stdout.flush()
-
-        sys.stdin = old_stdin
-        out, err = capture.readouterr()
-        capture.stop_capturing()
-
-        return Result(exit_code=exit_code,
-                      exception=exception,
-                      exc_info=exc_info,
-                      output=out,
-                      stderr=err)
 
     # Fetch an element state by name by
     # invoking bst show on the project with the CLI
