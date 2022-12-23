@@ -69,7 +69,7 @@ jobs:
         run: ${GITHUB_WORKSPACE}/.github/wheel-helpers/fetch-latest-buildbox-release.sh
 
       - name: Build wheels
-        run: pipx run cibuildwheel==2.8.1
+        run: pipx run cibuildwheel==2.11.3
 
       - uses: actions/upload-artifact@v3
         with:
@@ -90,6 +90,7 @@ jobs:
           - wheels-manylinux_2_28-cp38
           - wheels-manylinux_2_28-cp39
           - wheels-manylinux_2_28-cp310
+          - wheels-manylinux_2_28-cp311
 
     steps:
       - uses: actions/checkout@v3
