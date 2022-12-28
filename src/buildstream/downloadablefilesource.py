@@ -118,7 +118,7 @@ def _download_file(opener, url, etag, directory):
 class DownloadableFileSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
-    COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ["url", "ref", "etag"]
+    COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ["url", "ref"]
 
     __urlopener = None
     __default_mirror_file = None
@@ -128,7 +128,6 @@ class DownloadableFileSource(Source):
         self.ref = node.get_str("ref", None)
         self.url = self.translate_url(self.original_url)
         self._mirror_dir = os.path.join(self.get_mirror_directory(), utils.url_directory_name(self.original_url))
-        self._warn_deprecated_etag(node)
 
     def preflight(self):
         return
@@ -141,7 +140,6 @@ class DownloadableFileSource(Source):
 
     def load_ref(self, node):
         self.ref = node.get_str("ref", None)
-        self._warn_deprecated_etag(node)
 
     def get_ref(self):
         return self.ref
@@ -184,12 +182,6 @@ class DownloadableFileSource(Source):
             raise SourceError(
                 "File downloaded from {} has sha256sum '{}', not '{}'!".format(self.url, sha256, self.ref)
             )
-
-    def _warn_deprecated_etag(self, node):
-        etag = node.get_str("etag", None)
-        if etag:
-            provenance = node.get_scalar(etag).get_provenance()
-            self.warn('{} "etag" is deprecated and ignored.'.format(provenance))
 
     def _get_etag(self, ref):
         etagfilename = os.path.join(self._mirror_dir, "{}.etag".format(ref))
