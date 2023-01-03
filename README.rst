@@ -99,7 +99,7 @@ How can I get started?
 To get started, first `install BuildStream by following the installation guide
 <https://buildstream.build/install.html>`_
 and then follow our tutorial in the
-`user guide <https://docs.buildstream.build/1.4.1/main_using.html>`_.
+`user guide <https://docs.buildstream.build/master/main_using.html>`_.
 
 We also recommend exploring some existing BuildStream projects:
 
@@ -108,16 +108,3 @@ We also recommend exploring some existing BuildStream projects:
 * https://gitlab.com/baserock/definitions
 
 If you have any questions please ask on our `#buildstream <irc://irc.gnome.org/buildstream>`_ channel in `irc.gnome.org <irc://irc.gnome.org>`_
-
-
-Availability in distros
-=======================
-* BuildStream:
-
-.. image:: https://repology.org/badge/vertical-allrepos/buildstream.svg
-   :target: https://repology.org/metapackage/buildstream/versions
-
-* BuildStream external plugins (bst-external)
-
-.. image:: https://repology.org/badge/vertical-allrepos/bst-external.svg
-   :target: https://repology.org/metapackage/bst-external/versions
