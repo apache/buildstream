@@ -1,4 +1,10 @@
 =================
+buildstream 1.6.9
+=================
+
+  o Further Python 3.11 fixes to regex flags.
+
+=================
 buildstream 1.6.8
 =================
 
