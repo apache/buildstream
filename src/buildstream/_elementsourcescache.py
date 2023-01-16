@@ -12,7 +12,6 @@
 #  limitations under the License.
 #
 import os
-import grpc
 
 from ._cas.casremote import BlobNotFound
 from ._assetcache import AssetCache
@@ -227,12 +226,6 @@ class ElementSourcesCache(AssetCache):
             if cas_error.reason != "cache-too-full":
                 raise SourceCacheError("Failed to push source blobs: {}".format(cas_error))
             return False
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
-                raise SourceCacheError(
-                    "Failed to push source blobs with status {}: {}".format(e.code().name, e.details()), temporary=True
-                )
-            return False
 
         return True
 
@@ -269,10 +262,8 @@ class ElementSourcesCache(AssetCache):
                 source_digest,
                 references_directories=referenced_directories,
             )
-        except grpc.RpcError as e:
-            raise SourceCacheError(
-                "Failed to push source with status {}: {}".format(e.code().name, e.details()), temporary=True
-            )
+        except AssetCacheError as e:
+            raise SourceCacheError("Failed to push source: {}".format(e), temporary=True)
 
         return True
 
@@ -305,12 +296,10 @@ class ElementSourcesCache(AssetCache):
                 f.write(source.SerializeToString())
 
             self.cas._fetch_directory(remote, source.files)
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise SourceCacheError(
-                    "Failed to pull source with status {}: {}".format(e.code().name, e.details()), temporary=True
-                )
+        except BlobNotFound:
             return False
+        except CASRemoteError as e:
+            raise SourceCacheError("Failed to pull source: {}".format(e), temporary=True)
 
         return True
 
@@ -323,9 +312,6 @@ class ElementSourcesCache(AssetCache):
             remote.push_directory([uri], source_proto.files)
             return True
 
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
-                raise SourceCacheError(
-                    "Failed to push source with status {}: {}".format(e.code().name, e.details()), temporary=True
-                )
-            return False
+        except AssetCacheError as e:
+            raise SourceCacheError("Failed to push source: {}".format(e), temporary=True)
+        return False
