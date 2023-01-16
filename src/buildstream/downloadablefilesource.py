@@ -211,7 +211,7 @@ class DownloadableFileSource(Source):
                 # We do not use etag in case what we have in cache is
                 # not matching ref in order to be able to recover from
                 # corrupted download.
-                if self.ref and not self.is_cached():
+                if self.ref and self.is_cached():
                     # Do not re-download the file if the ETag matches.
                     etag = self._get_etag(self.ref)
                 else:
