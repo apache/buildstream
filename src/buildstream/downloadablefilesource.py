@@ -97,22 +97,36 @@ def _download_file(opener, url, etag, directory):
     if etag is not None:
         request.add_header("If-None-Match", etag)
 
-    with contextlib.closing(opener.open(request)) as response:
-        info = response.info()
+    try:
+        with contextlib.closing(opener.open(request)) as response:
+            info = response.info()
 
-        # some servers don't honor the 'If-None-Match' header
-        if etag and info["ETag"] == etag:
-            return None, None
+            # some servers don't honor the 'If-None-Match' header
+            if etag and info["ETag"] == etag:
+                return None, None, None
 
-        etag = info["ETag"]
+            etag = info["ETag"]
 
-        filename = info.get_filename(default_name)
-        filename = os.path.basename(filename)
-        local_file = os.path.join(directory, filename)
-        with open(local_file, "wb") as dest:
-            shutil.copyfileobj(response, dest)
+            filename = info.get_filename(default_name)
+            filename = os.path.basename(filename)
+            local_file = os.path.join(directory, filename)
+            with open(local_file, "wb") as dest:
+                shutil.copyfileobj(response, dest)
 
-    return local_file, etag
+    except urllib.error.HTTPError as e:
+        if e.code == 304:
+            # 304 Not Modified.
+            # Because we use etag only for matching ref, currently specified ref is what
+            # we would have downloaded.
+            return None, None, None
+
+        return None, None, str(e)
+    except (urllib.error.URLError, urllib.error.ContentTooShortError, OSError, ValueError) as e:
+        # Note that urllib.request.Request in the try block may throw a
+        # ValueError for unknown url types, so we handle it here.
+        return None, None, str(e)
+
+    return local_file, etag, None
 
 
 class DownloadableFileSource(Source):
@@ -206,50 +220,39 @@ class DownloadableFileSource(Source):
 
     def _ensure_mirror(self, activity_name: str):
         # Downloads from the url and caches it according to its sha256sum.
-        try:
-            with self.tempdir() as td:
-                # We do not use etag in case what we have in cache is
-                # not matching ref in order to be able to recover from
-                # corrupted download.
-                if self.ref and not self.is_cached():
-                    # Do not re-download the file if the ETag matches.
-                    etag = self._get_etag(self.ref)
-                else:
-                    etag = None
+        with self.tempdir() as td:
+            # We do not use etag in case what we have in cache is
+            # not matching ref in order to be able to recover from
+            # corrupted download.
+            if self.ref and not self.is_cached():
+                # Do not re-download the file if the ETag matches.
+                etag = self._get_etag(self.ref)
+            else:
+                etag = None
 
-                local_file, new_etag = self.blocking_activity(
-                    _download_file, (self.__get_urlopener(), self.url, etag, td), activity_name
-                )
+            local_file, new_etag, error = self.blocking_activity(
+                _download_file, (self.__get_urlopener(), self.url, etag, td), activity_name
+            )
 
-                if local_file is None:
-                    return self.ref
+            if error:
+                raise SourceError("{}: Error mirroring {}: {}".format(self, self.url, error), temporary=True)
 
-                # Make sure url-specific mirror dir exists.
-                if not os.path.isdir(self._mirror_dir):
-                    os.makedirs(self._mirror_dir)
-
-                # Store by sha256sum
-                sha256 = utils.sha256sum(local_file)
-                # Even if the file already exists, move the new file over.
-                # In case the old file was corrupted somehow.
-                os.rename(local_file, self._get_mirror_file(sha256))
-
-                if new_etag:
-                    self._store_etag(sha256, new_etag)
-                return sha256
-
-        except urllib.error.HTTPError as e:
-            if e.code == 304:
-                # 304 Not Modified.
-                # Because we use etag only for matching ref, currently specified ref is what
-                # we would have downloaded.
+            if local_file is None:
                 return self.ref
-            raise SourceError("{}: Error mirroring {}: {}".format(self, self.url, e), temporary=True) from e
 
-        except (urllib.error.URLError, urllib.error.ContentTooShortError, OSError, ValueError) as e:
-            # Note that urllib.request.Request in the try block may throw a
-            # ValueError for unknown url types, so we handle it here.
-            raise SourceError("{}: Error mirroring {}: {}".format(self, self.url, e), temporary=True) from e
+            # Make sure url-specific mirror dir exists.
+            if not os.path.isdir(self._mirror_dir):
+                os.makedirs(self._mirror_dir)
+
+            # Store by sha256sum
+            sha256 = utils.sha256sum(local_file)
+            # Even if the file already exists, move the new file over.
+            # In case the old file was corrupted somehow.
+            os.rename(local_file, self._get_mirror_file(sha256))
+
+            if new_etag:
+                self._store_etag(sha256, new_etag)
+            return sha256
 
     def _get_mirror_file(self, sha=None):
         if sha is not None:
