@@ -1,5 +1,5 @@
 click==8.1.3
-grpcio==1.46.0
+grpcio==1.51.1
 Jinja2==3.1.2
 pluginbase==1.0.1
 protobuf==4.21.12

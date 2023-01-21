@@ -11,13 +11,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+import multiprocessing
 import os
 import shutil
 import signal
 from collections import namedtuple
 from contextlib import ExitStack, contextmanager
 from concurrent import futures
-from multiprocessing import Process, Queue
 from urllib.parse import urlparse
 
 import grpc
@@ -36,9 +36,11 @@ REMOTE_ASSET_SOURCE_URN_TEMPLATE = "urn:fdc:buildstream.build:2020:source:{}"
 
 class BaseArtifactShare:
     def __init__(self):
-        q = Queue()
+        multiprocessing_context = multiprocessing.get_context("forkserver")
 
-        self.process = Process(target=self.run, args=(q,))
+        q = multiprocessing_context.Queue()
+
+        self.process = multiprocessing_context.Process(target=self.run, args=(q,))
         self.process.start()
 
         # Retrieve port from server subprocess
@@ -73,14 +75,6 @@ class BaseArtifactShare:
             signal.sigwait([signal.SIGTERM, signal.SIGINT])
 
             server.stop(0)
-
-        # Save collected coverage data
-        try:
-            from pytest_cov.embed import cleanup
-        except ImportError:
-            pass
-        else:
-            cleanup()
 
     # _create_server()
     #
@@ -138,12 +132,13 @@ class ArtifactShare(BaseArtifactShare):
         self.repodir = os.path.join(self.directory, "repo")
         os.makedirs(self.repodir)
 
-        self.cas = CASCache(self.repodir, casd=False)
-
         self.quota = quota
         self.index_only = index_only
 
         super().__init__()
+
+        # Set after subprocess creation as it's not picklable
+        self.cas = CASCache(self.repodir, casd=False)
 
     def _create_server(self):
         return create_server(
