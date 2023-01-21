@@ -78,7 +78,7 @@ class Git(Repo):
         if url is not None:
             submodule["url"] = url
         self.submodules[subdir] = submodule
-        self._run_git("submodule", "add", url, subdir)
+        self._run_git("-c", "protocol.file.allow=always", "submodule", "add", url, subdir)
         self._run_git("commit", "-m", "Added the submodule")
         return self.latest_commit()
 
