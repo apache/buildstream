@@ -8,7 +8,7 @@ import signal
 from collections import namedtuple
 
 from contextlib import contextmanager
-from multiprocessing import Process, Queue
+import multiprocessing
 
 from buildstream import _yaml
 from buildstream._artifactcache.casserver import create_server
@@ -48,17 +48,17 @@ class ArtifactShare():
 
         os.makedirs(self.repodir)
 
-        self.cas = CASCache(self.repodir)
-
         self.total_space = total_space
         self.free_space = free_space
 
         self.max_head_size = max_head_size
         self.min_head_size = min_head_size
 
-        q = Queue()
+        multiprocessing_context = multiprocessing.get_context("forkserver")
 
-        self.process = Process(target=self.run, args=(q,))
+        q = multiprocessing_context.Queue()
+
+        self.process = multiprocessing_context.Process(target=self.run, args=(q,))
         self.process.start()
 
         # Retrieve port from server subprocess
@@ -66,18 +66,14 @@ class ArtifactShare():
 
         self.repo = 'http://localhost:{}'.format(port)
 
+        # Set after subprocess creation as it's not picklable
+        self.cas = CASCache(self.repodir)
+
     # run():
     #
     # Run the artifact server.
     #
     def run(self, q):
-
-        try:
-            import pytest_cov
-        except ImportError:
-            pass
-        else:
-            pytest_cov.embed.cleanup_on_sigterm()
 
         # Optionally mock statvfs
         if self.total_space:
