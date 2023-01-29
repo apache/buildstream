@@ -88,7 +88,8 @@ class _NetrcPasswordManager:
             return login, password
 
 
-def _download_file(opener, url, etag, directory):
+def _download_file(opener_creator, url, etag, directory):
+    opener = opener_creator.get_url_opener()
     default_name = os.path.basename(url)
     request = urllib.request.Request(url)
     request.add_header("Accept", "*/*")
@@ -120,7 +121,6 @@ class DownloadableFileSource(Source):
 
     COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ["url", "ref", "etag"]
 
-    __urlopener = None
     __default_mirror_file = None
 
     def configure(self, node):
@@ -217,8 +217,10 @@ class DownloadableFileSource(Source):
                 else:
                     etag = None
 
+                url_opener_creator = _UrlOpenerCreator(self._parse_netrc())
+
                 local_file, new_etag = self.blocking_activity(
-                    _download_file, (self.__get_urlopener(), self.url, etag, td), activity_name
+                    _download_file, (url_opener_creator, self.url, etag, td), activity_name
                 )
 
                 if local_file is None:
@@ -251,6 +253,21 @@ class DownloadableFileSource(Source):
             # ValueError for unknown url types, so we handle it here.
             raise SourceError("{}: Error mirroring {}: {}".format(self, self.url, e), temporary=True) from e
 
+    def _parse_netrc(self):
+        netrc_config = None
+        try:
+            netrc_config = netrc.netrc()
+        except OSError:
+            # If the .netrc file was not found, FileNotFoundError will be
+            # raised, but OSError will be raised directly by the netrc package
+            # in the case that $HOME is not set.
+            #
+            # This will catch both cases.
+            pass
+        except netrc.NetrcParseError as e:
+            self.warn("{}: While reading .netrc: {}".format(self, e))
+        return netrc_config
+
     def _get_mirror_file(self, sha=None):
         if sha is not None:
             return os.path.join(self._mirror_dir, sha)
@@ -260,29 +277,15 @@ class DownloadableFileSource(Source):
 
         return self.__default_mirror_file
 
-    @classmethod
-    def _reset_url_opener(cls):
-        # Needed for tests, in order to cleanup the `netrc` configuration.
-        cls.__urlopener = None  # pylint: disable=unused-private-member
 
-    def __get_urlopener(self):
-        if not DownloadableFileSource.__urlopener:
-            try:
-                netrc_config = netrc.netrc()
-            except OSError:
-                # If the .netrc file was not found, FileNotFoundError will be
-                # raised, but OSError will be raised directly by the netrc package
-                # in the case that $HOME is not set.
-                #
-                # This will catch both cases.
-                #
-                DownloadableFileSource.__urlopener = urllib.request.build_opener()
-            except netrc.NetrcParseError as e:
-                self.warn("{}: While reading .netrc: {}".format(self, e))
-                return urllib.request.build_opener()
-            else:
-                netrc_pw_mgr = _NetrcPasswordManager(netrc_config)
-                http_auth = urllib.request.HTTPBasicAuthHandler(netrc_pw_mgr)
-                ftp_handler = _NetrcFTPOpener(netrc_config)
-                DownloadableFileSource.__urlopener = urllib.request.build_opener(http_auth, ftp_handler)
-        return DownloadableFileSource.__urlopener
+class _UrlOpenerCreator:
+    def __init__(self, netrc_config):
+        self.netrc_config = netrc_config
+
+    def get_url_opener(self):
+        if self.netrc_config:
+            netrc_pw_mgr = _NetrcPasswordManager(self.netrc_config)
+            http_auth = urllib.request.HTTPBasicAuthHandler(netrc_pw_mgr)
+            ftp_handler = _NetrcFTPOpener(self.netrc_config)
+            return urllib.request.build_opener(http_auth, ftp_handler)
+        return urllib.request.build_opener()

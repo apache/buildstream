@@ -50,7 +50,6 @@ from ._state import State
 from .types import _KeyStrength, _PipelineSelection, _Scope, _HostMount
 from .plugin import Plugin
 from . import utils, node, _yaml, _site, _pipeline
-from .downloadablefilesource import DownloadableFileSource
 
 
 # Stream()
@@ -117,12 +116,6 @@ class Stream:
         # Reset global state in node.pyx, this is for the sake of
         # test isolation.
         node._reset_global_state()
-
-        # Ensure that any global state loaded by the downloadablefilesource
-        # is discarded in between sessions (different invocations of the CLI
-        # may come with different local state such as .netrc files, so we need
-        # a reset here).
-        DownloadableFileSource._reset_url_opener()
 
     # set_project()
     #
