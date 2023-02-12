@@ -377,8 +377,7 @@ def safe_copy(src: str, dest: str, *, copystat: bool = True, result: Optional[Fi
     try:
         os.unlink(dest)
     except OSError as e:
-        if e.errno != errno.ENOENT:
-            raise UtilError("Failed to remove destination file '{}': {}".format(dest, e)) from e
+        raise UtilError("Failed to remove destination file '{}': {}".format(dest, e)) from e
 
     try:
         shutil.copyfile(src, dest)
