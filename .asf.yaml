@@ -33,6 +33,9 @@ github:
     # disable rebase button:
     rebase: false
 
+  # Close branches when pull requests are merged
+  del_branch_on_merge: true
+
   # Enable pages publishing
   ghp_branch: gh-pages
   ghp_path: /
