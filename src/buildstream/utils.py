@@ -399,6 +399,15 @@ def safe_copy(src: str, dest: str, *, copystat: bool = True, result: Optional[Fi
                 result.failed_attributes.append(dest)
 
 
+def _same_file(src: str, dest: str):
+    src_info = os.stat(src)
+    dest_info = os.stat(dest)
+    if not src_info.st_ino or not dest_info.st_ino:
+        # This filesystem has no correctly working inode numbers, just assume files are not same
+        return False
+    return src_info.st_ino == dest_info.st_ino
+
+
 def safe_link(src: str, dest: str, *, result: Optional[FileListResult] = None, _unlink=False) -> None:
     """Try to create a hardlink, but resort to copying in the case of cross device links.
 
@@ -424,6 +433,9 @@ def safe_link(src: str, dest: str, *, result: Optional[FileListResult] = None, _
         os.link(src, dest)
     except OSError as e:
         if e.errno == errno.EEXIST and not _unlink:
+            if _same_file(src, dest):
+                # Nothing to do
+                return
             # Target exists already, unlink and try again
             safe_link(src, dest, result=result, _unlink=True)
         elif e.errno in (errno.EXDEV, errno.EPERM):
