@@ -236,11 +236,15 @@ consider using `pipx <https://docs.python.org/3/tutorial/venv.html>`_.
 Installing completions
 ----------------------
 
-BuildStream integrates with Bash to provide helpful tab-completion. These
-are provided by the `bst` completion script, available online
-`here <https://raw.githubusercontent.com/apache/buildstream/master/src/buildstream/data/bst>`_
-and in your local Git clone at ``src/buildstream/data/bst``. The completion
-script requires manaul installation.
+BuildStream integrates with Bash and Zsh to provide helpful tab-completion.
+These completion scripts require manual installation.
+
+Bash completions
+~~~~~~~~~~~~~~~~
+
+Bash completions are provided by the ``bst`` completion script, available online
+(`src/buildstream/data/bst <https://raw.githubusercontent.com/apache/buildstream/master/src/buildstream/data/bst>`_)
+and in your local Git clone at ``src/buildstream/data/bst``.
 
 To install for the current user, paste the contents of the completion script
 into the file ``~/.bash_completion``.
@@ -252,3 +256,43 @@ bash-completion installation path, which you can discover as follows::
 
 See the `bash-completion FAQ <https://github.com/scop/bash-completion#faq>`_
 for more information.
+
+Zsh completions
+~~~~~~~~~~~~~~~~
+
+Zsh completions are provided by the ``_bst`` completion script, available online
+(`src/buildstream/data/zsh/_bst <https://raw.githubusercontent.com/apache/buildstream/master/src/buildstream/data/zsh/_bst>`_)
+and in your local Git clone at ``src/buildstream/data/zsh/_bst``.
+
+Copy the above file to your Zsh completions location. Here are some instructions
+for vanilla Zsh, as well as the *Prezto* and *Oh My Zsh* frameworks:
+
+**Zsh**::
+
+    cp src/buildstream/data/zsh/_bst ~/.zfunc/_bst
+
+You must then add the following lines in your ``~/.zshrc``, if they do not already exist::
+
+    fpath+=~/.zfunc
+    autoload -Uz compinit && compinit
+
+
+**Prezto**::
+
+    cp src/buildstream/data/zsh/_bst ~/.zprezto/modules/completion/external/src/_bst
+
+You may have to reset your zcompdump cache, if you have one, and then restart your shell::
+
+    rm ~/.zcompdump ${XDG_CACHE_HOME:-$HOME/.cache}/prezto/zcompdump
+
+**Oh My Zsh**::
+
+    mkdir $ZSH_CUSTOM/plugins/bst
+    cp src/buildstream/data/zsh/_bst $ZSH_CUSTOM/plugins/bst/_bst
+
+You must then add ``bst`` to your plugins array in ``~/.zshrc``::
+
+    plugins(
+      bst
+      ...
+    )
