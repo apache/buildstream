@@ -123,7 +123,6 @@ import multiprocessing.synchronize
 import multiprocessing.popen_forkserver  # type: ignore
 
 import os
-import pickle
 import queue
 import signal
 import subprocess
@@ -184,13 +183,8 @@ def _background_job_wrapper(result_queue: multiprocessing.Queue, target: Callabl
     try:
         result = target(*args)
         result_queue.put((None, result))
-    except Exception as exc:  # pylint: disable=broad-except
-        try:
-            # Here we send the result again, just in case it was a PickleError
-            # in which case the same exception would be thrown down
-            result_queue.put((exc, result))
-        except pickle.PickleError:
-            result_queue.put((traceback.format_exc(), None))
+    except Exception:  # pylint: disable=broad-except
+        result_queue.put((traceback.format_exc(), None))
 
 
 class Plugin:
@@ -606,7 +600,8 @@ class Plugin:
         in order to avoid starving the scheduler.
 
         The function, its arguments and return value must all be pickleable,
-        as it will be run in another process.
+        as it will be run in another process. The function should not raise
+        an exception.
 
         This should be used whenever there is a potential for a blocking
         syscall to not return in a reasonable (<1s) amount of time.
@@ -676,12 +671,7 @@ class Plugin:
                     raise PluginError("Background process didn't exit after 15 seconds and got killed.")
 
             if err is not None:
-                if isinstance(err, str):
-                    # This was a pickle error, this is a bug
-                    raise PluginError(
-                        "An error happened while returning the result from a blocking activity", detail=err
-                    )
-                raise err
+                raise PluginError("An error happened while running a blocking activity", detail=err)
 
             return result
 
