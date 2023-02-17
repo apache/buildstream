@@ -313,23 +313,6 @@ with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "README.rst"
 #####################################################
 #            Setup Cython and extensions            #
 #####################################################
-# We want to ensure that source distributions always
-# include the .c files, in order to allow users to
-# not need cython when building.
-def assert_cython_required():
-    if "sdist" not in sys.argv:
-        return
-
-    print(
-        "Cython is required when building 'sdist' in order to "
-        "ensure source distributions can be built without Cython. "
-        "Please install it using your package manager (usually 'python3-cython') "
-        "or pip (pip install cython).",
-        file=sys.stderr,
-    )
-
-    raise SystemExit(1)
-
 
 try:
     ENABLE_CYTHON_TRACE = int(os.environ.get("BST_CYTHON_TRACE", "0"))
@@ -342,29 +325,27 @@ extension_macros = [("CYTHON_TRACE", ENABLE_CYTHON_TRACE)]
 
 
 def cythonize(extensions, **kwargs):
+    # We want to make sure that generated Cython code is never
+    # included in the source distribution.
+    #
+    # This is because Cython will generate some code which accesses
+    # internal API from CPython, as such we cannot guarantee that
+    # the C code we generated when creating the distribution will
+    # be valid for the target CPython interpretor.
+    #
+    if "sdist" in sys.argv:
+        return extensions
+
     try:
         from Cython.Build import cythonize as _cythonize
     except ImportError:
-        assert_cython_required()
-
-        print("Cython not found. Using preprocessed c files instead")
-
-        missing_c_sources = []
-
-        for extension in extensions:
-            for source in extension.sources:
-                if source.endswith(".pyx"):
-                    c_file = source.replace(".pyx", ".c")
-
-                    if not os.path.exists(c_file):
-                        missing_c_sources.append((extension, c_file))
-
-        if missing_c_sources:
-            for extension, source in missing_c_sources:
-                print("Missing '{}' for building extension '{}'".format(source, extension.name))
-
-            raise SystemExit(1)
-        return extensions
+        print(
+            "Cython is required when building BuildStream from sources. "
+            "Please install it using your package manager (usually 'python3-cython') "
+            "or pip (pip install cython).",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
 
     return _cythonize(extensions, **kwargs)
 
