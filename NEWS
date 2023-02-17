@@ -1,4 +1,24 @@
 =================
+buildstream 2.0.1
+=================
+
+  o Stop including generated C code in releases (#1777)
+
+  o Support completions for Zsh shells (#558)
+
+  o Support Python 3.11 (#1782, #1806, #1815, #1759)
+
+  o Fix git submodule tests to work with recent git (#1816)
+
+  o Enable coverage collection in tests (#1817)
+
+  o Optimize file copies where possible (#1793)
+
+  o Some fixes for downloadable file sources (#1826, #1814)
+
+  o Various cleanups of deprecated code and documentation
+
+=================
 buildstream 2.0.0
 =================
 
