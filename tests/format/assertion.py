@@ -32,4 +32,4 @@ def test_assertion_cli(cli, datafiles, target, opt_pony, opt_horsy, assertion):
 
     # Assert that the assertion text provided by the user
     # is found in the exception text
-    assert assertion in str(result.exception)
+    assert assertion in str(result.stderr)
