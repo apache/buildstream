@@ -135,10 +135,7 @@ def test_nested_conflict(cli, datafiles):
     copy_subprojects(project, datafiles, ['foo', 'bar'])
 
     result = cli.run(project=project, args=['build', 'target.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.CONFLICTING_JUNCTION
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.CONFLICTING_JUNCTION)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -146,10 +143,7 @@ def test_invalid_missing(cli, datafiles):
     project = os.path.join(str(datafiles), 'invalid')
 
     result = cli.run(project=project, args=['build', 'missing.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.MISSING_FILE
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -158,10 +152,7 @@ def test_invalid_with_deps(cli, datafiles):
     copy_subprojects(project, datafiles, ['base'])
 
     result = cli.run(project=project, args=['build', 'junction-with-deps.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, ElementError)
-    assert result.exception.reason == 'element-forbidden-depends'
+    result.assert_main_error(ErrorDomain.ELEMENT, 'element-forbidden-depends')
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -170,10 +161,7 @@ def test_invalid_junction_dep(cli, datafiles):
     copy_subprojects(project, datafiles, ['base'])
 
     result = cli.run(project=project, args=['build', 'junction-dep.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.INVALID_DATA
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -248,10 +236,7 @@ def test_git_show(cli, tmpdir, datafiles):
 
     # Verify that bst show does not implicitly fetch subproject
     result = cli.run(project=project, args=['show', 'target.bst'])
-    assert result.exit_code != 0
-    assert result.exception
-    assert isinstance(result.exception, LoadError)
-    assert result.exception.reason == LoadErrorReason.SUBPROJECT_FETCH_NEEDED
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_FETCH_NEEDED)
 
     # Explicitly fetch subproject
     result = cli.run(project=project, args=['fetch', 'base.bst'])
