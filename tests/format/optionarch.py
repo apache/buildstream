@@ -12,6 +12,12 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 # Context manager to override the reported value of `os.uname()`
 @contextmanager
 def override_uname_arch(name):
+
+    #
+    # Disabling this test since we now run bst in a subprocess during tests.
+    #
+    pytest.xfail("Overriding os.uname() in bst subprocess is unsupported")
+
     orig_uname = os.uname
     orig_tuple = tuple(os.uname())
     override_result = (orig_tuple[0], orig_tuple[1],

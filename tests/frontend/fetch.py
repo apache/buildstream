@@ -71,8 +71,7 @@ def test_fetch_consistency_bug(cli, tmpdir, datafiles):
     #    more gracefully as a BUG message.
     #
     result = cli.run(project=project, args=['fetch', 'bug.bst'])
-    assert result.exc is not None
-    assert str(result.exc) == "Something went terribly wrong"
+    assert "Something went terribly wrong" in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)

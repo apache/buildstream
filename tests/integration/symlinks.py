@@ -70,5 +70,5 @@ def test_detect_symlink_overlaps_pointing_outside_sandbox(cli, tmpdir, datafiles
     # point outside the sandbox which BuildStream needs to detect before it
     # tries to actually write there.
     result = cli.run(project=project, args=['checkout', element_name, checkout])
-    assert result.exit_code == -1
+    assert result.exit_code != 0
     assert "Destination path resolves to a path outside of the staging area" in result.stderr

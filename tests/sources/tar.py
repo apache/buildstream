@@ -348,6 +348,7 @@ def test_netrc_already_specified_user(cli, datafiles, server_type, tmpdir):
 
 # Test that BuildStream doesnt crash if HOME is unset while
 # the netrc module is trying to find it's ~/.netrc file.
+@pytest.mark.xfail(reason="Cannot set environment variable to None when running tests in subprocesses")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_homeless_environment(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)

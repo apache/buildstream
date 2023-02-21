@@ -22,9 +22,11 @@ import sys
 import resource
 import traceback
 import datetime
+from enum import Enum
 from textwrap import TextWrapper
 from contextlib import contextmanager
 
+import ujson
 import click
 from click import UsageError
 
@@ -35,7 +37,7 @@ from .. import Scope
 from .._context import Context
 from .._platform import Platform
 from .._project import Project
-from .._exceptions import BstError, StreamError, LoadError, LoadErrorReason, AppError
+from .._exceptions import BstError, StreamError, LoadError, LoadErrorReason, AppError, get_last_task_error
 from .._message import Message, MessageType, unconditional_messages
 from .._stream import Stream
 from .._versions import BST_FORMAT_VERSION
@@ -681,6 +683,20 @@ class App():
             indent = " " * INDENT
             detail = '\n' + indent + indent.join(error.detail.splitlines(True))
             click.echo("{}".format(detail), err=True)
+
+        # Record machine readable errors in a tempfile for the test harness to read back
+        if 'BST_TEST_ERROR_CODES' in os.environ:
+            task_error_domain, task_error_reason = get_last_task_error ()
+            error_codes = ujson.dumps ({
+                'main_error_domain': error.domain.value if error.domain else None,
+                'main_error_reason': error.reason.value if isinstance (error.reason, Enum) else error.reason,
+                'task_error_domain': task_error_domain.value if task_error_domain else None,
+                'task_error_reason': (
+                    task_error_reason.value if isinstance (task_error_reason, Enum) else task_error_reason
+                )
+            })
+            with open (os.environ['BST_TEST_ERROR_CODES'], "w", encoding="utf-8") as f:
+                f.write (error_codes)
 
         sys.exit(-1)
 

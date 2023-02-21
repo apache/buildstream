@@ -289,6 +289,7 @@ def test_never_delete_required_track(cli, datafiles, tmpdir):
 # has 10K total disk space, and 6K of it is already in use (not
 # including any space used by the artifact cache).
 #
+@pytest.mark.xfail(reason="unittest.mock() not supported when running tests in subprocesses")
 @pytest.mark.parametrize("quota,err_domain,err_reason", [
     # Valid configurations
     ("1", 'success', None),

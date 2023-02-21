@@ -26,8 +26,8 @@ jobs:
         # "../compose/ci.docker-compose.yml"
         test-name:
           - debian-10
-          - fedora-35
           - fedora-36
+          - fedora-37
           - lint
 
     steps:

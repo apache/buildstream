@@ -24,23 +24,8 @@ from enum import Enum
 # pylint: disable=global-statement
 
 # The last raised exception, this is used in test cases only
-_last_exception = None
 _last_task_error_domain = None
 _last_task_error_reason = None
-
-
-# get_last_exception()
-#
-# Fetches the last exception from the main process
-#
-# Used by regression tests
-#
-def get_last_exception():
-    global _last_exception
-
-    le = _last_exception
-    _last_exception = None
-    return le
 
 
 # get_last_task_error()
@@ -102,7 +87,6 @@ class ErrorDomain(Enum):
 class BstError(Exception):
 
     def __init__(self, message, *, detail=None, domain=None, reason=None, temporary=False):
-        global _last_exception
 
         super().__init__(message)
 
@@ -125,9 +109,6 @@ class BstError(Exception):
         #
         self.domain = domain
         self.reason = reason
-
-        # Hold on to the last raised exception for testing purposes
-        _last_exception = self
 
 
 # PluginError
