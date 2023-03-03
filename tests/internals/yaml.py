@@ -16,7 +16,7 @@ from io import StringIO
 
 import pytest
 
-from buildstream import _yaml, Node, MappingNode, ProvenanceInformation, SequenceNode
+from buildstream import _yaml, Node, ProvenanceInformation, SequenceNode
 from buildstream.exceptions import LoadErrorReason
 from buildstream._exceptions import LoadError
 
@@ -30,7 +30,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_load_yaml(datafiles):
 
-    filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
+    filename = os.path.join(datafiles, "basics.yaml")
 
     loaded = _yaml.load(filename, shortname=None)
     assert loaded.get_str("kind") == "pony"
@@ -49,7 +49,7 @@ def assert_provenance(filename, line, col, node):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_basic_provenance(datafiles):
 
-    filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
+    filename = os.path.join(datafiles, "basics.yaml")
 
     loaded = _yaml.load(filename, shortname=None)
     assert loaded.get_str("kind") == "pony"
@@ -60,7 +60,7 @@ def test_basic_provenance(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_member_provenance(datafiles):
 
-    filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
+    filename = os.path.join(datafiles, "basics.yaml")
 
     loaded = _yaml.load(filename, shortname=None)
     assert loaded.get_str("kind") == "pony"
@@ -70,7 +70,7 @@ def test_member_provenance(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_element_provenance(datafiles):
 
-    filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
+    filename = os.path.join(datafiles, "basics.yaml")
 
     loaded = _yaml.load(filename, shortname=None)
     assert loaded.get_str("kind") == "pony"
@@ -80,8 +80,8 @@ def test_element_provenance(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_mapping_validate_keys(datafiles):
 
-    valid = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
-    invalid = os.path.join(datafiles.dirname, datafiles.basename, "invalid.yaml")
+    valid = os.path.join(datafiles, "basics.yaml")
+    invalid = os.path.join(datafiles, "invalid.yaml")
 
     base = _yaml.load(valid, shortname=None)
 
@@ -98,7 +98,7 @@ def test_mapping_validate_keys(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_node_get(datafiles):
 
-    filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
+    filename = os.path.join(datafiles, "basics.yaml")
 
     base = _yaml.load(filename, shortname=None)
     assert base.get_str("kind") == "pony"
@@ -120,7 +120,7 @@ def test_node_get(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_node_set(datafiles):
 
-    filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
+    filename = os.path.join(datafiles, "basics.yaml")
 
     base = _yaml.load(filename, shortname=None)
 
@@ -132,7 +132,7 @@ def test_node_set(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_node_set_overwrite(datafiles):
 
-    filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
+    filename = os.path.join(datafiles, "basics.yaml")
 
     base = _yaml.load(filename, shortname=None)
 
@@ -150,7 +150,7 @@ def test_node_set_overwrite(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_node_set_list_element(datafiles):
 
-    filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
+    filename = os.path.join(datafiles, "basics.yaml")
 
     base = _yaml.load(filename, shortname=None)
 
@@ -167,8 +167,8 @@ def test_node_set_list_element(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_composite_preserve_originals(datafiles):
 
-    filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
-    overlayfile = os.path.join(datafiles.dirname, datafiles.basename, "composite.yaml")
+    filename = os.path.join(datafiles, "basics.yaml")
+    overlayfile = os.path.join(datafiles, "composite.yaml")
 
     base = _yaml.load(filename, shortname=None)
     overlay = _yaml.load(overlayfile, shortname=None)
@@ -229,8 +229,8 @@ def test_composite_preserve_originals(datafiles):
     ],
 )
 def test_list_composition(datafiles, filename, tmpdir, index, length, mood, prov_file, prov_line, prov_col):
-    base_file = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
-    overlay_file = os.path.join(datafiles.dirname, datafiles.basename, filename)
+    base_file = os.path.join(datafiles, "basics.yaml")
+    overlay_file = os.path.join(datafiles, filename)
 
     base = _yaml.load(base_file, shortname="basics.yaml")
     overlay = _yaml.load(overlay_file, shortname=filename)
@@ -248,8 +248,8 @@ def test_list_composition(datafiles, filename, tmpdir, index, length, mood, prov
 # Test that overwriting a list with an empty list works as expected.
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_list_deletion(datafiles):
-    base = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
-    overlay = os.path.join(datafiles.dirname, datafiles.basename, "listoverwriteempty.yaml")
+    base = os.path.join(datafiles, "basics.yaml")
+    overlay = os.path.join(datafiles, "listoverwriteempty.yaml")
 
     base = _yaml.load(base, shortname="basics.yaml")
     overlay = _yaml.load(overlay, shortname="listoverwriteempty.yaml")
@@ -341,9 +341,9 @@ def test_list_deletion(datafiles):
 def test_list_composition_twice(
     datafiles, tmpdir, filename1, filename2, index, length, mood, prov_file, prov_line, prov_col
 ):
-    file_base = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
-    file1 = os.path.join(datafiles.dirname, datafiles.basename, filename1)
-    file2 = os.path.join(datafiles.dirname, datafiles.basename, filename2)
+    file_base = os.path.join(datafiles, "basics.yaml")
+    file1 = os.path.join(datafiles, filename1)
+    file2 = os.path.join(datafiles, filename2)
 
     #####################
     # Round 1 - Fight !
@@ -382,7 +382,7 @@ def test_list_composition_twice(
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_convert_value_to_string(datafiles):
-    conf_file = os.path.join(datafiles.dirname, datafiles.basename, "convert_value_to_str.yaml")
+    conf_file = os.path.join(datafiles, "convert_value_to_str.yaml")
 
     # Run file through yaml to convert it
     test_dict = _yaml.load(conf_file, shortname=None)
@@ -406,7 +406,7 @@ def test_convert_value_to_string(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_value_doesnt_match_expected(datafiles):
-    conf_file = os.path.join(datafiles.dirname, datafiles.basename, "convert_value_to_str.yaml")
+    conf_file = os.path.join(datafiles, "convert_value_to_str.yaml")
 
     # Run file through yaml to convert it
     test_dict = _yaml.load(conf_file, shortname=None)
@@ -418,7 +418,7 @@ def test_value_doesnt_match_expected(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_roundtrip_dump(datafiles):
-    filename = os.path.join(datafiles.dirname, datafiles.basename, "roundtrip-test.yaml")
+    filename = os.path.join(datafiles, "roundtrip-test.yaml")
     with open(filename, "r", encoding="utf-8") as fh:
         rt_raw = fh.read()
 
@@ -463,7 +463,7 @@ def test_roundtrip_dump(datafiles):
     ],
 )
 def test_node_find_target(datafiles, case):
-    filename = os.path.join(datafiles.dirname, datafiles.basename, "traversal.yaml")
+    filename = os.path.join(datafiles, "traversal.yaml")
     # We set copy_tree in order to ensure that the nodes in `loaded`
     # are not the same nodes as in `prov.toplevel`
     loaded = _yaml.load(filename, shortname=None, copy_tree=True)
@@ -497,7 +497,7 @@ def test_node_find_target(datafiles, case):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_node_find_target_fails(datafiles):
-    filename = os.path.join(datafiles.dirname, datafiles.basename, "traversal.yaml")
+    filename = os.path.join(datafiles, "traversal.yaml")
     loaded = _yaml.load(filename, shortname=None, copy_tree=True)
 
     brand_new = Node.from_dict({})
@@ -515,7 +515,7 @@ def test_node_find_target_fails(datafiles):
     ids=["list-of-dict", "list-of-list"],
 )
 def test_get_str_list_invalid(datafiles, filename, provenance):
-    conf_file = os.path.join(datafiles.dirname, datafiles.basename, filename)
+    conf_file = os.path.join(datafiles, filename)
 
     base = _yaml.load(conf_file, shortname=None)
 
@@ -527,7 +527,7 @@ def test_get_str_list_invalid(datafiles, filename, provenance):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_get_str_list_default_none(datafiles):
-    conf_file = os.path.join(datafiles.dirname, datafiles.basename, "list-of-dict.yaml")
+    conf_file = os.path.join(datafiles, "list-of-dict.yaml")
 
     base = _yaml.load(conf_file, shortname=None)
 
@@ -538,8 +538,8 @@ def test_get_str_list_default_none(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_mapping_node_assign_none(datafiles):
-    conf_file = os.path.join(datafiles.dirname, datafiles.basename, "dictionary.yaml")
-    dump_file = os.path.join(datafiles.dirname, datafiles.basename, "dictionary-dump.yaml")
+    conf_file = os.path.join(datafiles, "dictionary.yaml")
+    dump_file = os.path.join(datafiles, "dictionary-dump.yaml")
 
     base = _yaml.load(conf_file, shortname=None)
     nested = base.get_mapping("nested")

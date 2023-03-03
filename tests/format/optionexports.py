@@ -40,7 +40,7 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
     ],
 )
 def test_export(cli, datafiles, option_name, option_value, var_name, var_value):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-exports")
+    project = os.path.join(datafiles, "option-exports")
     result = cli.run(
         project=project,
         silent=True,

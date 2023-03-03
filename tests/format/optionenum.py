@@ -40,7 +40,7 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
     ],
 )
 def test_conditional_cli(cli, datafiles, target, option, value, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-enum")
+    project = os.path.join(datafiles, "option-enum")
     result = cli.run(
         project=project,
         silent=True,
@@ -67,7 +67,7 @@ def test_conditional_cli(cli, datafiles, target, option, value, expected):
     ],
 )
 def test_conditional_config(cli, datafiles, target, option, value, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-enum")
+    project = os.path.join(datafiles, "option-enum")
     cli.configure({"projects": {"test": {"options": {option: value}}}})
     result = cli.run(project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", target])
 
@@ -78,7 +78,7 @@ def test_conditional_config(cli, datafiles, target, option, value, expected):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_value_cli(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-enum")
+    project = os.path.join(datafiles, "option-enum")
     result = cli.run(
         project=project,
         silent=True,
@@ -90,7 +90,7 @@ def test_invalid_value_cli(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("config_option", [("giraffy"), (["its", "a", "list"]), ({"dic": "tionary"})])
 def test_invalid_value_config(cli, datafiles, config_option):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-enum")
+    project = os.path.join(datafiles, "option-enum")
     cli.configure({"projects": {"test": {"options": {"brother": config_option}}}})
     result = cli.run(
         project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
@@ -100,7 +100,7 @@ def test_invalid_value_config(cli, datafiles, config_option):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_missing_values(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-enum-missing")
+    project = os.path.join(datafiles, "option-enum-missing")
     result = cli.run(
         project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
     )

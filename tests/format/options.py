@@ -36,7 +36,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "options")
     ],
 )
 def test_invalid_option_name(cli, datafiles, project_dir):
-    project = os.path.join(datafiles.dirname, datafiles.basename, project_dir)
+    project = os.path.join(datafiles, project_dir)
     result = cli.run(project=project, silent=True, args=["show", "element.bst"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_SYMBOL_NAME)
 
@@ -50,14 +50,14 @@ def test_invalid_option_name(cli, datafiles, project_dir):
     ],
 )
 def test_invalid_variable_name(cli, datafiles, project_dir):
-    project = os.path.join(datafiles.dirname, datafiles.basename, project_dir)
+    project = os.path.join(datafiles, project_dir)
     result = cli.run(project=project, silent=True, args=["show", "element.bst"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_SYMBOL_NAME)
 
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_option_type(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "invalid-type")
+    project = os.path.join(datafiles, "invalid-type")
 
     # Test with the opt option set
     result = cli.run(
@@ -70,7 +70,7 @@ def test_invalid_option_type(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_option_cli(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "simple-condition")
+    project = os.path.join(datafiles, "simple-condition")
 
     # Test with the opt option set
     result = cli.run(
@@ -83,7 +83,7 @@ def test_invalid_option_cli(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_option_config(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "simple-condition")
+    project = os.path.join(datafiles, "simple-condition")
     cli.configure({"projects": {"test": {"options": {"fart": "Hello"}}}})
     result = cli.run(
         project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
@@ -93,7 +93,7 @@ def test_invalid_option_config(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_expression(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "invalid-expression")
+    project = os.path.join(datafiles, "invalid-expression")
     result = cli.run(
         project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
     )
@@ -102,7 +102,7 @@ def test_invalid_expression(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_undefined(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "undefined-variable")
+    project = os.path.join(datafiles, "undefined-variable")
     result = cli.run(
         project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
     )
@@ -111,7 +111,7 @@ def test_undefined(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_condition(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "invalid-condition")
+    project = os.path.join(datafiles, "invalid-condition")
     result = cli.run(
         project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
     )
@@ -127,7 +127,7 @@ def test_invalid_condition(cli, datafiles):
     ],
 )
 def test_simple_conditional(cli, datafiles, opt_option, expected_prefix):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "simple-condition")
+    project = os.path.join(datafiles, "simple-condition")
 
     # Test with the opt option set
     result = cli.run(
@@ -151,7 +151,7 @@ def test_simple_conditional(cli, datafiles, opt_option, expected_prefix):
     ],
 )
 def test_nested_conditional(cli, datafiles, debug, logging, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "nested-condition")
+    project = os.path.join(datafiles, "nested-condition")
 
     # Test with the opt option set
     result = cli.run(
@@ -188,7 +188,7 @@ def test_nested_conditional(cli, datafiles, debug, logging, expected):
     ],
 )
 def test_compound_and_conditional(cli, datafiles, debug, logging, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "compound-and-condition")
+    project = os.path.join(datafiles, "compound-and-condition")
 
     # Test with the opt option set
     result = cli.run(
@@ -225,7 +225,7 @@ def test_compound_and_conditional(cli, datafiles, debug, logging, expected):
     ],
 )
 def test_compound_or_conditional(cli, datafiles, debug, logging, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "compound-or-condition")
+    project = os.path.join(datafiles, "compound-or-condition")
 
     # Test with the opt option set
     result = cli.run(
@@ -260,7 +260,7 @@ def test_compound_or_conditional(cli, datafiles, debug, logging, expected):
     ],
 )
 def test_deep_nesting_level1(cli, datafiles, option, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "deep-nesting")
+    project = os.path.join(datafiles, "deep-nesting")
     result = cli.run(
         project=project,
         silent=True,
@@ -283,7 +283,7 @@ def test_deep_nesting_level1(cli, datafiles, option, expected):
     ],
 )
 def test_deep_nesting_level2(cli, datafiles, option, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "deep-nesting")
+    project = os.path.join(datafiles, "deep-nesting")
     result = cli.run(
         project=project,
         silent=True,

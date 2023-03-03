@@ -27,7 +27,7 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("arch", [("i686"), ("x86_64")])
 def test_override(cli, datafiles, arch):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-overrides")
+    project = os.path.join(datafiles, "option-overrides")
 
     bst_args = ["--option", "arch", arch]
     bst_args += ["show", "--deps", "none", "--format", "%{vars}", "element.bst"]

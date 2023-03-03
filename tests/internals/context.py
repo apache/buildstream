@@ -88,7 +88,7 @@ def test_context_load_user_config(context_fixture, datafiles):
     cache_home = context_fixture["xdg-cache"]
     assert isinstance(context, Context)
 
-    conf_file = os.path.join(datafiles.dirname, datafiles.basename, "userconf.yaml")
+    conf_file = os.path.join(datafiles, "userconf.yaml")
     context.load(conf_file)
 
     assert context.sourcedir == os.path.expanduser("~/pony")
@@ -132,7 +132,7 @@ def test_context_load_missing_config(context_fixture, datafiles):
     context = context_fixture["context"]
     assert isinstance(context, Context)
 
-    conf_file = os.path.join(datafiles.dirname, datafiles.basename, "nonexistant.yaml")
+    conf_file = os.path.join(datafiles, "nonexistant.yaml")
 
     with pytest.raises(LoadError) as exc:
         context.load(conf_file)
@@ -145,7 +145,7 @@ def test_context_load_malformed_config(context_fixture, datafiles):
     context = context_fixture["context"]
     assert isinstance(context, Context)
 
-    conf_file = os.path.join(datafiles.dirname, datafiles.basename, "malformed.yaml")
+    conf_file = os.path.join(datafiles, "malformed.yaml")
 
     with pytest.raises(LoadError) as exc:
         context.load(conf_file)
@@ -158,7 +158,7 @@ def test_context_load_notdict_config(context_fixture, datafiles):
     context = context_fixture["context"]
     assert isinstance(context, Context)
 
-    conf_file = os.path.join(datafiles.dirname, datafiles.basename, "notdict.yaml")
+    conf_file = os.path.join(datafiles, "notdict.yaml")
 
     with pytest.raises(LoadError) as exc:
         context.load(conf_file)

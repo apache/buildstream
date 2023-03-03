@@ -136,7 +136,7 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("config_key, config_value", [("client-cert", "client.crt"), ("client-key", "client.key")])
 def test_missing_certs(cli, datafiles, config_key, config_value):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "missing-certs")
+    project = os.path.join(datafiles, "missing-certs")
 
     project_conf = {
         "name": "test",
@@ -169,7 +169,7 @@ def test_missing_certs(cli, datafiles, config_key, config_value):
     ],
 )
 def test_only_one(cli, datafiles, override_caches, project_caches, user_caches):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "only-one")
+    project = os.path.join(datafiles, "only-one")
 
     # Produce a fake user and project config with the cache configuration.
     user_config, project_config = configure_remote_caches(override_caches, project_caches, user_caches)

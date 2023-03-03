@@ -35,7 +35,7 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
     ],
 )
 def test_conditional_cli(cli, datafiles, target, value, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-element-mask")
+    project = os.path.join(datafiles, "option-element-mask")
     result = cli.run(
         project=project,
         silent=True,
@@ -57,7 +57,7 @@ def test_conditional_cli(cli, datafiles, target, value, expected):
     ],
 )
 def test_conditional_config(cli, datafiles, target, value, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-element-mask")
+    project = os.path.join(datafiles, "option-element-mask")
     cli.configure({"projects": {"test": {"options": {"debug_elements": value}}}})
     result = cli.run(project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", target])
 
@@ -68,7 +68,7 @@ def test_conditional_config(cli, datafiles, target, value, expected):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_declaration(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-element-mask-invalid")
+    project = os.path.join(datafiles, "option-element-mask-invalid")
     result = cli.run(project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "pony.bst"])
 
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
@@ -76,7 +76,7 @@ def test_invalid_declaration(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_value(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-element-mask")
+    project = os.path.join(datafiles, "option-element-mask")
     result = cli.run(
         project=project,
         silent=True,

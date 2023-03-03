@@ -30,7 +30,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project-ov
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_prepend_configure_commands(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "prepend-configure-commands")
+    project = os.path.join(datafiles, "prepend-configure-commands")
     result = cli.run(
         project=project, silent=True, args=["show", "--deps", "none", "--format", "%{config}", "element.bst"]
     )

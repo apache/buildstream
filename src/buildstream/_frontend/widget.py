@@ -34,6 +34,10 @@ from .._artifactelement import ArtifactElement
 ERROR_MESSAGES = [MessageType.FAIL, MessageType.ERROR, MessageType.BUG]
 
 
+class FormattingError(Exception):
+    pass
+
+
 # Widget()
 #
 # Args:
@@ -694,7 +698,7 @@ class LogLine(Widget):
                 variable = m.group(1)
                 format_string = format_string[m.end(0) :]
                 if variable not in self.logfile_variable_names:
-                    raise Exception("'{0}' is not a valid log variable name.".format(variable))
+                    raise FormattingError("'{0}' is not a valid log variable name.".format(variable))
                 logfile_tokens.append(self.logfile_variable_names[variable])
             else:
                 m = re.search("^[^%]+", format_string)
@@ -704,7 +708,9 @@ class LogLine(Widget):
                     logfile_tokens.append(text)
                 else:
                     # No idea what to do now
-                    raise Exception("'{0}' could not be parsed into a valid logging format.".format(format_string))
+                    raise FormattingError(
+                        "'{0}' could not be parsed into a valid logging format.".format(format_string)
+                    )
         return logfile_tokens
 
     def _render(self, message):

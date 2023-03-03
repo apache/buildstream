@@ -43,7 +43,7 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
     ],
 )
 def test_conditional_cli(cli, datafiles, target, option, value, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-flags")
+    project = os.path.join(datafiles, "option-flags")
     result = cli.run(
         project=project,
         silent=True,
@@ -67,7 +67,7 @@ def test_conditional_cli(cli, datafiles, target, option, value, expected):
     ],
 )
 def test_conditional_config(cli, datafiles, target, option, value, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-flags")
+    project = os.path.join(datafiles, "option-flags")
     cli.configure({"projects": {"test": {"options": {option: value}}}})
     result = cli.run(project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", target])
 
@@ -82,7 +82,7 @@ def test_conditional_config(cli, datafiles, target, option, value, expected):
     [("giraffy"), ("horsy pony")],  # Not a valid animal for the farm option  # Does not include comma separators
 )
 def test_invalid_value_cli(cli, datafiles, cli_option):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-flags")
+    project = os.path.join(datafiles, "option-flags")
     result = cli.run(
         project=project,
         silent=True,
@@ -101,7 +101,7 @@ def test_invalid_value_cli(cli, datafiles, cli_option):
     ],
 )
 def test_invalid_value_config(cli, datafiles, config_option):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-flags")
+    project = os.path.join(datafiles, "option-flags")
     cli.configure({"projects": {"test": {"options": {"farm": config_option}}}})
     result = cli.run(
         project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
@@ -111,7 +111,7 @@ def test_invalid_value_config(cli, datafiles, config_option):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_missing_values(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-flags-missing")
+    project = os.path.join(datafiles, "option-flags-missing")
     result = cli.run(
         project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
     )

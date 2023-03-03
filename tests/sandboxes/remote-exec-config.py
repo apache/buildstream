@@ -31,7 +31,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "remote-exe
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("config_key, config_value", [("client-cert", "client.crt"), ("client-key", "client.key")])
 def test_missing_certs(cli, datafiles, config_key, config_value):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "missing-certs")
+    project = os.path.join(datafiles, "missing-certs")
 
     cli.configure(
         {

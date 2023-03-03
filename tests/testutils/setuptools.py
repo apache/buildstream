@@ -23,7 +23,7 @@ class MockDist:
         self.module_name = module_name
 
     def get_resource_filename(self, *_args, **_kwargs):
-        return os.path.join(self.datafiles.dirname, self.datafiles.basename, self.module_name)
+        return os.path.join(self.datafiles, self.module_name)
 
 
 # A mock setuptools entry object.

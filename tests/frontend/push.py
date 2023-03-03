@@ -744,7 +744,7 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles, use_remote, ignore_
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("buildtrees", [("buildtrees"), ("normal")])
 def test_push_no_strict(caplog, cli, tmpdir, datafiles, buildtrees):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     caplog.set_level(1)
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
@@ -786,7 +786,7 @@ def test_push_no_strict(caplog, cli, tmpdir, datafiles, buildtrees):
 # of a non-reproducible element.
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_after_rebuild(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     generate_project(
         project,
@@ -822,7 +822,7 @@ def test_push_after_rebuild(cli, tmpdir, datafiles):
 # artifact on the server.
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_update_after_rebuild(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     generate_project(
         project,
