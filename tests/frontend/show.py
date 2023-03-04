@@ -345,7 +345,6 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage, workspaced):
 @pytest.mark.parametrize("workspaced", [True, False], ids=["workspace", "no-workspace"])
 def test_fetched_junction(cli, tmpdir, datafiles, element_name, workspaced):
     project = str(datafiles)
-    project = os.path.join(datafiles.dirname, datafiles.basename)
     subproject_path = os.path.join(project, "files", "sub-project")
     junction_path = os.path.join(project, "elements", "junction.bst")
     element_path = os.path.join(project, "elements", "junction-dep.bst")

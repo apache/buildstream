@@ -42,7 +42,7 @@ def relative_walk(rootdir):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_staged(tmpdir, cli, datafiles):
-    project_dir = os.path.join(datafiles.dirname, datafiles.basename, "project")
+    project_dir = os.path.join(datafiles, "project")
     cachedir = os.path.join(str(tmpdir), "cache")
 
     cli.configure({"cachedir": cachedir})
@@ -79,7 +79,7 @@ def test_source_staged(tmpdir, cli, datafiles):
 # Check sources are staged during a fetch
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_fetch(tmpdir, cli, datafiles):
-    project_dir = os.path.join(datafiles.dirname, datafiles.basename, "project")
+    project_dir = os.path.join(datafiles, "project")
     cachedir = os.path.join(str(tmpdir), "cache")
 
     cli.configure({"cachedir": cachedir})
@@ -113,7 +113,7 @@ def test_source_fetch(tmpdir, cli, datafiles):
 # Check that with sources only in the CAS build successfully completes
 @pytest.mark.datafiles(DATA_DIR)
 def test_staged_source_build(tmpdir, datafiles, cli):
-    project_dir = os.path.join(datafiles.dirname, datafiles.basename, "project")
+    project_dir = os.path.join(datafiles, "project")
     cachedir = os.path.join(str(tmpdir), "cache")
     element_path = "elements"
     source_protos = os.path.join(str(tmpdir), "cache", "source_protos")

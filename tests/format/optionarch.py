@@ -47,7 +47,7 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 )
 def test_conditional(cli, datafiles, machine, value, expected):
     with override_platform_uname(machine=machine):
-        project = os.path.join(datafiles.dirname, datafiles.basename, "option-arch")
+        project = os.path.join(datafiles, "option-arch")
 
         bst_args = []
         if value is not None:
@@ -65,7 +65,7 @@ def test_conditional(cli, datafiles, machine, value, expected):
 def test_unsupported_arch(cli, datafiles):
 
     with override_platform_uname(machine="x86_64"):
-        project = os.path.join(datafiles.dirname, datafiles.basename, "option-arch")
+        project = os.path.join(datafiles, "option-arch")
         result = cli.run(
             project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
         )
@@ -77,7 +77,7 @@ def test_unsupported_arch(cli, datafiles):
 def test_alias(cli, datafiles):
 
     with override_platform_uname(machine="arm"):
-        project = os.path.join(datafiles.dirname, datafiles.basename, "option-arch-alias")
+        project = os.path.join(datafiles, "option-arch-alias")
         result = cli.run(
             project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
         )
@@ -89,7 +89,7 @@ def test_alias(cli, datafiles):
 def test_unknown_host_arch(cli, datafiles):
 
     with override_platform_uname(machine="x86_128"):
-        project = os.path.join(datafiles.dirname, datafiles.basename, "option-arch")
+        project = os.path.join(datafiles, "option-arch")
         result = cli.run(
             project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
         )
@@ -100,7 +100,7 @@ def test_unknown_host_arch(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_unknown_project_arch(cli, datafiles):
 
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-arch-unknown")
+    project = os.path.join(datafiles, "option-arch-unknown")
     result = cli.run(
         project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
     )

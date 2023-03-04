@@ -97,7 +97,7 @@ def test_artifact_list_exact_contents_long(cli, datafiles, target):
         "{target}:\n"
         "\tdrwxr-xr-x  dir    0           usr\n"
         "\tdrwxr-xr-x  dir    0           usr/bin\n"
-        "\t-rw-r--r--  reg    28          usr/bin/hello\n\n"
+        "\t-rwxr-xr-x  exe    28          usr/bin/hello\n\n"
     )
     expected_output = expected_output_template.format(target=arg)
 

@@ -290,7 +290,7 @@ def print_version(ctx, param, value):
     ctx.exit()
 
 
-@click.group(context_settings=dict(help_option_names=["-h", "--help"]))
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
 @click.option("--version", is_flag=True, callback=print_version, expose_value=False, is_eager=True)
 @click.option(
     "--config", "-c", type=click.Path(exists=True, dir_okay=False, readable=True), help="Configuration file to use"

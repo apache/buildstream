@@ -38,14 +38,14 @@ def test_missing_project_conf(cli, datafiles, args):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_missing_project_name(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "missingname")
+    project = os.path.join(datafiles, "missingname")
     result = cli.run(project=project, args=["workspace", "list"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_missing_element(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "missing-element")
+    project = os.path.join(datafiles, "missing-element")
     result = cli.run(project=project, args=["show", "manual.bst"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
 
@@ -55,7 +55,7 @@ def test_missing_element(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_missing_junction(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "missing-junction")
+    project = os.path.join(datafiles, "missing-junction")
     result = cli.run(project=project, args=["show", "manual.bst"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
 
@@ -65,28 +65,28 @@ def test_missing_junction(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_empty_project_name(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "emptyname")
+    project = os.path.join(datafiles, "emptyname")
     result = cli.run(project=project, args=["workspace", "list"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_SYMBOL_NAME)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_invalid_project_name(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "invalidname")
+    project = os.path.join(datafiles, "invalidname")
     result = cli.run(project=project, args=["workspace", "list"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_SYMBOL_NAME)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_invalid_yaml(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "invalid-yaml")
+    project = os.path.join(datafiles, "invalid-yaml")
     result = cli.run(project=project, args=["workspace", "list"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_YAML)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_load_default_project(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "default")
+    project = os.path.join(datafiles, "default")
     result = cli.run(project=project, args=["show", "--format", "%{env}", "manual.bst"])
     result.assert_success()
 
@@ -98,7 +98,7 @@ def test_load_default_project(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_load_project_from_subdir(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "project-from-subdir")
+    project = os.path.join(datafiles, "project-from-subdir")
     result = cli.run(
         project=project, cwd=os.path.join(project, "subdirectory"), args=["show", "--format", "%{env}", "manual.bst"]
     )
@@ -112,7 +112,7 @@ def test_load_project_from_subdir(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_override_project_path(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "overridepath")
+    project = os.path.join(datafiles, "overridepath")
     result = cli.run(project=project, args=["show", "--format", "%{env}", "manual.bst"])
     result.assert_success()
 
@@ -123,7 +123,7 @@ def test_override_project_path(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_project_unsupported(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "unsupported")
+    project = os.path.join(datafiles, "unsupported")
 
     result = cli.run(project=project, args=["workspace", "list"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNSUPPORTED_PROJECT)
@@ -170,7 +170,7 @@ def test_local_plugin_not_directory(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [("inline"), ("project.refs")])
 def test_plugin_no_load_ref(cli, datafiles, ref_storage):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "plugin-no-load-ref")
+    project = os.path.join(datafiles, "plugin-no-load-ref")
 
     # Generate project with access to the noloadref plugin and project.refs enabled
     #
@@ -194,14 +194,14 @@ def test_plugin_no_load_ref(cli, datafiles, ref_storage):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_plugin_preflight_error(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "plugin-preflight-error")
+    project = os.path.join(datafiles, "plugin-preflight-error")
     result = cli.run(project=project, args=["source", "fetch", "error.bst"])
     result.assert_main_error(ErrorDomain.SOURCE, "the-preflight-error")
 
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_duplicate_plugins(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "duplicate-plugins")
+    project = os.path.join(datafiles, "duplicate-plugins")
     result = cli.run(project=project, silent=True, args=["show", "element.bst"])
     result.assert_main_error(ErrorDomain.PLUGIN, "duplicate-plugin")
 
@@ -211,7 +211,7 @@ def test_duplicate_plugins(cli, datafiles):
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_project_refs_options(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "refs-options")
+    project = os.path.join(datafiles, "refs-options")
 
     result1 = cli.run(
         project=project,
@@ -245,6 +245,6 @@ def test_element_path_project_path_contains_symlinks(cli, datafiles, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_empty_depends(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "empty-depends")
+    project = os.path.join(datafiles, "empty-depends")
     result = cli.run(project=project, args=["show", "manual.bst"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)

@@ -1,6 +1,10 @@
 from buildstream import Source
 
 
+class CustomError(Exception):
+    pass
+
+
 class ConsistencyBugSource(Source):
 
     BST_MIN_VERSION = "2.0"
@@ -20,7 +24,7 @@ class ConsistencyBugSource(Source):
     def is_cached(self):
 
         # Raise an unhandled exception (not a BstError)
-        raise Exception("Something went terribly wrong")
+        raise CustomError("Something went terribly wrong")
 
     def get_ref(self):
         return None

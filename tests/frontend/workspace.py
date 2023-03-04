@@ -440,7 +440,7 @@ def test_close_removed(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_close_nonexistant_element(cli, tmpdir, datafiles):
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "tar")
-    element_path = os.path.join(datafiles.dirname, datafiles.basename, "elements", element_name)
+    element_path = os.path.join(datafiles, "elements", element_name)
 
     # First brutally remove the element.bst file, ensuring that
     # the element does not exist anymore in the project where

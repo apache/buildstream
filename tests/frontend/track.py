@@ -90,7 +90,7 @@ def test_track_single(cli, tmpdir, datafiles):
 @pytest.mark.parametrize("ref_storage", [("inline"), ("project-refs")])
 @pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_track_optional(cli, tmpdir, datafiles, ref_storage):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "track-optional-" + ref_storage)
+    project = os.path.join(datafiles, "track-optional-" + ref_storage)
     dev_files_path = os.path.join(project, "files")
     element_path = os.path.join(project, "target.bst")
 
@@ -398,7 +398,7 @@ def test_track_error_cannot_write_file(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
 def test_no_needless_overwrite(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     dev_files_path = os.path.join(project, "files", "dev-files")
     element_path = os.path.join(project, "elements")
     target = "track-test-target.bst"

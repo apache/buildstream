@@ -32,7 +32,6 @@ from .resources import Resources
 from .jobs import JobStatus
 from ..types import FastEnum
 from .._profile import Topics, PROFILER
-from ..plugin import Plugin
 from .. import _signals
 
 

@@ -31,7 +31,7 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("value,expected", [("pony", "a pony"), ("horsy", "a horsy")], ids=["pony", "horsy"])
 def test_resolve_project_root_conditional(cli, datafiles, value, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-project-root")
+    project = os.path.join(datafiles, "option-project-root")
     result = cli.run(
         project=project,
         silent=True,
@@ -48,7 +48,7 @@ def test_resolve_project_root_conditional(cli, datafiles, value, expected):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("value,expected", [("pony", "a pony"), ("horsy", "a horsy")], ids=["pony", "horsy"])
 def test_resolve_element_override_conditional(cli, datafiles, value, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "option-element-override")
+    project = os.path.join(datafiles, "option-element-override")
     result = cli.run(
         project=project,
         silent=True,
@@ -72,7 +72,7 @@ def test_resolve_element_override_conditional(cli, datafiles, value, expected):
     ids=["name", "options"],
 )
 def test_restricted_conditionals(cli, datafiles, project_dir, provenance):
-    project = os.path.join(datafiles.dirname, datafiles.basename, project_dir)
+    project = os.path.join(datafiles, project_dir)
     result = cli.run(
         project=project,
         silent=True,

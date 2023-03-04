@@ -34,6 +34,10 @@ REMOTE_ASSET_ARTIFACT_URN_TEMPLATE = "urn:fdc:buildstream.build:2020:artifact:{}
 REMOTE_ASSET_SOURCE_URN_TEMPLATE = "urn:fdc:buildstream.build:2020:source:{}"
 
 
+class ArtifactSharror(Exception):
+    pass
+
+
 class BaseArtifactShare:
     def __init__(self):
         multiprocessing_context = multiprocessing.get_context("forkserver")
@@ -47,7 +51,7 @@ class BaseArtifactShare:
         port = q.get()
 
         if port is None:
-            raise Exception("Error occurred when starting artifact server.")
+            raise ArtifactSharror("Error occurred when starting artifact server.")
 
         self.repo = "http://localhost:{}".format(port)
 

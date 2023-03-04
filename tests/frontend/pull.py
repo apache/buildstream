@@ -357,7 +357,7 @@ def test_pull_missing_blob_split_share(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull_missing_local_blob(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     repo = create_repo("tar", str(tmpdir))
     repo.create(os.path.join(str(datafiles), "files"))
     element_dir = os.path.join(str(tmpdir), "elements")

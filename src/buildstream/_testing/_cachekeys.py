@@ -18,6 +18,10 @@ from collections import OrderedDict
 from .runcli import Cli
 
 
+class CacheKeyTestError(Exception):
+    pass
+
+
 def check_cache_key_stability(project_path: os.PathLike, cli: Cli) -> None:
     """
     Check that the cache key of various elements has not changed.
@@ -105,7 +109,7 @@ def _load_expected_keys(project_dir, actual_keys, raise_error=True):
         except FileNotFoundError:
             expected_key = None
             if raise_error:
-                raise Exception(
+                raise CacheKeyTestError(
                     "Cache key test needs update, "
                     + "expected file {} not found.\n\n".format(expected)
                     + "Use python3 -m buildstream._testing._update_cachekeys in the"

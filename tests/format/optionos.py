@@ -46,7 +46,7 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 )
 def test_conditionals(cli, datafiles, system, value, expected):
     with override_platform_uname(system=system):
-        project = os.path.join(datafiles.dirname, datafiles.basename, "option-os")
+        project = os.path.join(datafiles, "option-os")
 
         bst_args = []
         if value is not None:
@@ -64,7 +64,7 @@ def test_conditionals(cli, datafiles, system, value, expected):
 def test_unsupported_arch(cli, datafiles):
 
     with override_platform_uname(system="ULTRIX"):
-        project = os.path.join(datafiles.dirname, datafiles.basename, "option-os")
+        project = os.path.join(datafiles, "option-os")
         result = cli.run(
             project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
         )
