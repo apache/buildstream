@@ -235,8 +235,12 @@ class DownloadableFileSource(Source):
                 return self.ref
 
             # Make sure url-specific mirror dir exists.
-            if not os.path.isdir(self._mirror_dir):
-                os.makedirs(self._mirror_dir)
+            try:
+                os.makedirs(self._mirror_dir, exist_ok=True)
+            except FileExistsError as e:
+                raise SourceError(
+                    "{}: Mirror directory exists but is not a directory: {}".format(self, self._mirror_dir)
+                ) from e
 
             # Store by sha256sum
             sha256 = utils.sha256sum(local_file)
