@@ -20,6 +20,8 @@ requires = [
     # Require a new enough cython for the python versions we support
     "Cython>=0.29.25",
     "packaging",
+    # Versioneer is a build time dependency
+    "versioneer[toml]",
 ]
 build-backend = "setuptools.build_meta"
 
