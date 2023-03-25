@@ -99,21 +99,9 @@ def _download_file(opener_creator, url, etag, directory):
         request.add_header("If-None-Match", etag)
 
     try:
-        with contextlib.closing(opener.open(request)) as response:
-            info = response.info()
-
-            # some servers don't honor the 'If-None-Match' header
-            if etag and info["ETag"] == etag:
-                return None, None, None
-
-            etag = info["ETag"]
-
-            filename = info.get_filename(default_name)
-            filename = os.path.basename(filename)
-            local_file = os.path.join(directory, filename)
-            with open(local_file, "wb") as dest:
-                shutil.copyfileobj(response, dest)
-
+        filename = os.path.join(directory, os.path.basename(url))
+        local_file, headers = urllib.request.urlretrieve(request, filename)
+        etag = info["ETag"]
     except urllib.error.HTTPError as e:
         if e.code == 304:
             # 304 Not Modified.
