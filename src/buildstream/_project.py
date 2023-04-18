@@ -18,6 +18,7 @@
 from typing import TYPE_CHECKING, Optional, Dict, Union, List
 
 import os
+import sys
 import urllib.parse
 from pathlib import Path
 from pluginbase import PluginBase
@@ -283,7 +284,10 @@ class Project:
             )
 
         try:
-            full_resolved_path = full_path.resolve(strict=True)
+            if sys.version_info[0] == 3 and sys.version_info[1] < 6:
+                full_resolved_path = full_path.resolve()
+            else:
+                full_resolved_path = full_path.resolve(strict=True)  # pylint: disable=unexpected-keyword-arg
         except FileNotFoundError:
             provenance = node.get_provenance()
             raise LoadError(

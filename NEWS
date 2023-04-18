@@ -155,7 +155,7 @@ buildstream 1.95.0
 
 Core
 ----
-  o BuildStream now requires Python >= 3.7 and also supports Python 3.10.
+  o BuildStream now also supports Python 3.10.
 
 
 API

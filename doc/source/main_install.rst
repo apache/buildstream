@@ -32,10 +32,9 @@ Installing Dependencies
 
 Runtime requirements
 ~~~~~~~~~~~~~~~~~~~~
-
 BuildStream requires the following Python environment to run:
 
-- python3 >= 3.7
+- python3 >= 3.6
 - PyPI packages as specified in
   `requirements.in <https://github.com/apache/buildstream/blob/master/requirements/requirements.in>`_.
 
