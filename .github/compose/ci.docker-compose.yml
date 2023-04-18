@@ -34,6 +34,10 @@ services:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-${CI_IMAGE_VERSION:-latest}
 
+  centos-7.7.1908:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.7.1908-${CI_IMAGE_VERSION:-latest}
+
   # Ensure that tests also pass in the absence of a sandboxing tool
   fedora-missing-deps:
     <<: *tests-template

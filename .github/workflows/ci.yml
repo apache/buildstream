@@ -39,6 +39,7 @@ jobs:
           - debian-10
           - fedora-36
           - fedora-37
+          - centos-7.7.1908
           - fedora-missing-deps
           - lint
           - mypy
