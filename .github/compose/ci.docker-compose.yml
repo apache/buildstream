@@ -94,6 +94,11 @@ services:
   # on the PyPA official 'manylinux' images that define the base ABI for
   # Python binary packages.
 
+  wheels-manylinux_2_28-cp36:
+    <<: *tests-template
+    image: quay.io/pypa/manylinux_2_28_x86_64
+    command: .github/wheel-helpers/test-wheel-manylinux.sh cp36-cp36m-manylinux_2_28_x86_64 /opt/python/cp36-cp36m/bin/python3
+
   wheels-manylinux_2_28-cp37:
     <<: *tests-template
     image: quay.io/pypa/manylinux_2_28_x86_64

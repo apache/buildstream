@@ -122,6 +122,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install python3.6
+        run: |
+          sudo apt-get install python3.6
+
       - name: Fetch latest BuildBox release
         run: ${GITHUB_WORKSPACE}/.github/wheel-helpers/fetch-latest-buildbox-release.sh
 
@@ -143,6 +147,7 @@ jobs:
         # The names here should map to a valid service defined in
         # "../compose/ci.docker-compose.yml"
         test-name:
+          - wheels-manylinux_2_28-cp36
           - wheels-manylinux_2_28-cp37
           - wheels-manylinux_2_28-cp38
           - wheels-manylinux_2_28-cp39
