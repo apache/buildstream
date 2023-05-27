@@ -93,6 +93,9 @@ class SandboxRemote(SandboxREAPI):
             except grpc.RpcError as e:
                 status_code = e.code()
 
+                if last_operation and status_code == grpc.StatusCode.UNAVAILABLE:
+                    return last_operation
+
                 if status_code in (
                     grpc.StatusCode.INVALID_ARGUMENT,
                     grpc.StatusCode.FAILED_PRECONDITION,
