@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   tests:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     continue-on-error: ${{ matrix.allow-failure || false }}
 
     strategy:
@@ -37,8 +37,8 @@ jobs:
         # "../compose/ci.docker-compose.yml"
         test-name:
           - debian-10
-          - fedora-36
           - fedora-37
+          - fedora-38
           - fedora-missing-deps
           - lint
           - mypy
@@ -60,7 +60,7 @@ jobs:
 
   # Matrix of tests which run against remote services which we bring up adjacently
   service-tests:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
 
     strategy:
       matrix:
@@ -84,7 +84,7 @@ jobs:
           ${GITHUB_WORKSPACE}/.github/run-ci.sh --service ${{ matrix.test-name }}
 
   build_docs:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Check out repository
         uses: actions/checkout@v2

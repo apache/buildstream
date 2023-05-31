@@ -1,7 +1,7 @@
 version: '3.4'
 
 x-tests-template: &tests-template
-    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:36-${CI_IMAGE_VERSION:-latest}
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:38-${CI_IMAGE_VERSION:-latest}
     command: tox -vvvvv -- --color=yes --integration
     environment:
       TOXENV: ${CI_TOXENV_ALL}
@@ -22,13 +22,13 @@ x-tests-template: &tests-template
 
 services:
 
-  fedora-36:
-    <<: *tests-template
-    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:36-${CI_IMAGE_VERSION:-latest}
-
   fedora-37:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:37-${CI_IMAGE_VERSION:-latest}
+
+  fedora-38:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:38-${CI_IMAGE_VERSION:-latest}
 
   debian-10:
     <<: *tests-template
