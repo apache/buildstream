@@ -107,12 +107,17 @@ def _download_file(opener_creator, url, etag, directory):
                 return None, None, None
 
             etag = info["ETag"]
+            length = info.get("Content-Length")
 
             filename = info.get_filename(default_name)
             filename = os.path.basename(filename)
             local_file = os.path.join(directory, filename)
             with open(local_file, "wb") as dest:
                 shutil.copyfileobj(response, dest)
+
+                actual_length = dest.tell()
+                if length and actual_length < int(length):
+                    raise ValueError(f"Partial file {actual_length}/{length}")
 
     except urllib.error.HTTPError as e:
         if e.code == 304:
@@ -122,7 +127,7 @@ def _download_file(opener_creator, url, etag, directory):
             return None, None, None
 
         return None, None, str(e)
-    except (urllib.error.URLError, urllib.error.ContentTooShortError, OSError, ValueError) as e:
+    except (urllib.error.URLError, OSError, ValueError) as e:
         # Note that urllib.request.Request in the try block may throw a
         # ValueError for unknown url types, so we handle it here.
         return None, None, str(e)
