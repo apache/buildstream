@@ -83,6 +83,14 @@ class SandboxRemote(SandboxREAPI):
                     operation_iterator = stub.WaitExecution(request)
 
                 for operation in operation_iterator:
+                    metadata = remote_execution_pb2.ExecuteOperationMetadata()
+                    operation.metadata.Unpack(metadata)
+
+                    context = self._get_context()
+                    context.messenger.status("Waiting for remote execution",
+                                             element_name=self._get_element_name(),
+                                             detail=str(metadata))
+
                     if not self.operation_name:
                         self.operation_name = operation.name
                     if operation.done:
