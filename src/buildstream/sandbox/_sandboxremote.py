@@ -273,7 +273,11 @@ class SandboxRemote(SandboxREAPI):
             # Failure of remote execution, usually due to an error in BuildStream
             raise SandboxError("No response returned from server")
 
-        assert not operation.HasField("error") and operation.HasField("response")
+        if operation.HasField("error"):
+            raise SandboxError(f"Non-conforming Server returned an error {operation.error}", detail=operation)
+
+        assert operation.HasField("response")
+
 
         execution_response = remote_execution_pb2.ExecuteResponse()
         # The response is expected to be an ExecutionResponse message
