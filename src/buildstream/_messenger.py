@@ -411,8 +411,11 @@ class Messenger:
         assert not hasattr(self._locals, "log_filename") or self._locals.log_filename is None
 
         # Create the fully qualified logfile in the log directory,
-        # appending the pid and .log extension at the end.
-        self._locals.log_filename = os.path.join(logdir, "{}.{}.log".format(filename, os.getpid()))
+        # appending the timestamp and .log extension at the end.
+        timestamp = datetime.datetime.now()
+        self._locals.log_filename = os.path.join(
+            logdir, "{}.{}.log".format(filename, timestamp.strftime("%Y%m%d-%H%M%S"))
+        )
 
         # Ensure the directory exists first
         directory = os.path.dirname(self._locals.log_filename)

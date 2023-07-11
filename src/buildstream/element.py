@@ -1893,6 +1893,13 @@ class Element(Plugin):
                 # equal to the resolved strict key.
                 #
                 if artifact.strong_key != self.__strict_cache_key:
+
+                    self.info(
+                        "Discarded failed build",
+                        detail="Discarded '{}'\n".format(artifact.strong_key)
+                        + "in non strict mode because intermediate dependencies may have changed.",
+                    )
+
                     artifact = Artifact(
                         self,
                         context,
