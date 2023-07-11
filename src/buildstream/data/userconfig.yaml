@@ -80,6 +80,11 @@ build:
   max-jobs: 0
 
   #
+  # Try to build elements for which a failed build artifact is found
+  #
+  retry-failed: False
+
+  #
   # Control which dependencies to build
   #
   dependencies: none

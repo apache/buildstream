@@ -167,6 +167,9 @@ class Context:
         # Maximum jobs per build
         self.build_max_jobs: Optional[int] = None
 
+        # Retry any existing failed builds
+        self.build_retry_failed: Optional[bool] = None
+
         # Control which dependencies to build
         self.build_dependencies: Optional[_PipelineSelection] = None
 
@@ -427,8 +430,9 @@ class Context:
 
         # Load build config
         build = defaults.get_mapping("build")
-        build.validate_keys(["max-jobs", "dependencies"])
+        build.validate_keys(["max-jobs", "retry-failed", "dependencies"])
         self.build_max_jobs = build.get_int("max-jobs")
+        self.build_retry_failed = build.get_bool("retry-failed")
 
         dependencies = build.get_str("dependencies")
         if dependencies not in ["none", "all"]:

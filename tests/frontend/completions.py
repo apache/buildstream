@@ -152,6 +152,8 @@ def test_commands(cli, cmd, word_idx, expected):
                 "--source-remote ",
                 "--ignore-project-artifact-remotes ",
                 "--ignore-project-source-remotes ",
+                "--retry-failed ",
+                "-r ",
             ],
         ),
         # Test the behavior of completing after an option that has a

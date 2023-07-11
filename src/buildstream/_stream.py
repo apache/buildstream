@@ -369,6 +369,7 @@ class Stream:
     #    source_remotes: Source cache remotes specified on the commmand line
     #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
     #    ignore_project_source_remotes: Whether to ignore source remotes specified by projects
+    #    retry_failed: Try to build elements for which a failed build artifact is found
     #
     # If `remote` specified as None, then regular configuration will be used
     # to determine where to push artifacts to.
@@ -383,10 +384,15 @@ class Stream:
         source_remotes: Iterable[RemoteSpec] = (),
         ignore_project_artifact_remotes: bool = False,
         ignore_project_source_remotes: bool = False,
+        retry_failed: bool = False,
     ):
 
         # Flag the build state
         self._context.build = True
+
+        # Override user configuration if --retry-failed is specified
+        if retry_failed:
+            self._context.build_retry_failed = True
 
         elements = self._load(
             targets,

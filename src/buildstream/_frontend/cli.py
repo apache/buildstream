@@ -470,6 +470,12 @@ def init(app, project_name, min_version, element_path, force, target_directory):
 @click.option(
     "--ignore-project-source-remotes", is_flag=True, help="Ignore remote source cache servers recommended by projects"
 )
+@click.option(
+    "--retry-failed",
+    "-r",
+    is_flag=True,
+    help="Try to build elements for which a failed build artifact is found",
+)
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
 def build(
@@ -480,6 +486,7 @@ def build(
     source_remotes,
     ignore_project_artifact_remotes,
     ignore_project_source_remotes,
+    retry_failed,
 ):
     """Build elements in a pipeline
 
@@ -519,6 +526,7 @@ def build(
             source_remotes=source_remotes,
             ignore_project_artifact_remotes=ignore_project_artifact_remotes,
             ignore_project_source_remotes=ignore_project_source_remotes,
+            retry_failed=retry_failed,
         )
 
 
