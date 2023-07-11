@@ -1,4 +1,4 @@
-.TH "BST SOURCE FETCH" "1" "2020-10-14" "" "bst source fetch Manual"
+.TH "BST SOURCE FETCH" "1" "2023-07-11" "" "bst source fetch Manual"
 .SH NAME
 bst\-source\-fetch \- Fetch sources in a pipeline
 .SH SYNOPSIS
@@ -14,16 +14,13 @@ elements will be fetched.
 When this command is executed from a workspace directory, the default
 is to fetch the workspace element.
 .PP
-By default this will only try to fetch sources which are
-required for the build plan of the specified target element,
-omitting sources for any elements which are already built
-and available in the artifact cache.
+By default this will only try to fetch sources for the specified
+elements.
 .PP
 Specify `--deps` to control which sources to fetch:
 .PP
 
     none:  No dependencies, just the element itself
-    plan:  Only dependencies required for the build plan
     run:   Runtime dependencies, including the element itself
     build: Build time dependencies, excluding the element itself
     all:   All dependencies
@@ -32,8 +29,11 @@ Specify `--deps` to control which sources to fetch:
 \fB\-\-except\fP PATH
 Except certain dependencies from fetching
 .TP
-\fB\-d,\fP \-\-deps [plan|none|build|run|all]
-The dependencies to fetch  [default: plan]
+\fB\-d,\fP \-\-deps [none|build|run|all]
+The dependencies to fetch  [default: none]
 .TP
-\fB\-r,\fP \-\-remote TEXT
-The URL of the remote source cache (defaults to the first configured cache)
+\fB\-\-source\-remote\fP REMOTE
+A remote for downloading sources
+.TP
+\fB\-\-ignore\-project\-source\-remotes\fP
+Ignore remote source cache servers recommended by projects

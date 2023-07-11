@@ -1,9 +1,9 @@
-.TH "BST SHELL" "1" "2020-10-14" "" "bst shell Manual"
+.TH "BST SHELL" "1" "2023-07-11" "" "bst shell Manual"
 .SH NAME
 bst\-shell \- Shell into an element's sandbox environment
 .SH SYNOPSIS
 .B bst shell
-[OPTIONS] [ELEMENT] [COMMAND]...
+[OPTIONS] [TARGET] [COMMAND]...
 .SH DESCRIPTION
 Run a command in the target element's sandbox environment
 .PP
@@ -37,7 +37,16 @@ Mount a file or directory into the sandbox
 Create an isolated build sandbox
 .TP
 \fB\-t,\fP \-\-use\-buildtree
-Stage a buildtree. Will fail if a buildtree is not available. --pull and pull-buildtrees configuration is needed if trying to query for remotely cached buildtrees.
+Stage a buildtree. Will fail if a buildtree is not available. pull-buildtrees configuration is needed if the buildtree is not available locally.
 .TP
-\fB\-\-pull\fP
-Attempt to pull missing or incomplete artifacts
+\fB\-\-artifact\-remote\fP REMOTE
+A remote for uploading and downloading artifacts
+.TP
+\fB\-\-source\-remote\fP REMOTE
+A remote for uploading and downloading cached sources
+.TP
+\fB\-\-ignore\-project\-artifact\-remotes\fP
+Ignore remote artifact cache servers recommended by projects
+.TP
+\fB\-\-ignore\-project\-source\-remotes\fP
+Ignore remote source cache servers recommended by projects

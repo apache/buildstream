@@ -1,4 +1,4 @@
-.TH "BST ARTIFACT CHECKOUT" "1" "2020-10-14" "" "bst artifact checkout Manual"
+.TH "BST ARTIFACT CHECKOUT" "1" "2023-07-11" "" "bst artifact checkout Manual"
 .SH NAME
 bst\-artifact\-checkout \- Checkout contents of an artifact
 .SH SYNOPSIS
@@ -29,8 +29,11 @@ Create a tarball from the artifact contents instead of a file tree. If LOCATION 
 \fB\-\-compression\fP [gz|xz|bz2]
 The compression option of the tarball created.
 .TP
-\fB\-\-pull\fP
-Pull the artifact if it's missing or incomplete.
-.TP
 \fB\-\-directory\fP DIRECTORY
 The directory to checkout the artifact to
+.TP
+\fB\-\-artifact\-remote\fP REMOTE
+A remote for downloading artifacts
+.TP
+\fB\-\-ignore\-project\-artifact\-remotes\fP
+Ignore remote artifact cache servers recommended by projects
