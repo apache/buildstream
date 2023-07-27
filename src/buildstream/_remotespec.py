@@ -312,11 +312,12 @@ class RemoteSpec:
                 elif key == "instance-name":
                     instance_name = val
                 elif key == "type":
-                    remote_type = val
-                    if remote_type not in [RemoteType.INDEX, RemoteType.STORAGE, RemoteType.ALL]:
+                    remote_type = cast(str, RemoteType(val))
+                    allowed_types = [RemoteType.INDEX, RemoteType.STORAGE, RemoteType.ALL]
+                    if remote_type not in allowed_types:
                         raise RemoteError(
                             "Value for remote 'type' must be one of: {}".format(
-                                ", ".join([RemoteType.INDEX, RemoteType.STORAGE, RemoteType.ALL])
+                                ", ".join([str(_type) for _type in allowed_types])
                             )
                         )
                 elif key == "push":
