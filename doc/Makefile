@@ -133,10 +133,8 @@ badges-clean:
 
 badges:
 	mkdir -p source/badges
-	$(CURDIR)/badges.py > source/badges/snapshot.svg
-	$(CURDIR)/badges.py --release > source/badges/release.svg
-	$(CURDIR)/badges.py --redirect > source/badges/snapshot.html
-	$(CURDIR)/badges.py --redirect --release > source/badges/release.html
+	$(CURDIR)/badges.py > source/badges/release.svg
+	$(CURDIR)/badges.py --redirect > source/badges/release.html
 
 
 ############################################################
