@@ -20,6 +20,7 @@ import pytest
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing import generate_project
 
 from tests.testutils import filetypegenerator
 
@@ -229,6 +230,24 @@ def test_project_refs_options(cli, datafiles):
 
     # Assert that the cache keys are different
     assert result1.output != result2.output
+
+
+# Assert that we can correctly track an element that has multiple sources such
+# that a remote source (i.e. `kind: tar`) comes after a `kind: local` source
+# when using project.refs
+#
+# `kind: local` sources are supposed to leave a gap in the project.refs file. However,
+# older versions of buildstream would incorrectly account for this gap. See issue for
+# more details: https://github.com/apache/buildstream/issues/1851
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "project-refs-gap"))
+def test_project_refs_gap(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    generate_project(project, config={
+        "aliases": {"tmpdir": "file:///" + str(tmpdir)},
+        "ref-storage": "project.refs",
+    })
+    result = cli.run(project=project, args=["source", "track", "target.bst"])
+    result.assert_success()
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "element-path"))
