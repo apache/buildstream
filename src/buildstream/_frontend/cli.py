@@ -1292,6 +1292,16 @@ def artifact_show(app, deps, artifacts):
     ),
     help="The dependencies to checkout",
 )
+@click.option(
+    "--use-buildtree",
+    "-t",
+    "cli_buildtree",
+    is_flag=True,
+    help=(
+        "Checkout a buildtree. Will fail if a buildtree is not available. "
+        "pull-buildtrees configuration is needed if the buildtree is not available locally."
+    ),
+)
 @click.option("--integrate/--no-integrate", default=None, is_flag=True, help="Whether to run integration commands")
 @click.option("--hardlinks", is_flag=True, help="Checkout hardlinks instead of copying if possible")
 @click.option(
@@ -1330,6 +1340,7 @@ def artifact_checkout(
     app,
     force,
     deps,
+    cli_buildtree,
     integrate,
     hardlinks,
     tar,
@@ -1345,6 +1356,9 @@ def artifact_checkout(
     is to checkout the artifact of the workspace element.
     """
     from .. import utils
+
+    if cli_buildtree:
+        deps = _PipelineSelection.NONE
 
     if hardlinks and tar:
         click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
@@ -1397,6 +1411,7 @@ def artifact_checkout(
             hardlinks=hardlinks,
             compression=compression,
             tar=bool(tar),
+            usebuildtree=cli_buildtree,
             artifact_remotes=artifact_remotes,
             ignore_project_artifact_remotes=ignore_project_artifact_remotes,
         )

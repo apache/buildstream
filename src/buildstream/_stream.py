@@ -661,6 +661,7 @@ class Stream:
     #    location: Location to checkout the artifact to
     #    force: Whether files can be overwritten if necessary
     #    selection: The selection mode for the specified targets (_PipelineSelection)
+    #    usebuildtree (bool): Whether to use a buildtree as the source, given cli option
     #    integrate: Whether to run integration commands
     #    hardlinks: Whether checking out files hardlinked to
     #               their artifacts is acceptable
@@ -679,6 +680,7 @@ class Stream:
         location: Optional[str] = None,
         force: bool = False,
         selection: str = _PipelineSelection.RUN,
+        usebuildtree: bool = False,
         integrate: bool = True,
         hardlinks: bool = False,
         compression: str = "",
@@ -711,6 +713,24 @@ class Stream:
         self.query_cache(elements)
         self._pull_missing_artifacts(elements)
 
+        # Check if we require a pull queue attempt, with given artifact state and context
+        if usebuildtree:
+            if not element._cached_buildroot():
+                if not element._cached():
+                    message = "Artifact not cached locally or in available remotes"
+                    reason = "missing-buildtree-artifact-not-cached"
+                elif element._buildroot_exists():
+                    message = "Buildtree is not cached locally or in available remotes"
+                    reason = "missing-buildtree-artifact-buildtree-not-cached"
+                else:
+                    message = "Artifact was created without buildtree"
+                    reason = "missing-buildtree-artifact-created-without-buildtree"
+                raise StreamError(message, reason=reason)
+
+            # Raise warning if the element is cached in a failed state
+            if element._cached_failure():
+                self._context.messenger.warn("using a buildtree from a failed build.")
+
         try:
             scope = {
                 _PipelineSelection.RUN: _Scope.RUN,
@@ -718,7 +738,7 @@ class Stream:
                 _PipelineSelection.NONE: _Scope.NONE,
                 _PipelineSelection.ALL: _Scope.ALL,
             }
-            with element._prepare_sandbox(scope=scope[selection], integrate=integrate) as sandbox:
+            with element._prepare_sandbox(scope=scope[selection], integrate=integrate, usebuildtree=usebuildtree) as sandbox:
                 # Copy or move the sandbox to the target directory
                 virdir = sandbox.get_virtual_directory()
                 self._export_artifact(tar, location, compression, element, hardlinks, virdir)
