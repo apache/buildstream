@@ -17,9 +17,6 @@ About
 .. image:: https://docs.buildstream.build/master/_static/release.svg
    :target: https://docs.buildstream.build/master/_static/release.html
 
-.. image:: https://docs.buildstream.build/master/_static/snapshot.svg
-   :target: https://docs.buildstream.build/master/_static/snapshot.html
-
 .. image:: https://img.shields.io/github/workflow/status/apache/buildstream/Merge%20actions
    :alt: GitHub Workflow Status
    :target: https://github.com/apache/buildstream/actions/workflows/merge.yml

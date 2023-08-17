@@ -65,8 +65,7 @@ BADGE_TEMPLATE = """
 """
 
 # The redirect template is for a static html page hosted in the
-# latest docs which always redirects you to the latest snapshot
-# or release on github.
+# latest docs which always redirects you to the latest release on github.
 #
 REDIRECT_TEMPLATE = """
 <!DOCTYPE html>
@@ -83,7 +82,6 @@ REDIRECT_TEMPLATE = """
 
 URL_FORMAT = 'https://github.com/apache/buildstream/releases/tag/{version}'
 RELEASE_COLOR = '#0040FF'
-SNAPSHOT_COLOR = '#FF8000'
 VERSION_TAG_MATCH = r'([0-9]*)\.([0-9]*)\.([0-9]*)'
 
 
@@ -107,7 +105,7 @@ def parse_tag(tag):
 # Call out to git and guess the latest version,
 # this will just return (0, 0, 0) in case of any error.
 #
-def guess_version(release):
+def guess_version():
     try:
         tags_output = subprocess.check_output(['git', 'tag'])
     except subprocess.CalledProcessError:
@@ -118,38 +116,23 @@ def guess_version(release):
     all_tags = tags_output.splitlines()
     all_versions = [parse_tag(tag) for tag in all_tags]
 
-    # Filter the list by the minor point version, if
-    # we are checking for the latest "release" version, then
-    # only pickup even number minor points.
-    #
-    filtered_versions = [
-        version for version in all_versions
-        if (version[1] % 2) == (not release)
-    ]
-
     # Make sure they are sorted, and take the last one
-    sorted_versions = sorted(filtered_versions)
+    sorted_versions = sorted(all_versions)
     latest_version = sorted_versions[-1]
 
     return latest_version
 
 
 @click.command(short_help="Generate the version badges")
-@click.option('--release', is_flag=True, default=False,
-              help="Whether to generate the badge for the release version")
 @click.option('--redirect', is_flag=True, default=False,
               help="Whether to generate the redirect html file")
-def generate_badges(release, redirect):
+def generate_badges(redirect):
     """Generate the version badge svg files
     """
-    major, minor, micro = guess_version(release)
+    major, minor, micro = guess_version()
 
-    if release:
-        badge_name = 'release'
-        color = RELEASE_COLOR
-    else:
-        badge_name = 'snapshot'
-        color = SNAPSHOT_COLOR
+    badge_name = 'release'
+    color = RELEASE_COLOR
 
     version = '{major}.{minor}.{micro}'.format(major=major, minor=minor, micro=micro)
     url_target = URL_FORMAT.format(version=version)

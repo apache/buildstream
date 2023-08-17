@@ -93,24 +93,24 @@ services:
   wheels-manylinux_2_28-cp37:
     <<: *tests-template
     image: quay.io/pypa/manylinux_2_28_x86_64
-    command: .github/wheel-helpers/test-wheel-manylinux.sh cp37-cp37m-manylinux_2_28_x86_64 /opt/python/cp37-cp37m/bin/python3
+    command: .github/wheel-helpers/test-wheel-manylinux.sh cp37 /opt/python/cp37-cp37m/bin/python3
 
   wheels-manylinux_2_28-cp38:
     <<: *tests-template
     image: quay.io/pypa/manylinux_2_28_x86_64
-    command: .github/wheel-helpers/test-wheel-manylinux.sh cp38-cp38-manylinux_2_28_x86_64 /opt/python/cp38-cp38/bin/python3
+    command: .github/wheel-helpers/test-wheel-manylinux.sh cp38 /opt/python/cp38-cp38/bin/python3
 
   wheels-manylinux_2_28-cp39:
     <<: *tests-template
     image: quay.io/pypa/manylinux_2_28_x86_64
-    command: .github/wheel-helpers/test-wheel-manylinux.sh cp39-cp39-manylinux_2_28_x86_64 /opt/python/cp39-cp39/bin/python3
+    command: .github/wheel-helpers/test-wheel-manylinux.sh cp39 /opt/python/cp39-cp39/bin/python3
 
   wheels-manylinux_2_28-cp310:
     <<: *tests-template
     image: quay.io/pypa/manylinux_2_28_x86_64
-    command: .github/wheel-helpers/test-wheel-manylinux.sh cp310-cp310-manylinux_2_28_x86_64 /opt/python/cp310-cp310/bin/python3
+    command: .github/wheel-helpers/test-wheel-manylinux.sh cp310 /opt/python/cp310-cp310/bin/python3
 
   wheels-manylinux_2_28-cp311:
     <<: *tests-template
     image: quay.io/pypa/manylinux_2_28_x86_64
-    command: .github/wheel-helpers/test-wheel-manylinux.sh cp311-cp311-manylinux_2_28_x86_64 /opt/python/cp311-cp311/bin/python3
+    command: .github/wheel-helpers/test-wheel-manylinux.sh cp311 /opt/python/cp311-cp311/bin/python3
