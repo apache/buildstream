@@ -146,7 +146,8 @@ class ProjectRefs:
             if not ensure:
                 return None
 
-            element_list.append({})
+            while len(element_list) <= source_index:
+                element_list.append({})
             node = element_list.mapping_at(source_index)
 
         return node
