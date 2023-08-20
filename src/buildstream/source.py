@@ -308,6 +308,15 @@ class SourceFetcher:
 
         Args:
            url: The url used to download.
+
+        .. note::
+
+           While this must be called in a SourceFetcher initializer for the URL which
+           will be used by the fetcher, note that any URLs which are known and specified
+           in the Source configuration YAML must be marked with either
+           :func:`Source.mark_download_url() <buildstream.source.Source.mark_download_url>` or
+           :func:`Source.translate_url() <buildstream.source.Source.translate_url>` in
+           the :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` implementation.
         """
         self.__alias = _extract_alias(url)
 
@@ -791,6 +800,18 @@ class Source(Plugin):
                 raise SourceError(
                     "{}: Invalid alias '{}' specified in URL: {}".format(self, alias, url),
                     reason="invalid-source-alias",
+                )
+            if not project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=False):
+                raise SourceError(
+                    "{}: No fetch URI found for alias '{}'".format(self, alias),
+                    detail="Check fetch controls in your user configuration",
+                    reason="missing-source-alias-target",
+                )
+            if not project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=True):
+                raise SourceError(
+                    "{}: No tracking URI found for alias '{}'".format(self, alias),
+                    detail="Check track controls in your user configuration",
+                    reason="missing-source-alias-target",
                 )
 
     def get_project_directory(self) -> str:
@@ -1401,6 +1422,7 @@ class Source(Plugin):
                 self.fetch(**kwargs)
                 return
 
+            last_error = None
             for uri in project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=False):
                 new_source = self.__clone_for_uri(uri)
                 try:
