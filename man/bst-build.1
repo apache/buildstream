@@ -1,4 +1,4 @@
-.TH "BST BUILD" "1" "2020-10-14" "" "bst build Manual"
+.TH "BST BUILD" "1" "2023-07-11" "" "bst build Manual"
 .SH NAME
 bst\-build \- Build elements in a pipeline
 .SH SYNOPSIS
@@ -14,16 +14,31 @@ elements will be built.
 When this command is executed from a workspace directory, the default
 is to build the workspace element.
 .PP
-Specify `--deps` to control which dependencies to build:
+Specify `--deps` to control which dependencies must be built:
 .PP
 
-    plan:  Only dependencies required for the build plan
+    none:  No dependencies, just the element itself
     build: Build time dependencies, excluding the element itself
     all:   All dependencies
+.PP
+Dependencies that are consequently required to build the requested
+elements will be built on demand.
 .SH OPTIONS
 .TP
-\fB\-d,\fP \-\-deps [build|plan|all]
+\fB\-d,\fP \-\-deps [none|build|all]
 The dependencies to build
 .TP
-\fB\-r,\fP \-\-remote TEXT
-The URL of the remote cache (defaults to the first configured cache)
+\fB\-\-artifact\-remote\fP REMOTE
+A remote for uploading and downloading artifacts
+.TP
+\fB\-\-source\-remote\fP REMOTE
+A remote for uploading and downloading cached sources
+.TP
+\fB\-\-ignore\-project\-artifact\-remotes\fP
+Ignore remote artifact cache servers recommended by projects
+.TP
+\fB\-\-ignore\-project\-source\-remotes\fP
+Ignore remote source cache servers recommended by projects
+.TP
+\fB\-r,\fP \-\-retry\-failed
+Try to build elements for which a failed build artifact is found

@@ -1857,7 +1857,30 @@ class Element(Plugin):
         # Attempt to pull artifact with the strict cache key
         pulled = pull and artifact.pull(pull_buildtrees=pull_buildtrees)
 
+        # Ignore failed build artifacts if a retry was requested
+        ignore_failed_artifact = context.build and context.build_retry_failed
+
         if artifact.cached() or strict:
+            if artifact.cached() and ignore_failed_artifact:
+                success, _, _ = artifact.load_build_result()
+                if not success:
+
+                    self.info(
+                        "Discarded failed build",
+                        detail="Discarded '{}'\n".format(artifact.strong_key)
+                        + "because retrying failed builds is enabled.",
+                    )
+
+                    artifact = Artifact(
+                        self,
+                        context,
+                        strong_key=self.__cache_key,
+                        strict_key=self.__strict_cache_key,
+                        weak_key=self.__weak_cache_key,
+                    )
+                    artifact._cached = False
+                    pulled = False
+
             self.__artifact = artifact
             return pulled
         elif self.__pull_pending:
@@ -1892,7 +1915,17 @@ class Element(Plugin):
                 # build in non-strict mode unless the failed artifact's strong key is
                 # equal to the resolved strict key.
                 #
-                if artifact.strong_key != self.__strict_cache_key:
+                if ignore_failed_artifact or artifact.strong_key != self.__strict_cache_key:
+
+                    if ignore_failed_artifact:
+                        reason = "because retrying failed builds is enabled."
+                    else:
+                        reason = "in non strict mode because intermediate dependencies may have changed."
+                    self.info(
+                        "Discarded failed build",
+                        detail="Discarded '{}'\n{}".format(artifact.strong_key, reason),
+                    )
+
                     artifact = Artifact(
                         self,
                         context,

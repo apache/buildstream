@@ -332,6 +332,14 @@ Attributes
   available on the host and limit this with a hard coded value of ``8``, which was
   found to be an optimial number when building even on hosts with many cores.
 
+* ``retry-failed``
+
+  Try to build elements for which a failed build artifact is found when running
+  :ref:`bst build <invoking_build>`.
+
+  This is useful in the case that a build has failed due to insufficient resources
+  such as memory or disk space.
+
 * ``dependencies``
 
   This instructs what dependencies of the target elements should be built, valid

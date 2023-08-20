@@ -1,11 +1,11 @@
-.TH "BST ARTIFACT PUSH" "1" "2020-10-14" "" "bst artifact push Manual"
+.TH "BST ARTIFACT PUSH" "1" "2023-07-11" "" "bst artifact push Manual"
 .SH NAME
 bst\-artifact\-push \- Push a built artifact
 .SH SYNOPSIS
 .B bst artifact push
 [OPTIONS] [ARTIFACTS]...
 .SH DESCRIPTION
-Push a built artifact to a remote artifact cache.
+Push built artifacts to a remote artifact cache, possibly pulling them first.
 .PP
 Specifying no elements will result in pushing the default targets
 of the project. If no default targets are configured, all project
@@ -13,9 +13,6 @@ elements will be pushed.
 .PP
 When this command is executed from a workspace directory, the default
 is to push the workspace element.
-.PP
-The default destination is the highest priority configured cache. You can
-override this by passing a different cache URL with the `--remote` flag.
 .PP
 If bst has been configured to include build trees on artifact pulls,
 an attempt will be made to pull any required build trees to avoid the
@@ -33,5 +30,8 @@ Specify `--deps` to control which artifacts to push:
 \fB\-d,\fP \-\-deps [build|none|run|all]
 The dependencies to push  [default: none]
 .TP
-\fB\-r,\fP \-\-remote TEXT
-The URL of the remote cache (defaults to the first configured cache)
+\fB\-\-artifact\-remote\fP REMOTE
+A remote for uploading artifacts
+.TP
+\fB\-\-ignore\-project\-artifact\-remotes\fP
+Ignore remote artifact cache servers recommended by projects

@@ -1,4 +1,4 @@
-.TH "BST SHOW" "1" "2020-10-14" "" "bst show Manual"
+.TH "BST SHOW" "1" "2023-07-11" "" "bst show Manual"
 .SH NAME
 bst\-show \- Show elements in the pipeline
 .SH SYNOPSIS
@@ -21,7 +21,6 @@ Specify ``--deps`` to control which elements to show:
 .PP
 
     none:  No dependencies, just the element itself
-    plan:  Dependencies required for a build plan
     run:   Runtime dependencies, including the element itself
     build: Build time dependencies, excluding the element itself
     all:   All dependencies
@@ -64,7 +63,7 @@ If you want to use a newline in a format string in bash, use the '$' modifier:
 \fB\-\-except\fP PATH
 Except certain dependencies
 .TP
-\fB\-d,\fP \-\-deps [none|plan|run|build|all]
+\fB\-d,\fP \-\-deps [none|run|build|all]
 The dependencies to show  [default: all]
 .TP
 \fB\-\-order\fP [stage|alpha]

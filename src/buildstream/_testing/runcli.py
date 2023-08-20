@@ -235,6 +235,13 @@ class Result:
 
         return list(pulled)
 
+    def get_discarded_elements(self):
+        discarded = re.findall(r"\[\s*(?:main|pull):(\S+)\s*\]\s*INFO\s*Discarded failed build", self.stderr)
+        if discarded is None:
+            return []
+
+        return list(discarded)
+
 
 class Cli:
     def __init__(self, directory, verbose=True, default_options=None):
