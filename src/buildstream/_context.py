@@ -57,7 +57,7 @@ class _CacheConfig:
         node.validate_keys(["override-project-caches", "servers"])
         servers = node.get_sequence("servers", default=[], allowed_types=[MappingNode])
 
-        override_projects: bool = node.get_bool("push", default=False)
+        override_projects: bool = node.get_bool("override-project-caches", default=False)
         remote_specs: List[RemoteSpec] = [RemoteSpec.new_from_node(node) for node in servers]
 
         return cls(override_projects, remote_specs)
