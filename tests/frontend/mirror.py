@@ -277,35 +277,39 @@ def test_mirror_fetch_multi(cli, tmpdir, project_config, user_config, expect_suc
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.usefixtures("datafiles")
 @pytest.mark.parametrize(
-    "project_config,user_config,alias_success,expect_success,source",
+    "project_config,user_config,alias_success,expect_success,source,expect_missing_aliases",
     [
         #
         # Test "alias" fetch source policy (aliases only)
         #
         # Test that we fail to fetch from the primary alias even if the user config defines a mirror
-        (MirrorConfig.NO_MIRRORS, MirrorConfig.SUCCESS_MIRRORS, False, False, "aliases"),
+        (MirrorConfig.NO_MIRRORS, MirrorConfig.SUCCESS_MIRRORS, False, False, "aliases", False),
         # Test that we fail to fetch from the primary alias even if the project config defines a mirror
-        (MirrorConfig.SUCCESS_MIRRORS, MirrorConfig.NO_MIRRORS, False, False, "aliases"),
+        (MirrorConfig.SUCCESS_MIRRORS, MirrorConfig.NO_MIRRORS, False, False, "aliases", False),
         # Test that we succeed to fetch from the primary alias even if the user config defines a failing mirror
-        (MirrorConfig.FAIL_MIRRORS, MirrorConfig.FAIL_MIRRORS, True, True, "aliases"),
+        (MirrorConfig.FAIL_MIRRORS, MirrorConfig.FAIL_MIRRORS, True, True, "aliases", False),
         #
         # Test "mirrors" fetch source policy (mirrors only, no base aliases)
         #
         # Test that we fail to fetch from primary alias even if it is the only one configured to succeed
-        (MirrorConfig.FAIL_MIRRORS, MirrorConfig.FAIL_MIRRORS, True, False, "mirrors"),
+        (MirrorConfig.FAIL_MIRRORS, MirrorConfig.FAIL_MIRRORS, True, False, "mirrors", False),
         # Test that we succeed to fetch from mirrors when primary alias is set to succeed
         # (doesn't prove that primary alias is not consulted, but tests that we indeed consult
         # mirrors when configued in mirror mode)
-        (MirrorConfig.SUCCESS_MIRRORS, MirrorConfig.NO_MIRRORS, True, True, "mirrors"),
-        (MirrorConfig.FAIL_MIRRORS, MirrorConfig.SUCCESS_MIRRORS, True, True, "mirrors"),
+        (MirrorConfig.SUCCESS_MIRRORS, MirrorConfig.NO_MIRRORS, True, True, "mirrors", False),
+        (MirrorConfig.FAIL_MIRRORS, MirrorConfig.SUCCESS_MIRRORS, True, True, "mirrors", False),
+        #
+        # Test preflight errors when there are missing mirror alias targets
+        #
+        (MirrorConfig.NO_MIRRORS, MirrorConfig.NO_MIRRORS, True, False, "mirrors", True),
         #
         # Test "user" fetch source policy (only mirrors defined in user configuration)
         #
         # Test that we fail to fetch even if the alias is good and the project defined mirrors are good
-        (MirrorConfig.SUCCESS_MIRRORS, MirrorConfig.FAIL_MIRRORS, True, False, "user"),
+        (MirrorConfig.SUCCESS_MIRRORS, MirrorConfig.FAIL_MIRRORS, True, False, "user", False),
         # Test that we succeed to fetch when alias is bad and project mirrors are bad
         # (this doesn't prove that project aliases and mirrors are not consulted, but here for completeness)
-        (MirrorConfig.FAIL_MIRRORS, MirrorConfig.SUCCESS_MIRRORS, False, True, "user"),
+        (MirrorConfig.FAIL_MIRRORS, MirrorConfig.SUCCESS_MIRRORS, False, True, "user", False),
     ],
     ids=[
         "aliases-fail-user-config",
@@ -314,11 +318,14 @@ def test_mirror_fetch_multi(cli, tmpdir, project_config, user_config, expect_suc
         "mirrors-fail-bad-mirrors",
         "mirrors-success-project-config",
         "mirrors-success-user-config",
+        "mirrors-fail-inactive",
         "user-fail",
         "user-succees",
     ],
 )
-def test_mirror_fetch_source(cli, tmpdir, project_config, user_config, alias_success, expect_success, source):
+def test_mirror_fetch_source(
+    cli, tmpdir, project_config, user_config, alias_success, expect_success, source, expect_missing_aliases
+):
     output_file = os.path.join(str(tmpdir), "output.txt")
     project_dir = str(tmpdir)
     element_dir = os.path.join(project_dir, "elements")
@@ -349,8 +356,14 @@ def test_mirror_fetch_source(cli, tmpdir, project_config, user_config, alias_suc
             assert "Fetch foo:repo1 succeeded from FOO/repo1" in contents
             assert "Fetch bar:repo2 succeeded from RAB/repo2" in contents
     else:
-        result.assert_main_error(ErrorDomain.STREAM, None)
-        result.assert_task_error(ErrorDomain.SOURCE, None)
+        #
+        # Special case check this failure mode
+        #
+        if expect_missing_aliases:
+            result.assert_main_error(ErrorDomain.SOURCE, "missing-source-alias-target")
+        else:
+            result.assert_main_error(ErrorDomain.STREAM, None)
+            result.assert_task_error(ErrorDomain.SOURCE, None)
 
 
 @pytest.mark.datafiles(DATA_DIR)
