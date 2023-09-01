@@ -9,7 +9,5 @@ ruamel.yaml.clib==0.2.7
 setuptools==67.4.0
 pyroaring==0.3.8
 ujson==5.7.0
-python-dateutil==2.8.2
 ## The following requirements were added by pip freeze:
 MarkupSafe==2.1.2
-six==1.16.0
