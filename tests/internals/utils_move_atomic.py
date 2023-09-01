@@ -14,14 +14,14 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
+from os.path import getmtime
+
 import pytest
 
 from buildstream.utils import (
     move_atomic,
     DirectoryExistsError,
-    _get_file_mtimestamp,
     _set_file_mtime,
-    _parse_timestamp,
 )
 from buildstream._testing._utils.site import have_subsecond_mtime
 
@@ -123,10 +123,6 @@ def test_move_to_empty_dir_set_mtime(src, tmp_path):
     assert dst.joinpath("test").exists()
     _dst = str(dst)
     # set the mtime via stamp
-    timestamp1 = "2020-01-08T11:05:50.832123Z"
-    _set_file_mtime(_dst, _parse_timestamp(timestamp1))
-    assert timestamp1 == _get_file_mtimestamp(_dst)
-    # reset the mtime using an offset stamp
-    timestamp2 = "2010-02-12T12:05:50.832123+01:00"
-    _set_file_mtime(_dst, _parse_timestamp(timestamp2))
-    assert _get_file_mtimestamp(_dst) == "2010-02-12T11:05:50.832123Z"
+    timestamp1 = 1578481550.832123
+    _set_file_mtime(_dst, timestamp1)
+    assert timestamp1 == getmtime(_dst)
