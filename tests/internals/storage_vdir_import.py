@@ -21,7 +21,7 @@ from buildstream import DirectoryError
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
 from buildstream._cas import CASCache
-from buildstream.utils import _set_file_mtime, _parse_timestamp
+from buildstream.utils import _set_file_mtime
 from buildstream._testing._utils.site import have_subsecond_mtime
 
 
@@ -48,7 +48,6 @@ root_filesets = [
 empty_hash_ref = sha256().hexdigest()
 RANDOM_SEED = 69105
 NUM_RANDOM_TESTS = 4
-TIMESTAMP = "2019-12-16T08:49:04.012Z"
 MTIME = 1576486144.0120000
 
 
@@ -69,7 +68,7 @@ def generate_import_root(rootdir, filelist):
             with open(fullpath, "wt", encoding="utf-8") as f:
                 f.write(content)
             # set file mtime to arbitrary
-            _set_file_mtime(fullpath, _parse_timestamp(TIMESTAMP))
+            _set_file_mtime(fullpath, MTIME)
         elif typesymbol == "D":
             os.makedirs(os.path.join(rootdir, path), exist_ok=True)
         elif typesymbol == "S":
@@ -103,7 +102,7 @@ def generate_random_root(rootno, directory):
         elif thing == "file":
             with open(target, "wt", encoding="utf-8") as f:
                 f.write("This is node {}\n".format(i))
-            _set_file_mtime(target, _parse_timestamp(TIMESTAMP))
+            _set_file_mtime(target, MTIME)
         elif thing == "link":
             symlink_type = random.choice(["absolute", "relative", "broken"])
             if symlink_type == "broken" or not things:

@@ -38,12 +38,10 @@ import subprocess
 from subprocess import TimeoutExpired
 import tempfile
 import threading
-import datetime
 import itertools
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Callable, IO, Iterable, Iterator, Optional, Tuple, Union
-from dateutil import parser as dateutil_parser
 from google.protobuf import timestamp_pb2
 
 import psutil
@@ -121,62 +119,6 @@ class FileListResult:
 
         self.files_written = []
         """List of files that were written."""
-
-
-def _make_timestamp(timepoint: float) -> str:
-    """Obtain the ISO 8601 timestamp represented by the time given in seconds.
-
-    Args:
-        timepoint (float): the time since the epoch in seconds
-
-    Returns:
-        (str): the timestamp specified by https://www.ietf.org/rfc/rfc3339.txt
-               with a UTC timezone code 'Z'.
-
-    """
-    assert isinstance(timepoint, float), "Time to render as timestamp must be a float: {}".format(str(timepoint))
-    try:
-        return datetime.datetime.utcfromtimestamp(timepoint).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    except (OverflowError, TypeError):
-        raise UtilError("Failed to make UTC timestamp from {}".format(timepoint))
-
-
-def _get_file_mtimestamp(fullpath: str) -> str:
-    """Obtain the ISO 8601 timestamp represented by the mtime of the
-    file at the given path."""
-    assert isinstance(fullpath, str), "Path to file must be a string: {}".format(str(fullpath))
-    try:
-        mtime = os.path.getmtime(fullpath)
-    except OSError:
-        raise UtilError("Failed to get mtime of file at {}".format(fullpath))
-    return _make_timestamp(mtime)
-
-
-def _parse_timestamp(timestamp: str) -> float:
-    """Parse an ISO 8601 timestamp as specified in
-    https://www.ietf.org/rfc/rfc3339.txt. Only timestamps with the UTC code
-    'Z' or an offset are valid. For example: '2019-12-12T10:23:01.54Z' or
-    '2019-12-12T10:23:01.54+00:00'.
-
-    Args:
-        timestamp (str): the timestamp
-
-    Returns:
-        (float): The time in seconds since epoch represented by the
-            timestamp.
-
-    Raises:
-        UtilError: if extraction of seconds fails
-    """
-    assert isinstance(timestamp, str), "Timestamp to parse must be a string: {}".format(str(timestamp))
-    try:
-        errmsg = "Failed to parse given timestamp: " + timestamp
-        parsed_time = dateutil_parser.isoparse(timestamp)
-        if parsed_time.tzinfo:
-            return parsed_time.timestamp()
-        raise UtilError(errmsg)
-    except (ValueError, OverflowError, TypeError):
-        raise UtilError(errmsg)
 
 
 def _make_protobuf_timestamp(timestamp: timestamp_pb2.Timestamp, timepoint: float):  # pylint: disable=no-member
