@@ -22,6 +22,7 @@ import datetime
 import itertools
 import threading
 import traceback
+from contextlib import ExitStack
 
 # BuildStream toplevel imports
 from ... import utils
@@ -312,11 +313,26 @@ class Job:
             self.action_name, self._message_element_name, self._message_element_key
         )
 
-        # Time, log and and run the action function
-        #
-        with self._messenger.timed_suspendable() as timeinfo, self._messenger.recorded_messages(
-            self._logfile, self._scheduler.context.logdir
-        ) as filename:
+        with ExitStack() as stack:
+            # Time, log and and run the action function
+            #
+            timeinfo = stack.enter_context(self._messenger.timed_suspendable())
+
+            try:
+                filename = stack.enter_context(
+                    self._messenger.recorded_messages(self._logfile, self._scheduler.context.logdir)
+                )
+            except Exception as e:  # pylint: disable=broad-except
+                elapsed = datetime.datetime.now() - timeinfo.start_time
+                self.message(
+                    MessageType.ERROR,
+                    "Error opening log file: {}".format(e),
+                    elapsed=elapsed,
+                    detail=traceback.format_exc(),
+                )
+                self._thread_id = None
+                return _ReturnCode.PERM_FAIL, None
+
             try:
                 self.message(MessageType.START, self.action_name, logfile=filename)
 
