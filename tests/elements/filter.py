@@ -347,8 +347,6 @@ def test_filter_track_multi(datafiles, cli, tmpdir):
     ref = repo.create(os.path.join(str(datafiles), "files"))
     elements_dir = os.path.join(str(tmpdir), "elements")
     project = str(tmpdir)
-    input_name = "input.bst"
-    input2_name = "input2.bst"
 
     project_config = {
         "name": "filter-track-test",
@@ -363,43 +361,41 @@ def test_filter_track_multi(datafiles, cli, tmpdir):
         "sources": [repo.source_config()],
     }
 
-    input_file = os.path.join(elements_dir, input_name)
-    _yaml.roundtrip_dump(input_config, input_file)
+    #
+    # Lets do 10 of them at the same time, this may help regression
+    # test against https://github.com/apache/buildstream/issues/1831
+    #
+    filter_elements = []
+    input_elements = []
+    for num in range(0, 10):
+        input_elt = f"input{num}.bst"
+        input_file = os.path.join(elements_dir, input_elt)
+        _yaml.roundtrip_dump(input_config, input_file)
 
-    input2_config = dict(input_config)
-    input2_file = os.path.join(elements_dir, input2_name)
-    _yaml.roundtrip_dump(input2_config, input2_file)
+        filter_config = {"kind": "filter", "depends": [{"filename": input_elt, "type": "build"}]}
+        filter_elt = f"filter{num}.bst"
+        filter_file = os.path.join(elements_dir, filter_elt)
+        _yaml.roundtrip_dump(filter_config, filter_file)
 
-    filter1_config = {"kind": "filter", "depends": [{"filename": input_name, "type": "build"}]}
-    filter1_file = os.path.join(elements_dir, "filter1.bst")
-    _yaml.roundtrip_dump(filter1_config, filter1_file)
-
-    filter2_config = {"kind": "filter", "depends": [{"filename": input2_name, "type": "build"}]}
-    filter2_file = os.path.join(elements_dir, "filter2.bst")
-    _yaml.roundtrip_dump(filter2_config, filter2_file)
+        input_elements.append(input_elt)
+        filter_elements.append(filter_elt)
 
     # Assert that a fetch is needed
-    states = cli.get_element_states(project, [input_name, input2_name])
-
-    assert states == {
-        input_name: "no reference",
-        input2_name: "no reference",
-    }
+    states = cli.get_element_states(project, input_elements)
+    for key in states:
+        assert states[key] == "no reference"
 
     # Now try to track it
-    result = cli.run(project=project, args=["source", "track", "filter1.bst", "filter2.bst"])
+    result = cli.run(project=project, args=["source", "track"] + filter_elements)
     result.assert_success()
 
     # Now check that a ref field exists
-    new_input = _yaml.load(input_file, shortname=None)
-    source_node = new_input.get_sequence("sources").mapping_at(0)
-    new_ref = source_node.get_str("ref")
-    assert new_ref == ref
-
-    new_input2 = _yaml.load(input2_file, shortname=None)
-    source_node2 = new_input2.get_sequence("sources").mapping_at(0)
-    new_ref2 = source_node2.get_str("ref")
-    assert new_ref2 == ref
+    for elt in input_elements:
+        input_file = os.path.join(elements_dir, elt)
+        new_input = _yaml.load(input_file, shortname=None)
+        source_node = new_input.get_sequence("sources").mapping_at(0)
+        new_ref = source_node.get_str("ref")
+        assert new_ref == ref
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "basic"))
