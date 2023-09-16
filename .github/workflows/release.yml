@@ -91,6 +91,7 @@ jobs:
           - wheels-manylinux_2_28-cp39
           - wheels-manylinux_2_28-cp310
           - wheels-manylinux_2_28-cp311
+          - wheels-manylinux_2_28-cp312
 
     steps:
       - uses: actions/checkout@v3
