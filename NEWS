@@ -1,4 +1,36 @@
 =================
+buildstream 2.1.0
+=================
+
+  o Support new architecture name "la64v100" (#1811)
+
+  o Fix race condition when downloading sources (#1831)
+
+  o Properly handle partial download errors (#1846)
+
+  o Fix regressed ETag handling to prevent redundant file downloads (#1834)
+
+  o Fix parsing remotes specified on the command line (#1850)
+
+  o Fix bug when tracking ref-less sources (like local sources) when
+    using project.refs (#1858)
+
+  o Follow semantic versioning more strictly (#1854)
+
+  o New `bst build --retry-failed` feature (#1849)
+
+  o Fix parsing override-project-caches configuration (#1861)
+
+  o Fix crashes when instructed to only download from mirrors, and
+    some sources have no mirrors defined (#1862)
+
+  o Drop unnecessary dependency on dateutil (#1867)
+
+  o Fix severe hangs when can occur when running out of disk
+    space specifically when attempting to open and write to
+    a new log file (#1865)
+
+=================
 buildstream 2.0.1
 =================
 
