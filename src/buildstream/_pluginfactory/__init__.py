@@ -18,6 +18,7 @@ from .pluginoriginpip import PluginOriginPip
 from .pluginoriginjunction import PluginOriginJunction
 from .sourcefactory import SourceFactory
 from .elementfactory import ElementFactory
+from .sourcemirrorfactory import SourceMirrorFactory
 
 
 # load_plugin_origin()
