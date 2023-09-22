@@ -12,8 +12,7 @@ buildstream 2.1.0
 
   o Fix parsing remotes specified on the command line (#1850)
 
-  o Fix bug when tracking ref-less sources (like local sources) when
-    using project.refs (#1858)
+  o Fix bug when tracking ref-less sources (like local sources) when using project.refs (#1858)
 
   o Follow semantic versioning more strictly (#1854)
 
