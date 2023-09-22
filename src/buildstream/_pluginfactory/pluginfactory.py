@@ -22,6 +22,7 @@ from .. import utils
 from .. import _site
 from ..plugin import Plugin
 from ..source import Source
+from ..sourcemirror import SourceMirror
 from ..element import Element
 from ..node import Node
 from ..utils import UtilError
@@ -314,6 +315,8 @@ class PluginFactory:
             base_type = Source
         elif self._plugin_type == PluginType.ELEMENT:
             base_type = Element
+        elif self._plugin_type == PluginType.SOURCE_MIRROR:
+            base_type = SourceMirror
 
         try:
             if not issubclass(plugin_type, base_type):
