@@ -30,6 +30,9 @@ element_plugins = os.path.join(root, "plugins", "elements")
 # The Source plugin directory
 source_plugins = os.path.join(root, "plugins", "sources")
 
+# The SourceMirror plugin directory
+source_mirror_plugins = os.path.join(root, "plugins", "sourcemirrors")
+
 # Default user configuration
 default_user_config = os.path.join(root, "data", "userconfig.yaml")
 

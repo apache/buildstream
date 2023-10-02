@@ -84,6 +84,8 @@ class PluginFactory:
             self._site_plugins_path = _site.source_plugins
         elif self._plugin_type == PluginType.ELEMENT:
             self._site_plugins_path = _site.element_plugins
+        elif self._plugin_type == PluginType.SOURCE_MIRROR:
+            self._site_plugins_path = _site.source_mirror_plugins
 
         self._site_source = self._plugin_base.make_plugin_source(
             searchpath=[self._site_plugins_path],

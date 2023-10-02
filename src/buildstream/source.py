@@ -217,11 +217,12 @@ Class Reference
 
 import os
 from contextlib import contextmanager
-from typing import Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
+from typing import Iterable, Iterator, Optional, Tuple, TYPE_CHECKING, Union
 
 from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
+from .sourcemirror import SourceMirror
 from .types import SourceRef, CoreWarnings
 from ._exceptions import BstError, ImplError, PluginError
 from .exceptions import ErrorDomain
@@ -281,7 +282,7 @@ class SourceFetcher:
     #############################################################
     #                      Abstract Methods                     #
     #############################################################
-    def fetch(self, alias_override: Optional[str] = None, **kwargs) -> None:
+    def fetch(self, alias_override: Optional[Union[str, SourceMirror]] = None, **kwargs) -> None:
         """Fetch remote sources and mirror them locally, ensuring at least
         that the specific reference is cached locally.
 
@@ -388,8 +389,8 @@ class Source(Plugin):
         meta: MetaSource,
         variables: Variables,
         *,
-        alias_override: Optional[Tuple[str, str]] = None,
-        unique_id: Optional[int] = None
+        alias_override: Optional[Tuple[str, Union[str, SourceMirror]]] = None,
+        unique_id: Optional[int] = None,
     ):
         # Set element_name member before parent init, as needed for debug messaging
         self.__element_name = meta.element_name  # The name of the element owning this source
@@ -697,7 +698,12 @@ class Source(Plugin):
         return self.__mirror_directory
 
     def translate_url(
-        self, url: str, *, alias_override: Optional[str] = None, primary: bool = True, suffix: Optional[str] = None
+        self,
+        url: str,
+        *,
+        alias_override: Optional[Union[str, SourceMirror]] = None,
+        primary: bool = True,
+        suffix: Optional[str] = None,
     ) -> str:
         """Translates the given url which may be specified with an alias
         into a fully qualified url.
@@ -721,6 +727,8 @@ class Source(Plugin):
            the URL was previously marked with :func:`Source.mark_download_url() <buildstream.source.Source.mark_download_url>`
            at :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` time.
         """
+        project = self._get_project()
+
         # Ensure that the download URL is also marked
         self.mark_download_url(url, primary=primary)
 
@@ -729,23 +737,40 @@ class Source(Plugin):
 
         # Alias overriding can happen explicitly (by command-line) or
         # implicitly (the Source being constructed with an __alias_override).
+        #
         if alias_override or self.__alias_override:
+
             url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
-            if url_alias:
-                if alias_override:
-                    url = alias_override + url_body
-                else:
-                    # Implicit alias overrides may only be done for one
-                    # specific alias, so that sources that fetch from multiple
-                    # URLs and use different aliases default to only overriding
-                    # one alias, rather than getting confused.
-                    override_alias = self.__alias_override[0]  # type: ignore
-                    override_url = self.__alias_override[1]  # type: ignore
-                    if url_alias == override_alias:
-                        url = override_url + url_body
-            return url
+            project_alias_url = project.get_alias_url(url_alias, first_pass=self.__first_pass)
+
+            if self.__alias_override is not None:
+                override_alias = self.__alias_override[0]
+                override_mirror = self.__alias_override[1]
+
+                # Implicit alias overrides may only be done for one
+                # specific alias, so that sources that fetch from multiple
+                # URLs and use different aliases default to only overriding
+                # one alias, rather than getting confused.
+                #
+                if url_alias != override_alias:
+                    return url
+
+            elif alias_override is not None:
+                override_mirror = alias_override
+
+            # The default source mirror will give prefix URLs
+            if isinstance(override_mirror, str):
+                return override_mirror + url_body
+            #
+            # Delegate the URL translation to the SourceMirror plugin
+            #
+            return override_mirror.translate_url(
+                alias=url_alias,
+                alias_url=project_alias_url,
+                source_url=url_body,
+            )
+
         else:
-            project = self._get_project()
             return project.translate_url(url, first_pass=self.__first_pass)
 
     def mark_download_url(self, url: str, *, primary: bool = True) -> None:
@@ -1345,7 +1370,7 @@ class Source(Plugin):
     #              primary with either mark_download_url() or
     #              translate_url().
     #
-    def __clone_for_uri(self, uri):
+    def __clone_for_uri(self, mirror):
         project = self._get_project()
         context = self._get_context()
         alias = self._get_alias()
@@ -1363,7 +1388,12 @@ class Source(Plugin):
         )
 
         clone = source_kind(
-            context, project, meta, self.__variables, alias_override=(alias, uri), unique_id=self._unique_id
+            context,
+            project,
+            meta,
+            self.__variables,
+            alias_override=(alias, mirror),
+            unique_id=self._unique_id,
         )
 
         # Do the necessary post instantiation routines here
@@ -1406,9 +1436,9 @@ class Source(Plugin):
 
                 alias = fetcher._get_alias()
                 last_error = None
-                for uri in project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=False):
+                for mirror in project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=False):
                     try:
-                        fetcher.fetch(uri)
+                        fetcher.fetch(mirror)
                     # FIXME: Need to consider temporary vs. permanent failures,
                     #        and how this works with retries.
                     except BstError as e:
@@ -1435,8 +1465,9 @@ class Source(Plugin):
                 return
 
             last_error = None
-            for uri in project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=False):
-                new_source = self.__clone_for_uri(uri)
+            for mirror in project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=False):
+
+                new_source = self.__clone_for_uri(mirror)
                 try:
                     new_source.fetch(**kwargs)
                 # FIXME: Need to consider temporary vs. permanent failures,
@@ -1466,8 +1497,8 @@ class Source(Plugin):
         # NOTE: We are assuming here that tracking only requires substituting the
         #       first alias used
         last_error = None
-        for uri in reversed(project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=True)):
-            new_source = self.__clone_for_uri(uri)
+        for mirror in reversed(project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=True)):
+            new_source = self.__clone_for_uri(mirror)
             try:
                 ref = new_source.track(**kwargs)  # pylint: disable=assignment-from-none
             # FIXME: Need to consider temporary vs. permanent failures,
@@ -1475,7 +1506,9 @@ class Source(Plugin):
             except BstError as e:
                 last_error = e
                 continue
+
             return ref
+
         raise last_error
 
     @classmethod
