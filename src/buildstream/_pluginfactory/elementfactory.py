@@ -14,8 +14,16 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+from typing import TYPE_CHECKING, Type, cast
+
 from .pluginfactory import PluginFactory
 from .pluginorigin import PluginType
+from .._loader import LoadElement
+from ..element import Element
+
+if TYPE_CHECKING:
+    from .._context import Context
+    from .._project import Project
 
 
 # A ElementFactory creates Element instances
@@ -30,8 +38,7 @@ class ElementFactory(PluginFactory):
 
     # create():
     #
-    # Create an Element object, the pipeline uses this to create Element
-    # objects on demand for a given pipeline.
+    # Create an Element object.
     #
     # Args:
     #    context (object): The Context object for processing
@@ -44,7 +51,8 @@ class ElementFactory(PluginFactory):
     #    PluginError (if the kind lookup failed)
     #    LoadError (if the element itself took issue with the config)
     #
-    def create(self, context, project, load_element):
-        element_type, default_config = self.lookup(context.messenger, load_element.kind, load_element.node)
+    def create(self, context: "Context", project: "Project", load_element: LoadElement) -> Element:
+        plugin_type, default_config = self.lookup(context.messenger, load_element.kind, load_element.node)
+        element_type = cast(Type[Element], plugin_type)
         element = element_type(context, project, load_element, default_config)
         return element
