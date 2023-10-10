@@ -28,15 +28,6 @@ from buildstream.exceptions import ErrorDomain, LoadErrorReason
 def get_default_min_version():
     bst_major, bst_minor = utils.get_bst_version()
 
-    # For the version check, artificially set the version to at least
-    # version 2.0
-    #
-    # TODO: Remove this code block after releasing 2.0
-    #
-    if bst_major < 2:
-        bst_major = 2
-        bst_minor = 0
-
     return "{}.{}".format(bst_major, bst_minor)
 
 
