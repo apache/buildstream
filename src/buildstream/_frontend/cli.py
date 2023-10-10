@@ -408,7 +408,7 @@ def help_command(ctx, command):
 @click.option(
     "--min-version",
     type=click.STRING,
-    default="2.0",
+    default="2.1",
     show_default=True,
     help="The required format version",
 )
