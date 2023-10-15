@@ -169,6 +169,8 @@ cdef class Representer:
         return RepresenterState.wait_key
 
     cdef RepresenterState _handle_wait_key_ScalarEvent(self, object ev):
+        if ev.value in self.output[-1]:
+            raise YAMLLoadError(f"Duplicate key {ev.value} at line {ev.start_mark.line} column {ev.start_mark.column}")
         self.keys.append(ev.value)
         return RepresenterState.wait_value
 
