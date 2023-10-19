@@ -760,7 +760,9 @@ class Source(Plugin):
 
                 assert (
                     self.__expected_alias is None or self.__expected_alias == expected_alias
-                ), "Primary URL marked twice with different URLs"
+                ), "Attempt to mark primary URL with {}, already marked with {}".format(
+                    expected_alias, self.__expected_alias
+                )
 
                 self.__expected_alias = expected_alias
 
