@@ -72,6 +72,7 @@ class RemoteSpec:
         client_key: str = None,
         client_cert: str = None,
         instance_name: Optional[str] = None,
+        connection_config: Optional[MappingNode] = None,
         spec_node: Optional[MappingNode] = None,
     ) -> None:
 
@@ -112,6 +113,9 @@ class RemoteSpec:
         # The grpc credentials object
         self._credentials: Optional[ChannelCredentials] = None
 
+        # Various connection parameters for grpc connection
+        self._connection_config: Optional[MappingNode] = connection_config
+
     #
     # Implement dunder methods to support hashing and
     # comparisons.
@@ -129,6 +133,7 @@ class RemoteSpec:
                 self.server_cert_file,
                 self.client_key_file,
                 self.client_cert_file,
+                self.keepalive_time,
             )
         )
 
@@ -175,6 +180,14 @@ class RemoteSpec:
                 certificate_chain=self.client_cert,
             )
         return self._credentials
+
+    # grpc keepalive time
+    #
+    @property
+    def keepalive_time(self) -> Optional[int]:
+        if self._connection_config:
+            return self._connection_config.get_int("keepalive-time", None)
+        return None
 
     # open_channel()
     #
@@ -230,7 +243,7 @@ class RemoteSpec:
         push: bool = False
         remote_type: str = RemoteType.ENDPOINT
 
-        valid_keys: List[str] = ["url", "instance-name", "auth"]
+        valid_keys: List[str] = ["url", "instance-name", "auth", "connection-config"]
         if not remote_execution:
             remote_type = cast(str, spec_node.get_enum("type", RemoteType, default=RemoteType.ALL))
             push = spec_node.get_bool("push", default=False)
@@ -253,6 +266,8 @@ class RemoteSpec:
         if auth_node:
             server_cert, client_key, client_cert = cls._parse_auth(auth_node, basedir)
 
+        connection_config = spec_node.get_mapping("connection-config", None)
+
         return cls(
             remote_type,
             url,
@@ -261,6 +276,7 @@ class RemoteSpec:
             client_key=client_key,
             client_cert=client_cert,
             instance_name=instance_name,
+            connection_config=connection_config,
             spec_node=spec_node,
         )
 
