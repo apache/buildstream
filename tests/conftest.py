@@ -47,36 +47,37 @@ def pytest_addoption(parser):
     parser.addoption("--remote-cache", action="store_true", default=False, help="Run remote-cache tests only")
 
 
-def pytest_runtest_setup(item):
-    # Without --integration: skip tests not marked with 'integration'
-    if not item.config.getvalue("integration"):
-        if item.get_closest_marker("integration"):
-            pytest.skip("skipping integration test")
+def pytest_collection_modifyitems(session, config, items):
+    for item in items:
+        # Without --integration: skip tests not marked with 'integration'
+        if not config.getvalue("integration"):
+            if item.get_closest_marker("integration"):
+                item.add_marker(pytest.mark.skip("skipping integration test"))
 
-    # With --remote-execution: only run tests marked with 'remoteexecution'
-    if item.config.getvalue("remote_execution"):
-        if not item.get_closest_marker("remoteexecution"):
-            pytest.skip("skipping non remote-execution test")
+        # With --remote-execution: only run tests marked with 'remoteexecution'
+        if config.getvalue("remote_execution"):
+            if not item.get_closest_marker("remoteexecution"):
+                item.add_marker(pytest.mark.skip("skipping non remote-execution test"))
 
-    # Without --remote-execution: skip tests marked with 'remoteexecution'
-    else:
-        if item.get_closest_marker("remoteexecution"):
-            pytest.skip("skipping remote-execution test")
+        # Without --remote-execution: skip tests marked with 'remoteexecution'
+        else:
+            if item.get_closest_marker("remoteexecution"):
+                item.add_marker(pytest.mark.skip("skipping remote-execution test"))
 
-    # With --remote-cache: only run tests marked with 'remotecache'
-    if item.config.getvalue("remote_cache"):
-        if not item.get_closest_marker("remotecache"):
-            pytest.skip("skipping non remote-cache test")
+        # With --remote-cache: only run tests marked with 'remotecache'
+        if config.getvalue("remote_cache"):
+            if not item.get_closest_marker("remotecache"):
+                item.add_marker(pytest.mark.skip("skipping non remote-cache test"))
 
-    # Without --remote-cache: skip tests marked with 'remotecache'
-    else:
-        if item.get_closest_marker("remotecache"):
-            pytest.skip("skipping remote-cache test")
+        # Without --remote-cache: skip tests marked with 'remotecache'
+        else:
+            if item.get_closest_marker("remotecache"):
+                item.add_marker(pytest.mark.skip("skipping remote-cache test"))
 
-    # With --plugins only run plugins tests
-    if item.config.getvalue("plugins"):
-        if not item.get_closest_marker("generic_source_test"):
-            pytest.skip("Skipping not generic source test")
+        # With --plugins only run plugins tests
+        if config.getvalue("plugins"):
+            if not item.get_closest_marker("generic_source_test"):
+                item.add_marker(pytest.mark.skip("Skipping not generic source test"))
 
 
 #################################################
