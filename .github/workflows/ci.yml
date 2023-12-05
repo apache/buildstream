@@ -39,6 +39,7 @@ jobs:
           - debian-10
           - fedora-37
           - fedora-38
+          - fedora-39
           - fedora-missing-deps
           - lint
           - mypy
@@ -125,7 +126,7 @@ jobs:
         run: ${GITHUB_WORKSPACE}/.github/wheel-helpers/fetch-latest-buildbox-release.sh
 
       - name: Build wheels
-        run: pipx run cibuildwheel==2.11.3
+        run: pipx run cibuildwheel==v2.16.2
 
       - uses: actions/upload-artifact@v3
         with:
@@ -147,6 +148,7 @@ jobs:
           - wheels-manylinux_2_28-cp39
           - wheels-manylinux_2_28-cp310
           - wheels-manylinux_2_28-cp311
+          - wheels-manylinux_2_28-cp312
 
     steps:
       - uses: actions/checkout@v3
