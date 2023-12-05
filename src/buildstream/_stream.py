@@ -308,7 +308,7 @@ class Stream:
             element = self.targets[0]
             element._set_required(scope)
 
-            if scope == _Scope.BUILD:
+            if scope == _Scope.BUILD and not usebuildtree:
                 pull_elements = [element] + elements
             else:
                 pull_elements = elements
