@@ -6,3 +6,7 @@ pytest-env < 1.0
 pytest-xdist
 pytest-timeout
 pyftpdlib
+
+# This is an indirect dependency, but needs to be specified
+# in order to use an old enough package which supports Python 3.7
+isort < 5.11
