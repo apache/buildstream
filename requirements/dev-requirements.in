@@ -1,7 +1,7 @@
 pep8
 pylint >= 2.10.0
 pytest >= 3.7
-pytest-datafiles
+pytest-datafiles < 3.0
 pytest-env
 pytest-xdist
 pytest-timeout
