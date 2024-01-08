@@ -13,3 +13,4 @@ isort < 5.11
 lazy-object-proxy < 1.10
 platformdirs < 4.0
 pluggy < 1.3
+typing-extensions < 4.8
