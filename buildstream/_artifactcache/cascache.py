@@ -82,7 +82,7 @@ class _Attempt():
 
 def _retry(tries=5):
     for a in range(tries):
-        attempt = _Attempt(last_attempt=(a == tries - 1))
+        attempt = _Attempt(last_attempt = a == tries - 1)
         yield attempt
         if attempt.passed():
             break

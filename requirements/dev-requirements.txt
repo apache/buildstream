@@ -1,27 +1,28 @@
 pep8==1.7.1
-pylint==2.14.5
-pytest==7.1.2
+pylint==2.17.7
+pytest==7.4.4
 pytest-datafiles==2.0.1
-pytest-env==0.6.2
-pytest-xdist==2.5.0
-pytest-timeout==2.1.0
-pyftpdlib==1.5.6
-## The following requirements were added by pip freeze:
-astroid==2.11.7
-attrs==22.1.0
-dill==0.3.5.1
-execnet==1.9.0
-iniconfig==1.1.1
+pytest-env==0.8.2
+pytest-xdist==3.5.0
+pytest-timeout==2.2.0
+pyftpdlib==1.5.9
+
+# The following are indirect dependencies, but need to be specified
+# in order to use an old enough package which supports Python 3.7
 isort==5.10.1
-lazy-object-proxy==1.7.1
+lazy-object-proxy==1.9.0
+platformdirs==3.11.0
+pluggy==1.2.0
+typing-extensions==4.7.1
+## The following requirements were added by pip freeze:
+astroid==2.15.8
+dill==0.3.7
+exceptiongroup==1.2.0
+execnet==2.0.2
+iniconfig==2.0.0
 mccabe==0.7.0
-packaging==21.3
-platformdirs==2.5.2
-pluggy==1.0.0
+packaging==23.2
 py==1.11.0
-pyparsing==3.0.9
-pytest-forked==1.4.0
 tomli==2.0.1
-tomlkit==0.11.1
-typing-extensions==4.3.0
-wrapt==1.14.1
+tomlkit==0.12.3
+wrapt==1.16.0
