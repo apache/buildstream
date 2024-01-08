@@ -6,4 +6,4 @@ protobuf >= 3.19, < 4.22
 psutil
 ruamel.yaml < 0.18
 setuptools
-ujson
+ujson < 5.8
