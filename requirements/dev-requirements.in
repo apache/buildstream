@@ -11,3 +11,4 @@ pyftpdlib
 # in order to use an old enough package which supports Python 3.7
 isort < 5.11
 lazy-object-proxy < 1.10
+platformdirs < 4.0
