@@ -2,7 +2,7 @@ Click
 grpcio >= 1.30
 jinja2 >= 2.10
 pluginbase
-protobuf >= 3.19
+protobuf >= 3.19, < 4.22
 psutil
 ruamel.yaml < 0.18
 setuptools
