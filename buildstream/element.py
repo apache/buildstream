@@ -2387,7 +2387,7 @@ class Element(Plugin):
                 )
                 for index, exp in enumerate(whitelist)
             ]
-            expression = ('^(?:' + '|'.join(whitelist_expressions) + ')$')
+            expression = '^(?:' + '|'.join(whitelist_expressions) + ')$'
             self.__whitelist_regex = re.compile(expression, re.MULTILINE | re.DOTALL)
         return self.__whitelist_regex.match(path) or self.__whitelist_regex.match(os.path.join(os.sep, path))
 

@@ -1,8 +1,16 @@
 pep8
-pylint >= 2.10.0
+pylint >= 2.10.0, < 3.0
 pytest >= 3.7
-pytest-datafiles
-pytest-env
+pytest-datafiles < 3.0
+pytest-env < 1.0
 pytest-xdist
 pytest-timeout
 pyftpdlib
+
+# The following are indirect dependencies, but need to be specified
+# in order to use an old enough package which supports Python 3.7
+isort < 5.11
+lazy-object-proxy < 1.10
+platformdirs < 4.0
+pluggy < 1.3
+typing-extensions < 4.8
