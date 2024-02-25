@@ -1,3 +1,5 @@
+from typing import Optional, Dict, Any
+
 from buildstream import SourceMirror, MappingNode
 
 
@@ -17,7 +19,16 @@ class Sample(SourceMirror):
         for alias_name, url_list in aliases.items():
             self.aliases[alias_name] = url_list.as_str_list()
 
-    def translate_url(self, project_name, alias, alias_url, alias_substitute_url, source_url):
+    def translate_url(
+        self,
+        *,
+        project_name: str,
+        alias: str,
+        alias_url: str,
+        alias_substitute_url: Optional[str],
+        source_url: str,
+        extra_data: Optional[Dict[str, Any]],
+    ) -> str:
         return self.aliases[alias][0] + source_url
 
 

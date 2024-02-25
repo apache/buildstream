@@ -217,7 +217,7 @@ Class Reference
 
 import os
 from contextlib import contextmanager
-from typing import Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
+from typing import Iterable, Iterator, Optional, Tuple, Dict, Any, Set, TYPE_CHECKING
 
 from . import _yaml, utils
 from .node import MappingNode
@@ -235,8 +235,6 @@ from ._variables import Variables
 from .sourcemirror import SourceMirror
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, Set
-
     # pylint: disable=cyclic-import
     from ._context import Context
     from ._project import Project
@@ -340,7 +338,7 @@ class Source(Plugin):
     """
 
     # The defaults from the project
-    __defaults = None  # type: Optional[Dict[str, Any]]
+    __defaults: Optional[Dict[str, Any]] = None
 
     BST_REQUIRES_PREVIOUS_SOURCES_TRACK = False
     """Whether access to previous sources is required during track
@@ -415,7 +413,7 @@ class Source(Plugin):
         self.__alias_override = alias_override  # Tuple of alias and its override to use instead
         self.__expected_alias = None  # The primary alias
         # Set of marked download URLs
-        self.__marked_urls = set()  # type: Set[str]
+        self.__marked_urls: Set[str] = set()
 
         # The active SourceMirror in context of fetch/track
         self.__active_mirror: Optional[SourceMirror] = active_mirror
@@ -702,7 +700,13 @@ class Source(Plugin):
         return self.__mirror_directory
 
     def translate_url(
-        self, url: str, *, alias_override: Optional[str] = None, primary: bool = True, suffix: Optional[str] = None
+        self,
+        url: str,
+        *,
+        alias_override: Optional[str] = None,
+        primary: bool = True,
+        suffix: Optional[str] = None,
+        extra_data: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Translates the given url which may be specified with an alias
         into a fully qualified url.
@@ -712,6 +716,7 @@ class Source(Plugin):
            alias_override: Optionally, an URI to override the alias with.
            primary: Whether this is the primary URL for the source.
            suffix: an optional suffix to append to the URL (*Since: 2.2*)
+           extra_data: Additional data provided by :class:`SourceMirror <buildstream.sourcemirror.SourceMirror>` (*Since: 2.2*)
 
         Returns:
            The fully qualified URL, with aliases resolved
@@ -774,9 +779,13 @@ class Source(Plugin):
             # Delegate the URL translation to the SourceMirror plugin
             #
             return self.__active_mirror.translate_url(
-                project.name, url_alias, project_alias_url, alias_override, url_body
+                project_name=project.name,
+                alias=url_alias,
+                alias_url=project_alias_url,
+                alias_substitute_url=alias_override,
+                source_url=url_body,
+                extra_data=extra_data,
             )
-
         else:
             return project.translate_url(url, first_pass=self.__first_pass)
 
