@@ -1,3 +1,5 @@
+from typing import Optional, Dict, Any
+
 from buildstream import SourceMirror, MappingNode
 
 
@@ -17,7 +19,14 @@ class Sample(SourceMirror):
 
         self.set_supported_aliases(self.aliases.keys())
 
-    def translate_url(self, *, alias: str, alias_url: str, source_url: str) -> str:
+    def translate_url(
+        self,
+        *,
+        alias: str,
+        alias_url: str,
+        source_url: str,
+        extra_data: Optional[Dict[str, Any]],
+    ) -> str:
         return self.aliases[alias][0] + source_url
 
 

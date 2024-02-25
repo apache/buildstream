@@ -45,7 +45,7 @@ Class Reference
 ---------------
 """
 
-from typing import Optional, Dict, List, Set, TYPE_CHECKING
+from typing import Optional, Any, Dict, List, Set, TYPE_CHECKING
 
 from .node import MappingNode
 from .plugin import Plugin
@@ -151,13 +151,17 @@ class SourceMirror(Plugin):
         alias: str,
         alias_url: str,
         source_url: str,
+        extra_data: Optional[Dict[str, Any]],
     ) -> str:
         """Produce an alternative url for `url` for the given alias.
+
+        This method implements the behavior of :func:`Source.translate_url() <buildstream.source.Source.translate_url>`.
 
         Args:
            alias: The alias to translate for
            alias_url: The default URL configured for this alias in the originating project
            source_url: The URL as specified by original source YAML, excluding the alias
+           extra_data: An optional extra dictionary to return additional data
         """
         raise ImplError(
             "source mirror plugin '{kind}' does not implement translate_url()".format(kind=self.get_kind())
