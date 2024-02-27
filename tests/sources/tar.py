@@ -29,7 +29,7 @@ from buildstream.exceptions import ErrorDomain
 from buildstream._testing import generate_project, generate_element
 from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream._testing._utils.site import HAVE_LZIP
-from tests.testutils.file_server import create_file_server
+from tests.testutils.file_server import create_file_server, create_bearer_http_server
 from . import list_dir_contents
 
 DATA_DIR = os.path.join(
@@ -334,6 +334,76 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
     with create_file_server(server_type) as server:
         server.add_user("testuser", "12345", file_server_files)
         generate_project(project, config={"aliases": {"tmpdir": server.base_url()}})
+
+        src_tar = os.path.join(file_server_files, "a.tar.gz")
+        _assemble_tar(os.path.join(str(datafiles), "content"), "a", src_tar)
+
+        server.start()
+
+        result = cli.run(project=project, args=["source", "track", "target.bst"])
+        result.assert_success()
+        result = cli.run(project=project, args=["source", "fetch", "target.bst"])
+        result.assert_success()
+        result = cli.run(project=project, args=["build", "target.bst"])
+        result.assert_success()
+        result = cli.run(project=project, args=["artifact", "checkout", "target.bst", "--directory", checkoutdir])
+        result.assert_success()
+
+        original_dir = os.path.join(str(datafiles), "content", "a")
+        original_contents = list_dir_contents(original_dir)
+        checkout_contents = list_dir_contents(checkoutdir)
+        assert checkout_contents == original_contents
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "fetch"))
+def test_use_netrc_bearer_auth(cli, datafiles, tmpdir):
+    file_server_files = os.path.join(str(tmpdir), "file_server")
+    fake_home = os.path.join(str(tmpdir), "fake_home")
+    os.makedirs(file_server_files, exist_ok=True)
+    os.makedirs(fake_home, exist_ok=True)
+    project = str(datafiles)
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    os.environ["HOME"] = fake_home
+    with open(os.path.join(fake_home, ".netrc"), "wb") as f:
+        os.fchmod(f.fileno(), 0o700)
+        f.write(b"machine 127.0.0.1\n")
+        f.write(b"password 12345\n")
+
+    #
+    # Enable using mirrors for source tracking
+    #
+    cli.configure({"track": {"source": "mirrors"}})
+
+    #
+    # Create a file server which uses bearer authentication
+    #
+    with create_bearer_http_server() as server:
+        server.set_directory(file_server_files)
+        server.add_token("12345")
+
+        #
+        # Configure the project to load our source mirror plugin which
+        # reports the "http-auth" extra data
+        #
+        additional_config = {
+            "aliases": {"tmpdir": server.base_url()},
+            "mirrors": [
+                {
+                    "name": "middle-earth",
+                    "kind": "bearermirror",
+                    "config": {
+                        "aliases": {
+                            "tmpdir": [server.base_url()],
+                        },
+                    },
+                },
+            ],
+            "plugins": [
+                {"origin": "local", "path": "sourcemirrors", "source-mirrors": ["bearermirror"]},
+            ],
+        }
+        generate_project(project, config=additional_config)
 
         src_tar = os.path.join(file_server_files, "a.tar.gz")
         _assemble_tar(os.path.join(str(datafiles), "content"), "a", src_tar)
