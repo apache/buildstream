@@ -25,6 +25,66 @@ Any derived classes must write their own stage() and get_unique_key()
 implementation.
 
 
+SourceMirror extra data "auth-header-format"
+--------------------------------------------
+The DownloadableFileSource, and consequently any :class:`Source <buildstream.source.Source>`
+implementations which derive from DownloadableFileSource, support the "auth-header-format"
+extra data returned by :class:`SourceMirror <buildstream.sourcemirror.SourceMirror>` plugins
+through :func:`Source.translate_url() <buildstream.source.Source.translate_url>`.
+
+This functionality is available **Since: 2.2**.
+
+This allows one to use :class:`SourceMirror <buildstream.sourcemirror.SourceMirror>` plugins
+to add an authorization header to the ``GET`` requests.
+
+
+**Example:**
+
+.. code:: python
+
+   class MySourceMirror(SourceMirror):
+
+        def translate_url(
+            self,
+            *,
+            project_name: str,
+            alias: str,
+            alias_url: str,
+            alias_substitute_url: Optional[str],
+            source_url: str,
+            extra_data: Optional[Dict[str, Any]],
+        ) -> str:
+
+            #
+            # Set the "auth-header-format" extra data
+            #
+            if extra_data is not None:
+                extra_data["auth-header-format"] = "Bearer {password}"
+
+            return alias_substitute_url + source_url
+
+The "auth-header-format" value **must** contain the ``{password}`` expression, which
+will be substituted with the corresponding password found in the user's ``~/.netrc``.
+
+
+**Example:**
+
+If the URL reported by :func:`SourceMirror.translate_url() <buildstream.sourcemirror.SourceMirror.translate_url>`
+is ``http://flying-ponies.com/downloads/pony.tgz``, then a corresponding entry will be expected in the
+user's ``~/.netrc``:
+
+.. code::
+
+   flying-ponies.com
+       password 1234
+
+Assuming the ``"auth-header-format"`` value of ``Bearer {password}`` and the configured password ``1234``,
+the DownloadableFileSource will add the following header to the ``GET`` request to download the file:
+
+.. code::
+
+   Authorization: Bearer 1234
+
 """
 
 
@@ -95,6 +155,22 @@ def _download_file(opener_creator, url, etag, directory):
     request.add_header("Accept", "*/*")
     request.add_header("User-Agent", "BuildStream/2")
 
+    if opener_creator.auth_header_format:
+        if not opener_creator.netrc_config:
+            raise SourceError("Authorization header format specified without supporting netrc")
+
+        parts = urllib.parse.urlsplit(url)
+        entry = opener_creator.netrc_config.authenticators(parts.hostname)
+        if not entry:
+            raise SourceError(
+                "Authorization header format specified without provided password",
+                detail="No password specified in netrc for hostname: {}".format(parts.hostname),
+            )
+
+        _, _, password = entry
+        auth_header = opener_creator.auth_header_format.format(password=password)
+        request.add_header("Authorization", auth_header)
+
     if etag is not None:
         request.add_header("If-None-Match", etag)
 
@@ -145,7 +221,22 @@ class DownloadableFileSource(Source):
     def configure(self, node):
         self.original_url = node.get_str("url")
         self.ref = node.get_str("ref", None)
-        self.url = self.translate_url(self.original_url)
+
+        extra_data = {}
+        self.url = self.translate_url(self.original_url, extra_data=extra_data)
+        self.auth_header_format = extra_data.get("auth-header-format")
+
+        #
+        # Validate the auth header format for a `{password}` formatting identifier
+        #
+        if self.auth_header_format:
+            try:
+                self.auth_header_format.format(password="dummy")
+            except KeyError as e:
+                raise SourceError(
+                    "SourceMirror specified auth-header-format without a password", detail=self.auth_header_format
+                ) from e
+
         self._mirror_dir = os.path.join(self.get_mirror_directory(), utils.url_directory_name(self.original_url))
 
     def preflight(self):
@@ -227,7 +318,7 @@ class DownloadableFileSource(Source):
             else:
                 etag = None
 
-            url_opener_creator = _UrlOpenerCreator(self._parse_netrc())
+            url_opener_creator = _UrlOpenerCreator(self._parse_netrc(), self.auth_header_format)
 
             local_file, new_etag, error = self.blocking_activity(
                 _download_file, (url_opener_creator, self.url, etag, td), activity_name
@@ -283,11 +374,12 @@ class DownloadableFileSource(Source):
 
 
 class _UrlOpenerCreator:
-    def __init__(self, netrc_config):
+    def __init__(self, netrc_config, auth_header_format):
         self.netrc_config = netrc_config
+        self.auth_header_format = auth_header_format
 
     def get_url_opener(self):
-        if self.netrc_config:
+        if not self.auth_header_format and self.netrc_config:
             netrc_pw_mgr = _NetrcPasswordManager(self.netrc_config)
             http_auth = urllib.request.HTTPBasicAuthHandler(netrc_pw_mgr)
             ftp_handler = _NetrcFTPOpener(self.netrc_config)
