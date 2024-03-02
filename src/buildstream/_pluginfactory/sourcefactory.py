@@ -14,8 +14,18 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+from typing import TYPE_CHECKING, Type, cast
+
 from .pluginfactory import PluginFactory
 from .pluginorigin import PluginType
+from ..source import Source
+from .._loader import MetaSource
+from .._variables import Variables
+
+if TYPE_CHECKING:
+    from .._context import Context
+    from .._project import Project
+
 
 # A SourceFactory creates Source instances
 # in the context of a given factory
@@ -29,8 +39,7 @@ class SourceFactory(PluginFactory):
 
     # create():
     #
-    # Create a Source object, the pipeline uses this to create Source
-    # objects on demand for a given pipeline.
+    # Create a Source object.
     #
     # Args:
     #    context (object): The Context object for processing
@@ -45,7 +54,8 @@ class SourceFactory(PluginFactory):
     #    PluginError (if the kind lookup failed)
     #    LoadError (if the source itself took issue with the config)
     #
-    def create(self, context, project, meta, variables):
-        source_type, _ = self.lookup(context.messenger, meta.kind, meta.config)
+    def create(self, context: "Context", project: "Project", meta: MetaSource, variables: Variables) -> Source:
+        plugin_type, _ = self.lookup(context.messenger, meta.kind, meta.config)
+        source_type = cast(Type[Source], plugin_type)
         source = source_type(context, project, meta, variables)
         return source
