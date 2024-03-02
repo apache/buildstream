@@ -15,6 +15,7 @@ from contextlib import contextmanager
 
 from .ftp_server import SimpleFtpServer
 from .http_server import SimpleHttpServer
+from .bearer_http_server import BearerHttpServer
 
 
 @contextmanager
@@ -26,6 +27,22 @@ def create_file_server(file_server_type):
     else:
         assert False
 
+    try:
+        yield server
+    finally:
+        server.stop()
+
+
+#
+# We use a separate function here in order to avoid
+# confusing the linter (which thinks that anything
+# yielded by `create_file_server()` is a SimpleFtpServer).
+#
+# And no, type annotations with Union[...] does not fix this.
+#
+@contextmanager
+def create_bearer_http_server():
+    server = BearerHttpServer()
     try:
         yield server
     finally:

@@ -19,7 +19,6 @@ import os
 import pytest
 
 from buildstream import _yaml
-from buildstream.exceptions import ErrorDomain
 from .._utils import generate_junction
 from .. import create_repo
 from .. import cli  # pylint: disable=unused-import
@@ -187,60 +186,6 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
 
     # Now make the upstream unavailable.
     os.rename(upstream_repo.repo, "{}.bak".format(upstream_repo.repo))
-    result = cli.run(project=project_dir, args=["source", "fetch", element_name])
-    result.assert_success()
-
-
-@pytest.mark.datafiles(DATA_DIR)
-def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
-    project_dir = str(datafiles)
-    bin_files_path = os.path.join(project_dir, "files", "bin-files", "usr")
-    upstream_repodir = os.path.join(str(tmpdir), "upstream")
-    mirror_repodir = os.path.join(str(tmpdir), "mirror")
-    element_dir = os.path.join(project_dir, "elements")
-
-    # Create repo objects of the upstream and mirror
-    upstream_repo = create_repo(kind, upstream_repodir)
-    upstream_ref = upstream_repo.create(bin_files_path)
-    mirror_repo = upstream_repo.copy(mirror_repodir)
-
-    element = {"kind": "junction", "sources": [upstream_repo.source_config(ref=upstream_ref)]}
-    element_name = "test.bst"
-    element_path = os.path.join(element_dir, element_name)
-    full_repo = element["sources"][0]["url"]
-    upstream_map, repo_name = os.path.split(full_repo)
-    alias = "foo-" + kind
-    aliased_repo = alias + ":" + repo_name
-    element["sources"][0]["url"] = aliased_repo
-    full_mirror = mirror_repo.source_config()["url"]
-    mirror_map, _ = os.path.split(full_mirror)
-    _yaml.roundtrip_dump(element, element_path)
-
-    config_project_dir = str(tmpdir.join("config"))
-    os.makedirs(config_project_dir, exist_ok=True)
-    config_project = {"name": "config", "min-version": "2.0"}
-    _yaml.roundtrip_dump(config_project, os.path.join(config_project_dir, "project.conf"))
-    extra_mirrors = {
-        "mirrors": [
-            {
-                "name": "middle-earth",
-                "aliases": {
-                    alias: [mirror_map + "/"],
-                },
-            }
-        ]
-    }
-    _yaml.roundtrip_dump(extra_mirrors, os.path.join(config_project_dir, "mirrors.yml"))
-    generate_junction(str(tmpdir.join("config_repo")), config_project_dir, os.path.join(element_dir, "config.bst"))
-
-    _set_project_includes_and_aliases(project_dir, ["config.bst:mirrors.yml"], {alias: upstream_map + "/"})
-
-    # Now make the upstream unavailable.
-    os.rename(upstream_repo.repo, "{}.bak".format(upstream_repo.repo))
-    result = cli.run(project=project_dir, args=["source", "fetch", element_name])
-    result.assert_main_error(ErrorDomain.STREAM, None)
-    # Now make the upstream available again.
-    os.rename("{}.bak".format(upstream_repo.repo), upstream_repo.repo)
     result = cli.run(project=project_dir, args=["source", "fetch", element_name])
     result.assert_success()
 

@@ -18,41 +18,54 @@ from typing import TYPE_CHECKING, Type, cast
 
 from .pluginfactory import PluginFactory
 from .pluginorigin import PluginType
-from .._loader import LoadElement
-from ..element import Element
+
+from ..node import MappingNode
+from ..plugin import Plugin
+from ..sourcemirror import SourceMirror
 
 if TYPE_CHECKING:
     from .._context import Context
     from .._project import Project
 
 
-# A ElementFactory creates Element instances
+# A SourceMirrorFactory creates SourceMirror instances
 # in the context of a given factory
 #
 # Args:
 #     plugin_base (PluginBase): The main PluginBase object to work with
 #
-class ElementFactory(PluginFactory):
+class SourceMirrorFactory(PluginFactory):
     def __init__(self, plugin_base):
-        super().__init__(plugin_base, PluginType.ELEMENT)
+        super().__init__(plugin_base, PluginType.SOURCE_MIRROR)
 
     # create():
     #
-    # Create an Element object.
+    # Create a SourceMirror object.
     #
     # Args:
     #    context (object): The Context object for processing
     #    project (object): The project object
-    #    load_element (object): The LoadElement
+    #    node (MappingNode): The node where the mirror was defined
     #
-    # Returns: A newly created Element object of the appropriate kind
+    # Returns:
+    #    A newly created SourceMirror object of the appropriate kind
     #
     # Raises:
     #    PluginError (if the kind lookup failed)
-    #    LoadError (if the element itself took issue with the config)
+    #    LoadError (if the source mirror itself took issue with the config)
     #
-    def create(self, context: "Context", project: "Project", load_element: LoadElement) -> Element:
-        plugin_type, default_config = self.lookup(context.messenger, load_element.kind, load_element.node)
-        element_type = cast(Type[Element], plugin_type)
-        element = element_type(context, project, load_element, default_config)
-        return element
+    def create(self, context: "Context", project: "Project", node: MappingNode) -> SourceMirror:
+        plugin_type: Type[Plugin]
+
+        # Shallow parsing to get the custom plugin type, delegate the remainder
+        # of the parsing to SourceMirror
+        #
+        kind = node.get_str("kind", None)
+        if kind is None:
+            plugin_type = SourceMirror
+        else:
+            plugin_type, _ = self.lookup(context.messenger, kind, node)
+
+        source_mirror_type = cast(Type[SourceMirror], plugin_type)
+        source_mirror = source_mirror_type(context, project, node)
+        return source_mirror
