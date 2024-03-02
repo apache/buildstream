@@ -134,6 +134,12 @@ toplevel of your configuration file, like so:
      # Avoid caching build trees if we don't need them
      cache-buildtrees: auto
 
+     # Connection config is parameters given to grpc. It's completely
+     # optional. By default keepalive time is unset and grpc defaults
+     # are used.
+     connection-config:
+       keepalive-time: 60
+
      #
      # Support CAS server as remote cache
      # Useful to minimize network traffic with remote execution

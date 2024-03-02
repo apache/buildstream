@@ -18,6 +18,7 @@ package build.buildgrid;
 
 import "build/bazel/remote/execution/v2/remote_execution.proto";
 import "google/rpc/status.proto";
+import "google/protobuf/duration.proto";
 
 service LocalContentAddressableStorage {
   // Fetch blobs from a remote CAS to the local cache.
@@ -468,6 +469,9 @@ message Remote {
   // client authentication. If this is specified, `client_key` must be
   // specified as well.
   bytes client_cert = 5;
+
+  // Remote keepalive time. Unset or empty is treated as disabling keepalive.
+  google.protobuf.Duration keepalive_time = 6;
 }
 
 // A request message for
