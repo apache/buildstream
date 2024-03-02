@@ -192,7 +192,7 @@ def test_cross_link_junction_include(cli, tmpdir, datafiles):
     project = os.path.join(str(datafiles), "cross-link-junction-include")
 
     # Show the variables and parse our test variable from the subsubproject
-    result = cli.run(project=project, args=["show", "--format", "%{vars}", "target.bst"])
+    result = cli.run(project=project, args=["show", "--deps", "none", "--format", "%{vars}", "target.bst"])
     result.assert_success()
 
     # Read back some of our project defaults from the env
