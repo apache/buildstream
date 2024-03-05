@@ -15,7 +15,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
-from typing import TYPE_CHECKING, Optional, Dict, Union, List
+from typing import TYPE_CHECKING, Optional, Dict, Union, List, Tuple
 
 import os
 import urllib.parse
@@ -31,14 +31,15 @@ from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
 from ._options import OptionPool
 from .node import ScalarNode, MappingNode, ProvenanceInformation, _assert_symbol_name
-from ._pluginfactory import ElementFactory, SourceFactory, load_plugin_origin
-from .types import CoreWarnings, _HostMount, _SourceMirror, _SourceUriPolicy
+from ._pluginfactory import ElementFactory, SourceFactory, SourceMirrorFactory, load_plugin_origin
+from .types import CoreWarnings, _HostMount, _SourceUriPolicy
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._loader import Loader, LoadContext
 from .element import Element
 from ._includes import Includes
 from ._workspaces import WORKSPACE_PROJECT_FILE
 from ._remotespec import RemoteSpec
+from .sourcemirror import SourceMirror
 
 
 if TYPE_CHECKING:
@@ -56,7 +57,7 @@ class ProjectConfig:
         self.base_variables = {}  # The base set of variables
         self.element_overrides = {}  # Element specific configurations
         self.source_overrides = {}  # Source specific configurations
-        self.mirrors = {}  # Dictionary of _SourceAlias objects
+        self.mirrors = {}  # Dictionary of SourceMirror objects
         self.default_mirror = None  # The name of the preferred mirror.
         self._aliases = None  # Aliases dictionary
 
@@ -115,6 +116,7 @@ class Project:
 
         self.element_factory: Optional[ElementFactory] = None  # ElementFactory for loading elements
         self.source_factory: Optional[SourceFactory] = None  # SourceFactory for loading sources
+        self.source_mirror_factory: Optional[SourceMirrorFactory] = None  # SourceMirrorFactory
 
         self.sandbox: Optional[MappingNode] = None
         self.splits: Optional[MappingNode] = None
@@ -195,6 +197,28 @@ class Project:
     #                     Public Methods                   #
     ########################################################
 
+    # get_alias_url():
+    #
+    # Fetch the value of a URL alias
+    #
+    # Args:
+    #    alias: The alias
+    #    first_pass: Whether to use first pass configuration (for junctions)
+    #
+    # Returns:
+    #    The alias substitution
+    #
+    def get_alias_url(self, alias: str, *, first_pass: bool = False) -> Optional[str]:
+        if first_pass:
+            config = self.first_pass_config
+        else:
+            config = self.config
+
+        if config._aliases:
+            return config._aliases.get_str(alias, default=None)
+
+        return None
+
     # translate_url():
     #
     # Translates the given url which may be specified with an alias
@@ -211,14 +235,10 @@ class Project:
     # fully qualified urls based on the shorthand which is allowed
     # to be specified in the YAML
     def translate_url(self, url, *, first_pass=False):
-        if first_pass:
-            config = self.first_pass_config
-        else:
-            config = self.config
 
         if url and utils._ALIAS_SEPARATOR in url:
             url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
-            alias_url = config._aliases.get_str(url_alias, default=None)
+            alias_url = self.get_alias_url(url_alias)
             if alias_url:
                 url = alias_url + url_body
 
@@ -382,35 +402,45 @@ class Project:
     # get_alias_uris()
     #
     # Args:
-    #    alias (str): The alias.
-    #    first_pass (bool): Whether to use first pass configuration (for junctions)
-    #    tracking (bool): Whether we want the aliases for tracking (otherwise assume fetching)
+    #    alias: The alias.
+    #    first_pass: Whether to use first pass configuration (for junctions)
+    #    tracking: Whether we want the aliases for tracking (otherwise assume fetching)
     #
-    # Returns a list of every URI to replace an alias with
-    def get_alias_uris(self, alias, *, first_pass=False, tracking=False):
+    # Returns:
+    #    A list of (SourceMirror, string) tuples with each alias substitution found along
+    #    with the SourceMirror object which produced it.
+    #
+    def get_alias_uris(
+        self, alias: str, *, first_pass: bool = False, tracking: bool = False
+    ) -> List[Tuple[Optional[SourceMirror], Optional[str]]]:
+
         if first_pass:
             config = self.first_pass_config
         else:
             config = self.config
 
         if not alias or alias not in config._aliases:  # pylint: disable=unsupported-membership-test
-            return [None]
+            return [(None, None)]
 
-        uri_list = []
+        uri_list: List[Tuple[Optional[SourceMirror], Optional[str]]] = []
         policy = self._context.track_source if tracking else self._context.fetch_source
 
         if policy in (_SourceUriPolicy.ALL, _SourceUriPolicy.MIRRORS) or (
             policy == _SourceUriPolicy.USER and self._mirror_override
         ):
             for mirror_name, mirror in config.mirrors.items():
-                if alias in mirror.aliases:
+                mirror_uri_list = mirror._get_alias_uris(alias)
+                if mirror_uri_list:
+
+                    list_to_add = [(mirror, uri) for uri in mirror_uri_list]
+
                     if mirror_name == config.default_mirror:
-                        uri_list = mirror.aliases[alias] + uri_list
+                        uri_list = list_to_add + uri_list
                     else:
-                        uri_list += mirror.aliases[alias]
+                        uri_list += list_to_add
 
         if policy in (_SourceUriPolicy.ALL, _SourceUriPolicy.ALIASES):
-            uri_list.append(config._aliases.get_str(alias))
+            uri_list.append((None, config._aliases.get_str(alias)))
 
         return uri_list
 
@@ -1025,9 +1055,9 @@ class Project:
         # even if the mirrors are specified in user configuration.
         variables.expand(mirrors_node)
 
-        # Collect _SourceMirror objects
+        # Collect SourceMirror objects
         for mirror_node in mirrors_node:
-            mirror = _SourceMirror.new_from_node(mirror_node)
+            mirror = self.source_mirror_factory.create(self._context, self, mirror_node)
             output.mirrors[mirror.name] = mirror
             if not output.default_mirror:
                 output.default_mirror = mirror.name
@@ -1087,6 +1117,7 @@ class Project:
         pluginbase = PluginBase(package="buildstream.plugins")
         self.element_factory = ElementFactory(pluginbase)
         self.source_factory = SourceFactory(pluginbase)
+        self.source_mirror_factory = SourceMirrorFactory(pluginbase)
 
         # Load the plugin origins and register them to their factories
         origins = config.get_sequence("plugins", default=[])
@@ -1096,6 +1127,8 @@ class Project:
                 self.element_factory.register_plugin_origin(kind, origin, conf.allow_deprecated)
             for kind, conf in origin.sources.items():
                 self.source_factory.register_plugin_origin(kind, origin, conf.allow_deprecated)
+            for kind, conf in origin.source_mirrors.items():
+                self.source_mirror_factory.register_plugin_origin(kind, origin, conf.allow_deprecated)
 
     # _warning_is_fatal():
     #

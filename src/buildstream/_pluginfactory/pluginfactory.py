@@ -15,13 +15,14 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
-from typing import Tuple, Type, Iterator
+from typing import Tuple, Type, Iterator, Optional
 from pluginbase import PluginSource
 
 from .. import utils
 from .. import _site
 from ..plugin import Plugin
 from ..source import Source
+from ..sourcemirror import SourceMirror
 from ..element import Element
 from ..node import Node
 from ..utils import UtilError
@@ -83,6 +84,8 @@ class PluginFactory:
             self._site_plugins_path = _site.source_plugins
         elif self._plugin_type == PluginType.ELEMENT:
             self._site_plugins_path = _site.element_plugins
+        elif self._plugin_type == PluginType.SOURCE_MIRROR:
+            self._site_plugins_path = _site.source_mirror_plugins
 
         self._site_source = self._plugin_base.make_plugin_source(
             searchpath=[self._site_plugins_path],
@@ -127,7 +130,7 @@ class PluginFactory:
     #
     # Raises: PluginError
     #
-    def lookup(self, messenger: Messenger, kind: str, provenance_node: Node) -> Tuple[Type[Plugin], str]:
+    def lookup(self, messenger: Messenger, kind: str, provenance_node: Node) -> Tuple[Type[Plugin], Optional[str]]:
         plugin_type, defaults = self._ensure_plugin(kind, provenance_node)
 
         # We can be called with None for the messenger here in the
@@ -180,7 +183,7 @@ class PluginFactory:
     #           the plugin's preferred defaults.
     #    (str): The explanatory display string describing how this plugin was loaded
     #
-    def get_plugin_paths(self, kind: str):
+    def get_plugin_paths(self, kind: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         try:
             origin = self._origins[kind]
         except KeyError:
@@ -208,7 +211,7 @@ class PluginFactory:
     # Raises:
     #    (PluginError): In case something went wrong loading the plugin
     #
-    def _ensure_plugin(self, kind: str, provenance_node: Node) -> Tuple[Type[Plugin], str]:
+    def _ensure_plugin(self, kind: str, provenance_node: Node) -> Tuple[Type[Plugin], Optional[str]]:
 
         if kind not in self._types:
 
@@ -314,6 +317,8 @@ class PluginFactory:
             base_type = Source
         elif self._plugin_type == PluginType.ELEMENT:
             base_type = Element
+        elif self._plugin_type == PluginType.SOURCE_MIRROR:
+            base_type = SourceMirror
 
         try:
             if not issubclass(plugin_type, base_type):
