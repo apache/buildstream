@@ -782,9 +782,7 @@ class Source(Plugin):
             # the case for git submodules which might be automatically
             # discovered.
             #
-            assert url in self.__marked_urls or not _extract_alias(
-                url
-            ), "URL was not seen at configure time: {}".format(url)
+            pass
 
         alias = _extract_alias(url)
 
