@@ -59,6 +59,7 @@ class ProjectConfig:
         self.source_overrides = {}  # Source specific configurations
         self.mirrors = {}  # Dictionary of SourceMirror objects
         self.default_mirror = None  # The name of the preferred mirror.
+        self.mirror_overrides = {}
         self._aliases = None  # Aliases dictionary
 
 
@@ -136,7 +137,8 @@ class Project:
         self._shell_command: List[str] = []  # The default interactive shell command
         self._shell_environment: Dict[str, str] = {}  # Statically set environment vars
         self._shell_host_files: List[_HostMount] = []  # A list of HostMount objects
-        self._mirror_override: bool = False  # Whether mirrors have been declared in user configuration
+        self._user_mirror_override: bool = False  # Whether mirrors have been declared in user configuration
+        self._toplevel_mirror_override: bool = False  # Whether mirrors have been declared in the toplevel project
 
         # This is a lookup table of lists indexed by project,
         # the child dictionaries are lists of ScalarNodes indicating
@@ -425,8 +427,10 @@ class Project:
         uri_list: List[Tuple[Optional[SourceMirror], Optional[str]]] = []
         policy = self._context.track_source if tracking else self._context.fetch_source
 
-        if policy in (_SourceUriPolicy.ALL, _SourceUriPolicy.MIRRORS) or (
-            policy == _SourceUriPolicy.USER and self._mirror_override
+        if (
+            policy in (_SourceUriPolicy.ALL, _SourceUriPolicy.MIRRORS)
+            or (policy == _SourceUriPolicy.USER and self._user_mirror_override)
+            or (policy == _SourceUriPolicy.TOPLEVEL and self._toplevel_mirror_override)
         ):
             for mirror_name, mirror in config.mirrors.items():
                 mirror_uri_list = mirror._get_alias_uris(alias)
@@ -671,6 +675,7 @@ class Project:
                 "sources",
                 "source-caches",
                 "junctions",
+                "projects",
                 "(@)",
                 "(?)",
             ]
@@ -1041,6 +1046,30 @@ class Project:
         # Override default_mirror if not set by command-line
         output.default_mirror = self._default_mirror or overrides.get_str("default-mirror", default=None)
 
+        if self == toplevel_project:
+            project_overrides = config.get_mapping("projects", default={})
+
+            for project_name, project_overrides in project_overrides.items():
+                project_overrides.validate_keys(["mirrors"])
+                mirrors_node = project_overrides.get_sequence("mirrors", default=None)
+
+                if mirrors_node is None:
+                    continue
+
+                variables.expand(mirrors_node)
+
+                mirrors = []
+                # Collect SourceMirror objects
+                for mirror_node in mirrors_node:
+                    mirror = self.source_mirror_factory.create(self._context, self, mirror_node)
+                    mirrors.append(mirror)
+                output.mirror_overrides[project_name] = mirrors
+
+        if self == toplevel_project:
+            toplevel_config = output
+        else:
+            toplevel_config = toplevel_project.config
+
         # First try mirrors specified in user configuration, user configuration
         # is allowed to completely disable mirrors by specifying an empty list,
         # so we check for a None value here too.
@@ -1048,19 +1077,27 @@ class Project:
         mirrors_node = overrides.get_sequence("mirrors", default=None)
         if mirrors_node is None:
             mirrors_node = config.get_sequence("mirrors", default=[])
+            if self.name in toplevel_config.mirror_overrides:
+                self._toplevel_mirror_override = True
         else:
-            self._mirror_override = True
+            self._user_mirror_override = True
 
-        # Perform variable substitutions in source mirror definitions,
-        # even if the mirrors are specified in user configuration.
-        variables.expand(mirrors_node)
+        if self._toplevel_mirror_override:
+            for mirror in toplevel_config.mirror_overrides[self.name]:
+                output.mirrors[mirror.name] = mirror
+                if not output.default_mirror:
+                    output.default_mirror = mirror.name
+        else:
+            # Perform variable substitutions in source mirror definitions,
+            # even if the mirrors are specified in user configuration.
+            variables.expand(mirrors_node)
 
-        # Collect SourceMirror objects
-        for mirror_node in mirrors_node:
-            mirror = self.source_mirror_factory.create(self._context, self, mirror_node)
-            output.mirrors[mirror.name] = mirror
-            if not output.default_mirror:
-                output.default_mirror = mirror.name
+            # Collect SourceMirror objects
+            for mirror_node in mirrors_node:
+                mirror = self.source_mirror_factory.create(self._context, self, mirror_node)
+                output.mirrors[mirror.name] = mirror
+                if not output.default_mirror:
+                    output.default_mirror = mirror.name
 
         # Source url aliases
         output._aliases = config.get_mapping("aliases", default={})
