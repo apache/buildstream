@@ -274,6 +274,10 @@ class _SourceUriPolicy(FastEnum):
     # configuration has not provided a mirror
     USER = "user"
 
+    # Use only URIs defined in the toplevel project (the project on  which
+    # BuildStream was invoked with as opposed to a junctioned subproject.
+    TOPLEVEL = "toplevel"
+
 
 # _PipelineSelection()
 #
