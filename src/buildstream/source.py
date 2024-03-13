@@ -427,7 +427,7 @@ class Source(Plugin):
         # cached values for commonly access values on the source
         self.__mirror_directory = None  # type: Optional[str]
 
-        self._configure(self.__config)
+        self.configure(self.__config)
 
         self.__is_cached = None
 

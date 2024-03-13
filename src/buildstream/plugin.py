@@ -328,7 +328,6 @@ class Plugin:
 
         self.__provenance_node = provenance_node  # The originating YAML node
         self.__type_tag = type_tag  # The type of plugin (element or source)
-        self.__configuring = False  # Whether we are currently configuring
 
         # Get the full_name as project & type_tag are resolved
         self.__full_name = self.__get_full_name()
@@ -869,30 +868,6 @@ class Plugin:
                 yield output
         else:
             yield log
-
-    # _configure():
-    #
-    # Calls configure() for the plugin, this must be called by
-    # the core instead of configure() directly, so that the
-    # _get_configuring() state is up to date.
-    #
-    # Args:
-    #    node (buildstream.node.MappingNode): The loaded configuration dictionary
-    #
-    def _configure(self, node):
-        self.__configuring = True
-        self.configure(node)
-        self.__configuring = False
-
-    # _get_configuring():
-    #
-    # Checks whether the plugin is in the middle of having
-    # its Plugin.configure() method called
-    #
-    # Returns:
-    #    (bool): Whether we are currently configuring
-    def _get_configuring(self):
-        return self.__configuring
 
     # _preflight():
     #

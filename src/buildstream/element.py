@@ -2890,7 +2890,7 @@ class Element(Plugin):
         self.__config = self.__extract_config(load_element)
         self.__variables.expand(self.__config)
 
-        self._configure(self.__config)
+        self.configure(self.__config)
 
         # Extract Sandbox config
         sandbox_config = self.__extract_sandbox_config(project, load_element)
