@@ -696,7 +696,9 @@ class Source(Plugin):
 
         return self.__mirror_directory
 
-    def translate_url(self, url: str, *, alias_override: Optional[str] = None, primary: bool = True) -> str:
+    def translate_url(
+        self, url: str, *, alias_override: Optional[str] = None, primary: bool = True, suffix: Optional[str] = None
+    ) -> str:
         """Translates the given url which may be specified with an alias
         into a fully qualified url.
 
@@ -704,6 +706,7 @@ class Source(Plugin):
            url: A URL, which may be using an alias
            alias_override: Optionally, an URI to override the alias with.
            primary: Whether this is the primary URL for the source.
+           suffix: an optional suffix to append to the URL (*Since: 2.2*)
 
         Returns:
            The fully qualified URL, with aliases resolved
@@ -713,9 +716,16 @@ class Source(Plugin):
            :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` if
            :func:`Source.mark_download_url() <buildstream.source.Source.mark_download_url>`
            is not called.
+
+           The *suffix* argument may be used to translate URLs for which only the base portion of
+           the URL was previously marked with :func:`Source.mark_download_url() <buildstream.source.Source.mark_download_url>`
+           at :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` time.
         """
         # Ensure that the download URL is also marked
         self.mark_download_url(url, primary=primary)
+
+        if suffix:
+            url = url + suffix
 
         # Alias overriding can happen explicitly (by command-line) or
         # implicitly (the Source being constructed with an __alias_override).
