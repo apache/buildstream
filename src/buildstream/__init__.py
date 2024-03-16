@@ -32,7 +32,7 @@ if "_BST_COMPLETION" not in os.environ:
     from .node import MappingNode, Node, ProvenanceInformation, ScalarNode, SequenceNode
     from .plugin import Plugin
     from .source import Source, SourceError, SourceFetcher
-    from .sourcemirror import SourceMirror
+    from .sourcemirror import SourceMirror, SourceMirrorError
     from .downloadablefilesource import DownloadableFileSource
     from .element import Element, ElementError, DependencyConfiguration
     from .buildelement import BuildElement
