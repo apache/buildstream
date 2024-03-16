@@ -238,7 +238,7 @@ class Project:
 
         if url and utils._ALIAS_SEPARATOR in url:
             url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
-            alias_url = self.get_alias_url(url_alias)
+            alias_url = self.get_alias_url(url_alias, first_pass=first_pass)
             if alias_url:
                 url = alias_url + url_body
 
