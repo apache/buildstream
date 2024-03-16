@@ -33,7 +33,7 @@ in order to load any custom configuration in the `config` dictionary.
 The remaining :ref:`Plugin base class abstract methods <core_plugin_abstract_methods>` are
 not relevant to the SourceMirror plugin object and need not be implemented.
 
-Sources expose the following abstract methods. Unless explicitly mentioned,
+SourceMirrors expose the following abstract methods. Unless explicitly mentioned,
 these methods are mandatory to implement.
 
 * :func:`SourceMirror.translate_url() <buildstream.source.SourceMirror.translate_url>`
