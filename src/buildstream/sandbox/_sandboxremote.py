@@ -99,7 +99,6 @@ class SandboxRemote(SandboxREAPI):
                     grpc.StatusCode.RESOURCE_EXHAUSTED,
                     grpc.StatusCode.INTERNAL,
                     grpc.StatusCode.DEADLINE_EXCEEDED,
-                    grpc.StatusCode.UNAVAILABLE,
                 ):
                     raise SandboxError(
                         "Failed contacting remote execution server at {}."
