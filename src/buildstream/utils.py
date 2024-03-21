@@ -731,7 +731,7 @@ def _get_host_tool_internal(
 ) -> str:
     search_path = os.environ.get("PATH", "").split(os.pathsep)
     if search_subprojects_dir:
-        search_path.insert(0, os.path.join(_site.subprojects, search_subprojects_dir))
+        search_path.append(os.path.join(_site.subprojects, search_subprojects_dir))
 
     program_path = shutil.which(name, path=os.pathsep.join(search_path))
 
