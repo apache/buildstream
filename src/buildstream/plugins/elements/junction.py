@@ -50,6 +50,9 @@ Overview
      overrides:
        subproject-junction.bst: local-junction.bst
 
+     aliases:
+       subproject-alias: local-alias
+
 With a junction element in place, local elements can depend on elements in
 the other BuildStream project using :ref:`element paths <format_element_names>`.
 For example, if you have a ``toolchain.bst`` junction element referring to
@@ -338,7 +341,7 @@ class JunctionElement(Element):
 
     def configure(self, node):
 
-        node.validate_keys(["path", "options", "overrides"])
+        node.validate_keys(["path", "options", "overrides", "aliases"])
 
         self.path = node.get_str("path", default="")
         self.options = node.get_mapping("options", default={})
@@ -360,6 +363,9 @@ class JunctionElement(Element):
                     reason="override-junction-with-self",
                 )
             self.overrides[key] = junction_name
+
+        # Map from subproject alias to local alias
+        self.aliases = node.get_mapping("aliases", default={})
 
     def preflight(self):
         pass
