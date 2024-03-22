@@ -204,6 +204,9 @@ URLs which are to be used in the individual ``.bst`` files.
      foo: git://git.foo.org/
      bar: http://bar.com/downloads/
 
+If you want this project's alias definitions to also be used for subprojects,
+see :ref:`Mapping source aliases of subprojects <project_junctions_source_aliases>`.
+
 
 Sandbox options
 ~~~~~~~~~~~~~~~
@@ -318,6 +321,9 @@ The mirrors can be overridden on a per project basis using
 :ref:`user configuration <config_mirrors>`. One can also specify which mirror should
 be used first in the :ref:`user configuration <config_default_mirror>`, or using
 the  :ref:`--default-mirror <invoking_bst>` command-line argument.
+
+If you want this project's mirrors to also be used for subprojects,
+see :ref:`Mapping source aliases of subprojects <project_junctions_source_aliases>`.
 
 
 .. _project_plugins:
@@ -987,6 +993,35 @@ subproject.
 
    Declaring a junction as *internal* is a promise that dependant projects
    will not accrue runtime dependencies on elements in your *internal* subproject.
+
+
+.. _project_junctions_source_aliases:
+
+Mapping source aliases of subprojects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:mod:`junction <elements.junction>` elements allow source aliases of subprojects
+to be mapped to aliases of the parent project. This makes it possible to control
+the translation of aliases to URLs including mirror configuration across multiple
+project levels.
+
+To ensure that there are mappings for all aliases of all subprojects, you can set the
+``disallow-subproject-uris`` flag in the ``junctions`` group here in ``project.conf``.
+
+top-level
+
+.. code:: yaml
+
+   junctions:
+     disallow-subproject-uris: True
+
+This will raise an error if an alias without a mapping is encountered. This flag
+is applied recursively across all junctions.
+
+It also configures ``unaliased-url`` as a fatal warning in all subprojects to
+ensure that the current project is in full control over all source URLs.
+As the fatal warning configuration contributes to the cache key, this flag will
+affect the cache key of subprojects that haven't already configured
+``unaliased-url`` as a fatal warning.
 
 
 .. _project_defaults:

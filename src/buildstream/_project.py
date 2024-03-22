@@ -40,10 +40,12 @@ from ._includes import Includes
 from ._workspaces import WORKSPACE_PROJECT_FILE
 from ._remotespec import RemoteSpec
 from .sourcemirror import SourceMirror
+from .source import SourceError
 
 
 if TYPE_CHECKING:
     from ._context import Context
+    from .plugins.elements.junction import JunctionElement
 
 
 # Project Configuration file
@@ -82,7 +84,7 @@ class Project:
         directory: Optional[str],
         context: "Context",
         *,
-        junction: Optional[object] = None,
+        junction: Optional["JunctionElement"] = None,
         cli_options: Optional[Dict[str, str]] = None,
         default_mirror: Optional[str] = None,
         parent_loader: Optional[Loader] = None,
@@ -98,11 +100,12 @@ class Project:
 
         self.load_context: LoadContext  # The LoadContext
         self.loader: Optional[Loader] = None  # The loader associated to this project
-        self.junction: Optional[object] = junction  # The junction Element object, if this is a subproject
+        self.junction: Optional["JunctionElement"] = junction  # The junction Element object, if this is a subproject
 
         self.ref_storage: Optional[ProjectRefStorage] = None  # Where to store source refs
         self.refs: Optional[ProjectRefs] = None
         self.junction_refs: Optional[ProjectRefs] = None
+        self.disallow_subproject_uris: bool = False
 
         self.config: ProjectConfig = ProjectConfig()
         self.first_pass_config: ProjectConfig = ProjectConfig()
@@ -234,12 +237,28 @@ class Project:
     # This method is provided for :class:`.Source` objects to resolve
     # fully qualified urls based on the shorthand which is allowed
     # to be specified in the YAML
-    def translate_url(self, url, *, first_pass=False):
+    def translate_url(self, url, *, source, first_pass=False):
 
         if url and utils._ALIAS_SEPARATOR in url:
             url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
             alias_url = self.get_alias_url(url_alias, first_pass=first_pass)
             if alias_url:
+                if self.junction:
+                    parent_project = self.junction._get_project()
+                    parent_alias = self.junction.aliases.get_str(url_alias, default=None)
+                    if parent_alias:
+                        # Delegate translation to parent project
+                        return parent_project.translate_url(
+                            parent_alias + utils._ALIAS_SEPARATOR + url_body, source=source, first_pass=first_pass
+                        )
+                    elif parent_project.disallow_subproject_uris:
+                        raise SourceError(
+                            "{}: Parent project did not provide a mapping for alias '{}' and disallowed usage of unmapped aliases".format(
+                                source, url_alias
+                            ),
+                            reason="missing-alias-mapping",
+                        )
+
                 url = alias_url + url_body
 
         return url
@@ -391,11 +410,32 @@ class Project:
     # Returns:
     #    bool: Whether the alias is declared in the scope of this project
     #
-    def alias_exists(self, alias, *, first_pass=False):
+    def alias_exists(self, alias, *, source, first_pass=False):
         if first_pass:
             config = self.first_pass_config
         else:
             config = self.config
+
+        if self.junction:
+            parent_project = self.junction._get_project()
+            parent_alias = self.junction.aliases.get_str(alias, default=None)
+            if parent_alias:
+                if parent_project.alias_exists(parent_alias, source=source, first_pass=first_pass):
+                    return True
+                else:
+                    raise SourceError(
+                        "{}: Mapped alias '{}' for subproject alias '{}' is invalid in the parent project".format(
+                            self.junction, parent_alias, alias
+                        ),
+                        reason="invalid-source-alias",
+                    )
+            elif parent_project.disallow_subproject_uris:
+                raise SourceError(
+                    "{}: Parent project did not provide a mapping for alias '{}' and disallowed usage of unmapped aliases".format(
+                        source, alias
+                    ),
+                    reason="missing-alias-mapping",
+                )
 
         return config._aliases.get_str(alias, default=None) is not None
 
@@ -422,6 +462,15 @@ class Project:
 
         if not alias or alias not in config._aliases:  # pylint: disable=unsupported-membership-test
             return [None]
+
+        if self.junction:
+            parent_project = self.junction._get_project()
+            parent_alias = self.junction.aliases.get_str(alias, default=None)
+            if parent_alias:
+                # Delegate translation to parent project
+                return parent_project.get_alias_uris(parent_alias, first_pass=first_pass, tracking=tracking)
+            elif parent_project.disallow_subproject_uris:
+                return [None]
 
         uri_list: List[Union[SourceMirror, str]] = []
         policy = self._context.track_source if tracking else self._context.fetch_source
@@ -814,7 +863,19 @@ class Project:
 
         # Junction configuration
         junctions_node = pre_config_node.get_mapping("junctions", default={})
-        junctions_node.validate_keys(["duplicates", "internal"])
+        junctions_node.validate_keys(["duplicates", "internal", "disallow-subproject-uris"])
+
+        if self.junction and self.junction._get_project().disallow_subproject_uris:
+            # If the parent project doesn't allow subproject URIs, this must
+            # be enforced for nested subprojects as well.
+            self.disallow_subproject_uris = True
+
+            # The `disallow-subproject-uris` flag also implies fatal `unaliased-url` in subprojects
+            # to ensure no subproject URIs escape the parent project's control.
+            if CoreWarnings.UNALIASED_URL not in self._fatal_warnings:
+                self._fatal_warnings.append(CoreWarnings.UNALIASED_URL)
+        else:
+            self.disallow_subproject_uris = junctions_node.get_bool("disallow-subproject-uris", default=False)
 
         # Parse duplicates
         junction_duplicates = junctions_node.get_mapping("duplicates", default={})
