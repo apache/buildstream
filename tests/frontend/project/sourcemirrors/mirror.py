@@ -11,7 +11,7 @@ class Sample(SourceMirror):
     BST_MIN_VERSION = "2.0"
 
     def configure(self, node):
-        node.validate_keys(["aliases"])
+        node.validate_keys(SourceMirror.COMMON_CONFIG_KEYS + ["aliases"])
 
         self.aliases = {}
 
@@ -19,13 +19,14 @@ class Sample(SourceMirror):
         for alias_name, url_list in aliases.items():
             self.aliases[alias_name] = url_list.as_str_list()
 
+        self.set_supported_aliases(self.aliases.keys())
+
     def translate_url(
         self,
         *,
         project_name: str,
         alias: str,
         alias_url: str,
-        alias_substitute_url: Optional[str],
         source_url: str,
         extra_data: Optional[Dict[str, Any]],
     ) -> str:

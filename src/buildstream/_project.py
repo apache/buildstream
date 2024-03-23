@@ -15,7 +15,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
-from typing import TYPE_CHECKING, Optional, Dict, Union, List, Tuple
+from typing import TYPE_CHECKING, Optional, Dict, Union, List
 
 import os
 import urllib.parse
@@ -412,7 +412,7 @@ class Project:
     #
     def get_alias_uris(
         self, alias: str, *, first_pass: bool = False, tracking: bool = False
-    ) -> List[Tuple[Optional[SourceMirror], Optional[str]]]:
+    ) -> List[Optional[SourceMirror | str]]:
 
         if first_pass:
             config = self.first_pass_config
@@ -420,27 +420,24 @@ class Project:
             config = self.config
 
         if not alias or alias not in config._aliases:  # pylint: disable=unsupported-membership-test
-            return [(None, None)]
+            return [None]
 
-        uri_list: List[Tuple[Optional[SourceMirror], Optional[str]]] = []
+        uri_list: List[Optional[SourceMirror | str]] = []
         policy = self._context.track_source if tracking else self._context.fetch_source
 
         if policy in (_SourceUriPolicy.ALL, _SourceUriPolicy.MIRRORS) or (
             policy == _SourceUriPolicy.USER and self._mirror_override
         ):
             for mirror_name, mirror in config.mirrors.items():
-                mirror_uri_list = mirror._get_alias_uris(alias)
-                if mirror_uri_list:
+                list_to_add = mirror._get_alias_uris(alias)
 
-                    list_to_add = [(mirror, uri) for uri in mirror_uri_list]
-
-                    if mirror_name == config.default_mirror:
-                        uri_list = list_to_add + uri_list
-                    else:
-                        uri_list += list_to_add
+                if mirror_name == config.default_mirror:
+                    uri_list = list_to_add + uri_list
+                else:
+                    uri_list += list_to_add
 
         if policy in (_SourceUriPolicy.ALL, _SourceUriPolicy.ALIASES):
-            uri_list.append((None, config._aliases.get_str(alias)))
+            uri_list.append(config._aliases.get_str(alias))
 
         return uri_list
 
