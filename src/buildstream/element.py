@@ -71,7 +71,7 @@ from contextlib import contextmanager, suppress
 from functools import partial
 from itertools import chain
 import string
-from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, Iterable, List, Optional, Set, Sequence
+from typing import cast, TYPE_CHECKING, Dict, Iterator, Iterable, List, Optional, Set, Sequence
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
@@ -210,7 +210,7 @@ class Element(Plugin):
         context: "Context",
         project: "Project",
         load_element: "LoadElement",
-        plugin_conf: Dict[str, Any],
+        plugin_conf: Optional[str],
         *,
         artifact_key: str = None,
     ):
@@ -2857,7 +2857,7 @@ class Element(Plugin):
     #
     # Normal element initialization procedure.
     #
-    def __initialize_from_yaml(self, load_element: "LoadElement", plugin_conf: Dict[str, Any]):
+    def __initialize_from_yaml(self, load_element: "LoadElement", plugin_conf: Optional[str]):
 
         context = self._get_context()
         project = self._get_project()
