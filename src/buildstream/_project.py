@@ -245,7 +245,7 @@ class Project:
             if alias_url:
                 if self.junction:
                     parent_project = self.junction._get_project()
-                    parent_alias = self.junction.aliases.get_str(url_alias, default=None)
+                    parent_alias = self.junction.get_parent_alias(url_alias)
                     if parent_alias:
                         # Delegate translation to parent project
                         return parent_project.translate_url(
@@ -418,7 +418,7 @@ class Project:
 
         if self.junction:
             parent_project = self.junction._get_project()
-            parent_alias = self.junction.aliases.get_str(alias, default=None)
+            parent_alias = self.junction.get_parent_alias(alias)
             if parent_alias:
                 if parent_project.alias_exists(parent_alias, source=source, first_pass=first_pass):
                     return True
@@ -465,7 +465,7 @@ class Project:
 
         if self.junction:
             parent_project = self.junction._get_project()
-            parent_alias = self.junction.aliases.get_str(alias, default=None)
+            parent_alias = self.junction.get_parent_alias(alias)
             if parent_alias:
                 # Delegate translation to parent project
                 return parent_project.get_alias_uris(parent_alias, first_pass=first_pass, tracking=tracking)

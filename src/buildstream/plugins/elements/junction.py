@@ -55,6 +55,9 @@ Overview
      aliases:
        subproject-alias: local-alias
 
+     # A default mapping can be set (defaults to none)
+     map-aliases: identity
+
 With a junction element in place, local elements can depend on elements in
 the other BuildStream project using :ref:`element paths <format_element_names>`.
 For example, if you have a ``toolchain.bst`` junction element referring to
@@ -329,6 +332,12 @@ in the same build pipeline, please refer to the
 
 from buildstream import Element, ElementError
 from buildstream._pipeline import PipelineError
+from buildstream.types import FastEnum
+
+
+class _AliasMappingStrategy(FastEnum):
+    NONE = "none"
+    IDENTITY = "identity"
 
 
 # Element implementation for the 'junction' kind.
@@ -343,7 +352,7 @@ class JunctionElement(Element):
 
     def configure(self, node):
 
-        node.validate_keys(["path", "options", "overrides", "aliases"])
+        node.validate_keys(["path", "options", "overrides", "aliases", "map-aliases"])
 
         self.path = node.get_str("path", default="")
         self.options = node.get_mapping("options", default={})
@@ -368,6 +377,13 @@ class JunctionElement(Element):
 
         # Map from subproject alias to local alias
         self.aliases = node.get_mapping("aliases", default={})
+        self.map_aliases = node.get_enum("map-aliases", _AliasMappingStrategy, default=_AliasMappingStrategy.NONE)
+
+    def get_parent_alias(self, alias):
+        parent_alias = self.aliases.get_str(alias, default=None)
+        if parent_alias is None and self.map_aliases == _AliasMappingStrategy.IDENTITY:
+            parent_alias = alias
+        return parent_alias
 
     def preflight(self):
         pass
