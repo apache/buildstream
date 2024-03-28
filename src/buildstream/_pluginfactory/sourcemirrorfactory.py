@@ -62,9 +62,9 @@ class SourceMirrorFactory(PluginFactory):
         #
         kind = node.get_str("kind", None)
         if kind is None:
-            plugin_type = SourceMirror
-        else:
-            plugin_type, _ = self.lookup(context.messenger, kind, node)
+            kind = "default"
+
+        plugin_type, _ = self.lookup(context.messenger, kind, node)
 
         source_mirror_type = cast(Type[SourceMirror], plugin_type)
         source_mirror = source_mirror_type(context, project, node)

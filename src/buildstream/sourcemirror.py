@@ -45,12 +45,12 @@ Class Reference
 ---------------
 """
 
-from typing import Optional, Dict, List, Any, TYPE_CHECKING
+from typing import Optional, Dict, List, Set, Any, TYPE_CHECKING
 
-from .node import MappingNode, SequenceNode
+from .node import MappingNode
 from .plugin import Plugin
-from ._exceptions import BstError, LoadError
-from .exceptions import ErrorDomain, LoadErrorReason
+from ._exceptions import BstError, ImplError
+from .exceptions import ErrorDomain
 
 if TYPE_CHECKING:
 
@@ -93,6 +93,13 @@ class SourceMirror(Plugin):
     # The SourceMirror plugin type is only supported since BuildStream 2.2
     BST_MIN_VERSION = "2.2"
 
+    COMMON_CONFIG_KEYS = ["name", "kind"]
+    """Common source config keys
+
+    SourceMirror config keys that must not be accessed in configure(), and
+    should be checked for using node.validate_keys().
+    """
+
     def __init__(
         self,
         context: "Context",
@@ -103,29 +110,46 @@ class SourceMirror(Plugin):
         #       the project level base variables, so there is no need
         #       to expand them redundantly here.
         #
-        node.validate_keys(["name", "kind", "config", "aliases"])
 
         # Do local base class parsing first
         name: str = node.get_str("name")
-        self.__aliases: Dict[str, List[str]] = self.__load_aliases(node)
 
         # Chain up to Plugin
         super().__init__(name, context, project, node, "source-mirror")
 
+        self.__aliases: Set[str] = set()
         # Plugin specific parsing
-        config = node.get_mapping("config", default={})
-        self._configure(config)
+        self._configure(node)
+
+    ##########################################################
+    #                      Internal API                      #
+    ##########################################################
+
+    # Returns a list of URIs/SourceMirrors for a given alias.
+    def _get_alias_uris(self, alias: str) -> List:
+        assert self.__aliases is not None, "Didn't set aliases during configuring time"
+        if alias in self.__aliases:
+            return [self]
+        return []
 
     ##########################################################
     #                        Public API                      #
     ##########################################################
+
+    def set_supported_aliases(self, aliases: List[str]):
+        """Set the aliases for which `self` can translate urls.
+
+        Args:
+           aliases: The list of aliases supported by this plugin
+        """
+        assert self._get_configuring(), "Trying to set aliases after configure time"
+        self.__aliases.update(aliases)
+
     def translate_url(
         self,
         *,
-        project_name: str,
         alias: str,
         alias_url: str,
-        alias_substitute_url: Optional[str],
         source_url: str,
         extra_data: Optional[Dict[str, Any]],
     ) -> str:
@@ -134,70 +158,11 @@ class SourceMirror(Plugin):
         This method implements the behavior of :func:`Source.translate_url() <buildstream.source.Source.translate_url>`.
 
         Args:
-           project_name: The name of the project this URL comes from
            alias: The alias to translate for
            alias_url: The default URL configured for this alias in the originating project
-           alias_substitute_url: The alias substitute URL configured in the mirror configuration, or None
            source_url: The URL as specified by original source YAML, excluding the alias
            extra_data: An optional extra dictionary to return additional data
         """
-        #
-        # Default implementation behaves in the same way we behaved before
-        # introducing the SourceMirror plugin.
-        #
-        assert alias_substitute_url is not None
-
-        return alias_substitute_url + source_url
-
-    #############################################################
-    #                   Plugin API implementation               #
-    #############################################################
-
-    #
-    # Provide a dummy implementation as the base class is used as a default
-    #
-    def configure(self, node: MappingNode) -> None:
-        pass
-
-    ##########################################################
-    #                       Internal API                     #
-    ##########################################################
-
-    # _get_alias_uris():
-    #
-    # Get a list of URIs for the specified alias
-    #
-    # Args:
-    #    alias: The alias to fetch URIs for
-    #
-    # Returns:
-    #    A list of URIs for the given alias
-    #
-    def _get_alias_uris(self, alias: str) -> List[str]:
-
-        aliases: List[str]
-        try:
-            aliases = self.__aliases[alias]
-        except KeyError:
-            aliases = []
-
-        return aliases
-
-    ##########################################################
-    #                        Private API                     #
-    ##########################################################
-    def __load_aliases(self, node: MappingNode) -> Dict[str, List[str]]:
-
-        aliases: Dict[str, List[str]] = {}
-        alias_node: MappingNode = node.get_mapping("aliases")
-
-        for alias, uris in alias_node.items():
-            if not isinstance(uris, SequenceNode):
-                raise LoadError(
-                    "{}: Value of '{}' expected to be a list of strings".format(uris, alias),
-                    LoadErrorReason.INVALID_DATA,
-                )
-
-            aliases[alias] = uris.as_str_list()
-
-        return aliases
+        raise ImplError(
+            "source mirror plugin '{kind}' does not implement translate_url()".format(kind=self.get_kind())
+        )
