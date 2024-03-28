@@ -807,3 +807,75 @@ def test_mirror_expand_project_and_toplevel_root(cli, tmpdir):
         # Success if the expanded %{project-root} is found
         assert foo_str in contents
         assert bar_str in contents
+
+
+# Test a simple SourceMirror implementation which reads
+# plugin configuration and behaves in the same way as default
+# mirrors but using data in the plugin configuration instead.
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.usefixtures("datafiles")
+def test_source_mirror_plugin(cli, tmpdir):
+    output_file = os.path.join(str(tmpdir), "output.txt")
+    project_dir = str(tmpdir)
+    element_dir = os.path.join(project_dir, "elements")
+    os.makedirs(element_dir, exist_ok=True)
+    element_name = "test.bst"
+    element_path = os.path.join(element_dir, element_name)
+    element = generate_element(output_file)
+    _yaml.roundtrip_dump(element, element_path)
+
+    project_file = os.path.join(project_dir, "project.conf")
+    project = {
+        "name": "test",
+        "min-version": "2.0",
+        "element-path": "elements",
+        "aliases": {
+            "foo": "FOO/",
+            "bar": "BAR/",
+        },
+        "mirrors": [
+            {
+                "name": "middle-earth",
+                "kind": "mirror",
+                "aliases": {
+                    "foo": ["OOF/"],
+                    "bar": ["RAB/"],
+                },
+            },
+            {
+                "name": "arrakis",
+                "kind": "mirror",
+                "aliases": {
+                    "foo": ["%{project-root}/OFO/"],
+                    "bar": ["%{project-root}/RBA/"],
+                },
+            },
+            {
+                "name": "oz",
+                "kind": "mirror",
+                "aliases": {
+                    "foo": ["ooF/"],
+                    "bar": ["raB/"],
+                },
+            },
+        ],
+        "plugins": [
+            {"origin": "local", "path": "sources", "sources": ["fetch_source"]},
+            {"origin": "local", "path": "sourcemirrors", "source-mirrors": ["mirror"]},
+        ],
+    }
+
+    _yaml.roundtrip_dump(project, project_file)
+
+    result = cli.run(project=project_dir, args=["--default-mirror", "arrakis", "source", "fetch", element_name])
+    result.assert_success()
+    with open(output_file, encoding="utf-8") as f:
+        contents = f.read()
+        print(contents)
+        foo_str = os.path.join(project_dir, "OFO/repo1")
+        bar_str = os.path.join(project_dir, "RBA/repo2")
+
+        # Success if the expanded %{project-root} is found
+        assert foo_str in contents
+        assert bar_str in contents
