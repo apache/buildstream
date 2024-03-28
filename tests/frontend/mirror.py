@@ -839,42 +839,24 @@ def test_source_mirror_plugin(cli, tmpdir):
                 "name": "middle-earth",
                 "kind": "mirror",
                 "aliases": {
-                    "foo": ["<invalid>"],
-                    "bar": ["<invalid>"],
-                },
-                "config": {
-                    "aliases": {
-                        "foo": ["OOF/"],
-                        "bar": ["RAB/"],
-                    },
+                    "foo": ["OOF/"],
+                    "bar": ["RAB/"],
                 },
             },
             {
                 "name": "arrakis",
                 "kind": "mirror",
                 "aliases": {
-                    "foo": ["<invalid>"],
-                    "bar": ["<invalid>"],
-                },
-                "config": {
-                    "aliases": {
-                        "foo": ["%{project-root}/OFO/"],
-                        "bar": ["%{project-root}/RBA/"],
-                    },
+                    "foo": ["%{project-root}/OFO/"],
+                    "bar": ["%{project-root}/RBA/"],
                 },
             },
             {
                 "name": "oz",
                 "kind": "mirror",
                 "aliases": {
-                    "foo": ["<invalid>"],
-                    "bar": ["<invalid>"],
-                },
-                "config": {
-                    "aliases": {
-                        "foo": ["ooF/"],
-                        "bar": ["raB/"],
-                    },
+                    "foo": ["ooF/"],
+                    "bar": ["raB/"],
                 },
             },
         ],
