@@ -102,7 +102,7 @@ class Project:
         self.ref_storage: Optional[ProjectRefStorage] = None  # Where to store source refs
         self.refs: Optional[ProjectRefs] = None
         self.junction_refs: Optional[ProjectRefs] = None
-        self.allow_subproject_uris: bool = True
+        self.disallow_subproject_uris: bool = False
 
         self.config: ProjectConfig = ProjectConfig()
         self.first_pass_config: ProjectConfig = ProjectConfig()
@@ -229,7 +229,7 @@ class Project:
                         return parent_project.translate_url(
                             parent_alias + utils._ALIAS_SEPARATOR + url_body, first_pass=first_pass
                         )
-                    elif not parent_project.allow_subproject_uris:
+                    elif parent_project.disallow_subproject_uris:
                         return url
 
                 url = alias_url + url_body
@@ -394,7 +394,7 @@ class Project:
             parent_alias = self.junction.aliases.get_str(alias, default=None)
             if parent_alias:
                 return parent_project.alias_exists(parent_alias, first_pass=first_pass)
-            elif not parent_project.allow_subproject_uris:
+            elif parent_project.disallow_subproject_uris:
                 return False
 
         return config._aliases.get_str(alias, default=None) is not None
@@ -422,7 +422,7 @@ class Project:
             if parent_alias:
                 # Delegate translation to parent project
                 return parent_project.get_alias_uris(parent_alias, first_pass=first_pass, tracking=tracking)
-            elif not parent_project.allow_subproject_uris:
+            elif parent_project.disallow_subproject_uris:
                 return [None]
 
         uri_list = []
@@ -815,14 +815,14 @@ class Project:
 
         # Junction configuration
         junctions_node = pre_config_node.get_mapping("junctions", default={})
-        junctions_node.validate_keys(["duplicates", "internal", "allow-subproject-uris"])
+        junctions_node.validate_keys(["duplicates", "internal", "disallow-subproject-uris"])
 
-        if self.junction and not self.junction._get_project().allow_subproject_uris:
+        if self.junction and not self.junction._get_project().disallow_subproject_uris:
             # If the parent project doesn't allow subproject URIs, this must
             # be enforced for nested subprojects as well.
-            self.allow_subproject_uris = False
+            self.disallow_subproject_uris = True
         else:
-            self.allow_subproject_uris = junctions_node.get_bool("allow-subproject-uris", default=True)
+            self.disallow_subproject_uris = junctions_node.get_bool("disallow-subproject-uris", default=False)
 
         # Parse duplicates
         junction_duplicates = junctions_node.get_mapping("duplicates", default={})

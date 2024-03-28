@@ -50,6 +50,8 @@ Overview
      overrides:
        subproject-junction.bst: local-junction.bst
 
+     # Optionally override aliases in subprojects, to allow using mirrors
+     # defined in the parent project.
      aliases:
        subproject-alias: local-alias
 
