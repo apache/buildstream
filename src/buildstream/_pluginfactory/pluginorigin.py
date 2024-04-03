@@ -30,6 +30,9 @@ class PluginType(FastEnum):
     # An Element plugin
     ELEMENT = "element"
 
+    # A SourceMirror plugin
+    SOURCE_MIRROR = "source-mirror"
+
     def __str__(self):
         return str(self.value)
 
@@ -68,7 +71,7 @@ class PluginConfiguration:
 class PluginOrigin:
 
     # Common fields valid for all plugin origins
-    _COMMON_CONFIG_KEYS = ["origin", "sources", "elements", "allow-deprecated"]
+    _COMMON_CONFIG_KEYS = ["origin", "sources", "elements", "source-mirrors", "allow-deprecated"]
 
     def __init__(self, origin_type):
 
@@ -76,6 +79,7 @@ class PluginOrigin:
         self.origin_type = origin_type  # The PluginOriginType
         self.elements = {}  # A dictionary of PluginConfiguration
         self.sources = {}  # A dictionary of PluginConfiguration objects
+        self.source_mirrors = {}  # A dictionary of PluginConfiguration objects
         self.provenance_node = None
         self.project = None
 
@@ -111,6 +115,9 @@ class PluginOrigin:
 
         source_sequence = origin_node.get_sequence("sources", [])
         self._load_plugin_configurations(source_sequence, self.sources)
+
+        source_mirror_sequence = origin_node.get_sequence("source-mirrors", [])
+        self._load_plugin_configurations(source_mirror_sequence, self.source_mirrors)
 
     ##############################################
     #              Abstract methods              #
