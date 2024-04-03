@@ -59,7 +59,7 @@ function runTest() {
     # Run docker-compose from it's directory, because it will use
     # relative paths
     cd "${topdir}/compose"
-    docker-compose \
+    docker compose \
         --env-file ${topdir}/common.env \
         --file ${topdir}/compose/ci.docker-compose.yml \
         run "${test_name}"
@@ -77,23 +77,23 @@ function runServiceTest() {
     # Run docker-compose from it's directory, because it will use
     # relative paths
     cd "${topdir}/compose"
-    docker-compose \
+    docker compose \
         --env-file "${topdir}/common.env" \
         --file "${topdir}/compose/ci.${test_name}.yml" \
         up --detach --renew-anon-volumes --remove-orphans
 
-    docker-compose \
+    docker compose \
         --env-file "${topdir}/common.env" \
         --file "${topdir}/compose/ci.docker-compose.yml" run ${test_name}
     test_exit_status=$?
 
-    docker-compose \
+    docker compose \
         --env-file "${topdir}/common.env" \
         --file "${topdir}/compose/ci.${test_name}.yml" stop
-    docker-compose \
+    docker compose \
         --env-file "${topdir}/common.env" \
         --file "${topdir}/compose/ci.${test_name}.yml" logs
-    docker-compose \
+    docker compose \
         --env-file "${topdir}/common.env" \
         --file "${topdir}/compose/ci.${test_name}.yml" down --volumes
 

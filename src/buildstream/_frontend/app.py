@@ -354,16 +354,16 @@ class App:
     #
     # Args:
     #    project_name (str): The project name, must be a valid symbol name
-    #    min_version (str): The minimum required version of BuildStream (default is current version)
-    #    element_path (str): The subdirectory to store elements in, default is 'elements'
+    #    min_version (str): The minimum required version of BuildStream
+    #    element_path (str): The subdirectory to store elements in
     #    force (bool): Allow overwriting an existing project.conf
     #    target_directory (str): The target directory the project should be initialized in
     #
     def init_project(
         self,
         project_name,
-        min_version=None,
-        element_path="elements",
+        min_version,
+        element_path,
         force=False,
         target_directory=None,
     ):
@@ -374,10 +374,6 @@ class App:
             directory = os.path.abspath(directory)
 
         project_path = os.path.join(directory, "project.conf")
-
-        if min_version is None:
-            bst_major, bst_minor = utils.get_bst_version()
-            min_version = "{}.{}".format(bst_major, bst_minor)
 
         try:
             if self._set_project_dir:
@@ -901,20 +897,17 @@ class App:
     #
     # Args:
     #    project_name (str): The project name, must be a valid symbol name
-    #    min_version (str): The minimum BuildStream version, default is the latest version
-    #    element_path (str): The subdirectory to store elements in, default is 'elements'
+    #    min_version (str): The minimum BuildStream version
+    #    element_path (str): The subdirectory to store elements in
     #
     # Returns:
     #    project_name (str): The user selected project name
     #    min_version (int): The user selected minimum BuildStream version
     #    element_path (str): The user selected element path
     #
-    def _init_project_interactive(self, project_name, min_version=None, element_path="elements"):
+    def _init_project_interactive(self, project_name, min_version, element_path):
 
         bst_major, bst_minor = utils._get_bst_api_version()
-
-        if min_version is None:
-            min_version = "{}.{}".format(bst_major, bst_minor)
 
         def project_name_proc(user_input):
             try:

@@ -21,7 +21,7 @@ jobs:
 
       - name: Build documentation using Docker Compose
         run: |
-          docker-compose \
+          docker compose \
             --env-file ${GITHUB_WORKSPACE}/.github/common.env \
             --file ${GITHUB_WORKSPACE}/.github/compose/ci.docker-compose.yml \
             run \
