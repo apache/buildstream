@@ -16,9 +16,11 @@
 # pylint: disable=redefined-outer-name
 
 import os
+import shutil
+
 import pytest
 
-from buildstream import _yaml
+from buildstream import CoreWarnings, _yaml
 from buildstream.exceptions import ErrorDomain
 from buildstream._testing import create_repo
 from buildstream._testing import cli  # pylint: disable=unused-import
@@ -885,3 +887,129 @@ def test_source_mirror_plugin(cli, tmpdir):
         # Success if the expanded %{project-root} is found
         assert foo_str in contents
         assert bar_str in contents
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.usefixtures("datafiles")
+@pytest.mark.parametrize("subproject_mirrors", [True, False])
+@pytest.mark.parametrize("unaliased_sources", [True, False])
+@pytest.mark.parametrize("disallow_subproject_uris", [True, False])
+@pytest.mark.parametrize("fetch_source", ["aliases", "mirrors"])
+@pytest.mark.parametrize("alias_override", [["foo"], ["foo", "bar"], "global", "invalid"])
+def test_mirror_subproject_aliases(
+    cli, tmpdir, subproject_mirrors, unaliased_sources, disallow_subproject_uris, fetch_source, alias_override
+):
+    output_file = os.path.join(str(tmpdir), "output.txt")
+    project_dir = tmpdir
+
+    element_dir = project_dir / "elements"
+    os.makedirs(element_dir, exist_ok=True)
+
+    subproject_dir = project_dir / "subproject"
+    subproject_element_dir = subproject_dir / "elements"
+    os.makedirs(subproject_element_dir, exist_ok=True)
+
+    subproject_bar_alias_succeed = (
+        fetch_source == "aliases" and not disallow_subproject_uris and alias_override == ["foo"]
+    )
+
+    subproject = {
+        "name": "test-subproject",
+        "min-version": "2.0",
+        "element-path": "elements",
+        "aliases": {
+            "foo": "OOF/",
+            "bar": "RAB/" if subproject_bar_alias_succeed else "BAR/",
+        },
+        "plugins": [
+            {"origin": "local", "path": "sources", "sources": ["fetch_source"]},
+        ],
+    }
+
+    if subproject_mirrors:
+        subproject["mirrors"] = FAIL_MIRROR_LIST
+
+    _yaml.roundtrip_dump(subproject, str(subproject_dir / "project.conf"))
+
+    element_name = "test.bst"
+    element = generate_element(output_file)
+
+    if unaliased_sources:
+        element["sources"][0]["urls"] = ["foo:repo1", "RAB/repo2"]
+    _yaml.roundtrip_dump(element, str(subproject_element_dir / element_name))
+
+    # copy the source plugin to the subproject
+    shutil.copytree(project_dir / "sources", subproject_dir / "sources")
+
+    project = generate_project(MirrorConfig.SUCCESS_MIRRORS, fetch_source == "aliases")
+
+    if disallow_subproject_uris:
+        project["junctions"] = {"disallow-subproject-uris": "true"}
+
+    _yaml.roundtrip_dump(project, str(project_dir / "project.conf"))
+
+    junction_name = "subproject.bst"
+    junction = {
+        "kind": "junction",
+        "sources": [
+            {
+                "kind": "local",
+                "path": "subproject",
+            }
+        ],
+    }
+
+    if alias_override == "global":
+        junction["config"] = {"map-aliases": "identity"}
+    elif alias_override == "invalid":
+        junction["config"] = {
+            "aliases": {
+                "foo": "invalid-foo",
+                "bar": "invalid-bar",
+            }
+        }
+    else:
+        junction["config"] = {"aliases": {alias: alias for alias in alias_override}}
+
+    _yaml.roundtrip_dump(junction, str(element_dir / junction_name))
+
+    userconfig = {"fetch": {"source": fetch_source}}
+    cli.configure(userconfig)
+
+    result = cli.run(project=project_dir, args=["source", "fetch", "{}:{}".format(junction_name, element_name)])
+    if alias_override == "invalid":
+        # Mapped alias does not exist in the parent project
+        result.assert_main_error(ErrorDomain.SOURCE, "invalid-source-alias")
+    elif disallow_subproject_uris and unaliased_sources:
+        # Subproject defines unaliased source and the parent project disallows subproject URIs
+        result.assert_main_error(ErrorDomain.PLUGIN, CoreWarnings.UNALIASED_URL)
+    elif disallow_subproject_uris and alias_override == ["foo"]:
+        # No alias mapping defined for `bar` and the parent project disallows subproject URIs
+        result.assert_main_error(ErrorDomain.SOURCE, "missing-alias-mapping")
+    elif fetch_source == "mirrors" and not unaliased_sources and alias_override == ["foo"]:
+        # Mirror required and no alias mapping defined for `bar`
+        if not subproject_mirrors:
+            # and the subproject has no mirror configured
+            result.assert_main_error(ErrorDomain.SOURCE, "missing-source-alias-target")
+        else:
+            # and the subproject has a failing mirror configured
+            result.assert_task_error(ErrorDomain.SOURCE, None)
+
+            with open(output_file, encoding="utf-8") as f:
+                contents = f.read()
+
+                assert "Fetch foo:repo1 succeeded from FOO/repo1" in contents
+                assert "Fetch bar:repo2 failed from rabbit/repo2" in contents
+                assert "Fetch bar:repo2 failed from buffalo/repo2" in contents
+    else:
+        result.assert_success()
+
+        with open(output_file, encoding="utf-8") as f:
+            contents = f.read()
+
+            assert "Fetch foo:repo1 succeeded from FOO/repo1" in contents
+
+            if unaliased_sources:
+                assert "Fetch RAB/repo2 succeeded from RAB/repo2" in contents
+            else:
+                assert "Fetch bar:repo2 succeeded from RAB/repo2" in contents
