@@ -103,6 +103,7 @@ class Project:
         self.ref_storage: Optional[ProjectRefStorage] = None  # Where to store source refs
         self.refs: Optional[ProjectRefs] = None
         self.junction_refs: Optional[ProjectRefs] = None
+        self.disallow_subproject_uris: bool = False
 
         self.config: ProjectConfig = ProjectConfig()
         self.first_pass_config: ProjectConfig = ProjectConfig()
@@ -240,6 +241,17 @@ class Project:
             url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
             alias_url = self.get_alias_url(url_alias, first_pass=first_pass)
             if alias_url:
+                if self.junction:
+                    parent_project = self.junction._get_project()
+                    parent_alias = self.junction.get_parent_alias(url_alias)
+                    if parent_alias:
+                        # Delegate translation to parent project
+                        return parent_project.translate_url(
+                            parent_alias + utils._ALIAS_SEPARATOR + url_body, first_pass=first_pass
+                        )
+                    elif parent_project.disallow_subproject_uris:
+                        return url
+
                 url = alias_url + url_body
 
         return url
@@ -397,6 +409,14 @@ class Project:
         else:
             config = self.config
 
+        if self.junction:
+            parent_project = self.junction._get_project()
+            parent_alias = self.junction.get_parent_alias(alias)
+            if parent_alias:
+                return parent_project.alias_exists(parent_alias, first_pass=first_pass)
+            elif parent_project.disallow_subproject_uris:
+                return False
+
         return config._aliases.get_str(alias, default=None) is not None
 
     # get_alias_uris()
@@ -422,6 +442,15 @@ class Project:
 
         if not alias or alias not in config._aliases:  # pylint: disable=unsupported-membership-test
             return [None]
+
+        if self.junction:
+            parent_project = self.junction._get_project()
+            parent_alias = self.junction.get_parent_alias(alias)
+            if parent_alias:
+                # Delegate translation to parent project
+                return parent_project.get_alias_uris(parent_alias, first_pass=first_pass, tracking=tracking)
+            elif parent_project.disallow_subproject_uris:
+                return [None]
 
         uri_list: List[Union[SourceMirror, str]] = []
         policy = self._context.track_source if tracking else self._context.fetch_source
@@ -814,7 +843,14 @@ class Project:
 
         # Junction configuration
         junctions_node = pre_config_node.get_mapping("junctions", default={})
-        junctions_node.validate_keys(["duplicates", "internal"])
+        junctions_node.validate_keys(["duplicates", "internal", "disallow-subproject-uris"])
+
+        if self.junction and not self.junction._get_project().disallow_subproject_uris:
+            # If the parent project doesn't allow subproject URIs, this must
+            # be enforced for nested subprojects as well.
+            self.disallow_subproject_uris = True
+        else:
+            self.disallow_subproject_uris = junctions_node.get_bool("disallow-subproject-uris", default=False)
 
         # Parse duplicates
         junction_duplicates = junctions_node.get_mapping("duplicates", default={})
