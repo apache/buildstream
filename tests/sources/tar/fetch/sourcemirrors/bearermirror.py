@@ -4,15 +4,22 @@ from buildstream import SourceMirror, MappingNode
 
 
 class Sample(SourceMirror):
-    BST_MIN_VERSION = "2.0"
+    def configure(self, node):
+        node.validate_keys(["aliases"])
+
+        self.aliases = {}
+
+        aliases = node.get_mapping("aliases")
+        for alias_name, url_list in aliases.items():
+            self.aliases[alias_name] = url_list.as_str_list()
+
+        self.set_supported_aliases(self.aliases.keys())
 
     def translate_url(
         self,
         *,
-        project_name: str,
         alias: str,
         alias_url: str,
-        alias_substitute_url: Optional[str],
         source_url: str,
         extra_data: Optional[Dict[str, Any]],
     ) -> str:
@@ -20,7 +27,7 @@ class Sample(SourceMirror):
         if extra_data is not None:
             extra_data["auth-header-format"] = "Bearer {password}"
 
-        return alias_substitute_url + source_url
+        return self.aliases[alias][0] + source_url
 
 
 # Plugin entry point

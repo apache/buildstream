@@ -392,8 +392,10 @@ def test_use_netrc_bearer_auth(cli, datafiles, tmpdir):
                 {
                     "name": "middle-earth",
                     "kind": "bearermirror",
-                    "aliases": {
-                        "tmpdir": [server.base_url()],
+                    "config": {
+                        "aliases": {
+                            "tmpdir": [server.base_url()],
+                        },
                     },
                 },
             ],
