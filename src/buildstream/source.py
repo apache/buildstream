@@ -768,7 +768,7 @@ class Source(Plugin):
                 alias=url_alias, alias_url=project_alias_url, source_url=url_body, extra_data=extra_data
             )
         else:
-            return project.translate_url(url, first_pass=self.__first_pass)
+            return project.translate_url(url, source=self, first_pass=self.__first_pass)
 
     def mark_download_url(self, url: str, *, primary: bool = True) -> None:
         """Identifies the URL that this Source uses to download
@@ -830,7 +830,7 @@ class Source(Plugin):
         # If there is an alias in use, ensure that it exists in the project
         if alias:
             project = self._get_project()
-            if not project.alias_exists(alias, first_pass=self.__first_pass):
+            if not project.alias_exists(alias, first_pass=self.__first_pass, source=self):
                 raise SourceError(
                     "{}: Invalid alias '{}' specified in URL: {}".format(self, alias, url),
                     reason="invalid-source-alias",
@@ -1287,7 +1287,7 @@ class Source(Plugin):
     def _get_alias(self):
         alias = self.__expected_alias
         project = self._get_project()
-        if project.alias_exists(alias, first_pass=self.__first_pass):
+        if project.alias_exists(alias, first_pass=self.__first_pass, source=self):
             # The alias must already be defined in the project's aliases
             # otherwise http://foo gets treated like it contains an alias
             return alias
