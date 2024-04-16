@@ -25,6 +25,62 @@ Any derived classes must write their own stage() and get_unique_key()
 implementation.
 
 
+SourceMirror extra data "http-auth"
+--------------------------------------------
+The DownloadableFileSource, and consequently any :class:`Source <buildstream.source.Source>`
+implementations which derive from DownloadableFileSource, support the "http-auth"
+extra data returned by :class:`SourceMirror <buildstream.sourcemirror.SourceMirror>` plugins
+through :func:`Source.translate_url() <buildstream.source.Source.translate_url>`.
+
+This functionality is available **Since: 2.2**.
+
+This allows one to use :class:`SourceMirror <buildstream.sourcemirror.SourceMirror>` plugins
+to add an authorization header to the ``GET`` requests.
+
+
+**Example:**
+
+.. code:: python
+
+   class MySourceMirror(SourceMirror):
+
+        def translate_url(
+            self,
+            *,
+            alias: str,
+            alias_url: str,
+            source_url: str,
+            extra_data: Optional[Dict[str, Any]],
+        ) -> str:
+
+            #
+            # Set the "http-auth" extra data
+            #
+            if extra_data is not None:
+                extra_data["http-auth"] = "bearer"
+
+            # ...
+
+Only the "http-auth" value ``bearer`` is supported.
+
+
+**Example:**
+
+If the URL reported by :func:`SourceMirror.translate_url() <buildstream.sourcemirror.SourceMirror.translate_url>`
+is ``http://flying-ponies.com/downloads/pony.tgz``, then a corresponding entry will be expected in the
+user's ``~/.netrc``:
+
+.. code::
+
+   flying-ponies.com
+       password 1234
+
+DownloadableFileSource will add the following header to the ``GET`` request to download the file:
+
+.. code::
+
+   Authorization: Bearer 1234
+
 """
 
 
@@ -88,12 +144,20 @@ class _NetrcPasswordManager:
             return login, password
 
 
-def _download_file(opener_creator, url, etag, directory):
-    opener = opener_creator.get_url_opener()
+def _download_file(opener_creator, url, etag, directory, bearer_auth):
+    opener = opener_creator.get_url_opener(bearer_auth)
     default_name = os.path.basename(url)
     request = urllib.request.Request(url)
     request.add_header("Accept", "*/*")
     request.add_header("User-Agent", "BuildStream/2")
+
+    if opener_creator.netrc_config and bearer_auth:
+        parts = urllib.parse.urlsplit(url)
+        entry = opener_creator.netrc_config.authenticators(parts.hostname)
+        if entry:
+            _, _, password = entry
+            auth_header = "Bearer " + password
+            request.add_header("Authorization", auth_header)
 
     if etag is not None:
         request.add_header("If-None-Match", etag)
@@ -145,7 +209,11 @@ class DownloadableFileSource(Source):
     def configure(self, node):
         self.original_url = node.get_str("url")
         self.ref = node.get_str("ref", None)
-        self.url = self.translate_url(self.original_url)
+
+        extra_data = {}
+        self.url = self.translate_url(self.original_url, extra_data=extra_data)
+        self.bearer_auth = extra_data.get("http-auth") == "bearer"
+
         self._mirror_dir = os.path.join(self.get_mirror_directory(), utils.url_directory_name(self.original_url))
 
     def preflight(self):
@@ -230,7 +298,7 @@ class DownloadableFileSource(Source):
             url_opener_creator = _UrlOpenerCreator(self._parse_netrc())
 
             local_file, new_etag, error = self.blocking_activity(
-                _download_file, (url_opener_creator, self.url, etag, td), activity_name
+                _download_file, (url_opener_creator, self.url, etag, td, self.bearer_auth), activity_name
             )
 
             if error:
@@ -286,8 +354,8 @@ class _UrlOpenerCreator:
     def __init__(self, netrc_config):
         self.netrc_config = netrc_config
 
-    def get_url_opener(self):
-        if self.netrc_config:
+    def get_url_opener(self, bearer_auth):
+        if self.netrc_config and not bearer_auth:
             netrc_pw_mgr = _NetrcPasswordManager(self.netrc_config)
             http_auth = urllib.request.HTTPBasicAuthHandler(netrc_pw_mgr)
             ftp_handler = _NetrcFTPOpener(self.netrc_config)
