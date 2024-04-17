@@ -1,4 +1,24 @@
 =================
+buildstream 2.2.0
+=================
+
+  o Support Python 3.12 (#1881, #1884)
+
+  o Add suffix parameter to `Source.translate_url()` (#1899)
+
+  o Error out if a YAML mapping has duplicate keys (#1877)
+
+  o New configuration option to set the grpc keepalive time (#1879)
+
+  o Add SourceMirror plugins to allow more flexibility when defining mirrors (#1903)
+
+  o Use system-installed buildbox components over bundled ones if available (#1902)
+
+  o Support bearer authentication in DownloadableFileSource (#1911)
+
+  o Support mapping aliases from subprojects to parent project to ease mirroring (#1910)
+
+=================
 buildstream 2.1.0
 =================
 
