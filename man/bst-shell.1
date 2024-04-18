@@ -1,4 +1,4 @@
-.TH "BST SHELL" "1" "2023-07-11" "" "bst shell Manual"
+.TH "BST SHELL" "1" "2024-04-17" "" "bst shell Manual"
 .SH NAME
 bst\-shell \- Shell into an element's sandbox environment
 .SH SYNOPSIS
@@ -7,24 +7,25 @@ bst\-shell \- Shell into an element's sandbox environment
 .SH DESCRIPTION
 Run a command in the target element's sandbox environment
 .PP
-When this command is executed from a workspace directory, the default
-is to shell into the workspace element.
+    When this command is executed from a workspace directory, the default
+    is to shell into the workspace element.
 .PP
-This will stage a temporary sysroot for running the target
-element, assuming it has already been built and all required
-artifacts are in the local cache.
+    This will stage a temporary sysroot for running the target
+    element, assuming it has already been built and all required
+    artifacts are in the local cache.
 .PP
-Use '--' to separate a command from the options to bst,
-otherwise bst may respond to them instead. e.g.
+    Use '--' to separate a command from the options to bst,
+    otherwise bst may respond to them instead. e.g.
 .PP
-
-    bst shell example.bst -- df -h
+    
+        bst shell example.bst -- df -h
 .PP
-Use the --build option to create a temporary sysroot for
-building the element instead.
+    Use the --build option to create a temporary sysroot for
+    building the element instead.
 .PP
-If no COMMAND is specified, the default is to attempt
-to run an interactive shell.
+    If no COMMAND is specified, the default is to attempt
+    to run an interactive shell.
+    
 .SH OPTIONS
 .TP
 \fB\-b,\fP \-\-build

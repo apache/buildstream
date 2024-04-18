@@ -1,4 +1,4 @@
-.TH "BST ARTIFACT PUSH" "1" "2023-07-11" "" "bst artifact push Manual"
+.TH "BST ARTIFACT PUSH" "1" "2024-04-17" "" "bst artifact push Manual"
 .SH NAME
 bst\-artifact\-push \- Push a built artifact
 .SH SYNOPSIS
@@ -7,24 +7,25 @@ bst\-artifact\-push \- Push a built artifact
 .SH DESCRIPTION
 Push built artifacts to a remote artifact cache, possibly pulling them first.
 .PP
-Specifying no elements will result in pushing the default targets
-of the project. If no default targets are configured, all project
-elements will be pushed.
+    Specifying no elements will result in pushing the default targets
+    of the project. If no default targets are configured, all project
+    elements will be pushed.
 .PP
-When this command is executed from a workspace directory, the default
-is to push the workspace element.
+    When this command is executed from a workspace directory, the default
+    is to push the workspace element.
 .PP
-If bst has been configured to include build trees on artifact pulls,
-an attempt will be made to pull any required build trees to avoid the
-skipping of partial artifacts being pushed.
+    If bst has been configured to include build trees on artifact pulls,
+    an attempt will be made to pull any required build trees to avoid the
+    skipping of partial artifacts being pushed.
 .PP
-Specify `--deps` to control which artifacts to push:
+    Specify `--deps` to control which artifacts to push:
 .PP
-
-    none:  No dependencies, just the element itself
-    run:   Runtime dependencies, including the element itself
-    build: Build time dependencies, excluding the element itself
-    all:   All dependencies
+    
+        none:  No dependencies, just the element itself
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
+        all:   All dependencies
+    
 .SH OPTIONS
 .TP
 \fB\-d,\fP \-\-deps [build|none|run|all]

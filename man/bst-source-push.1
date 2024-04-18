@@ -1,4 +1,4 @@
-.TH "BST SOURCE PUSH" "1" "2023-07-11" "" "bst source push Manual"
+.TH "BST SOURCE PUSH" "1" "2024-04-17" "" "bst source push Manual"
 .SH NAME
 bst\-source\-push \- Push sources in a pipeline
 .SH SYNOPSIS
@@ -7,23 +7,24 @@ bst\-source\-push \- Push sources in a pipeline
 .SH DESCRIPTION
 Push sources required to build the pipeline
 .PP
-Specifying no elements will result in pushing the sources of the default
-targets of the project. If no default targets are configured, sources of
-all project elements will be pushed.
+    Specifying no elements will result in pushing the sources of the default
+    targets of the project. If no default targets are configured, sources of
+    all project elements will be pushed.
 .PP
-When this command is executed from a workspace directory, the default
-is to push the sources of the workspace element.
+    When this command is executed from a workspace directory, the default
+    is to push the sources of the workspace element.
 .PP
-By default this will only try to push sources for the specified
-elements.
+    By default this will only try to push sources for the specified
+    elements.
 .PP
-Specify `--deps` to control which sources to fetch:
+    Specify `--deps` to control which sources to fetch:
 .PP
-
-    none:  No dependencies, just the element itself
-    run:   Runtime dependencies, including the element itself
-    build: Build time dependencies, excluding the element itself
-    all:   All dependencies
+    
+        none:  No dependencies, just the element itself
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
+        all:   All dependencies
+    
 .SH OPTIONS
 .TP
 \fB\-\-except\fP PATH
