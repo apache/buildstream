@@ -40,7 +40,7 @@ def parse_args():
     '''
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        'ELEMENT', nargs='*',
+        'element', nargs='*',
         help='Name of the element'
     )
     parser.add_argument(
