@@ -13,7 +13,6 @@
 #
 
 import grpc
-from google.protobuf.duration_pb2 import Duration  # pylint: disable=no-name-in-module
 
 from .._protos.google.rpc import code_pb2
 from .._protos.build.buildgrid import local_cas_pb2
@@ -71,7 +70,7 @@ class CASRemote(BaseRemote):
         if self.spec.client_cert:
             cas_endpoint.client_cert = self.spec.client_cert
         if self.spec.keepalive_time is not None:
-            cas_endpoint.keepalive_time = Duration().FromSeconds(self.spec.keepalive_time)
+            cas_endpoint.keepalive_time.FromSeconds(self.spec.keepalive_time)
         try:
             response = local_cas.GetInstanceNameForRemotes(request)
         except grpc.RpcError as e:

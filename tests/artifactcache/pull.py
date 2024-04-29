@@ -47,8 +47,17 @@ def tree_maker(cas, tree, directory):
         tree_maker(cas, tree, child_directory)
 
 
+@pytest.mark.parametrize(
+    "connection_config",
+    (
+        None,
+        {
+            "keepalive-time": 60,
+        },
+    ),
+)
 @pytest.mark.datafiles(DATA_DIR)
-def test_pull(cli, tmpdir, datafiles):
+def test_pull(cli, tmpdir, datafiles, connection_config):
     project_dir = str(datafiles)
 
     # Set up an artifact cache.
@@ -56,18 +65,17 @@ def test_pull(cli, tmpdir, datafiles):
         # Configure artifact share
         cache_dir = os.path.join(str(tmpdir), "cache")
         user_config_file = str(tmpdir.join("buildstream.conf"))
+        server = {
+            "url": share.repo,
+            "push": True,
+        }
         user_config = {
             "scheduler": {"pushers": 1},
-            "artifacts": {
-                "servers": [
-                    {
-                        "url": share.repo,
-                        "push": True,
-                    }
-                ]
-            },
+            "artifacts": {"servers": [server]},
             "cachedir": cache_dir,
         }
+        if connection_config is not None:
+            server["connection-config"] = connection_config
 
         # Write down the user configuration file
         _yaml.roundtrip_dump(user_config, file=user_config_file)
