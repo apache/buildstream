@@ -897,6 +897,7 @@ def test_source_mirror_plugin(cli, tmpdir):
 @pytest.mark.parametrize("fetch_source", ["aliases", "mirrors"])
 @pytest.mark.parametrize("alias_override", [["foo"], ["foo", "bar"], "global"])
 @pytest.mark.parametrize("alias_mapping", ["identity", "project-prefix", "invalid"])
+@pytest.mark.parametrize("source_mirror", [True, False])
 def test_mirror_subproject_aliases(
     cli,
     tmpdir,
@@ -906,6 +907,7 @@ def test_mirror_subproject_aliases(
     fetch_source,
     alias_override,
     alias_mapping,
+    source_mirror,
 ):
     if alias_override == "global":
         if alias_mapping == "invalid":
@@ -1013,6 +1015,13 @@ def test_mirror_subproject_aliases(
             },
         ],
     }
+    if source_mirror:
+        project["plugins"].append({"origin": "local", "path": "sourcemirrors", "source-mirrors": ["mirror"]})
+
+        mirrors = []
+        for mirror in project["mirrors"]:
+            mirrors.append({"name": mirror["name"], "kind": "mirror", "config": {"aliases": mirror["aliases"]}})
+        project["mirrors"] = mirrors
 
     if disallow_subproject_uris:
         project["junctions"] = {"disallow-subproject-uris": "true"}
