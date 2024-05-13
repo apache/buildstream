@@ -280,7 +280,7 @@ class SourceFetcher:
     #############################################################
     #                      Abstract Methods                     #
     #############################################################
-    def fetch(self, alias_override: Optional[Union[str, SourceMirror]] = None, **kwargs) -> None:
+    def fetch(self, alias_override: Optional[Tuple[str, Union[str, SourceMirror]]] = None, **kwargs) -> None:
         """Fetch remote sources and mirror them locally, ensuring at least
         that the specific reference is cached locally.
 
@@ -387,7 +387,7 @@ class Source(Plugin):
         meta: MetaSource,
         variables: Variables,
         *,
-        alias_override: Optional[Tuple[str, Union[str, SourceMirror]]] = None,
+        alias_override: Optional[Tuple[str, Tuple[str, Union[str, SourceMirror]]]] = None,
         unique_id: Optional[int] = None,
     ):
         # Set element_name member before parent init, as needed for debug messaging
@@ -699,7 +699,7 @@ class Source(Plugin):
         self,
         url: str,
         *,
-        alias_override: Optional[Union[str, SourceMirror]] = None,
+        alias_override: Optional[Tuple[str, Union[str, SourceMirror]]] = None,
         primary: bool = True,
         suffix: Optional[str] = None,
         extra_data: Optional[Dict[str, Any]] = None,
@@ -745,7 +745,7 @@ class Source(Plugin):
 
             if self.__alias_override is not None:
                 override_alias = self.__alias_override[0]
-                override_mirror = self.__alias_override[1]
+                effective_alias, override_mirror = self.__alias_override[1]
 
                 # Implicit alias overrides may only be done for one
                 # specific alias, so that sources that fetch from multiple
@@ -756,7 +756,7 @@ class Source(Plugin):
                     return url
 
             elif alias_override is not None:
-                override_mirror = alias_override
+                effective_alias, override_mirror = alias_override
 
             # The default source mirror will give prefix URLs
             if isinstance(override_mirror, str):
@@ -765,7 +765,7 @@ class Source(Plugin):
             # Delegate the URL translation to the SourceMirror plugin
             #
             return override_mirror.translate_url(
-                alias=url_alias, alias_url=project_alias_url, source_url=url_body, extra_data=extra_data
+                alias=effective_alias, alias_url=project_alias_url, source_url=url_body, extra_data=extra_data
             )
         else:
             return project.translate_url(url, source=self, first_pass=self.__first_pass)

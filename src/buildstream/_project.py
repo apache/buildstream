@@ -15,7 +15,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
-from typing import TYPE_CHECKING, Optional, Dict, Union, List, Sequence
+from typing import TYPE_CHECKING, Optional, Dict, Union, List, Sequence, Tuple
 
 import os
 import urllib.parse
@@ -453,7 +453,7 @@ class Project:
     #
     def get_alias_uris(
         self, alias: str, *, first_pass: bool = False, tracking: bool = False
-    ) -> Sequence[Union[SourceMirror, str, None]]:
+    ) -> Sequence[Union[Tuple[str, Union[SourceMirror, str]], None]]:
 
         if first_pass:
             config = self.first_pass_config
@@ -489,7 +489,7 @@ class Project:
         if policy in (_SourceUriPolicy.ALL, _SourceUriPolicy.ALIASES):
             uri_list.append(config._aliases.get_str(alias))
 
-        return uri_list
+        return [(alias, mirror) for mirror in uri_list]
 
     # load_elements()
     #
