@@ -15,7 +15,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
-from typing import TYPE_CHECKING, Optional, Dict, Union, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Optional, Dict, Union, List, Sequence
 
 import os
 import urllib.parse
@@ -40,7 +40,7 @@ from ._includes import Includes
 from ._workspaces import WORKSPACE_PROJECT_FILE
 from ._remotespec import RemoteSpec
 from .sourcemirror import SourceMirror
-from .source import SourceError
+from .source import AliasSubstitution, SourceError
 
 
 if TYPE_CHECKING:
@@ -453,7 +453,7 @@ class Project:
     #
     def get_alias_uris(
         self, alias: str, *, first_pass: bool = False, tracking: bool = False
-    ) -> Sequence[Union[Tuple[str, Union[SourceMirror, str]], None]]:
+    ) -> Sequence[Optional[AliasSubstitution]]:
 
         if first_pass:
             config = self.first_pass_config
@@ -489,7 +489,7 @@ class Project:
         if policy in (_SourceUriPolicy.ALL, _SourceUriPolicy.ALIASES):
             uri_list.append(config._aliases.get_str(alias))
 
-        return [(alias, mirror) for mirror in uri_list]
+        return [AliasSubstitution(alias, mirror) for mirror in uri_list]
 
     # load_elements()
     #
