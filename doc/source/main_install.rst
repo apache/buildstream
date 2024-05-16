@@ -117,26 +117,14 @@ e.g., ``~/.local/bin``.
 Build from source
 ~~~~~~~~~~~~~~~~~
 
-Each of the 4 buildbox components can be installed separately from their
-respective git repositiories, and each respository has individual install
-instructions. We recommend installing the latest release tag of each
-component.
+Buildbox components can be installed from their git repository.
+We recommend installing from the latest release tag.
 
-| **Buildbox-common:** See the installation section in:
-| https://gitlab.com/BuildGrid/buildbox/buildbox-common/-/blob/master/README.rst
-| (Be sure to install from the latest stable release tag.)
+See the <"Installation" section here <https://gitlab.com/BuildGrid/buildbox/buildbox/-/blob/master/README.rst#installation>`_.
 
-| **Buildbox-casd:** See the installation section in:
-| https://gitlab.com/BuildGrid/buildbox/buildbox-casd/-/blob/master/README.rst \
-| (Be sure to install from the latest stable release tag.)
-
-| **Buildbox-fuse:** See
-| https://gitlab.com/BuildGrid/buildbox/buildbox-fuse/-/blob/master/INSTALL.rst
-| (Be sure to install from the latest stable release tag.)
-
-| **Buildbox-run-bublewrap:** See the installation section in:
-| https://gitlab.com/BuildGrid/buildbox/buildbox-run-bubblewrap/-/blob/master/README.rst
-| (Be sure to install from the latest stable release tag.)
+Buildbox contains many components, BuildStream needs only ``buildbox-casd``,
+``buildbox-fuse`` and ``buildbox-run-bubblewrap``, which can be selected by
+passing options ``-DTOOLS=OFF -DCASD=ON -DFUSE=ON -DRUN_BUBBLEWRAP=ON`` to CMake.
 
 Finally, configure buildbox-run-bubblewrap as the default buildbox-run
 implementation::
