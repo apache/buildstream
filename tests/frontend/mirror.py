@@ -889,6 +889,18 @@ def test_source_mirror_plugin(cli, tmpdir):
         assert bar_str in contents
 
 
+# Test subproject alias mapping. As there are quite a few corner cases and interactions with other
+# features that need to be tested, this test relies heavily on parametrization. Here is what each
+# parameter means:
+# * subproject_mirrors: whether the subproject defines a (failing) mirror
+# * unaliased_sources: whether the subproject has unaliased sources
+# * disallow_subproject_uris: define disallow-subproject-uris in the parent project
+# * fetch_source: whether to fetch from aliases or mirrors
+# * alias_override: which aliases to override ("global" means use "map-aliases")
+# * alias_mapping: how to map aliases to the overrides
+# * source_mirror: whether to use a custom source mirror plugin
+
+
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.usefixtures("datafiles")
 @pytest.mark.parametrize("subproject_mirrors", [True, False])
