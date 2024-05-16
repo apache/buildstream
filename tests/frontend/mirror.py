@@ -889,16 +889,46 @@ def test_source_mirror_plugin(cli, tmpdir):
         assert bar_str in contents
 
 
+# Test subproject alias mapping. As there are quite a few corner cases and interactions with other
+# features that need to be tested, this test relies heavily on parametrization. Here is what each
+# parameter means:
+# * subproject_mirrors: whether the subproject defines a (failing) mirror
+# * unaliased_sources: whether the subproject has unaliased sources
+# * disallow_subproject_uris: define disallow-subproject-uris in the parent project
+# * fetch_source: whether to fetch from aliases or mirrors
+# * alias_override: which aliases to override ("global" means use "map-aliases")
+# * alias_mapping: how to map aliases to the overrides
+# * source_mirror: whether to use a custom source mirror plugin
+
+
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.usefixtures("datafiles")
 @pytest.mark.parametrize("subproject_mirrors", [True, False])
 @pytest.mark.parametrize("unaliased_sources", [True, False])
 @pytest.mark.parametrize("disallow_subproject_uris", [True, False])
 @pytest.mark.parametrize("fetch_source", ["aliases", "mirrors"])
-@pytest.mark.parametrize("alias_override", [["foo"], ["foo", "bar"], "global", "invalid"])
+@pytest.mark.parametrize("alias_override", [["foo"], ["foo", "bar"], "global"])
+@pytest.mark.parametrize("alias_mapping", ["identity", "project-prefix", "invalid"])
+@pytest.mark.parametrize("source_mirror", [True, False])
 def test_mirror_subproject_aliases(
-    cli, tmpdir, subproject_mirrors, unaliased_sources, disallow_subproject_uris, fetch_source, alias_override
+    cli,
+    tmpdir,
+    subproject_mirrors,
+    unaliased_sources,
+    disallow_subproject_uris,
+    fetch_source,
+    alias_override,
+    alias_mapping,
+    source_mirror,
 ):
+    if alias_override == "global":
+        if alias_mapping == "invalid":
+            # we can't have an invalid mapping using a predefined option
+            pytest.skip()
+        elif alias_mapping == "project-prefix":
+            # project-prefix alias mapping not yet implemented
+            pytest.xfail()
+
     output_file = os.path.join(str(tmpdir), "output.txt")
     project_dir = tmpdir
 
@@ -941,7 +971,69 @@ def test_mirror_subproject_aliases(
     # copy the source plugin to the subproject
     shutil.copytree(project_dir / "sources", subproject_dir / "sources")
 
-    project = generate_project(MirrorConfig.SUCCESS_MIRRORS, fetch_source == "aliases")
+    if alias_mapping == "identity":
+
+        def map_alias(x):
+            return x
+
+    elif alias_mapping == "project-prefix":
+
+        def map_alias(x):
+            return subproject["name"] + "/" + x
+
+    else:
+
+        def map_alias(x):
+            return "invalid-" + x
+
+    if alias_mapping != "invalid":
+        map_alias_valid = map_alias
+    else:
+
+        def map_alias_valid(x):
+            return x
+
+    project = {
+        "name": "test",
+        "min-version": "2.0",
+        "element-path": "elements",
+        "aliases": {
+            map_alias_valid("foo"): "FOO/",
+            map_alias_valid("bar"): "RAB/" if fetch_source == "aliases" else "BAR/",
+        },
+        "plugins": [{"origin": "local", "path": "sources", "sources": ["fetch_source"]}],
+        # Copy of SUCCESS_MIRROR_LIST from above
+        "mirrors": [
+            {
+                "name": "middle-earth",
+                "aliases": {
+                    map_alias_valid("foo"): ["OOF/"],
+                    map_alias_valid("bar"): ["RAB/"],
+                },
+            },
+            {
+                "name": "arrakis",
+                "aliases": {
+                    map_alias_valid("foo"): ["FOO/"],
+                    map_alias_valid("bar"): ["RBA/"],
+                },
+            },
+            {
+                "name": "oz",
+                "aliases": {
+                    map_alias_valid("foo"): ["ooF/"],
+                    map_alias_valid("bar"): ["raB/"],
+                },
+            },
+        ],
+    }
+    if source_mirror:
+        project["plugins"].append({"origin": "local", "path": "sourcemirrors", "source-mirrors": ["mirror"]})
+
+        mirrors = []
+        for mirror in project["mirrors"]:
+            mirrors.append({"name": mirror["name"], "kind": "mirror", "config": {"aliases": mirror["aliases"]}})
+        project["mirrors"] = mirrors
 
     if disallow_subproject_uris:
         project["junctions"] = {"disallow-subproject-uris": "true"}
@@ -960,16 +1052,9 @@ def test_mirror_subproject_aliases(
     }
 
     if alias_override == "global":
-        junction["config"] = {"map-aliases": "identity"}
-    elif alias_override == "invalid":
-        junction["config"] = {
-            "aliases": {
-                "foo": "invalid-foo",
-                "bar": "invalid-bar",
-            }
-        }
+        junction["config"] = {"map-aliases": alias_mapping}
     else:
-        junction["config"] = {"aliases": {alias: alias for alias in alias_override}}
+        junction["config"] = {"aliases": {alias: map_alias(alias) for alias in alias_override}}
 
     _yaml.roundtrip_dump(junction, str(element_dir / junction_name))
 
@@ -977,7 +1062,7 @@ def test_mirror_subproject_aliases(
     cli.configure(userconfig)
 
     result = cli.run(project=project_dir, args=["source", "fetch", "{}:{}".format(junction_name, element_name)])
-    if alias_override == "invalid":
+    if alias_mapping == "invalid":
         # Mapped alias does not exist in the parent project
         result.assert_main_error(ErrorDomain.SOURCE, "invalid-source-alias")
     elif disallow_subproject_uris and unaliased_sources:
