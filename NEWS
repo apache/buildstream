@@ -1,4 +1,17 @@
 =================
+buildstream 2.2.1
+=================
+
+  o Fix parsing of keepalive time (#1916)
+
+  o Fix alias mapping when using source mirror plugins (#1918)
+
+  o Fix typing of SourceFetcher.fetch() and Source.translate_url():
+    the `alias_override` parameter should be considered opaque.
+
+  o Update documentation regarding the buildbox merge (#1919)
+
+=================
 buildstream 2.2.0
 =================
 
