@@ -77,7 +77,7 @@ class Sandbox:
     # Minimal set of devices for the sandbox
     _dummy_reasons = []  # type: List[str]
 
-    def __init__(self, context: "Context", project: "Project", directory: str, **kwargs):
+    def __init__(self, context: "Context", project: "Project", **kwargs):
         self.__context = context
         self.__project = project
         self.__directories = []  # type: List[str]
