@@ -15,9 +15,9 @@ import os
 import time
 from unittest.mock import MagicMock
 
-from buildstream._cas.cascache import CASCache
 from buildstream._cas import casdprocessmanager
 from buildstream._messenger import Messenger
+from tests.testutils import casd_cache
 
 
 #
@@ -42,9 +42,8 @@ def test_report_when_cascache_dies_before_asked_to(tmp_path, monkeypatch):
     monkeypatch.setenv("PATH", str(tmp_path), prepend=os.pathsep)
 
     messenger = MagicMock(spec_set=Messenger)
-    cache = CASCache(str(tmp_path.joinpath("casd")), casd=True, log_directory=str(tmp_path.joinpath("logs")))
-    time.sleep(1)
-    cache.release_resources(messenger)
+    with casd_cache(tmp_path.joinpath("casd"), messenger):
+        time.sleep(1)
 
     assert messenger.bug.call_count == 1
 
@@ -64,9 +63,8 @@ def test_report_when_cascache_exits_not_cleanly(tmp_path, monkeypatch):
     monkeypatch.setattr(casdprocessmanager, "_CASD_TIMEOUT", 0.1)
 
     messenger = MagicMock(spec_set=Messenger)
-    cache = CASCache(str(tmp_path.joinpath("casd")), casd=True, log_directory=str(tmp_path.joinpath("logs")))
-    time.sleep(1)
-    cache.release_resources(messenger)
+    with casd_cache(tmp_path.joinpath("casd"), messenger):
+        time.sleep(1)
 
     assert messenger.bug.call_count == 1
 
@@ -86,9 +84,8 @@ def test_report_when_cascache_is_forcefully_killed(tmp_path, monkeypatch):
     monkeypatch.setattr(casdprocessmanager, "_CASD_TIMEOUT", 0.1)
 
     messenger = MagicMock(spec_set=Messenger)
-    cache = CASCache(str(tmp_path.joinpath("casd")), casd=True, log_directory=str(tmp_path.joinpath("logs")))
-    time.sleep(1)
-    cache.release_resources(messenger)
+    with casd_cache(tmp_path.joinpath("casd"), messenger):
+        time.sleep(1)
 
     assert messenger.warn.call_count == 1
 
@@ -114,9 +111,8 @@ def test_casd_redirects_stderr_to_file_and_rotate(tmp_path, monkeypatch):
 
     # Let's create the first `n_max_log_files` log files
     for i in range(1, n_max_log_files + 1):
-        cache = CASCache(str(casd_files_path), casd=True, log_directory=str(casd_parent_logs_path))
-        time.sleep(0.5)
-        cache.release_resources()
+        with casd_cache(casd_files_path):
+            time.sleep(0.5)
 
         existing_log_files = sorted(casd_logs_path.iterdir())
         assert len(existing_log_files) == i
@@ -126,9 +122,8 @@ def test_casd_redirects_stderr_to_file_and_rotate(tmp_path, monkeypatch):
     for _ in range(3):
         evicted_file = existing_log_files.pop(0)
 
-        cache = CASCache(str(casd_files_path), casd=True, log_directory=str(casd_parent_logs_path))
-        time.sleep(0.5)
-        cache.release_resources()
+        with casd_cache(casd_files_path):
+            time.sleep(0.5)
 
         existing_log_files = sorted(casd_logs_path.iterdir())
         assert len(existing_log_files) == n_max_log_files

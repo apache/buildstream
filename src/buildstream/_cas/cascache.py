@@ -32,7 +32,6 @@ from .. import utils
 from ..types import FastEnum, SourceRef
 from .._exceptions import CASCacheError
 
-from .casdprocessmanager import CASDProcessManager
 from .casremote import CASRemote, _CASBatchRead, _CASBatchUpdate, BlobNotFound
 
 _BUFFER_SIZE = 65536
@@ -52,25 +51,11 @@ class CASLogLevel(FastEnum):
 #
 # Args:
 #     path (str): The root directory for the CAS repository
-#     casd (bool): True to spawn buildbox-casd (default) or False (testing only)
-#     cache_quota (int): User configured cache quota
-#     protect_session_blobs (bool): Disable expiry for blobs used in the current session
-#     log_level (LogLevel): Log level to give to buildbox-casd for logging
-#     log_directory (str): the root of the directory in which to store logs
+#     casd (CASDProcessManager): The buildbox-casd manager
+#     remote_cache (bool): True if a CAS server is configured as a remote cache (storage-service)
 #
 class CASCache:
-    def __init__(
-        self,
-        path,
-        *,
-        casd=True,
-        cache_quota=None,
-        remote_cache_spec=None,
-        protect_session_blobs=True,
-        log_level=CASLogLevel.WARNING,
-        log_directory=None,
-        messenger=None
-    ):
+    def __init__(self, path, *, casd, remote_cache=False):
         self.casdir = os.path.join(path, "cas")
         self.tmpdir = os.path.join(path, "tmp")
         os.makedirs(self.tmpdir, exist_ok=True)
@@ -78,16 +63,10 @@ class CASCache:
         self._cache_usage_monitor = None
         self._cache_usage_monitor_forbidden = False
 
-        self._remote_cache = bool(remote_cache_spec)
+        self._remote_cache = remote_cache
 
-        self._casd = None
+        self._casd = casd
         if casd:
-            assert log_directory is not None, "log_directory is required when casd is True"
-            log_dir = os.path.join(log_directory, "_casd")
-            self._casd = CASDProcessManager(
-                path, log_dir, log_level, cache_quota, remote_cache_spec, protect_session_blobs, messenger
-            )
-
             self._cache_usage_monitor = _CASCacheUsageMonitor(self._casd)
             self._cache_usage_monitor.start()
         else:
@@ -124,14 +103,10 @@ class CASCache:
     #
     # Release resources used by CASCache.
     #
-    def release_resources(self, messenger=None):
+    def release_resources(self):
         if self._cache_usage_monitor:
             self._cache_usage_monitor.stop()
             self._cache_usage_monitor.join()
-
-        if self._casd:
-            self._casd.release_resources(messenger)
-            self._casd = None
 
     def get_default_remote(self):
         return self._default_remote

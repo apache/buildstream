@@ -22,20 +22,18 @@ import time
 
 import pytest
 
-from buildstream._cas import CASCache
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream._testing._utils.site import have_subsecond_mtime
 
-from tests.testutils import create_element_size, wait_for_cache_granularity
+from tests.testutils import casd_cache, create_element_size, wait_for_cache_granularity
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "expiry")
 
 
 def get_cache_usage(directory):
-    cas_cache = CASCache(directory, log_directory=os.path.dirname(directory))
-    try:
+    with casd_cache(directory) as cas_cache:
         wait = 0.1
         for _ in range(0, int(5 / wait)):
             used_size = cas_cache.get_cache_usage().used_size
@@ -45,8 +43,6 @@ def get_cache_usage(directory):
 
         assert False, "Unable to retrieve cache usage"
         return None
-    finally:
-        cas_cache.release_resources()
 
 
 # Ensure that the cache successfully removes an old artifact if we do

@@ -20,9 +20,10 @@ import pytest
 from buildstream import DirectoryError
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
-from buildstream._cas import CASCache
 from buildstream.utils import _set_file_mtime
 from buildstream._testing._utils.site import have_subsecond_mtime
+
+from tests.testutils import casd_cache
 
 
 # These are comparitive tests that check that FileBasedDirectory and
@@ -189,8 +190,7 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
     if not have_subsecond_mtime(str(tmpdir)):
         pytest.skip("Filesystem does not support subsecond mtime precision: {}".format(str(tmpdir)))
 
-    cas_cache = CASCache(tmpdir, log_directory=os.path.join(tmpdir, "logs"))
-    try:
+    with casd_cache(os.path.join(tmpdir, "casd")) as cas_cache:
         # Create some fake content
         generator_function(original, tmpdir)
         if original != overlay:
@@ -245,8 +245,6 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
         duplicate_cas._import_files_internal(roundtrip_dir, properties=["mtime"])
 
         assert duplicate_cas._get_digest().hash == d._get_digest().hash
-    finally:
-        cas_cache.release_resources()
 
 
 @pytest.mark.parametrize("original", range(1, len(root_filesets) + 1))
@@ -262,8 +260,7 @@ def test_random_cas_import(tmpdir, original, overlay):
 
 
 def _listing_test(tmpdir, root, generator_function):
-    cas_cache = CASCache(tmpdir, log_directory=os.path.join(tmpdir, "logs"))
-    try:
+    with casd_cache(os.path.join(tmpdir, "casd")) as cas_cache:
         # Create some fake content
         generator_function(root, tmpdir)
 
@@ -274,8 +271,6 @@ def _listing_test(tmpdir, root, generator_function):
         filelist2 = list(d2.list_relative_paths())
 
         assert filelist == filelist2
-    finally:
-        cas_cache.release_resources()
 
 
 @pytest.mark.parametrize("root", range(1, NUM_RANDOM_TESTS + 1))
@@ -291,8 +286,7 @@ def test_fixed_directory_listing(tmpdir, root):
 # Check that the vdir is decending and readable
 def test_open_directory(tmpdir):
     cas_dir = os.path.join(str(tmpdir), "cas")
-    cas_cache = CASCache(cas_dir, log_directory=os.path.join(str(tmpdir), "logs"))
-    try:
+    with casd_cache(cas_dir) as cas_cache:
         d = CasBasedDirectory(cas_cache)
 
         Content_to_check = "You got me"
@@ -306,8 +300,6 @@ def test_open_directory(tmpdir):
         with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
         assert Content_to_check == content
-    finally:
-        cas_cache.release_resources()
 
 
 # Check symlink logic for edgecases
@@ -315,8 +307,7 @@ def test_open_directory(tmpdir):
 # to decend in to files or links to files
 def test_bad_symlinks(tmpdir):
     cas_dir = os.path.join(str(tmpdir), "cas")
-    cas_cache = CASCache(cas_dir, log_directory=os.path.join(str(tmpdir), "logs"))
-    try:
+    with casd_cache(cas_dir) as cas_cache:
         d = CasBasedDirectory(cas_cache)
 
         test_dir = os.path.join(str(tmpdir), "importfrom")
@@ -336,16 +327,13 @@ def test_bad_symlinks(tmpdir):
         with pytest.raises(DirectoryError) as error:
             d.open_directory("a/f")
             assert error.reason == exp_reason
-    finally:
-        cas_cache.release_resources()
 
 
 # Check symlink logic for edgecases
 # Check decend accross relitive link
 def test_relative_symlink(tmpdir):
     cas_dir = os.path.join(str(tmpdir), "cas")
-    cas_cache = CASCache(cas_dir, log_directory=os.path.join(str(tmpdir), "logs"))
-    try:
+    with casd_cache(cas_dir) as cas_cache:
         d = CasBasedDirectory(cas_cache)
 
         Content_to_check = "You got me"
@@ -363,16 +351,13 @@ def test_relative_symlink(tmpdir):
         with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
         assert Content_to_check == content
-    finally:
-        cas_cache.release_resources()
 
 
 # Check symlink logic for edgecases
 # Check deccend accross abs link
 def test_abs_symlink(tmpdir):
     cas_dir = os.path.join(str(tmpdir), "cas")
-    cas_cache = CASCache(cas_dir, log_directory=os.path.join(str(tmpdir), "logs"))
-    try:
+    with casd_cache(cas_dir) as cas_cache:
         d = CasBasedDirectory(cas_cache)
 
         Content_to_check = "two step file"
@@ -391,16 +376,13 @@ def test_abs_symlink(tmpdir):
         with open(cas_cache.objpath(digest), encoding="utf-8") as fp:
             content = fp.read()
         assert Content_to_check == content
-    finally:
-        cas_cache.release_resources()
 
 
 # Check symlink logic for edgecases
 # Check symlink can not escape root
 def test_bad_sym_escape(tmpdir):
     cas_dir = os.path.join(str(tmpdir), "cas")
-    cas_cache = CASCache(cas_dir, log_directory=os.path.join(str(tmpdir), "logs"))
-    try:
+    with casd_cache(cas_dir) as cas_cache:
         d = CasBasedDirectory(cas_cache)
 
         test_dir = os.path.join(str(tmpdir), "importfrom")
@@ -417,5 +399,3 @@ def test_bad_sym_escape(tmpdir):
         with pytest.raises(DirectoryError) as error:
             d.open_directory("a/l", follow_symlinks=True)
             assert error.reason == "directory-not-found"
-    finally:
-        cas_cache.release_resources()

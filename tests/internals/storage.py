@@ -24,9 +24,10 @@ from typing import List, Optional
 import pytest
 
 from buildstream import DirectoryError, FileType
-from buildstream._cas import CASCache
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
+
+from tests.testutils import casd_cache
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "storage")
 
@@ -38,11 +39,8 @@ def setup_backend(backend_class, tmpdir):
         os.mkdir(path)
         yield backend_class(path)
     else:
-        cas_cache = CASCache(os.path.join(tmpdir, "cas"), log_directory=os.path.join(tmpdir, "logs"))
-        try:
+        with casd_cache(os.path.join(tmpdir, "cas")) as cas_cache:
             yield backend_class(cas_cache)
-        finally:
-            cas_cache.release_resources()
 
 
 @pytest.mark.parametrize("backend", [FileBasedDirectory, CasBasedDirectory])

@@ -63,6 +63,8 @@ _REQUIRED_CASD_MICRO = 58
 #
 class CASDProcessManager:
     def __init__(self, path, log_dir, log_level, cache_quota, remote_cache_spec, protect_session_blobs, messenger):
+        os.makedirs(path, exist_ok=True)
+
         self._log_dir = log_dir
 
         self._socket_path = self._make_socket_path(path)

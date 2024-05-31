@@ -142,7 +142,7 @@ class ArtifactShare(BaseArtifactShare):
         super().__init__()
 
         # Set after subprocess creation as it's not picklable
-        self.cas = CASCache(self.repodir, casd=False)
+        self.cas = CASCache(self.repodir, casd=None)
 
     def _create_server(self):
         return create_server(
