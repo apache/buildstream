@@ -109,6 +109,16 @@ class CASDProcessManager:
                 env=self.__buildbox_casd_env(),
             )
 
+        self._casd_channel = None
+        self._bytestream = None
+        self._casd_cas = None
+        self._local_cas = None
+        self._asset_fetch = None
+        self._asset_push = None
+        self._shutdown_requested = False
+
+        self._lock = threading.Lock()
+
     def __buildbox_casd(self):
         return utils._get_host_tool_internal("buildbox-casd", search_subprojects_dir="buildbox")
 
@@ -259,6 +269,17 @@ class CASDProcessManager:
     # Terminate the process and release related resources.
     #
     def release_resources(self, messenger=None):
+        self._shutdown_requested = True
+        with self._lock:
+            if self._casd_channel:
+                self._asset_push = None
+                self._asset_fetch = None
+                self._local_cas = None
+                self._casd_cas = None
+                self._bytestream = None
+                self._casd_channel.close()
+                self._casd_channel = None
+
         self._terminate(messenger)
         self.process = None
         shutil.rmtree(self._socket_tempdir)
@@ -305,31 +326,6 @@ class CASDProcessManager:
                 "Buildbox-casd didn't exit cleanly. Exit code: {}, Logs: {}".format(return_code, self._logfile)
             )
 
-    # create_channel():
-    #
-    # Return a CASDChannel, note that the actual connection is not necessarily
-    # established until it is needed.
-    #
-    def create_channel(self):
-        return CASDChannel(self._socket_path, self._connection_string, self._start_time, self.process.pid)
-
-
-class CASDChannel:
-    def __init__(self, socket_path, connection_string, start_time, casd_pid):
-        self._socket_path = socket_path
-        self._connection_string = connection_string
-        self._start_time = start_time
-        self._casd_channel = None
-        self._bytestream = None
-        self._casd_cas = None
-        self._local_cas = None
-        self._asset_fetch = None
-        self._asset_push = None
-        self._casd_pid = casd_pid
-        self._shutdown_requested = False
-
-        self._lock = threading.Lock()
-
     def _establish_connection(self):
         with self._lock:
             if self._casd_channel is not None:
@@ -347,7 +343,7 @@ class CASDChannel:
 
                 # check that process is still alive
                 try:
-                    proc = psutil.Process(self._casd_pid)
+                    proc = psutil.Process(self.process.pid)
                     if proc.status() == psutil.STATUS_ZOMBIE:
                         proc.wait()
 
@@ -409,38 +405,3 @@ class CASDChannel:
         if self._casd_channel is None:
             self._establish_connection()
         return self._asset_push
-
-    # is_closed():
-    #
-    # Return whether this connection is closed or not.
-    #
-    def is_closed(self):
-        return self._casd_channel is None
-
-    # request_shutdown():
-    #
-    # Notify the channel that a shutdown of casd was requested.
-    #
-    # Thus we know that not being able to establish a connection is expected
-    # and no error will be reported in that case.
-    def request_shutdown(self) -> None:
-        self._shutdown_requested = True
-
-    # close():
-    #
-    # Close the casd channel.
-    #
-    def close(self):
-        assert self._shutdown_requested, "Please request shutdown before closing"
-
-        with self._lock:
-            if self.is_closed():
-                return
-
-            self._asset_push = None
-            self._asset_fetch = None
-            self._local_cas = None
-            self._casd_cas = None
-            self._bytestream = None
-            self._casd_channel.close()
-            self._casd_channel = None

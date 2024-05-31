@@ -80,17 +80,15 @@ class CASCache:
 
         self._remote_cache = bool(remote_cache_spec)
 
-        self._casd_process_manager = None
-        self._casd_channel = None
+        self._casd = None
         if casd:
             assert log_directory is not None, "log_directory is required when casd is True"
             log_dir = os.path.join(log_directory, "_casd")
-            self._casd_process_manager = CASDProcessManager(
+            self._casd = CASDProcessManager(
                 path, log_dir, log_level, cache_quota, remote_cache_spec, protect_session_blobs, messenger
             )
 
-            self._casd_channel = self._casd_process_manager.create_channel()
-            self._cache_usage_monitor = _CASCacheUsageMonitor(self._casd_channel)
+            self._cache_usage_monitor = _CASCacheUsageMonitor(self._casd)
             self._cache_usage_monitor.start()
         else:
             assert not self._remote_cache
@@ -103,16 +101,16 @@ class CASCache:
     # Return ContentAddressableStorage stub for buildbox-casd channel.
     #
     def get_cas(self):
-        assert self._casd_channel, "CASCache was created without a channel"
-        return self._casd_channel.get_cas()
+        assert self._casd, "CASCache was created without buildbox-casd"
+        return self._casd.get_cas()
 
     # get_local_cas():
     #
     # Return LocalCAS stub for buildbox-casd channel.
     #
     def get_local_cas(self):
-        assert self._casd_channel, "CASCache was created without a channel"
-        return self._casd_channel.get_local_cas()
+        assert self._casd, "CASCache was created without buildbox-casd"
+        return self._casd.get_local_cas()
 
     # preflight():
     #
@@ -122,30 +120,18 @@ class CASCache:
         if not os.path.join(self.casdir, "objects"):
             raise CASCacheError("CAS repository check failed for '{}'".format(self.casdir))
 
-    # close_grpc_channels():
-    #
-    # Close the casd channel if it exists
-    #
-    def close_grpc_channels(self):
-        if self._casd_channel:
-            self._casd_channel.close()
-
     # release_resources():
     #
     # Release resources used by CASCache.
     #
     def release_resources(self, messenger=None):
-        if self._casd_channel:
-            self._casd_channel.request_shutdown()
-
         if self._cache_usage_monitor:
             self._cache_usage_monitor.stop()
             self._cache_usage_monitor.join()
 
-        if self._casd_process_manager:
-            self.close_grpc_channels()
-            self._casd_process_manager.release_resources(messenger)
-            self._casd_process_manager = None
+        if self._casd:
+            self._casd.release_resources(messenger)
+            self._casd = None
 
     def get_default_remote(self):
         return self._default_remote
@@ -733,16 +719,16 @@ class CASCache:
         assert not self._cache_usage_monitor_forbidden
         return self._cache_usage_monitor.get_cache_usage()
 
-    # get_casd_process_manager()
+    # get_casd()
     #
     # Get the underlying buildbox-casd process
     #
     # Returns:
     #   (subprocess.Process): The casd process that is used for the current cascache
     #
-    def get_casd_process_manager(self):
-        assert self._casd_process_manager is not None, "Only call this with a running buildbox-casd process"
-        return self._casd_process_manager
+    def get_casd(self):
+        assert self._casd is not None, "Only call this with a running buildbox-casd process"
+        return self._casd
 
 
 # _CASCacheUsage
@@ -783,9 +769,9 @@ class _CASCacheUsage:
 # buildbox-casd.
 #
 class _CASCacheUsageMonitor(threading.Thread):
-    def __init__(self, connection):
+    def __init__(self, casd):
         super().__init__()
-        self._connection = connection
+        self._casd = casd
         self._disk_usage = None
         self._disk_quota = None
         self._should_stop = False
@@ -797,7 +783,7 @@ class _CASCacheUsageMonitor(threading.Thread):
         self._should_stop = True
 
     def run(self):
-        local_cas = self._connection.get_local_cas()
+        local_cas = self._casd.get_local_cas()
 
         while not self._should_stop:
             try:

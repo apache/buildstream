@@ -87,7 +87,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
         context = self._get_context()
         cascache = context.get_cascache()
-        casd_process_manager = cascache.get_casd_process_manager()
+        casd = cascache.get_casd()
 
         with utils._tempnamedfile() as action_file, utils._tempnamedfile() as result_file:
             action_file.write(action.SerializeToString())
@@ -95,7 +95,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
             buildbox_command = [
                 self.__buildbox_run(),
-                "--remote={}".format(casd_process_manager._connection_string),
+                "--remote={}".format(casd._connection_string),
                 "--action={}".format(action_file.name),
                 "--action-result={}".format(result_file.name),
             ]

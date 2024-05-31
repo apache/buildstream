@@ -203,9 +203,6 @@ def test_pull_tree(cli, tmpdir, datafiles):
             cli.remove_artifact_from_cache(project_dir, "target.bst")
 
             # Assert that we are not cached locally anymore
-            artifactcache.release_resources()
-            cas._casd_channel.request_shutdown()
-            cas.close_grpc_channels()
             assert cli.get_element_state(project_dir, "target.bst") != "cached"
 
             tree_digest = remote_execution_pb2.Digest(hash=tree_hash, size_bytes=tree_size)
