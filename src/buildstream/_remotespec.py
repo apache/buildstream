@@ -218,6 +218,23 @@ class RemoteSpec:
 
         return channel
 
+    # to_localcas_remote()
+    #
+    # Create a `LocalContentAddressableStorage.Remote` proto from the `RemoteSpec` object.
+    #
+    def to_localcas_remote(self, remote):
+        remote.url = self.url
+        if self.instance_name:
+            remote.instance_name = self.instance_name
+        if self.server_cert:
+            remote.server_cert = self.server_cert
+        if self.client_key:
+            remote.client_key = self.client_key
+        if self.client_cert:
+            remote.client_cert = self.client_cert
+        if self.keepalive_time is not None:
+            remote.keepalive_time.FromSeconds(self.keepalive_time)
+
     # new_from_node():
     #
     # Creates a RemoteSpec() from a YAML loaded node.
