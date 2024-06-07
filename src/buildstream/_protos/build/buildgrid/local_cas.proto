@@ -287,6 +287,7 @@ message StageTreeRequest {
 
   message Credentials {
     int64 uid = 1;
+    int64 gid = 2;
   }
 
   // The UNIX credentials of the processes that will access the staged tree.
@@ -331,6 +332,16 @@ message CaptureTreeRequest {
   // If enabled, they MUST NOT be modified after issuing this request in order
   // to guarantee consistency.
   bool move_files = 5;
+
+  // The format that the localcas should use to capture the contents of
+  // output directories.
+  //
+  // In case this field is set to a value that is not supported by the
+  // localcas, the worker SHOULD interpret this field as TREE_ONLY. The
+  // localcas MAY store output directories in formats that are a superset
+  // of what was requested (e.g., interpreting DIRECTORY_ONLY as
+  // TREE_AND_DIRECTORY).
+  build.bazel.remote.execution.v2.Command.OutputDirectoryFormat output_directory_format = 7;
 }
 
 // A response message for
@@ -348,6 +359,11 @@ message CaptureTreeResponse {
 
     // The result of attempting to capture and upload the tree.
     google.rpc.Status status = 3;
+
+    // The digest of the captured directory as an encoded
+    // [Tree][build.bazel.remote.execution.v2.Directory] proto containing the
+    // directory's contents, if successful.
+    build.bazel.remote.execution.v2.Digest root_directory_digest = 4;
   }
 
   // The responses to the requests.
@@ -470,6 +486,12 @@ message Remote {
   // specified as well.
   bytes client_cert = 5;
 
+  // The path to a token for optional HTTP bearer authentication.
+  string access_token_path = 7;
+
+  // Access token reload interval.
+  google.protobuf.Duration access_token_reload_interval = 8;
+
   // Remote keepalive time. Unset or empty is treated as disabling keepalive.
   google.protobuf.Duration keepalive_time = 6;
 }
@@ -487,6 +509,7 @@ message GetInstanceNameForRemotesRequest {
   Remote content_addressable_storage = 1;
   Remote remote_asset = 2;
   Remote action_cache = 4;
+  Remote execution = 5;
 }
 
 // A response message for
