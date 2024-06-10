@@ -12,6 +12,7 @@
 #  limitations under the License.
 #
 import os
+import re
 import sys
 from functools import partial
 
@@ -627,18 +628,30 @@ def show(app, elements, deps, except_, order, format_):
             $'---------- %{name} ----------\\n%{vars}'
     """
     with app.initialized():
-        if not elements:
-            elements = app.project.get_default_targets()
-
-        dependencies = app.stream.load_selection(elements, selection=deps, except_targets=except_)
-
-        app.stream.query_cache(dependencies)
-
-        if order == "alpha":
-            dependencies = sorted(dependencies)
 
         if not format_:
             format_ = app.context.log_element_format
+
+        # First determine whether we need to go about querying the local cache
+        # and spending time setting up remotes.
+        state_match = re.search(r"%(\{(state)[^%]*?\})", format_)
+        key_match = re.search(r"%(\{(key)[^%]*?\})", format_)
+        full_key_match = re.search(r"%(\{(full-key)[^%]*?\})", format_)
+        need_state = bool(state_match or key_match or full_key_match)
+
+        if not elements:
+            elements = app.project.get_default_targets()
+
+        dependencies = app.stream.load_selection(
+            elements, selection=deps, except_targets=except_, need_state=need_state
+        )
+
+        # Don't spend time interrogating the cache if we don't need to show element state
+        if need_state:
+            app.stream.query_cache(dependencies)
+
+        if order == "alpha":
+            dependencies = sorted(dependencies)
 
         report = app.logger.show_pipeline(dependencies, format_)
         click.echo(report)
