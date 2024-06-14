@@ -90,10 +90,9 @@ def create_server(repo, *, enable_push, quota, index_only, log_level=LogLevel.Le
     handler.setFormatter(logging.Formatter(fmt="%(levelname)s: %(funcName)s: %(message)s"))
     logger.addHandler(handler)
 
-    casd_manager = CASDProcessManager(
+    casd = CASDProcessManager(
         os.path.abspath(repo), os.path.join(os.path.abspath(repo), "logs"), log_level, quota, None, False, None
     )
-    casd_channel = casd_manager.create_channel()
 
     try:
         # Use max_workers default from Python 3.5+
@@ -102,19 +101,19 @@ def create_server(repo, *, enable_push, quota, index_only, log_level=LogLevel.Le
 
         if not index_only:
             bytestream_pb2_grpc.add_ByteStreamServicer_to_server(
-                _ByteStreamServicer(casd_channel, enable_push=enable_push), server
+                _ByteStreamServicer(casd, enable_push=enable_push), server
             )
 
             remote_execution_pb2_grpc.add_ContentAddressableStorageServicer_to_server(
-                _ContentAddressableStorageServicer(casd_channel, enable_push=enable_push), server
+                _ContentAddressableStorageServicer(casd, enable_push=enable_push), server
             )
 
         remote_execution_pb2_grpc.add_CapabilitiesServicer_to_server(_CapabilitiesServicer(), server)
 
         # Remote Asset API
-        remote_asset_pb2_grpc.add_FetchServicer_to_server(_FetchServicer(casd_channel), server)
+        remote_asset_pb2_grpc.add_FetchServicer_to_server(_FetchServicer(casd), server)
         if enable_push:
-            remote_asset_pb2_grpc.add_PushServicer_to_server(_PushServicer(casd_channel), server)
+            remote_asset_pb2_grpc.add_PushServicer_to_server(_PushServicer(casd), server)
 
         # Ensure we have the signal handler set for SIGTERM
         # This allows threads from GRPC to call our methods that do register
@@ -123,9 +122,7 @@ def create_server(repo, *, enable_push, quota, index_only, log_level=LogLevel.Le
             yield server
 
     finally:
-        casd_channel.request_shutdown()
-        casd_channel.close()
-        casd_manager.release_resources()
+        casd.release_resources()
 
 
 class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):

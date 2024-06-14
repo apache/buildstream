@@ -30,7 +30,7 @@ from ._artifactcache import ArtifactCache
 from ._elementsourcescache import ElementSourcesCache
 from ._remotespec import RemoteSpec, RemoteExecutionSpec
 from ._sourcecache import SourceCache
-from ._cas import CASCache, CASLogLevel
+from ._cas import CASCache, CASDProcessManager, CASLogLevel
 from .types import _CacheBuildTrees, _PipelineSelection, _SchedulerErrorAction, _SourceUriPolicy
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .node import Node, MappingNode
@@ -223,6 +223,7 @@ class Context:
         self._project_overrides: MappingNode = Node.from_dict({})
         self._workspaces: Optional[Workspaces] = None
         self._workspace_project_cache: WorkspaceProjectCache = WorkspaceProjectCache()
+        self._casd: Optional[CASDProcessManager] = None
         self._cascache: Optional[CASCache] = None
 
     # __enter__()
@@ -247,7 +248,11 @@ class Context:
             self._sourcecache.release_resources()
 
         if self._cascache:
-            self._cascache.release_resources(self.messenger)
+            self._cascache.release_resources()
+
+        if self._casd:
+            self._casd.release_resources(self.messenger)
+            self._casd = None
 
     # load()
     #
@@ -677,8 +682,8 @@ class Context:
         # value which we cache here too.
         return self._strict_build_plan
 
-    def get_cascache(self) -> CASCache:
-        if self._cascache is None:
+    def get_casd(self) -> CASDProcessManager:
+        if self._casd is None:
             if self.log_debug:
                 log_level = CASLogLevel.TRACE
             elif self.log_verbose:
@@ -686,15 +691,22 @@ class Context:
             else:
                 log_level = CASLogLevel.WARNING
 
-            self._cascache = CASCache(
+            assert self.logdir is not None, "log_directory is required for casd"
+            log_dir = os.path.join(self.logdir, "_casd")
+            self._casd = CASDProcessManager(
                 self.cachedir,
-                casd=self.use_casd,
-                cache_quota=self.config_cache_quota,
-                remote_cache_spec=self.remote_cache_spec,
-                log_level=log_level,
-                log_directory=self.logdir,
+                log_dir,
+                log_level,
+                self.config_cache_quota,
+                self.remote_cache_spec,
+                protect_session_blobs=True,
                 messenger=self.messenger,
             )
+        return self._casd
+
+    def get_cascache(self) -> CASCache:
+        if self._cascache is None:
+            self._cascache = CASCache(self.cachedir, casd=self.get_casd(), remote_cache=bool(self.remote_cache_spec))
         return self._cascache
 
     ######################################################

@@ -68,9 +68,6 @@ class BaseRemote:
             if self._initialized:
                 return
 
-            if self.spec:
-                self.channel = self.spec.open_channel()
-
             self._configure_protocols()
             self._initialized = True
 

@@ -10,10 +10,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-#
-#  Authors:
-#        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .cascache import CASCache, CASLogLevel
-from .casdprocessmanager import CASDProcessManager
-from .casremote import CASRemote
+import os
+from contextlib import contextmanager
+
+from buildstream._cas import CASCache, CASDProcessManager, CASLogLevel
+
+
+@contextmanager
+def casd_cache(path, messenger=None):
+    casd = CASDProcessManager(
+        str(path), os.path.join(str(path), "..", "logs", "_casd"), CASLogLevel.WARNING, None, None, True, None
+    )
+    try:
+        cascache = CASCache(str(path), casd=casd)
+        try:
+            yield cascache
+        finally:
+            cascache.release_resources()
+    finally:
+        casd.release_resources(messenger)

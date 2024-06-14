@@ -59,18 +59,7 @@ class CASRemote(BaseRemote):
 
         local_cas = self.cascache.get_local_cas()
         request = local_cas_pb2.GetInstanceNameForRemotesRequest()
-        cas_endpoint = request.content_addressable_storage
-        cas_endpoint.url = self.spec.url
-        if self.spec.instance_name:
-            cas_endpoint.instance_name = self.spec.instance_name
-        if self.spec.server_cert:
-            cas_endpoint.server_cert = self.spec.server_cert
-        if self.spec.client_key:
-            cas_endpoint.client_key = self.spec.client_key
-        if self.spec.client_cert:
-            cas_endpoint.client_cert = self.spec.client_cert
-        if self.spec.keepalive_time is not None:
-            cas_endpoint.keepalive_time.FromSeconds(self.spec.keepalive_time)
+        self.spec.to_localcas_remote(request.content_addressable_storage)
         try:
             response = local_cas.GetInstanceNameForRemotes(request)
         except grpc.RpcError as e:
