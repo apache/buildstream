@@ -93,6 +93,8 @@ class CASDProcessManager:
             if remote_cache_spec.client_key_file:
                 casd_args.append("--cas-client-key={}".format(remote_cache_spec.client_key_file))
                 casd_args.append("--cas-client-cert={}".format(remote_cache_spec.client_cert_file))
+            if remote_cache_spec.access_token_file:
+                casd_args.append("--cas-access-token={}".format(remote_cache_spec.access_token_file))
             if remote_cache_spec.keepalive_time is not None:
                 casd_args.append("--cas-keepalive-time={}".format(remote_cache_spec.keepalive_time))
 

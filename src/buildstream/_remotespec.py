@@ -71,6 +71,7 @@ class RemoteSpec:
         server_cert: str = None,
         client_key: str = None,
         client_cert: str = None,
+        access_token: str = None,
         instance_name: Optional[str] = None,
         connection_config: Optional[MappingNode] = None,
         spec_node: Optional[MappingNode] = None,
@@ -96,6 +97,7 @@ class RemoteSpec:
         self.server_cert_file: Optional[str] = server_cert
         self.client_key_file: Optional[str] = client_key
         self.client_cert_file: Optional[str] = client_cert
+        self.access_token_file: Optional[str] = access_token
 
         #
         # Private members
@@ -133,6 +135,7 @@ class RemoteSpec:
                 self.server_cert_file,
                 self.client_key_file,
                 self.client_cert_file,
+                self.access_token_file,
                 self.keepalive_time,
             )
         )
@@ -232,6 +235,8 @@ class RemoteSpec:
             remote.client_key = self.client_key
         if self.client_cert:
             remote.client_cert = self.client_cert
+        if self.access_token_file:
+            remote.access_token_path = self.access_token_file
         if self.keepalive_time is not None:
             remote.keepalive_time.FromSeconds(self.keepalive_time)
 
@@ -257,6 +262,7 @@ class RemoteSpec:
         server_cert: Optional[str] = None
         client_key: Optional[str] = None
         client_cert: Optional[str] = None
+        access_token: Optional[str] = None
         push: bool = False
         remote_type: str = RemoteType.ENDPOINT
 
@@ -281,7 +287,7 @@ class RemoteSpec:
 
         auth_node = spec_node.get_mapping("auth", None)
         if auth_node:
-            server_cert, client_key, client_cert = cls._parse_auth(auth_node, basedir)
+            server_cert, client_key, client_cert, access_token = cls._parse_auth(auth_node, basedir)
 
         connection_config = spec_node.get_mapping("connection-config", None)
 
@@ -292,6 +298,7 @@ class RemoteSpec:
             server_cert=server_cert,
             client_key=client_key,
             client_cert=client_cert,
+            access_token=access_token,
             instance_name=instance_name,
             connection_config=connection_config,
             spec_node=spec_node,
@@ -323,6 +330,7 @@ class RemoteSpec:
         server_cert: Optional[str] = None
         client_key: Optional[str] = None
         client_cert: Optional[str] = None
+        access_token: Optional[str] = None
 
         if purpose == RemoteSpecPurpose.PULL:
             push = False
@@ -371,6 +379,8 @@ class RemoteSpec:
                     client_key = cls._resolve_path(val, os.getcwd())
                 elif key == "client-cert":
                     client_cert = cls._resolve_path(val, os.getcwd())
+                elif key == "access-token":
+                    access_token = cls._resolve_path(val, os.getcwd())
                 else:
                     raise RemoteError("Unexpected key '{}' encountered".format(key))
         else:
@@ -387,6 +397,7 @@ class RemoteSpec:
             server_cert=server_cert,
             client_key=client_key,
             client_cert=client_cert,
+            access_token=access_token,
             instance_name=instance_name,
         )
 
@@ -417,15 +428,15 @@ class RemoteSpec:
     #    basedir: The base directory which cert files are relative to, or None
     #
     # Returns:
-    #    A 3 tuple containing the filenames for the server-cert,
-    #    the client-key and the client-cert
+    #    A 4 tuple containing the filenames for the server-cert,
+    #    the client-key, the client-cert and the access-token
     #
     @classmethod
     def _parse_auth(
         cls, auth_node: MappingNode, basedir: Optional[str] = None
-    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
 
-        auth_keys = ["server-cert", "client-key", "client-cert"]
+        auth_keys = ["server-cert", "client-key", "client-cert", "access-token"]
         auth_values = {}
         auth_node.validate_keys(auth_keys)
 
@@ -438,6 +449,7 @@ class RemoteSpec:
         server_cert = auth_values["server-cert"]
         client_key = auth_values["client-key"]
         client_cert = auth_values["client-cert"]
+        access_token = auth_values["access-token"]
 
         if client_key and not client_cert:
             provenance = auth_node.get_node("client-key").get_provenance()
@@ -451,7 +463,7 @@ class RemoteSpec:
                 "{}: 'client-cert' was specified without 'client-key'".format(provenance), LoadErrorReason.INVALID_DATA
             )
 
-        return server_cert, client_key, client_cert
+        return server_cert, client_key, client_cert, access_token
 
     # _load_credential_files():
     #
