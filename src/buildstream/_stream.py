@@ -147,6 +147,7 @@ class Stream:
     #    source_remotes: Source cache remotes specified on the commmand line
     #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
     #    ignore_project_source_remotes: Whether to ignore source remotes specified by projects
+    #    need_state: Whether resolving element state is required
     #
     # Returns:
     #    (list of Element): The selected elements
@@ -163,6 +164,7 @@ class Stream:
         source_remotes: Iterable[RemoteSpec] = (),
         ignore_project_artifact_remotes: bool = False,
         ignore_project_source_remotes: bool = False,
+        need_state: bool = True,
     ):
         with PROFILER.profile(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, "-") for t in targets)):
             target_objects = self._load(
@@ -176,6 +178,7 @@ class Stream:
                 source_remotes=source_remotes,
                 ignore_project_artifact_remotes=ignore_project_artifact_remotes,
                 ignore_project_source_remotes=ignore_project_source_remotes,
+                need_state=need_state,
             )
             return target_objects
 
@@ -1617,6 +1620,7 @@ class Stream:
     #    source_remotes: Source cache remotes specified on the commmand line
     #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
     #    ignore_project_source_remotes: Whether to ignore source remotes specified by projects
+    #    need_state: Whether resolving element state is required
     #
     # Returns:
     #    (list of Element): The primary element selection
@@ -1637,6 +1641,7 @@ class Stream:
         source_remotes: Iterable[RemoteSpec] = (),
         ignore_project_artifact_remotes: bool = False,
         ignore_project_source_remotes: bool = False,
+        need_state: bool = True,
     ):
         elements, except_elements, artifacts = self._load_elements_from_targets(
             targets, except_targets, rewritable=False, valid_artifact_names=load_artifacts
@@ -1656,14 +1661,15 @@ class Stream:
         self.targets = elements
 
         # Connect to remote caches, this needs to be done before resolving element state
-        self._context.initialize_remotes(
-            connect_artifact_cache,
-            connect_source_cache,
-            artifact_remotes,
-            source_remotes,
-            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
-            ignore_project_source_remotes=ignore_project_source_remotes,
-        )
+        if need_state:
+            self._context.initialize_remotes(
+                connect_artifact_cache,
+                connect_source_cache,
+                artifact_remotes,
+                source_remotes,
+                ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+                ignore_project_source_remotes=ignore_project_source_remotes,
+            )
 
         # In some cases we need to have an actualized artifact, with all of
         # it's metadata, such that we can derive attributes about the artifact
