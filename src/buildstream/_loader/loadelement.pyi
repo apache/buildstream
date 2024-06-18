@@ -24,5 +24,6 @@ class LoadElement:
     first_pass: bool
     kind: str
     name: str
+    description: str
     node: Node
     link_target: ScalarNode

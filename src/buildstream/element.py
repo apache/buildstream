@@ -248,6 +248,7 @@ class Element(Plugin):
         #
         self._depth = None  # Depth of Element in its current dependency graph
         self._overlap_collector = None  # type: Optional[OverlapCollector]
+        self._description = load_element.description or ""  # type: str
 
         #
         # Private instance properties
