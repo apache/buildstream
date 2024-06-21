@@ -151,6 +151,7 @@ toplevel of your configuration file, like so:
          client-cert: client.crt
          client-key: client.key
          access-token: access.token
+         access-token-reload-interval: 60
 
 
 Attributes
@@ -712,6 +713,7 @@ The ``auth`` configuration block looks like this:
      client-cert: client.crt
      client-key: client.key
      access-token: access.token
+     access-token-reload-interval: 60
 
 
 Attributes
@@ -733,6 +735,11 @@ Attributes
 * ``access-token``
 
   The path to a token for optional HTTP bearer authentication.
+
+* ``access-token-reload-interval``
+
+  The reload interval in minutes for the specified access token.
+  If not specified, automatic reloading is disabled.
 
 Remote cache services may allow *downloading* artifacts and sources without
 authentication, in which case only ``server-cert`` is required for secure access
