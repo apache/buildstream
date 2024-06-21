@@ -28,9 +28,10 @@ installed.
 
 import argparse
 import subprocess
+import re
 
 from graphviz import Digraph
-
+from ruamel.yaml import YAML
 
 def parse_args():
     '''Handle parsing of command line arguments.
@@ -40,7 +41,7 @@ def parse_args():
     '''
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        'ELEMENT', nargs='*',
+        'element', nargs='*',
         help='Name of the element'
     )
     parser.add_argument(
@@ -64,15 +65,21 @@ def parse_graph(lines):
        Tuple of format (nodes,build_deps,runtime_deps)
        Each member of build_deps and runtime_deps is also a tuple.
     '''
+    parser = YAML(typ="safe")
     nodes = set()
     build_deps = set()
     runtime_deps = set()
     for line in lines:
+        line = line.strip()
+        if not line:
+            continue
         # It is safe to split on '|' as it is not a valid character for
         # element names.
         name, build_dep, runtime_dep = line.split('|')
-        build_dep = build_dep.lstrip('[').rstrip(']').split(',')
-        runtime_dep = runtime_dep.lstrip('[').rstrip(']').split(',')
+
+        build_dep = parser.load(build_dep)
+        runtime_dep = parser.load(runtime_dep)
+
         nodes.add(name)
         [build_deps.add((name, dep)) for dep in build_dep if dep]
         [runtime_deps.add((name, dep)) for dep in runtime_dep if dep]
@@ -103,13 +110,13 @@ def generate_graph(nodes, build_deps, runtime_deps):
 
 def main():
     args = parse_args()
-    cmd = ['bst', 'show', '--format', '%{name}|%{build-deps}|%{runtime-deps}']
+    cmd = ['bst', 'show', '--format', '%{name}|%{build-deps}|%{runtime-deps}||']
     if 'element' in args:
         cmd += args.element
     graph_lines = subprocess.check_output(cmd, universal_newlines=True)
     # NOTE: We generate nodes and edges before giving them to graphviz as
     # the library does not de-deuplicate them.
-    nodes, build_deps, runtime_deps = parse_graph(graph_lines.splitlines())
+    nodes, build_deps, runtime_deps = parse_graph(re.split("\|\|", graph_lines))
     graph = generate_graph(nodes, build_deps, runtime_deps)
     print(graph.source)
     if args.format:
