@@ -227,6 +227,7 @@ cdef class LoadElement:
     cdef readonly MappingNode node
     cdef readonly str name
     cdef readonly str full_name
+    cdef readonly str description
     cdef readonly str kind
     cdef int node_id
     cdef readonly bint first_pass
@@ -272,6 +273,7 @@ cdef class LoadElement:
         self.node.validate_keys(_valid_element_keys)
 
         self.kind = node.get_str(Symbol.KIND, default=None)
+        self.description = node.get_str(Symbol.DESCRIPTION, default=None)
         self.first_pass = self.kind in ("junction", "link")
 
         #

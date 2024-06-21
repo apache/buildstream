@@ -22,6 +22,7 @@
 class Symbol:
     FILENAME = "filename"
     KIND = "kind"
+    DESCRIPTION = "description"
     DEPENDS = "depends"
     BUILD_DEPENDS = "build-depends"
     RUNTIME_DEPENDS = "runtime-depends"
