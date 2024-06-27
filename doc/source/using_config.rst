@@ -150,6 +150,8 @@ toplevel of your configuration file, like so:
          server-cert: server.crt
          client-cert: client.crt
          client-key: client.key
+         access-token: access.token
+         access-token-reload-interval: 60
 
 
 Attributes
@@ -710,6 +712,8 @@ The ``auth`` configuration block looks like this:
      server-cert: server.crt
      client-cert: client.crt
      client-key: client.key
+     access-token: access.token
+     access-token-reload-interval: 60
 
 
 Attributes
@@ -717,26 +721,33 @@ Attributes
 
 * ``server-cert``
 
-  The server certificate is used to decrypt traffic coming from the
-  server.
+  The server certificate is used to verify the identity of the server instead
+  of using the CA store from the operating system for verification.
 
 * ``client-cert``
 
-  The client certificate is used by the remote server to decrypt
-  traffic being uploaded to the server.
-
-  The remote server will have its own copy of this certificate, but the
-  client needs to send this certificate's identity to the server so that
-  the server knows which certificate to use.
+  The client certificate is used by the remote server to authenticate the client.
 
 * ``client-key``
 
-  The client key is used to encrypt traffic when uploading traffic
-  to the server.
+  The private client key corresponding to the specified client certificate.
 
-Normally, only the ``server-cert`` is required to securely *download* data
-from remote cache services, while both the ``client-key`` and ``client-cert``
-is required to securely *upload* data to the server.
+* ``access-token``
+
+  The path to a token for optional HTTP bearer authentication.
+
+* ``access-token-reload-interval``
+
+  The reload interval in minutes for the specified access token.
+  If not specified, automatic reloading is disabled.
+
+Remote cache services may allow *downloading* artifacts and sources without
+authentication, in which case only ``server-cert`` is required for secure access
+(or no attributes at all if the CA store from the OS can be used).
+
+However, remote cache services should normally not allow *uploading* artifacts
+or sources without authentication. Authentication can be configured by setting
+``access-token`` or both ``client-key`` and ``client-cert``.
 
 
 .. _config_cache_servers:
