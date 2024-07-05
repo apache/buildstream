@@ -31,6 +31,7 @@ from .._protos.build.bazel.remote.asset.v1 import remote_asset_pb2_grpc
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2_grpc
 from .._protos.build.buildgrid import local_cas_pb2_grpc
 from .._protos.google.bytestream import bytestream_pb2_grpc
+from .._protos.google.longrunning import operations_pb2_grpc
 
 from .. import _site
 from .. import utils
@@ -125,6 +126,9 @@ class CASDProcessManager:
         self._local_cas = None
         self._asset_fetch = None
         self._asset_push = None
+        self._exec_service = None
+        self._operations_service = None
+        self._ac_service = None
         self._shutdown_requested = False
 
         self._lock = threading.Lock()
@@ -282,6 +286,9 @@ class CASDProcessManager:
         self._shutdown_requested = True
         with self._lock:
             if self._casd_channel:
+                self._ac_service = None
+                self._operations_service = None
+                self._exec_service = None
                 self._asset_push = None
                 self._asset_fetch = None
                 self._local_cas = None
@@ -374,6 +381,9 @@ class CASDProcessManager:
             self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
             self._asset_fetch = remote_asset_pb2_grpc.FetchStub(self._casd_channel)
             self._asset_push = remote_asset_pb2_grpc.PushStub(self._casd_channel)
+            self._exec_service = remote_execution_pb2_grpc.ExecutionStub(self._casd_channel)
+            self._operations_service = operations_pb2_grpc.OperationsStub(self._casd_channel)
+            self._ac_service = remote_execution_pb2_grpc.ActionCacheStub(self._casd_channel)
 
     # get_cas():
     #
@@ -415,3 +425,30 @@ class CASDProcessManager:
         if self._casd_channel is None:
             self._establish_connection()
         return self._asset_push
+
+    # get_exec_service():
+    #
+    # Return Remote Execution stub for buildbox-casd channel.
+    #
+    def get_exec_service(self):
+        if self._casd_channel is None:
+            self._establish_connection()
+        return self._exec_service
+
+    # get_operations_service():
+    #
+    # Return Operations stub for buildbox-casd channel.
+    #
+    def get_operations_service(self):
+        if self._casd_channel is None:
+            self._establish_connection()
+        return self._operations_service
+
+    # get_ac_service():
+    #
+    # Return Action Cache stub for buildbox-casd channel.
+    #
+    def get_ac_service(self):
+        if self._casd_channel is None:
+            self._establish_connection()
+        return self._ac_service
