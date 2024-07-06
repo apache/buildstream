@@ -127,8 +127,6 @@ class Stream:
     def set_project(self, project):
         assert self._project is None
         self._project = project
-        if self._project:
-            self._project.load_context.set_fetch_subprojects(self._fetch_subprojects)
 
     # load_selection()
     #
@@ -1323,6 +1321,22 @@ class Stream:
         assert queue
         queue.enqueue([element])
 
+    # fetch_subprojects()
+    #
+    # Fetch subprojects as part of the project and element loading process.
+    #
+    # This is passed to the Project in order to handle loading of subprojects
+    #
+    # Args:
+    #    junctions (list of Element): The junctions to fetch
+    #
+    def fetch_subprojects(self, junctions):
+        self._reset()
+        queue = FetchQueue(self._scheduler)
+        queue.enqueue(junctions)
+        self.queues = [queue]
+        self._run()
+
     #############################################################
     #                    Private Methods                        #
     #############################################################
@@ -1342,20 +1356,6 @@ class Stream:
             raise StreamError(
                 message, detail="No project.conf or active workspace was located", reason="project-not-loaded"
             )
-
-    # _fetch_subprojects()
-    #
-    # Fetch subprojects as part of the project and element loading process.
-    #
-    # Args:
-    #    junctions (list of Element): The junctions to fetch
-    #
-    def _fetch_subprojects(self, junctions):
-        self._reset()
-        queue = FetchQueue(self._scheduler)
-        queue.enqueue(junctions)
-        self.queues = [queue]
-        self._run()
 
     # _load_artifacts()
     #
