@@ -817,7 +817,8 @@ def test_mirror_expand_project_and_toplevel_root(cli, tmpdir):
 #
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.usefixtures("datafiles")
-def test_source_mirror_plugin(cli, tmpdir):
+@pytest.mark.parametrize("origin", [("local"), ("junction"), ("pip")])
+def test_source_mirror_plugin(cli, tmpdir, origin):
     output_file = os.path.join(str(tmpdir), "output.txt")
     project_dir = str(tmpdir)
     element_dir = os.path.join(project_dir, "elements")
@@ -826,6 +827,36 @@ def test_source_mirror_plugin(cli, tmpdir):
     element_path = os.path.join(element_dir, element_name)
     element = generate_element(output_file)
     _yaml.roundtrip_dump(element, element_path)
+
+    def source_mirror_plugin_origin():
+        if origin == "local":
+            return {"origin": "local", "path": "sourcemirrors", "source-mirrors": ["mirror"]}
+        elif origin == "pip":
+            return {
+                "origin": "pip",
+                "package-name": "sample-plugins>=1.2",
+                "source-mirrors": ["mirror"],
+            }
+        elif origin == "junction":
+            # For junction loading, just copy in the sample-plugins into a subdir and
+            # create a local junction
+            sample_plugins_dir = os.path.join(TOP_DIR, "..", "plugins", "sample-plugins")
+            sample_plugins_copy_dir = os.path.join(project_dir, "sample-plugins-copy")
+            junction_file = os.path.join(element_dir, "sample-plugins.bst")
+
+            shutil.copytree(sample_plugins_dir, sample_plugins_copy_dir)
+
+            _yaml.roundtrip_dump(
+                {"kind": "junction", "sources": [{"kind": "local", "path": "sample-plugins-copy"}]}, junction_file
+            )
+
+            return {
+                "origin": "junction",
+                "junction": "sample-plugins.bst",
+                "source-mirrors": ["mirror"],
+            }
+        else:
+            assert False
 
     project_file = os.path.join(project_dir, "project.conf")
     project = {
@@ -870,7 +901,7 @@ def test_source_mirror_plugin(cli, tmpdir):
         ],
         "plugins": [
             {"origin": "local", "path": "sources", "sources": ["fetch_source"]},
-            {"origin": "local", "path": "sourcemirrors", "source-mirrors": ["mirror"]},
+            source_mirror_plugin_origin(),
         ],
     }
 
