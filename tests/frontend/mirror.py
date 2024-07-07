@@ -26,6 +26,7 @@ from buildstream._testing import create_repo
 from buildstream._testing import cli  # pylint: disable=unused-import
 
 from tests.testutils.repo.git import Git
+from tests.testutils.repo.tar import Tar
 from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
 from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
 
@@ -1129,3 +1130,107 @@ def test_mirror_subproject_aliases(
                 assert "Fetch RAB/repo2 succeeded from RAB/repo2" in contents
             else:
                 assert "Fetch bar:repo2 succeeded from RAB/repo2" in contents
+
+
+# Test the behavior of loading a SourceMirror plugin across a junction,
+# when the cross junction SourceMirror object has a mirror.
+#
+# Check what happens when the mirror does not need to be exercized (success)
+#
+# Check what happens when the mirror needs to be exercised in order to obtain
+# the mirror plugin itself (failure) and check the failure mode.
+#
+#
+@pytest.mark.parametrize("fetch_source", [("all"), ("mirrors")], ids=["normal", "circular"])
+def test_source_mirror_circular_junction(cli, tmpdir, fetch_source):
+    project_dir = str(tmpdir)
+    element_dir = os.path.join(project_dir, "elements")
+    os.makedirs(element_dir, exist_ok=True)
+
+    cli.configure({"fetch": {"source": fetch_source}})
+
+    # Generate a 2 tar repos with the sample plugins
+    #
+    sample_plugins_dir = os.path.join(TOP_DIR, "..", "plugins", "sample-plugins")
+    base_sample_plugins_repodir = os.path.join(str(tmpdir), "base_sample_plugins")
+    base_sample_plugins_repo = Tar(base_sample_plugins_repodir)
+    base_sample_plugins_ref = base_sample_plugins_repo.create(sample_plugins_dir)
+    mirror_sample_plugins_repodir = os.path.join(str(tmpdir), "mirror_sample_plugins")
+    mirror_sample_plugins_repo = Tar(mirror_sample_plugins_repodir)
+
+    # Don't expect determinism from python tar, just copy over the Tar repo file
+    # and we need to use the same ref for both.
+    shutil.copyfile(
+        os.path.join(base_sample_plugins_repo.repo, "file.tar.gz"),
+        os.path.join(mirror_sample_plugins_repo.repo, "file.tar.gz"),
+    )
+
+    # Generate junction for sample plugins
+    #
+    sample_plugins_junction = {
+        "kind": "junction",
+        "sources": [
+            {
+                "kind": "tar",
+                "url": "samplemirror:file.tar.gz",
+                "ref": base_sample_plugins_ref,
+            }
+        ],
+    }
+    element_path = os.path.join(element_dir, "sample-plugins.bst")
+    _yaml.roundtrip_dump(sample_plugins_junction, element_path)
+
+    # Generate project.conf
+    #
+    project_file = os.path.join(project_dir, "project.conf")
+    project = {
+        "name": "test",
+        "min-version": "2.0",
+        "element-path": "elements",
+        "aliases": {
+            "samplemirror": "file://" + base_sample_plugins_repo.repo + "/",
+        },
+        "mirrors": [
+            {
+                "name": "alternative",
+                "kind": "mirror",
+                "config": {
+                    "aliases": {
+                        "samplemirror": ["file://" + mirror_sample_plugins_repo.repo + "/"],
+                    },
+                },
+            },
+        ],
+        "plugins": [
+            {"origin": "junction", "junction": "sample-plugins.bst", "source-mirrors": ["mirror"]},
+        ],
+    }
+    _yaml.roundtrip_dump(project, project_file)
+
+    # Make a silly element
+    element = {"kind": "import", "sources": [{"kind": "local", "path": "project.conf"}]}
+    element_path = os.path.join(element_dir, "test.bst")
+    _yaml.roundtrip_dump(element, element_path)
+
+    result = cli.run(project=project_dir, args=["show", "test.bst"])
+
+    if fetch_source == "all":
+        result.assert_success()
+    elif fetch_source == "mirrors":
+        #
+        # This error looks like this:
+        #
+        #   Error loading project: tar source at sample-plugins.bst [line 3 column 2]: No fetch URI found for alias 'samplemirror'
+        #
+        #       Check fetch controls in your user configuration
+        #
+        # This is not 100% ideal, as we could theoretically have Source.mark_download_url() detect
+        # the case that we are currently instantiating the specific SourceMirror plugin required
+        # to resolve the URL needed to obtain the same said SourceMirror plugin, and report
+        # something about this being a circular dependency error.
+        #
+        # However, this would be fairly complex to reason about in the code, especially considering
+        # the source alias redirects, and the possibility that a subproject's source mirror is being
+        # redirected to a parent project's aliases and corresponding mirrors.
+        #
+        result.assert_main_error(ErrorDomain.SOURCE, "missing-source-alias-target")
