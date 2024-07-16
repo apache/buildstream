@@ -163,7 +163,7 @@ def _download_file(opener_creator, url, etag, directory, bearer_auth):
         request.add_header("If-None-Match", etag)
 
     try:
-        with contextlib.closing(opener.open(request)) as response:
+        with contextlib.closing(opener.open(request, timeout=10 * 60)) as response:
             info = response.info()
 
             # some servers don't honor the 'If-None-Match' header
