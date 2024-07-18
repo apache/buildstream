@@ -53,8 +53,9 @@ environment = { BST_BUNDLE_BUILDBOX = "1" }
 manylinux-x86_64-image = "manylinux_2_28"
 
 skip = [
-  # BuildStream supports Python >= 3.7
+  # BuildStream supports Python >= 3.8
   "cp36-*",
+  "cp37-*",
   # PyPy may work, but nobody is testing it so avoid distributing prebuilt binaries.
   "pp*",
   # Skipping this niche archicture ~halves overall build time.
