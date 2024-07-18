@@ -40,6 +40,7 @@ jobs:
           - fedora-38
           - fedora-39
           - fedora-missing-deps
+          - ubuntu-20.04
           - lint
           - mypy
 
