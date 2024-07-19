@@ -41,6 +41,8 @@ class PluginOriginPip(PluginOrigin):
             entrypoint_group = "buildstream.plugins.sources"
         elif plugin_type == PluginType.ELEMENT:
             entrypoint_group = "buildstream.plugins.elements"
+        else:
+            assert False, "unreachable"
 
         # key by a tuple to avoid collision
         try:

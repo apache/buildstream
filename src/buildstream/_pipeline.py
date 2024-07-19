@@ -50,8 +50,7 @@ def dependencies(targets: List[Element], scope: int, *, recurse: bool = True) ->
     visited = (BitMap(), BitMap())
 
     for target in targets:
-        for element in target._dependencies(scope, recurse=recurse, visited=visited):
-            yield element
+        yield from target._dependencies(scope, recurse=recurse, visited=visited)
 
 
 # get_selection()

@@ -11,7 +11,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-[MASTER]
+[MAIN]
 
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
@@ -32,7 +32,7 @@ ignore=CVS,doc
 
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.
-ignore-patterns=.*_pb2.py,.*_pb2_grpc.py
+ignore-patterns=.*_pb2.py,.*_pb2_grpc.py,.*.pyi
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
@@ -50,6 +50,12 @@ persistent=yes
 
 # Specify a configuration file.
 #rcfile=
+
+# Add paths to the list of the source roots. Supports globbing patterns. The
+# source root is an absolute path or a path relative to the current working
+# directory used to determine a package namespace for modules located under the
+# source root.
+source-roots=src
 
 # When enabled, pylint would attempt to guess common misconfiguration and emit
 # user-friendly hints instead of false-positive error messages
@@ -223,7 +229,7 @@ ignored-classes=optparse.Values,thread._local,_thread._local,contextlib.closing,
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis. It
 # supports qualified module names, as well as Unix pattern matching.
-ignored-modules=pkg_resources,gi.repository,grpc,buildstream._protos.*
+ignored-modules=pkg_resources,gi.repository,grpc,buildstream._protos.*,google.protobuf.*
 
 # Show a hint with possible names when a member name was not found. The aspect
 # of finding the hint is based on edit distance.

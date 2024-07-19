@@ -301,6 +301,9 @@ def test_workspace_build(cli, tmpdir, datafiles, modification):
                 fdata.write(re.sub(r"Hello", "Goodbye", line))
         touched_time = int(os.stat(main_path).st_mtime)
 
+    else:
+        assert False, "unreachable"
+
     # refresh input times
     ws_times = get_mtimes(workspace)
 

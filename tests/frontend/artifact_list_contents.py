@@ -47,6 +47,8 @@ def test_artifact_list_exact_contents(cli, datafiles, target, with_project):
     elif target == "artifact-name":
         key = cli.get_element_key(project, "import-bin.bst")
         arg = "test/import-bin/" + key
+    else:
+        assert False, "unreachable"
 
     # Delete the project.conf if we're going to try this without a project
     if not with_project:
@@ -89,6 +91,8 @@ def test_artifact_list_exact_contents_long(cli, datafiles, target):
     elif target == "artifact-name":
         key = cli.get_element_key(project, "import-bin.bst")
         arg = "test/import-bin/" + key
+    else:
+        assert False, "unreachable"
 
     # List the contents via the element name
     result = cli.run(project=project, args=["artifact", "list-contents", "--long", arg])

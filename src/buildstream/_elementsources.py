@@ -72,8 +72,7 @@ class ElementSources:
     #   Source: The individual sources
     #
     def sources(self) -> Iterator["Source"]:
-        for source in self._sources:
-            yield source
+        yield from self._sources
 
     # track():
     #

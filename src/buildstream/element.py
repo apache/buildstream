@@ -1407,6 +1407,7 @@ class Element(Plugin):
             )
 
         # bst shell and bst artifact checkout require a local sandbox.
+        # pylint: disable-next=contextmanager-generator-missing-cleanup
         with self.__sandbox(None, config=self.__sandbox_config, allow_remote=False) as sandbox:
 
             # Configure always comes first, and we need it.
@@ -2847,6 +2848,7 @@ class Element(Plugin):
             os.makedirs(context.builddir, exist_ok=True)
 
             # Recursive contextmanager...
+            # pylint: disable-next=contextmanager-generator-missing-cleanup
             with utils._tempdir(
                 prefix="{}-".format(self.normal_name), dir=context.builddir
             ) as rootdir, self.__sandbox(

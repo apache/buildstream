@@ -142,7 +142,7 @@ class Scheduler:
         # background threads.
         # In Python 3.8+, `ThreadedChildWatcher` is the default watcher, and
         # not `SafeChildWatcher`.
-        asyncio.set_child_watcher(asyncio.SafeChildWatcher())
+        asyncio.set_child_watcher(asyncio.SafeChildWatcher())  # pylint: disable=deprecated-class
 
         # Ensure that we have a fresh new event loop, in case we want
         # to run another test in this thread.

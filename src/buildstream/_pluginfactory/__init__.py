@@ -42,6 +42,8 @@ def load_plugin_origin(project, origin_node):
         origin = PluginOriginPip()
     elif origin_type == PluginOriginType.JUNCTION:
         origin = PluginOriginJunction()
+    else:
+        assert False, "unreachable"
 
     origin.initialize(project, origin_node)
 

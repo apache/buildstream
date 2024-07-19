@@ -649,11 +649,12 @@ class CasBasedDirectory(Directory):
             if prop.name == "SubtreeReadOnly":
                 self.__subtree_read_only = prop.value == "true"
 
-        for entry in pb2_directory.directories:
-            self.__index[entry.name] = _IndexEntry(
-                self.__cas_cache, entry.name, FileType.DIRECTORY, digest=entry.digest
+        for dentry in pb2_directory.directories:
+            self.__index[dentry.name] = _IndexEntry(
+                self.__cas_cache, dentry.name, FileType.DIRECTORY, digest=dentry.digest
             )
         for entry in pb2_directory.files:
+            mtime: Optional[timestamp_pb2.Timestamp]
             if entry.node_properties.HasField("mtime"):
                 mtime = entry.node_properties.mtime
             else:
@@ -667,8 +668,10 @@ class CasBasedDirectory(Directory):
                 is_executable=entry.is_executable,
                 mtime=mtime,
             )
-        for entry in pb2_directory.symlinks:
-            self.__index[entry.name] = _IndexEntry(self.__cas_cache, entry.name, FileType.SYMLINK, target=entry.target)
+        for lentry in pb2_directory.symlinks:
+            self.__index[lentry.name] = _IndexEntry(
+                self.__cas_cache, lentry.name, FileType.SYMLINK, target=lentry.target
+            )
 
     def __add_directory(self, name: str) -> "CasBasedDirectory":
         assert name not in self.__index

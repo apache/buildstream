@@ -1151,9 +1151,8 @@ class Project:
         elif filename == WORKSPACE_PROJECT_FILE:
             workspace_project_cache = self._context.get_workspace_project_cache()
             workspace_project = workspace_project_cache.get(found_directory)
-            if workspace_project:
-                project_directory = workspace_project.get_default_project_path()
-                workspace_element = workspace_project.get_default_element()
+            project_directory = workspace_project.get_default_project_path()
+            workspace_element = workspace_project.get_default_element()
         else:
             raise LoadError(
                 "None of {names} found in '{path}' or any of its parent directories".format(

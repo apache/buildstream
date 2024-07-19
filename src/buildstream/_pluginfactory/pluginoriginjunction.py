@@ -41,6 +41,8 @@ class PluginOriginJunction(PluginOrigin):
             factory = project.source_factory
         elif plugin_type == PluginType.ELEMENT:
             factory = project.element_factory
+        else:
+            assert False, "unreachable"
 
         # Now ask for the paths from the subproject PluginFactory
         try:

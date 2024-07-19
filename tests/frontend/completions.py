@@ -387,5 +387,7 @@ def test_argument_artifact(cli, datafiles):
             elif i == 2:
                 expected1 = artifacts
                 expected2 = list(reversed(artifacts))
+            else:
+                assert False, "unreachable"
 
             assert words in (expected1, expected2)
