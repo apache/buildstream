@@ -7,6 +7,3 @@ pytest-env
 pytest-xdist
 pytest-timeout
 pyftpdlib
-# isort is an indirect requirement, but it must be constrained
-# as 5.12 is not available for python 3.7
-isort < 5.12

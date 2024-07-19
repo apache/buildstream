@@ -30,9 +30,9 @@ services:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:39-${CI_IMAGE_VERSION:-latest}
 
-  debian-10:
+  ubuntu-20.04:
     <<: *tests-template
-    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-${CI_IMAGE_VERSION:-latest}
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:20.04-${CI_IMAGE_VERSION:-latest}
 
   # Ensure that tests also pass in the absence of a sandboxing tool
   fedora-missing-deps:
@@ -89,11 +89,6 @@ services:
   # Test that each BuildStream+BuildBox wheel package can install and run.
   # on the PyPA official 'manylinux' images that define the base ABI for
   # Python binary packages.
-
-  wheels-manylinux_2_28-cp37:
-    <<: *tests-template
-    image: quay.io/pypa/manylinux_2_28_x86_64
-    command: .github/wheel-helpers/test-wheel-manylinux.sh cp37 /opt/python/cp37-cp37m/bin/python3
 
   wheels-manylinux_2_28-cp38:
     <<: *tests-template
