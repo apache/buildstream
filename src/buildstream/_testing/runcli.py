@@ -703,6 +703,7 @@ class TestArtifact:
             yield None
         else:
             if str(artifact.buildtree):
+                # pylint: disable-next=contextmanager-generator-missing-cleanup
                 with self._extract_subdirectory(tmpdir, artifact.buildtree) as f:
                     yield f
             else:

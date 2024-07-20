@@ -765,6 +765,9 @@ class Source(Plugin):
             elif alias_override is not None:
                 override_subst = alias_override
 
+            else:
+                assert False, "unreachable"
+
             # The default source mirror will give prefix URLs
             if isinstance(override_subst._mirror, str):
                 return override_subst._mirror + url_body
@@ -1060,7 +1063,7 @@ class Source(Plugin):
 
         def do_load_ref(node):
             try:
-                self.load_ref(ref_node)
+                self.load_ref(node)
             except ImplError as e:
                 raise SourceError(
                     "{}: Storing refs in project.refs is not supported by '{}' sources".format(self, self.get_kind()),

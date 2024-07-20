@@ -194,8 +194,7 @@ def get_args(cls, dist, header=None):
         cls._ensure_safe_name(name)
         script_text = TEMPLATE.format(ep.module_name, ep.attrs[0], ".".join(ep.attrs))
         args = cls._get_script_args("console", name, header, script_text)
-        for res in args:
-            yield res
+        yield from args
 
 
 ScriptWriter.get_args = get_args

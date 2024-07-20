@@ -921,7 +921,7 @@ def _force_rmtree(rootpath):
             os.remove(path)
 
     try:
-        shutil.rmtree(rootpath, onerror=fix_permissions)
+        shutil.rmtree(rootpath, onerror=fix_permissions)  # pylint: disable=deprecated-argument
     except OSError as e:
         raise UtilError("Failed to remove cache directory '{}': {}".format(rootpath, e))
 
