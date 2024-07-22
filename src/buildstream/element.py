@@ -1408,7 +1408,7 @@ class Element(Plugin):
 
         # bst shell and bst artifact checkout require a local sandbox.
         # pylint: disable-next=contextmanager-generator-missing-cleanup
-        with self.__sandbox(None, config=self.__sandbox_config, allow_remote=False) as sandbox:
+        with self.__sandbox(config=self.__sandbox_config, allow_remote=False) as sandbox:
 
             # Configure always comes first, and we need it.
             self.__configure_sandbox(sandbox)
@@ -1662,11 +1662,7 @@ class Element(Plugin):
             # Explicitly clean it up, keep the build dir around if exceptions are raised
             os.makedirs(context.builddir, exist_ok=True)
 
-            with utils._tempdir(
-                prefix="{}-".format(self.normal_name), dir=context.builddir
-            ) as rootdir, self.__sandbox(
-                rootdir, output_file, output_file, self.__sandbox_config
-            ) as sandbox:  # noqa
+            with self.__sandbox(output_file, output_file, self.__sandbox_config) as sandbox:
 
                 # Ensure that the plugin does not run commands if it said that it wouldn't
                 #
@@ -2802,7 +2798,7 @@ class Element(Plugin):
     #    (Sandbox): A usable sandbox
     #
     @contextmanager
-    def __sandbox(self, directory, stdout=None, stderr=None, config=None, allow_remote=True):
+    def __sandbox(self, stdout=None, stderr=None, config=None, allow_remote=True):
         context = self._get_context()
         project = self._get_project()
         platform = context.platform
@@ -2812,14 +2808,10 @@ class Element(Plugin):
         else:
             output_node_properties = None
 
-        if directory is not None and allow_remote and context.remote_execution_specs:
-
-            self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
-
+        if allow_remote and context.remote_execution_specs:
             with SandboxRemote(
                 context,
                 project,
-                directory,
                 plugin=self,
                 stdout=stdout,
                 stderr=stderr,
@@ -2828,13 +2820,12 @@ class Element(Plugin):
             ) as sandbox:
                 yield sandbox
 
-        elif directory is not None and os.path.exists(directory):
+        else:
             platform = context.platform
 
             sandbox = platform.create_sandbox(
                 context,
                 project,
-                directory,
                 plugin=self,
                 stdout=stdout,
                 stderr=stderr,
@@ -2842,18 +2833,6 @@ class Element(Plugin):
                 output_node_properties=output_node_properties,
             )
             with sandbox:
-                yield sandbox
-
-        else:
-            os.makedirs(context.builddir, exist_ok=True)
-
-            # Recursive contextmanager...
-            # pylint: disable-next=contextmanager-generator-missing-cleanup
-            with utils._tempdir(
-                prefix="{}-".format(self.normal_name), dir=context.builddir
-            ) as rootdir, self.__sandbox(
-                rootdir, stdout=stdout, stderr=stderr, config=config, allow_remote=allow_remote
-            ) as sandbox:
                 yield sandbox
 
     # __initialize_from_yaml()
