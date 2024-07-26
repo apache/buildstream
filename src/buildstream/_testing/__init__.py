@@ -100,23 +100,10 @@ def sourcetests_collection_hook(session):
     """
 
     def should_collect_tests(config):
-        args = config.args
-        rootdir = config.rootdir
-        # When no args are supplied, pytest defaults the arg list to
-        # just include the session's root_dir. We want to collect
+        # When no args are supplied, pytest defaults the arg list to the
+        # value of the `testpaths` configuration option. We want to collect
         # tests as part of the default collection
-        if args == [str(rootdir)]:
-            return True
-
-        # If specific tests are passed, don't collect
-        # everything. Pytest will handle this correctly without
-        # modification.
-        if len(args) > 1 or rootdir not in args:
-            return False
-
-        # If in doubt, collect them, this will be an easier bug to
-        # spot and is less likely to result in bug not being found.
-        return True
+        return config.args_source != pytest.Config.ArgsSource.ARGS
 
     from . import _sourcetests
 
