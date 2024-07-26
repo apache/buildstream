@@ -34,6 +34,13 @@ class PluginOriginPip(PluginOrigin):
 
         import pkg_resources
 
+        try:
+            # For setuptools >= 70
+            import packaging
+        except ImportError:
+            # For setuptools < 70
+            from pkg_resources.extern import packaging
+
         # Sources and elements are looked up in separate
         # entrypoint groups from the same package.
         #
@@ -66,7 +73,7 @@ class PluginOriginPip(PluginOrigin):
             # For setuptools < 49.0.0
             pkg_resources.RequirementParseError,
             # For setuptools >= 49.0.0
-            pkg_resources.extern.packaging.requirements.InvalidRequirement,
+            packaging.requirements.InvalidRequirement,
         ) as e:
             raise PluginError(
                 "{}: Malformed package-name '{}' encountered: {}".format(
