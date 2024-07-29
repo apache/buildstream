@@ -549,7 +549,7 @@ class CliIntegration(Cli):
 
                 temp_project = os.path.join(scratchdir, "project.conf")
                 with open(temp_project, "w", encoding="utf-8") as f:
-                    yaml.safe_dump(project_config, f)
+                    _yaml.roundtrip_dump(project_config, f)
 
                 project_config = _yaml.load(temp_project, shortname="project.conf")
 
