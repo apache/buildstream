@@ -169,15 +169,9 @@ class CASCache:
     #     can_link (bool): Whether we can create hard links in the destination
     #
     def checkout(self, dest, tree, *, can_link=False, _fetch=True):
-        if _fetch and self._remote_cache:
+        if _fetch:
             # We need the files in the local cache
-            local_cas = self.get_local_cas()
-
-            request = local_cas_pb2.FetchTreeRequest()
-            request.root_digest.CopyFrom(tree)
-            request.fetch_file_blobs = True
-
-            local_cas.FetchTree(request)
+            self.ensure_tree(tree)
 
         os.makedirs(dest, exist_ok=True)
 
@@ -222,6 +216,24 @@ class CASCache:
             # symlink
             fullpath = os.path.join(dest, symlinknode.name)
             os.symlink(symlinknode.target, fullpath)
+
+    # ensure_tree():
+    #
+    # Make sure all blobs referenced by the given directory tree are available
+    # in the local cache when using a remote cache.
+    #
+    # Args:
+    #     tree (Digest): The digest of the tree
+    #
+    def ensure_tree(self, tree):
+        if self._remote_cache:
+            local_cas = self.get_local_cas()
+
+            request = local_cas_pb2.FetchTreeRequest()
+            request.root_digest.CopyFrom(tree)
+            request.fetch_file_blobs = True
+
+            local_cas.FetchTree(request)
 
     # pull_tree():
     #
