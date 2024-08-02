@@ -466,6 +466,13 @@ class Directory:
     def _export_files(self, to_directory: str, *, can_link: bool = False, can_destroy: bool = False) -> None:
         raise NotImplementedError()
 
+    # _ensure_local()
+    #
+    # Makes sure the files for the directory are available locally. Should be called before
+    # using _get_underlying_path()
+    def _ensure_local(self):
+        pass
+
     # _get_underlying_path()
     #
     # Args:

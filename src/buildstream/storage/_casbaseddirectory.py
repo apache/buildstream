@@ -185,6 +185,7 @@ class CasBasedDirectory(Directory):
         return result
 
     def export_to_tar(self, tarfile: TarFile, destination_dir: str, mtime: int = BST_ARBITRARY_TIMESTAMP) -> None:
+        self._ensure_local()
         for filename, entry in sorted(self.__index.items()):
             arcname = os.path.join(destination_dir, filename)
             if entry.type == FileType.DIRECTORY:
@@ -395,6 +396,9 @@ class CasBasedDirectory(Directory):
     # We don't store UID/GID in CAS presently, so this can be ignored.
     def _set_deterministic_user(self) -> None:
         pass
+
+    def _ensure_local(self):
+        self.__cas_cache.ensure_tree(self._get_digest())
 
     def _get_underlying_path(self, filename) -> str:
         try:

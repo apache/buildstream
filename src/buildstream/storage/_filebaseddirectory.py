@@ -267,6 +267,9 @@ class FileBasedDirectory(Directory):
             #
             assert isinstance(external_pathspec, Directory)
 
+            # Ensure blobs are available locally
+            external_pathspec._ensure_local()
+
             def copy_action(src_path, dest_path, mtime, result):
                 utils.safe_copy(src_path, dest_path, result=result)
                 utils._set_file_mtime(dest_path, mtime)
