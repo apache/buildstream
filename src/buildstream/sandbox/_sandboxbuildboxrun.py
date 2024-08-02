@@ -223,7 +223,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
             except psutil.NoSuchProcess:
                 pass
 
-            if interactive:
+            if interactive and stdin.isatty():
                 # Make this process the foreground process again, otherwise the
                 # next read() on stdin will trigger SIGTTIN and stop the process.
                 # This is required because the sandboxed process does not have
