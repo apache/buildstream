@@ -48,6 +48,8 @@ class PluginOriginPip(PluginOrigin):
             entrypoint_group = "buildstream.plugins.sources"
         elif plugin_type == PluginType.ELEMENT:
             entrypoint_group = "buildstream.plugins.elements"
+        elif plugin_type == PluginType.SOURCE_MIRROR:
+            entrypoint_group = "buildstream.plugins.sourcemirrors"
         else:
             assert False, "unreachable"
 
@@ -84,8 +86,8 @@ class PluginOriginPip(PluginOrigin):
 
         if package is None:
             raise PluginError(
-                "{}: Pip package {} does not contain a plugin named '{}'".format(
-                    self.provenance_node.get_provenance(), self._package_name, kind
+                "{}: Pip package {} does not contain a {} plugin named '{}'".format(
+                    self.provenance_node.get_provenance(), self._package_name, plugin_type, kind
                 ),
                 reason="plugin-not-found",
             )

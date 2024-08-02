@@ -41,6 +41,8 @@ class PluginOriginJunction(PluginOrigin):
             factory = project.source_factory
         elif plugin_type == PluginType.ELEMENT:
             factory = project.element_factory
+        elif plugin_type == PluginType.SOURCE_MIRROR:
+            factory = project.source_mirror_factory
         else:
             assert False, "unreachable"
 
@@ -66,7 +68,7 @@ class PluginOriginJunction(PluginOrigin):
             # subproject.
             #
             raise PluginError(
-                "{}: project '{}' referred to by junction '{}' does not declare any {} plugin kind: '{}'".format(
+                "{}: project '{}' referred to by junction '{}' does not declare a {} plugin named: '{}'".format(
                     self.provenance_node.get_provenance(), project.name, self._junction, plugin_type, kind
                 ),
                 reason="junction-plugin-not-found",

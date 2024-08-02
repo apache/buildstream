@@ -90,6 +90,7 @@ class Project:
         parent_loader: Optional[Loader] = None,
         provenance_node: Optional[ProvenanceInformation] = None,
         search_for_project: bool = True,
+        fetch_subprojects=None
     ):
         #
         # Public members
@@ -161,6 +162,7 @@ class Project:
             self.load_context = parent_loader.load_context
         else:
             self.load_context = LoadContext(self._context)
+            self.load_context.set_fetch_subprojects(fetch_subprojects)
 
         if search_for_project:
             self.directory, self._invoked_from_workspace_element = self._find_project_dir(directory)
@@ -1100,6 +1102,9 @@ class Project:
         # Override default_mirror if not set by command-line
         output.default_mirror = self._default_mirror or overrides.get_str("default-mirror", default=None)
 
+        # Source url aliases
+        output._aliases = config.get_mapping("aliases", default={})
+
         # First try mirrors specified in user configuration, user configuration
         # is allowed to completely disable mirrors by specifying an empty list,
         # so we check for a None value here too.
@@ -1120,9 +1125,6 @@ class Project:
             output.mirrors[mirror.name] = mirror
             if not output.default_mirror:
                 output.default_mirror = mirror.name
-
-        # Source url aliases
-        output._aliases = config.get_mapping("aliases", default={})
 
         # Perform variable substitutions in source aliases
         variables.expand(output._aliases)

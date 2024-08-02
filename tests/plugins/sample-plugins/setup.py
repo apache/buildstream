@@ -33,6 +33,9 @@ setup(
             "sample = sample_plugins.sources.sample",
             "git = sample_plugins.sources.git",
         ],
+        "buildstream.plugins.sourcemirrors": [
+            "mirror = sample_plugins.sourcemirrors.mirror",
+        ],
     },
     zip_safe=False,
 )
