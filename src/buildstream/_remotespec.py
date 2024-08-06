@@ -202,16 +202,6 @@ class RemoteSpec:
     def open_channel(self) -> Channel:
         url = urlparse(self.url)
 
-        # Assert port number for RE endpoints
-        #
-        if self.remote_type == RemoteType.ENDPOINT and not url.port:
-            message = (
-                "Remote execution endpoints must specify the port number, for example: http://buildservice:50051."
-            )
-            if self._spec_node:
-                message = "{}: {}".format(self._spec_node.get_provenance(), message)
-            raise RemoteError(message)
-
         if url.scheme == "http":
             channel = grpc.insecure_channel("{}:{}".format(url.hostname, url.port or 80))
         elif url.scheme == "https":
