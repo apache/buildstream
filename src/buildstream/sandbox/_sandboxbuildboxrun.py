@@ -21,7 +21,7 @@ import psutil
 
 from .. import utils, _signals
 from . import _SandboxFlags
-from .._exceptions import SandboxError
+from .._exceptions import SandboxError, SandboxUnavailableError
 from .._platform import Platform
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from ._sandboxreapi import SandboxREAPI
@@ -37,12 +37,11 @@ class SandboxBuildBoxRun(SandboxREAPI):
         return utils._get_host_tool_internal("buildbox-run", search_subprojects_dir="buildbox")
 
     @classmethod
-    def check_available(cls):
+    def _setup(cls):
         try:
             path = cls.__buildbox_run()
-        except utils.ProgramNotFoundError as Error:
-            cls._dummy_reasons += ["buildbox-run not found"]
-            raise SandboxError(" and ".join(cls._dummy_reasons), reason="unavailable-local-sandbox") from Error
+        except utils.ProgramNotFoundError as e:
+            raise SandboxUnavailableError("buildbox-run not found", reason="unavailable-local-sandbox") from e
 
         exit_code, output = utils._call([path, "--capabilities"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if exit_code == 0:
@@ -53,8 +52,10 @@ class SandboxBuildBoxRun(SandboxREAPI):
             cls._capabilities = set()
         else:
             # buildbox-run is not functional
-            cls._dummy_reasons += ["buildbox-run: {}".format(output)]
-            raise SandboxError(" and ".join(cls._dummy_reasons), reason="unavailable-local-sandbox")
+            raise SandboxError(
+                "buildbox-run exited with code {}. Output: {}".format(exit_code, output),
+                reason="buildbox-run-not-functional",
+            )
 
         osfamily_prefix = "platform:OSFamily="
         cls._osfamilies = {cap[len(osfamily_prefix) :] for cap in cls._capabilities if cap.startswith(osfamily_prefix)}
@@ -73,14 +74,14 @@ class SandboxBuildBoxRun(SandboxREAPI):
     @classmethod
     def check_sandbox_config(cls, config):
         if config.build_os not in cls._osfamilies:
-            raise SandboxError("OS '{}' is not supported by buildbox-run.".format(config.build_os))
+            raise SandboxUnavailableError("OS '{}' is not supported by buildbox-run.".format(config.build_os))
         if config.build_arch not in cls._isas:
-            raise SandboxError("ISA '{}' is not supported by buildbox-run.".format(config.build_arch))
+            raise SandboxUnavailableError("ISA '{}' is not supported by buildbox-run.".format(config.build_arch))
 
         if config.build_uid is not None and "platform:unixUID" not in cls._capabilities:
-            raise SandboxError("Configuring sandbox UID is not supported by buildbox-run.")
+            raise SandboxUnavailableError("Configuring sandbox UID is not supported by buildbox-run.")
         if config.build_gid is not None and "platform:unixGID" not in cls._capabilities:
-            raise SandboxError("Configuring sandbox GID is not supported by buildbox-run.")
+            raise SandboxUnavailableError("Configuring sandbox GID is not supported by buildbox-run.")
 
     def _execute_action(self, action, flags):
         stdout, stderr = self._get_output()
