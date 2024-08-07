@@ -133,6 +133,15 @@ class SandboxBuildBoxRun(SandboxREAPI):
             else:
                 stdin = subprocess.DEVNULL
 
+            if "casd-socket" in self.__config:
+                # Expose the casd socket in the sandbox
+                buildbox_command.append(
+                    "--bind-mount={}:{".format(
+                        casd_process_manager._socket_path,
+                        self.__config["casd-socket"],
+                    )
+                )
+
             self._run_buildbox(
                 buildbox_command,
                 stdin,
