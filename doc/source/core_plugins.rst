@@ -69,5 +69,5 @@ running BuildStream and loaded using the :ref:`pip method <project_plugins_pip>`
 Here is a list of BuildStream plugin projects known to us at this time:
 
 * `buildstream-plugins <https://github.com/apache/buildstream-plugins/>`_
-* `bst-plugins-experimental <http://buildstream.gitlab.io/bst-plugins-experimental/>`_
+* `buildstream-plugins-community (formerly known as bst-plugins-experimental) <http://buildstream.gitlab.io/buildstream-plugins-community/>`_
 * `bst-plugins-container <https://pypi.org/project/bst-plugins-container/>`_
