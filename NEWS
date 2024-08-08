@@ -1,4 +1,30 @@
 =================
+buildstream 2.3.0
+=================
+
+  o Proxy remote asset and remote execution requests via buildbox-casd (#1922, #1926)
+
+  o Optimize bst show when no cached state is needed (#1923)
+
+  o Support %{description} in bst show commands
+
+  o Support HTTP Bearer authentication for remote API servers (#1925)
+
+  o Drop support for Python 3.7 (#1933, #1934, #1936)
+
+  o downloadablefilesource: Add 10 minutes timeout (#1928)
+
+  o tar.py: Always check member paths (#1932)
+
+  o Ensure blobs are available locally when using storage-service (#1938)
+
+  o Support loading source mirror plugins from pip and junction origins (#1931)
+
+  o Restore terminal after exiting a bst shell (#1786)
+
+  o Fail early if buildbox-run is present but non-functional (#1746)
+
+=================
 buildstream 2.2.1
 =================
 
