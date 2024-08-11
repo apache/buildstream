@@ -22,6 +22,10 @@ x-tests-template: &tests-template
 
 services:
 
+  debian-11:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:11-${CI_IMAGE_VERSION:-latest}
+
   fedora-40:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:40-${CI_IMAGE_VERSION:-latest}
