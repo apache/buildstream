@@ -7,3 +7,4 @@ pytest-env
 pytest-xdist
 pytest-timeout
 pyftpdlib
+setuptools

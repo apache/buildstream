@@ -12,6 +12,7 @@
 #  limitations under the License.
 #
 import os
+import sys
 
 from .._exceptions import PluginError
 
@@ -32,14 +33,12 @@ class PluginOriginPip(PluginOrigin):
 
     def get_plugin_paths(self, kind, plugin_type):
 
-        import pkg_resources
+        from packaging.requirements import Requirement, InvalidRequirement
 
-        try:
-            # For setuptools >= 70
-            import packaging
-        except ImportError:
-            # For setuptools < 70
-            from pkg_resources.extern import packaging
+        if sys.version_info >= (3, 10):
+            from importlib.metadata import distribution, PackageNotFoundError
+        else:
+            from importlib_metadata import distribution, PackageNotFoundError
 
         # Sources and elements are looked up in separate
         # entrypoint groups from the same package.
@@ -53,30 +52,9 @@ class PluginOriginPip(PluginOrigin):
         else:
             assert False, "unreachable"
 
-        # key by a tuple to avoid collision
         try:
-            package = pkg_resources.get_entry_info(self._package_name, entrypoint_group, kind)
-        except pkg_resources.DistributionNotFound as e:
-            raise PluginError(
-                "{}: Failed to load {} plugin '{}': {}".format(
-                    self.provenance_node.get_provenance(), plugin_type, kind, e
-                ),
-                reason="package-not-found",
-            ) from e
-        except pkg_resources.VersionConflict as e:
-            raise PluginError(
-                "{}: Version conflict encountered while loading {} plugin '{}'".format(
-                    self.provenance_node.get_provenance(), plugin_type, kind
-                ),
-                detail=e.report(),
-                reason="package-version-conflict",
-            ) from e
-        except (
-            # For setuptools < 49.0.0
-            pkg_resources.RequirementParseError,
-            # For setuptools >= 49.0.0
-            packaging.requirements.InvalidRequirement,
-        ) as e:
+            package = Requirement(self._package_name)
+        except InvalidRequirement as e:
             raise PluginError(
                 "{}: Malformed package-name '{}' encountered: {}".format(
                     self.provenance_node.get_provenance(), self._package_name, e
@@ -84,7 +62,28 @@ class PluginOriginPip(PluginOrigin):
                 reason="package-malformed-requirement",
             ) from e
 
-        if package is None:
+        try:
+            dist = distribution(package.name)
+        except PackageNotFoundError as e:
+            raise PluginError(
+                "{}: Failed to load {} plugin '{}': {}".format(
+                    self.provenance_node.get_provenance(), plugin_type, kind, e
+                ),
+                reason="package-not-found",
+            ) from e
+
+        if dist.version not in package.specifier:
+            raise PluginError(
+                "{}: Version conflict encountered while loading {} plugin '{}'".format(
+                    self.provenance_node.get_provenance(), plugin_type, kind
+                ),
+                detail="{} {} is installed but {} is required".format(dist.name, dist.version, package),
+                reason="package-version-conflict",
+            )
+
+        try:
+            entrypoint = dist.entry_points.select(group=entrypoint_group)[kind]
+        except KeyError as e:
             raise PluginError(
                 "{}: Pip package {} does not contain a {} plugin named '{}'".format(
                     self.provenance_node.get_provenance(), self._package_name, plugin_type, kind
@@ -92,24 +91,17 @@ class PluginOriginPip(PluginOrigin):
                 reason="plugin-not-found",
             )
 
-        location = package.dist.get_resource_filename(
-            pkg_resources._manager, package.module_name.replace(".", os.sep) + ".py"
-        )
+        location = dist.locate_file(entrypoint.module.replace(".", os.sep) + ".py")
+        defaults = dist.locate_file(entrypoint.module.replace(".", os.sep) + ".yaml")
 
-        # Also load the defaults - required since setuptools
-        # may need to extract the file.
-        try:
-            defaults = package.dist.get_resource_filename(
-                pkg_resources._manager, package.module_name.replace(".", os.sep) + ".yaml"
-            )
-        except KeyError:
+        if not defaults.exists():
             # The plugin didn't have an accompanying YAML file
             defaults = None
 
         return (
             os.path.dirname(location),
-            defaults,
-            "python package '{}' at: {}".format(package.dist, package.dist.location),
+            str(defaults),
+            "python package '{}' at: {}".format(dist, dist.locate_file("")),
         )
 
     def load_config(self, origin_node):

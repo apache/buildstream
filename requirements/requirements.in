@@ -1,11 +1,12 @@
 Click >= 7.0
 grpcio
 Jinja2 >= 2.10
+importlib_metadata >= 3.6; python_version < "3.10"
+packaging
 pluginbase
 protobuf >= 3.19
 psutil
 ruamel.yaml >= 0.16.7
 ruamel.yaml.clib >= 0.1.2
-setuptools
 pyroaring
 ujson
