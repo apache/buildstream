@@ -122,7 +122,7 @@ jobs:
       - name: Upload release assets
         run: |
           tag_name="${GITHUB_REF##*/}"
-          hub release create -a "docs.tgz" -m "$tag_name" "$tag_name"
+          gh release create "$tag_name" "docs.tgz" --notes "$tag_name"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
