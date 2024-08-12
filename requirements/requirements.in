@@ -1,4 +1,5 @@
 Click >= 7.0
+graphviz
 grpcio
 Jinja2 >= 2.10
 pluginbase
