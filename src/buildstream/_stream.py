@@ -1237,30 +1237,30 @@ class Stream:
     #    target (str): The target element from which to build a dependency graph.
     #
     def graph(self, target, format_, view):
-        graph_ = Digraph()
+        def _render(scope):
+            g = Digraph()
+            scope_name = {_Scope.BUILD: 'buildtime', _Scope.RUN: 'runtime'}[scope]
 
-        for e in self.load_selection([target], selection=_PipelineSelection.ALL, need_state=False):
-            name = e._get_full_name()
-            build_deps = set(dep._get_full_name() for dep in e._dependencies(_Scope.BUILD, recurse=False) if dep)
-            runtime_deps = set(dep._get_full_name() for dep in e._dependencies(_Scope.RUN, recurse=False) if dep)
+            for element in self.load_selection([target], selection=_PipelineSelection.ALL, need_state=False):
+                name = element._get_full_name()
+                g.node(name)
+                dependencies = {d._get_full_name() for d in element._dependencies(scope, recurse=False) if d}
 
-            graph_.node(name)
-            for dep in build_deps:
-                graph_.edge(name, dep, label='build-dep')
-            for dep in runtime_deps:
-                graph_.edge(name, dep, label='runtime-dep')
+                for dep in dependencies:
+                    g.edge(name, dep)
 
-        graph_name = os.path.basename(target)
-        graph_name, _ = os.path.splitext(graph_name)
-        graph_path = graph_.render(cleanup=True,
-                     filename=graph_name,
-                     format=format_,
-                     view=view)
+            filename = os.path.basename(target)
+            filename, _ = os.path.splitext(filename)
+            filename = f'{filename}.{scope_name}'
+            path = g.render(cleanup=True, filename=filename, format=format_, view=view)
 
-        if graph_path:
-            self._context.messenger.info(f"Rendered dependency graph: {graph_path}")
-        else:
-            self._context.messenger.warn("Failed to render graph")
+            if path:
+                self._context.messenger.info(f'Rendered dependency graph: {path}')
+            else:
+                self._context.messenger.warn('Failed to render graph')
+
+        _render(_Scope.BUILD)
+        _render(_Scope.RUN)
 
     # get_state()
     #
