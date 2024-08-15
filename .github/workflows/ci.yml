@@ -36,8 +36,8 @@ jobs:
         # The names here should map to a valid service defined in
         # "../compose/ci.docker-compose.yml"
         test-name:
-          - fedora-38
-          - fedora-39
+          - debian-11
+          - fedora-40
           - fedora-missing-deps
           - ubuntu-20.04
           - lint
