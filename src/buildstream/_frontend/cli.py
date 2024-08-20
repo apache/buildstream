@@ -1659,7 +1659,7 @@ def artifact_delete(app, artifacts, deps):
 ###################################################################
 #                          Graph Command                          #
 ###################################################################
-@cli.command(short_help="Render pipeline dependency graph.")
+@cli.command(short_help="Output pipeline dependency graph.")
 @click.option(
     "--format",
     "-f",
@@ -1667,16 +1667,11 @@ def artifact_delete(app, artifacts, deps):
     metavar="FORMAT",
     default="dot",
     type=click.STRING,
-    help="Render format: e.g. `dot`, `pdf`, `png`, `svg`, etc",
+    help="Output format: e.g. `dot` and `pkl`",
 )
-@click.option(
-    "--view",
-    is_flag=True,
-    help="Open the rendered graph with the default application",
-)
-@click.argument("element", nargs=1, required=True, type=click.Path())
+@click.argument("target", nargs=1, required=True, type=click.Path())
 @click.pass_obj
-def graph(app, element, format_, view):
-    """Render dependency graph."""
+def graph(app, target, format_):
+    """Output dependency graph."""
     with app.initialized():
-        app.stream.graph(element, format_, view)
+        app.stream.graph(target, format_)

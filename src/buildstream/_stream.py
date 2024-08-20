@@ -24,10 +24,10 @@ import shlex
 import shutil
 import tarfile
 import tempfile
+
 from contextlib import contextmanager, suppress
 from collections import deque
 from typing import List, Tuple, Optional, Iterable, Callable
-from graphviz import Digraph
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._artifactproject import ArtifactProject
@@ -50,7 +50,7 @@ from ._remotespec import RemoteSpec
 from ._state import State
 from .types import _KeyStrength, _PipelineSelection, _Scope, _HostMount
 from .plugin import Plugin
-from . import utils, node, _yaml, _site, _pipeline
+from . import utils, node, _tree, _yaml, _site, _pipeline
 
 
 # Stream()
@@ -1231,33 +1231,30 @@ class Stream:
 
     # graph()
     #
-    # Renders a dependency graph for the target element, in the given format and optionally opens it.
+    # Outputs a dependency graph for the target element, in the given format.
+    # The dot file format can be rendered using graphviz.
     #
     # Args:
     #    target (str): The target element from which to build a dependency graph.
+    #    format_ ('dot'/'pkl'): A .pkl dictionary or graphviz .dot file.
     #
-    def graph(self, target, format_, view):
+    def graph(self, target, format_):
         def _render(scope):
-            g = Digraph()
+            tree = _tree.Tree()
             scope_name = {_Scope.BUILD: 'buildtime', _Scope.RUN: 'runtime'}[scope]
 
             for element in self.load_selection([target], selection=_PipelineSelection.ALL, need_state=False):
-                name = element._get_full_name()
-                g.node(name)
                 dependencies = {d._get_full_name() for d in element._dependencies(scope, recurse=False) if d}
 
                 for dep in dependencies:
-                    g.edge(name, dep)
+                    tree.link(element._get_full_name(), dep)
 
-            filename = os.path.basename(target)
-            filename, _ = os.path.splitext(filename)
-            filename = f'{filename}.{scope_name}'
-            path = g.render(cleanup=True, filename=filename, format=format_, view=view)
+            path = os.path.basename(target)
+            path, _ = os.path.splitext(path)
+            path = f'{path}.{scope_name}'
+            tree.save(path, format_)
 
-            if path:
-                self._context.messenger.info(f'Rendered dependency graph: {path}')
-            else:
-                self._context.messenger.warn('Failed to render graph')
+            self._context.messenger.info(f'Rendered dependency graph: {path}')
 
         _render(_Scope.BUILD)
         _render(_Scope.RUN)
