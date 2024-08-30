@@ -74,7 +74,8 @@ class CASDProcessManager:
         protect_session_blobs,
         messenger,
         *,
-        reserved=None
+        reserved=None,
+        low_watermark=None
     ):
         os.makedirs(path, exist_ok=True)
 
@@ -92,7 +93,9 @@ class CASDProcessManager:
 
         if cache_quota is not None:
             casd_args.append("--quota-high={}".format(int(cache_quota)))
-            casd_args.append("--quota-low={}".format(int(cache_quota / 2)))
+
+        if low_watermark is not None:
+            casd_args.append("--quota-low={}%".format(int(low_watermark * 100)))
 
         if reserved is not None:
             casd_args.append("--reserved={}".format(int(reserved)))

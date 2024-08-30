@@ -832,6 +832,35 @@ def _parse_size(size, volume):
     return int(num) * 1024 ** units.index(unit)
 
 
+# _parse_percentage():
+#
+# Convert a string representing a percentage between 0% and 100% to a float.
+# E.g. "80%" -> 0.8.
+#
+# Arguments:
+#     percentage (str) The string to parse
+#
+# Returns:
+#     (float) The percentage as a float
+#
+# Raises:
+#     UtilError if the string is not a valid percentage.
+#
+def _parse_percentage(percentage):
+    if not percentage.endswith("%"):
+        raise UtilError("{} is not a valid percentage.".format(percentage))
+
+    try:
+        num = float(percentage[:-1])
+    except ValueError:
+        raise UtilError("{} is not a valid percentage.".format(percentage))
+
+    if num < 0 or num > 100:
+        raise UtilError("{} is not between 0% and 100%.".format(percentage))
+
+    return num / 100
+
+
 # _pretty_size()
 #
 # Converts a number of bytes into a string representation in KiB, MiB, GiB, TiB

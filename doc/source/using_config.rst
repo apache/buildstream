@@ -130,6 +130,9 @@ toplevel of your configuration file, like so:
      # Keep 5% of disk space available
      reserved-disk-space: 5%
 
+     # Retain 50% of the cache on cleanup
+     low-watermark: 50%
+
      # Avoid pulling large amounts of data we don't need locally
      pull-buildtrees: False
 
@@ -195,6 +198,15 @@ Attributes
 
   ``reserved-disk-space`` can be specified in the same way as ``quota``, with
   the exception of the special ``infinity`` value. The default is ``5%``.
+
+* ``low-watermark``
+
+  This controls how much of the cache should be retained on cleanup.
+
+  ``low-watermark`` is specified as a percentage of the effective cache quota
+  as configured by ``quota`` and/or ``reserved-disk-space``. The default is
+  ``50%``, which means that when cleanup is triggered, 50% of the cache will
+  be pruned by removing CAS objects that haven't been used recently.
 
 * ``pull-buildtrees``
 
