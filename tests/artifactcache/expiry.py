@@ -136,7 +136,7 @@ def test_expiry_order(cli, datafiles):
     element_path = "elements"
     checkout = os.path.join(project, "workspace")
 
-    cli.configure({"cache": {"quota": 9000000}})
+    cli.configure({"cache": {"quota": 9000000, "low-watermark": "50%"}})
 
     # Create an artifact
     create_element_size("dep.bst", project, element_path, [], 2000000)

@@ -124,8 +124,14 @@ toplevel of your configuration file, like so:
    #
    cache:
 
-     # Allow using as much free space as possible
+     # Use as much space as possible
      quota: infinity
+
+     # Keep 5% of disk space available
+     reserved-disk-space: 5%
+
+     # Retain 80% of the cache on cleanup
+     low-watermark: 80%
 
      # Avoid pulling large amounts of data we don't need locally
      pull-buildtrees: False
@@ -183,6 +189,24 @@ Attributes
 
     Percentage values are taken to represent a percentage of the partition
     size on the filesystem where the cache has been configured.
+
+* ``reserved-disk-space``
+
+  This controls how much disk space should remain available. If the amount
+  of available disk space falls below the specified value, unused cache
+  objects will be pruned even if the configured quota has not been exceeded.
+
+  ``reserved-disk-space`` can be specified in the same way as ``quota``, with
+  the exception of the special ``infinity`` value. The default is ``5%``.
+
+* ``low-watermark``
+
+  This controls how much of the cache should be retained on cleanup.
+
+  ``low-watermark`` is specified as a percentage of the effective cache quota
+  as configured by ``quota`` and/or ``reserved-disk-space``. The default is
+  ``80%``, which means that when cleanup is triggered, 20% of the cache will
+  be pruned by removing CAS objects that haven't been used recently.
 
 * ``pull-buildtrees``
 
