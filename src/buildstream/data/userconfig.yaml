@@ -41,8 +41,8 @@ cache:
   # Keep 5% of disk space available
   reserved-disk-space: 5%
 
-  # Retain 50% of the cache on cleanup
-  low-watermark: 50%
+  # Retain 80% of the cache on cleanup
+  low-watermark: 80%
 
   # Whether to pull build trees when downloading element artifacts
   pull-buildtrees: False

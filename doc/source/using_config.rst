@@ -130,8 +130,8 @@ toplevel of your configuration file, like so:
      # Keep 5% of disk space available
      reserved-disk-space: 5%
 
-     # Retain 50% of the cache on cleanup
-     low-watermark: 50%
+     # Retain 80% of the cache on cleanup
+     low-watermark: 80%
 
      # Avoid pulling large amounts of data we don't need locally
      pull-buildtrees: False
@@ -205,7 +205,7 @@ Attributes
 
   ``low-watermark`` is specified as a percentage of the effective cache quota
   as configured by ``quota`` and/or ``reserved-disk-space``. The default is
-  ``50%``, which means that when cleanup is triggered, 50% of the cache will
+  ``80%``, which means that when cleanup is triggered, 20% of the cache will
   be pruned by removing CAS objects that haven't been used recently.
 
 * ``pull-buildtrees``
