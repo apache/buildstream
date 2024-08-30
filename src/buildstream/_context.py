@@ -185,6 +185,9 @@ class Context:
         # User specified cache quota, used for display messages
         self.config_cache_quota_string: Optional[str] = None
 
+        # Reserved disk space for local cache in bytes
+        self.config_cache_reserved: Optional[int] = None
+
         # Remote cache server
         self.remote_cache_spec: Optional[RemoteSpec] = None
 
@@ -362,7 +365,7 @@ class Context:
         # We need to find the first existing directory in the path of our
         # casdir - the casdir may not have been created yet.
         cache = defaults.get_mapping("cache")
-        cache.validate_keys(["quota", "storage-service", "pull-buildtrees", "cache-buildtrees"])
+        cache.validate_keys(["quota", "reserved-disk-space", "storage-service", "pull-buildtrees", "cache-buildtrees"])
 
         cas_volume = self.casdir
         while not os.path.exists(cas_volume):
@@ -375,6 +378,23 @@ class Context:
             raise LoadError(
                 "{}\nPlease specify the value in bytes or as a % of full disk space.\n"
                 "\nValid values are, for example: 800M 10G 1T 50%\n".format(str(e)),
+                LoadErrorReason.INVALID_DATA,
+            ) from e
+
+        cache_reserved_string = cache.get_str("reserved-disk-space")
+        try:
+            self.config_cache_reserved = utils._parse_size(cache_reserved_string, cas_volume)
+            if self.config_cache_reserved is None:
+                provenance = cache.get_scalar("reserved-disk-space").get_provenance()
+                raise LoadError(
+                    "{}: Please specify the value in bytes or as a % of full disk space.\n"
+                    "\nValid values are, for example: 2G 5%\n".format(provenance),
+                    LoadErrorReason.INVALID_DATA,
+                )
+        except utils.UtilError as e:
+            raise LoadError(
+                "{}\nPlease specify the value in bytes or as a % of full disk space.\n"
+                "\nValid values are, for example: 2G 5%\n".format(str(e)),
                 LoadErrorReason.INVALID_DATA,
             ) from e
 
@@ -701,6 +721,7 @@ class Context:
                 self.remote_cache_spec,
                 protect_session_blobs=True,
                 messenger=self.messenger,
+                reserved=self.config_cache_reserved,
             )
         return self._casd
 

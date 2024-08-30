@@ -58,12 +58,24 @@ _REQUIRED_CASD_MICRO = 58
 #     log_dir (str): The directory for the logs
 #     log_level (LogLevel): Log level to give to buildbox-casd for logging
 #     cache_quota (int): User configured cache quota
+#     reserved (int): User configured reserved disk space
 #     remote_cache_spec (RemoteSpec): Optional remote cache server
 #     protect_session_blobs (bool): Disable expiry for blobs used in the current session
 #     messenger (Messenger): The messenger to report warnings through the UI
 #
 class CASDProcessManager:
-    def __init__(self, path, log_dir, log_level, cache_quota, remote_cache_spec, protect_session_blobs, messenger):
+    def __init__(
+        self,
+        path,
+        log_dir,
+        log_level,
+        cache_quota,
+        remote_cache_spec,
+        protect_session_blobs,
+        messenger,
+        *,
+        reserved=None
+    ):
         os.makedirs(path, exist_ok=True)
 
         self._log_dir = log_dir
@@ -81,6 +93,9 @@ class CASDProcessManager:
         if cache_quota is not None:
             casd_args.append("--quota-high={}".format(int(cache_quota)))
             casd_args.append("--quota-low={}".format(int(cache_quota / 2)))
+
+        if reserved is not None:
+            casd_args.append("--reserved={}".format(int(reserved)))
 
         if protect_session_blobs:
             casd_args.append("--protect-session-blobs")

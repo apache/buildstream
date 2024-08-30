@@ -38,6 +38,9 @@ cache:
   # Use as much space as possible
   quota: infinity
 
+  # Keep 5% of disk space available
+  reserved-disk-space: 5%
+
   # Whether to pull build trees when downloading element artifacts
   pull-buildtrees: False
 
