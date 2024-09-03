@@ -97,7 +97,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4.1.7
         with:
           name: wheels
           path: ./wheelhouse
@@ -115,7 +115,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4.1.7
         with:
           name: docs
 
@@ -131,12 +131,12 @@ jobs:
     needs: [build_docs, build_sdist, build_wheels, test_wheels]
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4.1.7
         with:
           name: sdist
           path: dist
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4.1.7
         with:
           name: wheels
           path: dist
