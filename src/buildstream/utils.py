@@ -1130,37 +1130,6 @@ def _set_deterministic_user(directory):
             os.chown(os.path.join(root, dirname), user, group, follow_symlinks=False)
 
 
-# _set_deterministic_mtime()
-#
-# Set the mtime for every file in a directory tree to the same.
-#
-# Args:
-#    directory (str): The directory to recursively set the mtime on
-#
-def _set_deterministic_mtime(directory):
-    for dirname, _, filenames in os.walk(directory.encode("utf-8"), topdown=False):
-        for filename in filenames:
-            pathname = os.path.join(dirname, filename)
-
-            # Python's os.utime only ever modifies the timestamp
-            # of the target, it is not acceptable to set the timestamp
-            # of the target here, if we are staging the link target we
-            # will also set its timestamp.
-            #
-            # We should however find a way to modify the actual link's
-            # timestamp, this outdated python bug report claims that
-            # it is impossible:
-            #
-            #   http://bugs.python.org/issue623782
-            #
-            # However, nowadays it is possible at least on gnuish systems
-            # with with the lutimes glibc function.
-            if not os.path.islink(pathname):
-                os.utime(pathname, (BST_ARBITRARY_TIMESTAMP, BST_ARBITRARY_TIMESTAMP))
-
-        os.utime(dirname, (BST_ARBITRARY_TIMESTAMP, BST_ARBITRARY_TIMESTAMP))
-
-
 # _tempdir()
 #
 # A context manager for doing work in a temporary directory.
@@ -1240,66 +1209,6 @@ def _tempnamedfile(mode="w+b", encoding=None, suffix="", prefix="tmp", dir=None)
         mode=mode, encoding=encoding, suffix=suffix, prefix=prefix, dir=dir
     ) as temp:
         yield temp
-
-
-# _tempnamedfile_name()
-#
-# A context manager for doing work on a temporary file, via the filename only.
-#
-# Note that a Windows restriction prevents us from using both the file
-# descriptor and the file name of tempfile.NamedTemporaryFile, the same file
-# cannot be opened twice at the same time. This wrapper makes it easier to
-# operate in a Windows-friendly way when only filenames are needed.
-#
-# Takes care to delete the file even if interrupted by SIGTERM. Note that there
-# is a race-condition, so this is done on a best-effort basis.
-#
-# Args:
-#    dir (str): A path to a parent directory for the temporary file, this is
-#               not optional for security reasons, please see below.
-#
-# Note that 'dir' should not be a directory that may be shared with potential
-# attackers that have rights to affect the directory, e.g. the system temp
-# directory. This is because an attacker can replace the temporary file with
-# e.g. a symlink to another location, that the BuildStream user has rights to
-# but the attacker does not.
-#
-# See here for more information:
-# https://www.owasp.org/index.php/Insecure_Temporary_File
-#
-# Yields:
-#    (str): The temporary file name
-#
-@contextmanager
-def _tempnamedfile_name(dir):  # pylint: disable=redefined-builtin
-    filename = None
-
-    def rm_tempfile():
-        nonlocal filename
-        if filename is not None:
-            # Note that this code is re-entrant - it's possible for us to
-            # "delete while we're deleting" if we are responding to SIGTERM.
-            #
-            # For simplicity, choose to leak the file in this unlikely case,
-            # rather than introducing a scheme for handling the file sometimes
-            # being missing. Note that we will still leak tempfiles on forced
-            # termination anyway.
-            #
-            # Note that we must not try to delete the file more than once. If
-            # we delete the file then another temporary file can be created
-            # with the same name.
-            #
-            filename2 = filename
-            filename = None
-            os.remove(filename2)
-
-    with _signals.terminator(rm_tempfile):
-        fd, filename = tempfile.mkstemp(dir=dir)
-        os.close(fd)
-        try:
-            yield filename
-        finally:
-            rm_tempfile()
 
 
 # _kill_process_tree()
@@ -1519,14 +1428,6 @@ def _deduplicate(iterable, key=None):
             if k not in seen:
                 seen_add(k)
                 yield element
-
-
-# Like os.path.getmtime(), but returns the mtime of a link rather than
-# the target, if the filesystem supports that.
-#
-def _get_link_mtime(path):
-    path_stat = os.lstat(path)
-    return path_stat.st_mtime
 
 
 # _message_digest()
