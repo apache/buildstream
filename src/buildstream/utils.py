@@ -240,9 +240,9 @@ def glob(paths: Iterable[str], pattern: str) -> Iterator[str]:
     +--------+------------------------------------------------------------------+
     | Meta   | Description                                                      |
     +========+==================================================================+
-    | \*     | Zero or more of any character, excepting path separators         |
+    | *      | Zero or more of any character, excepting path separators         |
     +--------+------------------------------------------------------------------+
-    | \**    | Zero or more of any character, including path separators         |
+    | **     | Zero or more of any character, including path separators         |
     +--------+------------------------------------------------------------------+
     | ?      | One of any character, except for path separators                 |
     +--------+------------------------------------------------------------------+
