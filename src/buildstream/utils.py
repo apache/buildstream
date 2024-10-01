@@ -228,7 +228,7 @@ def list_relative_paths(directory: str) -> Iterator[str]:
 
 # pylint: disable=anomalous-backslash-in-string
 def glob(paths: Iterable[str], pattern: str) -> Iterator[str]:
-    """A generator to yield paths which match the glob pattern
+    r"""A generator to yield paths which match the glob pattern
 
     Args:
        paths (iterable): The paths to check
