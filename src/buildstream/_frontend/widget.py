@@ -1040,7 +1040,7 @@ class LogLine(Widget):
                     + "{}".format(filename)
                 )
             elif filestat.file_type == FileType.SYMLINK:
-                target = directory.readlink(*filename.split(os.path.sep))
+                target = directory.readlink(filename)
                 return (
                     "lrwxrwxrwx  link   {}".format(size)
                     + "{} ".format(" " * (max_v_len - len(size)))
