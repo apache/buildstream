@@ -45,12 +45,19 @@ if TYPE_CHECKING:
 #
 class SandboxConfig:
     def __init__(
-        self, *, build_os: str, build_arch: str, build_uid: Optional[int] = None, build_gid: Optional[int] = None
+        self,
+        *,
+        build_os: str,
+        build_arch: str,
+        build_uid: Optional[int] = None,
+        build_gid: Optional[int] = None,
+        output_node_properties: Union[list, tuple] = tuple(),
     ):
         self.build_os = build_os
         self.build_arch = build_arch
         self.build_uid = build_uid
         self.build_gid = build_gid
+        self.output_node_properties = output_node_properties
 
     # to_dict():
     #
@@ -108,7 +115,7 @@ class SandboxConfig:
     #
     @classmethod
     def new_from_node(cls, config: "MappingNode[Node]", *, platform: Optional[Platform] = None) -> "SandboxConfig":
-        config.validate_keys(["build-uid", "build-gid", "build-os", "build-arch"])
+        config.validate_keys(["build-uid", "build-gid", "build-os", "build-arch", "fs-capture-properties"])
 
         build_os: str
         build_arch: str
@@ -132,4 +139,12 @@ class SandboxConfig:
         build_uid = config.get_int("build-uid", None)
         build_gid = config.get_int("build-gid", None)
 
-        return cls(build_os=build_os, build_arch=build_arch, build_uid=build_uid, build_gid=build_gid)
+        output_node_properties = config.get_str_list("fs-capture-properties", [])
+
+        return cls(
+            build_os=build_os,
+            build_arch=build_arch,
+            build_uid=build_uid,
+            build_gid=build_gid,
+            output_node_properties=output_node_properties,
+        )
