@@ -319,8 +319,12 @@ class Job:
             timeinfo = stack.enter_context(self._messenger.timed_suspendable())
 
             try:
-                filename = stack.enter_context(
-                    self._messenger.recorded_messages(self._logfile, self._scheduler.context.logdir)
+                filename = (
+                    stack.enter_context(
+                        self._messenger.recorded_messages(self._logfile, self._scheduler.context.logdir)
+                    )
+                    if self._logfile
+                    else None
                 )
             except Exception as e:  # pylint: disable=broad-except
                 elapsed = datetime.datetime.now() - timeinfo.start_time

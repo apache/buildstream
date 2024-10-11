@@ -61,6 +61,7 @@ class Queue:
     complete_name = None  # type: Optional[str]
     # Resources this queues' jobs want
     resources = []  # type: List[int]
+    log_to_file = True
 
     def __init__(self, scheduler, *, imperative=False):
 
@@ -238,7 +239,7 @@ class Queue:
             ElementJob(
                 self._scheduler,
                 self.action_name,
-                self._element_log_path(element),
+                self._element_log_path(element) if self.log_to_file else None,
                 element=element,
                 queue=self,
                 action_cb=self.get_process_func(),
