@@ -71,6 +71,7 @@ from contextlib import contextmanager, suppress
 from functools import partial
 from itertools import chain
 import string
+from threading import Lock
 from typing import cast, TYPE_CHECKING, Dict, Iterator, Iterable, List, Optional, Set, Sequence
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
@@ -298,6 +299,7 @@ class Element(Plugin):
 
         self.__environment: Dict[str, str] = {}
         self.__variables: Optional[Variables] = None
+        self.__dynamic_public_guard = Lock()
 
         if artifact_key:
             self.__initialize_from_artifact_key(artifact_key)
@@ -731,14 +733,15 @@ class Element(Plugin):
            called as a part of the :ref:`build phase <core_element_build_phase>`
            and never before.
         """
-        if self.__dynamic_public is None:
-            self.__load_public_data()
+        with self.__dynamic_public_guard:
+            if self.__dynamic_public is None:
+                self.__load_public_data()
 
-        # Disable type-checking since we can't easily tell mypy that
-        # `self.__dynamic_public` can't be None here.
-        data = self.__dynamic_public.get_mapping(domain, default=None)  # type: ignore
-        if data is not None:
-            data = data.clone()
+            # Disable type-checking since we can't easily tell mypy that
+            # `self.__dynamic_public` can't be None here.
+            data = self.__dynamic_public.get_mapping(domain, default=None)  # type: ignore
+            if data is not None:
+                data = data.clone()
 
         return data
 
@@ -754,13 +757,14 @@ class Element(Plugin):
         of the :func:`Element.assemble() <buildstream.element.Element.assemble>`
         method.
         """
-        if self.__dynamic_public is None:
-            self.__load_public_data()
+        with self.__dynamic_public_guard:
+            if self.__dynamic_public is None:
+                self.__load_public_data()
 
-        if data is not None:
-            data = data.clone()
+            if data is not None:
+                data = data.clone()
 
-        self.__dynamic_public[domain] = data  # type: ignore
+            self.__dynamic_public[domain] = data  # type: ignore
 
     def get_environment(self) -> Dict[str, str]:
         """Fetch the environment suitable for running in the sandbox
@@ -1674,7 +1678,8 @@ class Element(Plugin):
 
                 # By default, the dynamic public data is the same as the static public data.
                 # The plugin's assemble() method may modify this, though.
-                self.__dynamic_public = self.__public.clone()
+                with self.__dynamic_public_guard:
+                    self.__dynamic_public = self.__public.clone()
 
                 # Call the abstract plugin methods
 
@@ -1702,7 +1707,8 @@ class Element(Plugin):
 
         context = self._get_context()
         buildresult = self.__build_result
-        publicdata = self.__dynamic_public
+        with self.__dynamic_public_guard:
+            publicdata = self.__dynamic_public
         sandbox_vroot = sandbox.get_virtual_directory()
         collectvdir = None
         sandbox_build_dir = None
