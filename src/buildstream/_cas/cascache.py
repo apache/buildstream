@@ -235,6 +235,39 @@ class CASCache:
 
             local_cas.FetchTree(request)
 
+    # fetch_directory():
+    #
+    # Fetches remote directory and adds it to content addressable store.
+    #
+    # This recursively fetches directory objects and files.
+    #
+    # Args:
+    #     remote (Remote): The remote to use.
+    #     dir_digest (Digest): Digest object for the directory to fetch.
+    #
+    def fetch_directory(self, remote, dir_digest):
+        local_cas = self.get_local_cas()
+
+        request = local_cas_pb2.FetchTreeRequest()
+        request.instance_name = remote.local_cas_instance_name
+        request.root_digest.CopyFrom(dir_digest)
+        request.fetch_file_blobs = False
+
+        try:
+            local_cas.FetchTree(request)
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise BlobNotFound(
+                    dir_digest.hash,
+                    "Failed to fetch directory tree {}: {}: {}".format(dir_digest.hash, e.code().name, e.details()),
+                ) from e
+            raise CASCacheError(
+                "Failed to fetch directory tree {}: {}: {}".format(dir_digest.hash, e.code().name, e.details())
+            ) from e
+
+        required_blobs = self.required_blobs_for_directory(dir_digest)
+        self.fetch_blobs(remote, required_blobs)
+
     # pull_tree():
     #
     # Pull a single Tree rather than a ref.
@@ -568,39 +601,6 @@ class CASCache:
         with utils._tempnamedfile(dir=self.tmpdir) as f:
             os.chmod(f.name, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
             yield f
-
-    # _fetch_directory():
-    #
-    # Fetches remote directory and adds it to content addressable store.
-    #
-    # This recursively fetches directory objects and files.
-    #
-    # Args:
-    #     remote (Remote): The remote to use.
-    #     dir_digest (Digest): Digest object for the directory to fetch.
-    #
-    def _fetch_directory(self, remote, dir_digest):
-        local_cas = self.get_local_cas()
-
-        request = local_cas_pb2.FetchTreeRequest()
-        request.instance_name = remote.local_cas_instance_name
-        request.root_digest.CopyFrom(dir_digest)
-        request.fetch_file_blobs = False
-
-        try:
-            local_cas.FetchTree(request)
-        except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.NOT_FOUND:
-                raise BlobNotFound(
-                    dir_digest.hash,
-                    "Failed to fetch directory tree {}: {}: {}".format(dir_digest.hash, e.code().name, e.details()),
-                ) from e
-            raise CASCacheError(
-                "Failed to fetch directory tree {}: {}: {}".format(dir_digest.hash, e.code().name, e.details())
-            ) from e
-
-        required_blobs = self.required_blobs_for_directory(dir_digest)
-        self.fetch_blobs(remote, required_blobs)
 
     def _fetch_tree(self, remote, digest):
         self.fetch_blobs(remote, [digest])
