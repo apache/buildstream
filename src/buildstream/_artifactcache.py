@@ -464,13 +464,13 @@ class ArtifactCache(AssetCache):
                 f.write(artifact.SerializeToString())
 
             if str(artifact.files):
-                self.cas._fetch_directory(remote, artifact.files)
+                self.cas.fetch_directory(remote, artifact.files)
 
             if pull_buildtrees:
                 if str(artifact.buildtree):
-                    self.cas._fetch_directory(remote, artifact.buildtree)
+                    self.cas.fetch_directory(remote, artifact.buildtree)
                 if str(artifact.buildroot):
-                    self.cas._fetch_directory(remote, artifact.buildroot)
+                    self.cas.fetch_directory(remote, artifact.buildroot)
 
             digests = [artifact.low_diversity_meta, artifact.high_diversity_meta]
             if str(artifact.public_data):

@@ -157,6 +157,7 @@ class SandboxREAPI(Sandbox):
             environment_variables=environment_variables,
             output_paths=output_directories,
             output_node_properties=self._output_node_properties,
+            output_directory_format=remote_execution_pb2.Command.OutputDirectoryFormat.DIRECTORY_ONLY,
             platform=platform,
         )
 
@@ -174,16 +175,18 @@ class SandboxREAPI(Sandbox):
         vdir = self.get_virtual_directory()
 
         for output_directory in output_directories:
-            tree_digest = output_directory.tree_digest
-            if tree_digest is None or not tree_digest.hash:
-                raise SandboxError("Output directory structure had no digest attached.")
+            dir_digest = output_directory.root_directory_digest
+            if dir_digest is None or not dir_digest.hash:
+                tree_digest = output_directory.tree_digest
+                if tree_digest is None or not tree_digest.hash:
+                    raise SandboxError("Output directory structure had no digest attached.")
 
-            # Get digest of output directory from tree digest
-            tree = remote_execution_pb2.Tree()
-            with open(cascache.objpath(tree_digest), "rb") as f:
-                tree.ParseFromString(f.read())
-            root_directory = tree.root.SerializeToString()
-            dir_digest = utils._message_digest(root_directory)
+                # Get digest of output directory from tree digest
+                tree = remote_execution_pb2.Tree()
+                with open(cascache.objpath(tree_digest), "rb") as f:
+                    tree.ParseFromString(f.read())
+                root_directory = tree.root.SerializeToString()
+                dir_digest = utils._message_digest(root_directory)
 
             # Create a normalized absolute path (inside the input tree)
             path = os.path.normpath(os.path.join(working_directory, output_directory.path)).lstrip(os.path.sep)
