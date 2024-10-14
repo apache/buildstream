@@ -1,0 +1,888 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Source - Base source class &mdash; BuildStream 2.3.0+15.g35904f363 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=c31ac3e2"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="SourceMirror - Base source mirror class" href="buildstream.sourcemirror.html" />
+    <link rel="prev" title="Plugin - Base plugin class" href="buildstream.plugin.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_format.html">Project format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="core_framework.html">Plugin API reference</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html">Foundation types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum"><code class="docutils literal notranslate"><span class="pre">FastEnum</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings"><code class="docutils literal notranslate"><span class="pre">CoreWarnings</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.OverlapAction"><code class="docutils literal notranslate"><span class="pre">OverlapAction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef"><code class="docutils literal notranslate"><span class="pre">SourceRef</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html">Node - Parsed YAML configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode"><code class="docutils literal notranslate"><span class="pre">MappingNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.Node"><code class="docutils literal notranslate"><span class="pre">Node</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.ProvenanceInformation"><code class="docutils literal notranslate"><span class="pre">ProvenanceInformation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode"><code class="docutils literal notranslate"><span class="pre">ScalarNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode"><code class="docutils literal notranslate"><span class="pre">SequenceNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html">Plugin - Base plugin class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin"><code class="docutils literal notranslate"><span class="pre">Plugin</span></code></a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Source - Base source class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#built-in-functionality">Built-in functionality</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#abstract-methods">Abstract Methods</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#working-with-the-source-ref">Working with the source ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#accessing-previous-sources">Accessing previous sources</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sourcefetcher-object-for-fetching-individual-urls">SourceFetcher - Object for fetching individual URLs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">Abstract Methods</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#class-reference">Class Reference</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.source.SourceError"><code class="docutils literal notranslate"><span class="pre">SourceError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.source.AliasSubstitution"><code class="docutils literal notranslate"><span class="pre">AliasSubstitution</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.source.SourceFetcher"><code class="docutils literal notranslate"><span class="pre">SourceFetcher</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.SourceFetcher.fetch"><code class="docutils literal notranslate"><span class="pre">SourceFetcher.fetch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.SourceFetcher.mark_download_url"><code class="docutils literal notranslate"><span class="pre">SourceFetcher.mark_download_url()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.source.Source"><code class="docutils literal notranslate"><span class="pre">Source</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK"><code class="docutils literal notranslate"><span class="pre">Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH"><code class="docutils literal notranslate"><span class="pre">Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE"><code class="docutils literal notranslate"><span class="pre">Source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.BST_STAGE_VIRTUAL_DIRECTORY"><code class="docutils literal notranslate"><span class="pre">Source.BST_STAGE_VIRTUAL_DIRECTORY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.COMMON_CONFIG_KEYS"><code class="docutils literal notranslate"><span class="pre">Source.COMMON_CONFIG_KEYS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.load_ref"><code class="docutils literal notranslate"><span class="pre">Source.load_ref()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.get_ref"><code class="docutils literal notranslate"><span class="pre">Source.get_ref()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.set_ref"><code class="docutils literal notranslate"><span class="pre">Source.set_ref()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.track"><code class="docutils literal notranslate"><span class="pre">Source.track()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.fetch"><code class="docutils literal notranslate"><span class="pre">Source.fetch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.stage"><code class="docutils literal notranslate"><span class="pre">Source.stage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.stage_directory"><code class="docutils literal notranslate"><span class="pre">Source.stage_directory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.init_workspace"><code class="docutils literal notranslate"><span class="pre">Source.init_workspace()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.init_workspace_directory"><code class="docutils literal notranslate"><span class="pre">Source.init_workspace_directory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.get_source_fetchers"><code class="docutils literal notranslate"><span class="pre">Source.get_source_fetchers()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.validate_cache"><code class="docutils literal notranslate"><span class="pre">Source.validate_cache()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.is_cached"><code class="docutils literal notranslate"><span class="pre">Source.is_cached()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.get_mirror_directory"><code class="docutils literal notranslate"><span class="pre">Source.get_mirror_directory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.translate_url"><code class="docutils literal notranslate"><span class="pre">Source.translate_url()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.mark_download_url"><code class="docutils literal notranslate"><span class="pre">Source.mark_download_url()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.get_project_directory"><code class="docutils literal notranslate"><span class="pre">Source.get_project_directory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.tempdir"><code class="docutils literal notranslate"><span class="pre">Source.tempdir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.source.Source.is_resolved"><code class="docutils literal notranslate"><span class="pre">Source.is_resolved()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html">SourceMirror - Base source mirror class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirrorError"><code class="docutils literal notranslate"><span class="pre">SourceMirrorError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror"><code class="docutils literal notranslate"><span class="pre">SourceMirror</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html">DownloadableFileSource - Abstract class for sources downloaded from a URI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html">Element - Base element class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError"><code class="docutils literal notranslate"><span class="pre">ElementError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.DependencyConfiguration"><code class="docutils literal notranslate"><span class="pre">DependencyConfiguration</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element"><code class="docutils literal notranslate"><span class="pre">Element</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html">BuildElement - Abstract class for build elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement"><code class="docutils literal notranslate"><span class="pre">BuildElement</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html">ScriptElement - Abstract class for scripting elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement"><code class="docutils literal notranslate"><span class="pre">ScriptElement</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.setup"><code class="docutils literal notranslate"><span class="pre">setup()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html">Sandbox - The build sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.SandboxCommandError"><code class="docutils literal notranslate"><span class="pre">SandboxCommandError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox"><code class="docutils literal notranslate"><span class="pre">Sandbox</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html">Directory - Interfacing with files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.DirectoryError"><code class="docutils literal notranslate"><span class="pre">DirectoryError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileType"><code class="docutils literal notranslate"><span class="pre">FileType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileStat"><code class="docutils literal notranslate"><span class="pre">FileStat</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory"><code class="docutils literal notranslate"><span class="pre">Directory</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html">Exceptions - API for Error Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain"><code class="docutils literal notranslate"><span class="pre">ErrorDomain</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html">Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.UtilError"><code class="docutils literal notranslate"><span class="pre">UtilError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.ProgramNotFoundError"><code class="docutils literal notranslate"><span class="pre">ProgramNotFoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.DirectoryExistsError"><code class="docutils literal notranslate"><span class="pre">DirectoryExistsError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult"><code class="docutils literal notranslate"><span class="pre">FileListResult</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.list_relative_paths"><code class="docutils literal notranslate"><span class="pre">list_relative_paths()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.glob"><code class="docutils literal notranslate"><span class="pre">glob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.sha256sum"><code class="docutils literal notranslate"><span class="pre">sha256sum()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_copy"><code class="docutils literal notranslate"><span class="pre">safe_copy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_link"><code class="docutils literal notranslate"><span class="pre">safe_link()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_remove"><code class="docutils literal notranslate"><span class="pre">safe_remove()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.copy_files"><code class="docutils literal notranslate"><span class="pre">copy_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.link_files"><code class="docutils literal notranslate"><span class="pre">link_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_host_tool"><code class="docutils literal notranslate"><span class="pre">get_host_tool()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_bst_version"><code class="docutils literal notranslate"><span class="pre">get_bst_version()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.move_atomic"><code class="docutils literal notranslate"><span class="pre">move_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.save_file_atomic"><code class="docutils literal notranslate"><span class="pre">save_file_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_umask"><code class="docutils literal notranslate"><span class="pre">get_umask()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="core_framework.html">Plugin API reference</a></li>
+      <li class="breadcrumb-item active">Source - Base source class</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/buildstream.source.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="source-base-source-class">
+<span id="module-buildstream.source"></span><h1>Source - Base source class<a class="headerlink" href="#source-base-source-class" title="Link to this heading"></a></h1>
+<section id="built-in-functionality">
+<span id="core-source-builtins"></span><h2>Built-in functionality<a class="headerlink" href="#built-in-functionality" title="Link to this heading"></a></h2>
+<p>The Source base class provides built in functionality that may be overridden
+by individual plugins.</p>
+<ul>
+<li><p>Directory</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">directory</span></code> variable can be set for all sources of a type in project.conf
+or per source within a element.</p>
+<p>This sets the location within the build root that the content of the source
+will be loaded in to. If the location does not exist, it will be created.</p>
+</li>
+</ul>
+</section>
+<section id="abstract-methods">
+<span id="core-source-abstract-methods"></span><h2>Abstract Methods<a class="headerlink" href="#abstract-methods" title="Link to this heading"></a></h2>
+<p>For loading and configuration purposes, Sources must implement the
+<a class="reference internal" href="buildstream.plugin.html#core-plugin-abstract-methods"><span class="std std-ref">Plugin base class abstract methods</span></a>.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>In order to ensure that all configuration data is processed at
+load time, it is important that all URLs have been processed during
+<a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a>.</p>
+<p>Source implementations <em>must</em> either call
+<a class="reference internal" href="#buildstream.source.Source.translate_url" title="buildstream.source.Source.translate_url"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.translate_url()</span></code></a> or
+<a class="reference internal" href="#buildstream.source.Source.mark_download_url" title="buildstream.source.Source.mark_download_url"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.mark_download_url()</span></code></a>
+for every URL that has been specified in the configuration during
+<a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a></p>
+</div>
+<p>Sources expose the following abstract methods. Unless explicitly mentioned,
+these methods are mandatory to implement.</p>
+<ul>
+<li><p><a class="reference internal" href="#buildstream.source.Source.load_ref" title="buildstream.source.Source.load_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.load_ref()</span></code></a></p>
+<p>Load the ref from a specific YAML node</p>
+</li>
+<li><p><a class="reference internal" href="#buildstream.source.Source.get_ref" title="buildstream.source.Source.get_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.get_ref()</span></code></a></p>
+<p>Fetch the source ref</p>
+</li>
+<li><p><a class="reference internal" href="#buildstream.source.Source.set_ref" title="buildstream.source.Source.set_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.set_ref()</span></code></a></p>
+<p>Set a new ref explicitly</p>
+</li>
+<li><p><a class="reference internal" href="#buildstream.source.Source.track" title="buildstream.source.Source.track"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.track()</span></code></a></p>
+<p>Automatically derive a new ref from a symbolic tracking branch</p>
+</li>
+<li><p><a class="reference internal" href="#buildstream.source.Source.fetch" title="buildstream.source.Source.fetch"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.fetch()</span></code></a></p>
+<p>Fetch the actual payload for the currently set ref</p>
+</li>
+<li><p><a class="reference internal" href="#buildstream.source.Source.stage" title="buildstream.source.Source.stage"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.stage()</span></code></a> / <a class="reference internal" href="#buildstream.source.Source.stage_directory" title="buildstream.source.Source.stage_directory"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.stage_directory()</span></code></a></p>
+<p>Stage the sources for a given ref at a specified location</p>
+</li>
+<li><p><a class="reference internal" href="#buildstream.source.Source.init_workspace" title="buildstream.source.Source.init_workspace"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.init_workspace()</span></code></a> / <a class="reference internal" href="#buildstream.source.Source.init_workspace_directory" title="buildstream.source.Source.init_workspace_directory"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.init_workspace_workspace()</span></code></a></p>
+<p>Stage sources for use as a workspace.</p>
+<p><strong>Optional</strong>: If left unimplemented, these will default to calling
+<a class="reference internal" href="#buildstream.source.Source.stage" title="buildstream.source.Source.stage"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.stage()</span></code></a> / <a class="reference internal" href="#buildstream.source.Source.stage_directory" title="buildstream.source.Source.stage_directory"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.stage_directory()</span></code></a></p>
+</li>
+<li><p><a class="reference internal" href="#buildstream.source.Source.get_source_fetchers" title="buildstream.source.Source.get_source_fetchers"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.get_source_fetchers()</span></code></a></p>
+<p>Get the objects that are used for fetching.</p>
+<p><strong>Optional</strong>: This only needs to be implemented for sources that need to
+download from multiple URLs while fetching (e.g. a git repo and its
+submodules). For details on how to define a SourceFetcher, see
+<a class="reference internal" href="#core-source-fetcher"><span class="std std-ref">SourceFetcher</span></a>.</p>
+</li>
+<li><p><a class="reference internal" href="#buildstream.source.Source.validate_cache" title="buildstream.source.Source.validate_cache"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.validate_cache()</span></code></a></p>
+<p>Perform any validations which require the sources to be cached.</p>
+<p><strong>Optional</strong>: This is completely optional and will do nothing if left unimplemented.</p>
+</li>
+</ul>
+</section>
+<section id="working-with-the-source-ref">
+<span id="core-source-ref"></span><h2>Working with the source ref<a class="headerlink" href="#working-with-the-source-ref" title="Link to this heading"></a></h2>
+<p>The <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a> is used to determine the exact
+version of data to be addressed by the source.</p>
+<p>The various responsibilities involving the source reference are described here.</p>
+<section id="loading-and-saving">
+<h3>Loading and saving<a class="headerlink" href="#loading-and-saving" title="Link to this heading"></a></h3>
+<p>The source reference is expected to be loaded at
+<a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a> and
+and <a class="reference internal" href="#buildstream.source.Source.load_ref" title="buildstream.source.Source.load_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.load_ref()</span></code></a> time
+from the provided <a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a>.</p>
+<p>The <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a> should be loaded from a <cite>single key</cite>
+in that node, the recommended name for that key is <cite>ref</cite>, but is ultimately up
+to the implementor to decide.</p>
+<p>When <a class="reference internal" href="#buildstream.source.Source.set_ref" title="buildstream.source.Source.set_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.set_ref()</span></code></a> is called,
+the source reference should be assigned to the <cite>same single key</cite> in the
+provided <a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a>, this will be used to serialize changed
+source references to YAML as a result of <a class="reference internal" href="using_commands.html#invoking-source-track"><span class="std std-ref">tracking</span></a>.</p>
+</section>
+<section id="tracking-new-references">
+<h3>Tracking new references<a class="headerlink" href="#tracking-new-references" title="Link to this heading"></a></h3>
+<p>When the user <a class="reference internal" href="using_commands.html#invoking-source-track"><span class="std std-ref">tracks</span></a> for new versions of the source,
+then the new <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a> should be returned from
+the <a class="reference internal" href="#buildstream.source.Source.track" title="buildstream.source.Source.track"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.track()</span></code></a> implementation.</p>
+</section>
+<section id="managing-internal-state">
+<h3>Managing internal state<a class="headerlink" href="#managing-internal-state" title="Link to this heading"></a></h3>
+<p>Internally the source implementation is expected to keep track of its
+<a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a>. The internal state should be
+updated when <a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a>,
+<a class="reference internal" href="#buildstream.source.Source.load_ref" title="buildstream.source.Source.load_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.load_ref()</span></code></a> or
+<a class="reference internal" href="#buildstream.source.Source.set_ref" title="buildstream.source.Source.set_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.set_ref()</span></code></a> is called.</p>
+<p>The internal state should not be updated when
+<a class="reference internal" href="#buildstream.source.Source.track" title="buildstream.source.Source.track"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.track()</span></code></a> is called.</p>
+<p>The internal source ref must be returned on demand whenever
+<a class="reference internal" href="#buildstream.source.Source.get_ref" title="buildstream.source.Source.get_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.get_ref()</span></code></a> is called.</p>
+</section>
+<section id="generating-the-unique-key">
+<h3>Generating the unique key<a class="headerlink" href="#generating-the-unique-key" title="Link to this heading"></a></h3>
+<p>When <a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.get_unique_key" title="buildstream.plugin.Plugin.get_unique_key"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.get_unique_key()</span></code></a>
+is called, the source’s <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a> must be considered
+as a part of that key.</p>
+<p>The unique key will be used to generate the cache key of <a class="reference internal" href="arch_cachekeys.html#cachekeys"><span class="std std-ref">cache keys</span></a>
+of elements using this source, and so the unique key should be comprised of every
+configuration which may effect how the source is <a class="reference internal" href="#buildstream.source.Source.stage" title="buildstream.source.Source.stage"><code class="xref py py-func docutils literal notranslate"><span class="pre">staged</span></code></a>,
+as well as any configuration which uniquely identifies the source, which of course
+includes the <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a>.</p>
+</section>
+</section>
+<section id="accessing-previous-sources">
+<h2>Accessing previous sources<a class="headerlink" href="#accessing-previous-sources" title="Link to this heading"></a></h2>
+<p>In the general case, all sources are fetched and tracked independently of one
+another. In situations where a source needs to access previous source(s) in
+order to perform its own track and/or fetch, following attributes can be set to
+request access to previous sources:</p>
+<ul>
+<li><p><a class="reference internal" href="#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK" title="buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BST_REQUIRES_PREVIOUS_SOURCES_TRACK</span></code></a></p>
+<p>Indicate that access to previous sources is required during track</p>
+</li>
+<li><p><a class="reference internal" href="#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH" title="buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BST_REQUIRES_PREVIOUS_SOURCES_FETCH</span></code></a></p>
+<p>Indicate that access to previous sources is required during fetch</p>
+</li>
+</ul>
+<p>The intended use of such plugins is to fetch external dependencies of other
+sources, typically using some kind of package manager, such that all the
+dependencies of the original source(s) are available at build time.</p>
+<p>When implementing such a plugin, implementors should adhere to the following
+guidelines:</p>
+<ul class="simple">
+<li><p>Implementations must be able to store the obtained artifacts in a
+subdirectory.</p></li>
+<li><p>Implementations must be able to deterministically generate a unique ref, such
+that two refs are different if and only if they produce different outputs.</p></li>
+<li><p>Implementations must not introduce host contamination.</p></li>
+</ul>
+</section>
+</section>
+<section id="sourcefetcher-object-for-fetching-individual-urls">
+<span id="core-source-fetcher"></span><h1>SourceFetcher - Object for fetching individual URLs<a class="headerlink" href="#sourcefetcher-object-for-fetching-individual-urls" title="Link to this heading"></a></h1>
+<section id="id1">
+<h2>Abstract Methods<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<p>SourceFetchers expose the following abstract methods. Unless explicitly
+mentioned, these methods are mandatory to implement.</p>
+<ul>
+<li><p><a class="reference internal" href="#buildstream.source.SourceFetcher.fetch" title="buildstream.source.SourceFetcher.fetch"><code class="xref py py-func docutils literal notranslate"><span class="pre">SourceFetcher.fetch()</span></code></a></p>
+<p>Fetches the URL associated with this SourceFetcher, optionally taking an
+alias override.</p>
+</li>
+</ul>
+</section>
+<section id="class-reference">
+<h2>Class Reference<a class="headerlink" href="#class-reference" title="Link to this heading"></a></h2>
+</section>
+</section>
+<dl class="py exception">
+<dt class="sig sig-object py" id="buildstream.source.SourceError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SourceError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temporary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.source.SourceError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BstError</span></code></p>
+<p>This exception should be raised by <a class="reference internal" href="#buildstream.source.Source" title="buildstream.source.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a> implementations
+to report errors to the user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>message</strong> – The breif error description to report to the user</p></li>
+<li><p><strong>detail</strong> – A possibly multiline, more detailed error message</p></li>
+<li><p><strong>reason</strong> – An optional machine readable reason string, used for test cases</p></li>
+<li><p><strong>temporary</strong> – An indicator to whether the error may occur if the operation was run again.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.source.AliasSubstitution">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AliasSubstitution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_effective_alias</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_mirror</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror" title="buildstream.sourcemirror.SourceMirror"><span class="pre">buildstream.sourcemirror.SourceMirror</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.source.AliasSubstitution" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.source.SourceFetcher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SourceFetcher</span></span><a class="headerlink" href="#buildstream.source.SourceFetcher" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This interface exists so that a source that downloads from multiple
+places (e.g. a git source with submodules) has a consistent interface for
+fetching and substituting aliases.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>When implementing a SourceFetcher, remember to call
+<a class="reference internal" href="#buildstream.source.Source.mark_download_url" title="buildstream.source.Source.mark_download_url"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.mark_download_url()</span></code></a>
+for every URL found in the configuration data at
+<a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a> time.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.SourceFetcher.fetch">
+<span class="sig-name descname"><span class="pre">fetch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alias_override</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#buildstream.source.AliasSubstitution" title="buildstream.source.AliasSubstitution"><span class="pre">AliasSubstitution</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.source.SourceFetcher.fetch" title="Link to this definition"></a></dt>
+<dd><p>Fetch remote sources and mirror them locally, ensuring at least
+that the specific reference is cached locally.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>alias_override</strong> – The alias to use instead of the default one
+defined by the <a class="reference internal" href="format_project.html#project-source-aliases"><span class="std std-ref">aliases</span></a> field
+in the project’s config.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>.SourceError</strong> – </p>
+</dd>
+</dl>
+<p>Implementors should raise <a class="reference internal" href="#buildstream.source.SourceError" title="buildstream.source.SourceError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceError</span></code></a> if the there is some
+network error or if the source reference could not be matched.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.SourceFetcher.mark_download_url">
+<span class="sig-name descname"><span class="pre">mark_download_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.source.SourceFetcher.mark_download_url" title="Link to this definition"></a></dt>
+<dd><p>Identifies the URL that this SourceFetcher uses to download</p>
+<p>This must be called during the fetcher’s initialization</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>url</strong> – The url used to download.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>While this must be called in a SourceFetcher initializer for the URL which
+will be used by the fetcher, note that any URLs which are known and specified
+in the Source configuration YAML must be marked with either
+<a class="reference internal" href="#buildstream.source.Source.mark_download_url" title="buildstream.source.Source.mark_download_url"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.mark_download_url()</span></code></a> or
+<a class="reference internal" href="#buildstream.source.Source.translate_url" title="buildstream.source.Source.translate_url"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.translate_url()</span></code></a> in
+the <a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a> implementation.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.source.Source">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Source</span></span><a class="headerlink" href="#buildstream.source.Source" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin" title="buildstream.plugin.Plugin"><code class="xref py py-class docutils literal notranslate"><span class="pre">Plugin</span></code></a></p>
+<p>Base Source class.</p>
+<p>All Sources derive from this class, this interface defines how
+the core will be interacting with Sources.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK">
+<span class="sig-name descname"><span class="pre">BST_REQUIRES_PREVIOUS_SOURCES_TRACK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK" title="Link to this definition"></a></dt>
+<dd><p>Whether access to previous sources is required during track</p>
+<dl class="simple">
+<dt>When set to True:</dt><dd><ul class="simple">
+<li><p>all sources listed before this source in the given element will be
+fetched before this source is tracked</p></li>
+<li><p>Source.track() will be called with an additional keyword argument
+<cite>previous_sources_dir</cite> where previous sources will be staged</p></li>
+<li><p>this source can not be the first source for an element</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH">
+<span class="sig-name descname"><span class="pre">BST_REQUIRES_PREVIOUS_SOURCES_FETCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH" title="Link to this definition"></a></dt>
+<dd><p>Whether access to previous sources is required during fetch</p>
+<dl class="simple">
+<dt>When set to True:</dt><dd><ul class="simple">
+<li><p>all sources listed before this source in the given element will be
+fetched before this source is fetched</p></li>
+<li><p>Source.fetch() will be called with an additional keyword argument
+<cite>previous_sources_dir</cite> where previous sources will be staged</p></li>
+<li><p>this source can not be the first source for an element</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE">
+<span class="sig-name descname"><span class="pre">BST_REQUIRES_PREVIOUS_SOURCES_STAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE" title="Link to this definition"></a></dt>
+<dd><p>Whether access to previous sources is required during cache</p>
+<dl class="simple">
+<dt>When set to True:</dt><dd><ul class="simple">
+<li><p>All sources listed before current source in the given element will be
+staged with the source when it’s cached.</p></li>
+<li><p>This source can not be the first source for an element.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.source.Source.BST_STAGE_VIRTUAL_DIRECTORY">
+<span class="sig-name descname"><span class="pre">BST_STAGE_VIRTUAL_DIRECTORY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#buildstream.source.Source.BST_STAGE_VIRTUAL_DIRECTORY" title="Link to this definition"></a></dt>
+<dd><p>Whether we can stage this source directly to a virtual directory</p>
+<p>When set to True, <a class="reference internal" href="#buildstream.source.Source.stage_directory" title="buildstream.source.Source.stage_directory"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.stage_directory()</span></code></a>
+and <a class="reference internal" href="#buildstream.source.Source.init_workspace_directory" title="buildstream.source.Source.init_workspace_directory"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.init_workspace_directory()</span></code></a>
+will be called in place of <a class="reference internal" href="#buildstream.source.Source.stage" title="buildstream.source.Source.stage"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.stage()</span></code></a> and
+<a class="reference internal" href="#buildstream.source.Source.init_workspace" title="buildstream.source.Source.init_workspace"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.init_workspace()</span></code></a> respectively.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.source.Source.COMMON_CONFIG_KEYS">
+<span class="sig-name descname"><span class="pre">COMMON_CONFIG_KEYS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['kind',</span> <span class="pre">'directory']</span></em><a class="headerlink" href="#buildstream.source.Source.COMMON_CONFIG_KEYS" title="Link to this definition"></a></dt>
+<dd><p>Common source config keys</p>
+<p>Source config keys that must not be accessed in configure(), and
+should be checked for using node.validate_keys().</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.load_ref">
+<span class="sig-name descname"><span class="pre">load_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><span class="pre">MappingNode</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.source.Source.load_ref" title="Link to this definition"></a></dt>
+<dd><p>Loads the <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a> for this Source from the specified <em>node</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>node</strong> – The YAML node to load the ref from</p>
+</dd>
+</dl>
+<p>Working with the <a class="reference internal" href="#core-source-ref"><span class="std std-ref">source ref is discussed here</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a> for the Source is expected to be read at
+<a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a> time,
+this will only be used for loading refs from alternative locations
+than in the <cite>element.bst</cite> file where the given Source object has
+been declared.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.get_ref">
+<span class="sig-name descname"><span class="pre">get_ref</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#buildstream.source.Source.get_ref" title="Link to this definition"></a></dt>
+<dd><p>Fetch the <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The internal <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a>, or <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+<p>Working with the <a class="reference internal" href="#core-source-ref"><span class="std std-ref">source ref is discussed here</span></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.set_ref">
+<span class="sig-name descname"><span class="pre">set_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><span class="pre">MappingNode</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.source.Source.set_ref" title="Link to this definition"></a></dt>
+<dd><p>Applies the internal ref, however it is represented</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ref</strong> – The internal <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a> to set, or <code class="docutils literal notranslate"><span class="pre">None</span></code></p></li>
+<li><p><strong>node</strong> – The same node which was previously passed
+to <a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a>
+and <a class="reference internal" href="#buildstream.source.Source.load_ref" title="buildstream.source.Source.load_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.load_ref()</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<p>The implementor must update the <em>node</em> parameter to reflect the new <em>ref</em>,
+and it should store the passed <em>ref</em> so that it will be returned in any
+later calls to <a class="reference internal" href="#buildstream.source.Source.get_ref" title="buildstream.source.Source.get_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.get_ref()</span></code></a>.</p>
+<p>The passed <em>ref</em> parameter is guaranteed to either be a value which has
+been previously retrieved by the <a class="reference internal" href="#buildstream.source.Source.get_ref" title="buildstream.source.Source.get_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.get_ref()</span></code></a>
+method on the same plugin, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Implementation of Source.set_ref()</span>
+<span class="c1">#</span>
+<span class="k">def</span> <span class="nf">set_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+
+    <span class="c1"># Update internal state of the ref</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">ref</span> <span class="o">=</span> <span class="n">ref</span>
+
+    <span class="c1"># Update the passed node so that we will read the new ref</span>
+    <span class="c1"># next time this source plugin is configured with this node.</span>
+    <span class="c1">#</span>
+    <span class="n">node</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref</span>
+</pre></div>
+</div>
+<p>Working with the <a class="reference internal" href="#core-source-ref"><span class="std std-ref">source ref is discussed here</span></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.track">
+<span class="sig-name descname"><span class="pre">track</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previous_sources_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#buildstream.source.Source.track" title="Link to this definition"></a></dt>
+<dd><p>Resolve a new ref from the plugin’s track option</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>previous_sources_dir</strong> (<em>str</em>) – directory where previous sources are staged.
+Note that this keyword argument is available only when
+<a class="reference internal" href="#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK" title="buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BST_REQUIRES_PREVIOUS_SOURCES_TRACK</span></code></a>
+is set to True.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a>, or None</p>
+</dd>
+</dl>
+<p>If the backend in question supports resolving references from
+a symbolic tracking branch or tag, then this should be implemented
+to perform this task on behalf of <a class="reference internal" href="using_commands.html#invoking-source-track"><span class="std std-ref">bst source track</span></a>
+commands.</p>
+<p>This usually requires fetching new content from a remote origin
+to see if a new ref has appeared for your branch or tag. If the
+backend store allows one to query for a new ref from a symbolic
+tracking data without downloading then that is desirable.</p>
+<p>Working with the <a class="reference internal" href="#core-source-ref"><span class="std std-ref">source ref is discussed here</span></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.fetch">
+<span class="sig-name descname"><span class="pre">fetch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previous_sources_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.source.Source.fetch" title="Link to this definition"></a></dt>
+<dd><p>Fetch remote sources and mirror them locally, ensuring at least
+that the specific reference is cached locally.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>previous_sources_dir</strong> (<em>str</em>) – directory where previous sources are staged.
+Note that this keyword argument is available only when
+<a class="reference internal" href="#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH" title="buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BST_REQUIRES_PREVIOUS_SOURCES_FETCH</span></code></a>
+is set to True.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>.SourceError</strong> – </p>
+</dd>
+</dl>
+<p>Implementors should raise <a class="reference internal" href="#buildstream.source.SourceError" title="buildstream.source.SourceError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceError</span></code></a> if the there is some
+network error or if the source reference could not be matched.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.stage">
+<span class="sig-name descname"><span class="pre">stage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.source.Source.stage" title="Link to this definition"></a></dt>
+<dd><p>Stage the sources to a directory</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>directory</strong> – Path to stage the source</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>.SourceError</strong> – </p>
+</dd>
+</dl>
+<p>Implementors should assume that <em>directory</em> already exists
+and stage already cached sources to the passed directory.</p>
+<p>Implementors should raise <a class="reference internal" href="#buildstream.source.SourceError" title="buildstream.source.SourceError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceError</span></code></a> when encountering
+some system error.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.stage_directory">
+<span class="sig-name descname"><span class="pre">stage_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory" title="buildstream.storage.directory.Directory"><span class="pre">Directory</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.source.Source.stage_directory" title="Link to this definition"></a></dt>
+<dd><p>Stage the sources to a directory</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>directory</strong> – <a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory" title="buildstream.storage.directory.Directory"><code class="xref py py-class docutils literal notranslate"><span class="pre">Directory</span></code></a> object to stage the source into</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>.SourceError</strong> – </p>
+</dd>
+</dl>
+<p>Implementors should assume that <em>directory</em> represents an existing
+directory root into which the source content can be populated.</p>
+<p>Implementors should raise <a class="reference internal" href="#buildstream.source.SourceError" title="buildstream.source.SourceError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceError</span></code></a> when encountering
+some system error.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This will be called <em>instead</em> of <a class="reference internal" href="#buildstream.source.Source.stage" title="buildstream.source.Source.stage"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.stage()</span></code></a>
+in the case that <a class="reference internal" href="#buildstream.source.Source.BST_STAGE_VIRTUAL_DIRECTORY" title="buildstream.source.Source.BST_STAGE_VIRTUAL_DIRECTORY"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BST_STAGE_VIRTUAL_DIRECTORY</span></code></a> is set
+for this plugin.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.init_workspace">
+<span class="sig-name descname"><span class="pre">init_workspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.source.Source.init_workspace" title="Link to this definition"></a></dt>
+<dd><p>Stage sources for use as a workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>directory</strong> – Path of the workspace to initialize.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>.SourceError</strong> – </p>
+</dd>
+</dl>
+<p>Default implementation is to call
+<a class="reference internal" href="#buildstream.source.Source.stage" title="buildstream.source.Source.stage"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.stage()</span></code></a>.</p>
+<p>Implementors overriding this method should assume that <em>directory</em>
+already exists.</p>
+<p>Implementors should raise <a class="reference internal" href="#buildstream.source.SourceError" title="buildstream.source.SourceError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceError</span></code></a> when encountering
+some system error.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.init_workspace_directory">
+<span class="sig-name descname"><span class="pre">init_workspace_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory" title="buildstream.storage.directory.Directory"><span class="pre">Directory</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.source.Source.init_workspace_directory" title="Link to this definition"></a></dt>
+<dd><p>Stage sources for use as a workspace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>directory</strong> – <a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory" title="buildstream.storage.directory.Directory"><code class="xref py py-class docutils literal notranslate"><span class="pre">Directory</span></code></a> object of the workspace to initialize.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>.SourceError</strong> – </p>
+</dd>
+</dl>
+<p>Default implementation is to call
+<a class="reference internal" href="#buildstream.source.Source.stage_directory" title="buildstream.source.Source.stage_directory"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.stage_directory()</span></code></a>.</p>
+<p>Implementors overriding this method should assume that <em>directory</em>
+already exists.</p>
+<p>Implementors should raise <a class="reference internal" href="#buildstream.source.SourceError" title="buildstream.source.SourceError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceError</span></code></a> when encountering
+some system error.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This will be called <em>instead</em> of
+<a class="reference internal" href="#buildstream.source.Source.init_workspace" title="buildstream.source.Source.init_workspace"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.init_workspace()</span></code></a> in the case that
+<a class="reference internal" href="#buildstream.source.Source.BST_STAGE_VIRTUAL_DIRECTORY" title="buildstream.source.Source.BST_STAGE_VIRTUAL_DIRECTORY"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BST_STAGE_VIRTUAL_DIRECTORY</span></code></a> is set for this plugin.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.get_source_fetchers">
+<span class="sig-name descname"><span class="pre">get_source_fetchers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#buildstream.source.SourceFetcher" title="buildstream.source.SourceFetcher"><span class="pre">SourceFetcher</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#buildstream.source.Source.get_source_fetchers" title="Link to this definition"></a></dt>
+<dd><p>Get the objects that are used for fetching</p>
+<p>If this source doesn’t download from multiple URLs,
+returning None and falling back on the default behaviour
+is recommended.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The Source’s SourceFetchers, if any.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Implementors can implement this as a generator.</p>
+<p>The <a class="reference internal" href="#buildstream.source.SourceFetcher.fetch" title="buildstream.source.SourceFetcher.fetch"><code class="xref py py-func docutils literal notranslate"><span class="pre">SourceFetcher.fetch()</span></code></a>
+method will be called on the returned fetchers one by one,
+before consuming the next fetcher in the list.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.validate_cache">
+<span class="sig-name descname"><span class="pre">validate_cache</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.source.Source.validate_cache" title="Link to this definition"></a></dt>
+<dd><p>Implement any validations once we know the sources are cached</p>
+<p>This is guaranteed to be called only once for a given session
+once the sources are known to be cached, before
+<a class="reference internal" href="#buildstream.source.Source.stage" title="buildstream.source.Source.stage"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.stage()</span></code></a> or
+<a class="reference internal" href="#buildstream.source.Source.init_workspace" title="buildstream.source.Source.init_workspace"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.init_workspace()</span></code></a>
+is called.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.is_cached">
+<span class="sig-name descname"><span class="pre">is_cached</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#buildstream.source.Source.is_cached" title="Link to this definition"></a></dt>
+<dd><p>Get whether the source has a local copy of its data.</p>
+<p>This method is guaranteed to only be called whenever
+<a class="reference internal" href="#buildstream.source.Source.is_resolved" title="buildstream.source.Source.is_resolved"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.is_resolved()</span></code></a>
+returns <cite>True</cite>.</p>
+<p>Returns: whether the source is cached locally or not.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.get_mirror_directory">
+<span class="sig-name descname"><span class="pre">get_mirror_directory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#buildstream.source.Source.get_mirror_directory" title="Link to this definition"></a></dt>
+<dd><p>Fetches the directory where this source should store things</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The directory belonging to this source</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.translate_url">
+<span class="sig-name descname"><span class="pre">translate_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alias_override</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#buildstream.source.AliasSubstitution" title="buildstream.source.AliasSubstitution"><span class="pre">AliasSubstitution</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#buildstream.source.Source.translate_url" title="Link to this definition"></a></dt>
+<dd><p>Translates the given url which may be specified with an alias
+into a fully qualified url.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>url</strong> – A URL, which may be using an alias</p></li>
+<li><p><strong>alias_override</strong> – Optionally, an URI to override the alias with.</p></li>
+<li><p><strong>primary</strong> – Whether this is the primary URL for the source.</p></li>
+<li><p><strong>suffix</strong> – an optional suffix to append to the URL (<em>Since: 2.2</em>)</p></li>
+<li><p><strong>extra_data</strong> – Additional data provided by <a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror" title="buildstream.sourcemirror.SourceMirror"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceMirror</span></code></a> (<em>Since: 2.2</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The fully qualified URL, with aliases resolved</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This must be called for every URL in the configuration during
+<a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a> if
+<a class="reference internal" href="#buildstream.source.Source.mark_download_url" title="buildstream.source.Source.mark_download_url"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.mark_download_url()</span></code></a>
+is not called.</p>
+<p>The <em>suffix</em> argument may be used to translate URLs for which only the base portion of
+the URL was previously marked with <a class="reference internal" href="#buildstream.source.Source.mark_download_url" title="buildstream.source.Source.mark_download_url"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.mark_download_url()</span></code></a>
+at <a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a> time.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.mark_download_url">
+<span class="sig-name descname"><span class="pre">mark_download_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.source.Source.mark_download_url" title="Link to this definition"></a></dt>
+<dd><p>Identifies the URL that this Source uses to download</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>url</strong> (<em>str</em>) – The URL used to download</p></li>
+<li><p><strong>primary</strong> (<em>bool</em>) – Whether this is the primary URL for the source</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This must be called for every URL in the configuration during
+<a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a> if
+<a class="reference internal" href="#buildstream.source.Source.translate_url" title="buildstream.source.Source.translate_url"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.translate_url()</span></code></a>
+is not called.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.get_project_directory">
+<span class="sig-name descname"><span class="pre">get_project_directory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#buildstream.source.Source.get_project_directory" title="Link to this definition"></a></dt>
+<dd><p>Fetch the project base directory</p>
+<p>This is useful for sources which need to load resources
+stored somewhere inside the project.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The project base directory</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.tempdir">
+<span class="sig-name descname"><span class="pre">tempdir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#buildstream.source.Source.tempdir" title="Link to this definition"></a></dt>
+<dd><p>Context manager for working in a temporary directory</p>
+<dl class="field-list simple">
+<dt class="field-odd">Yields<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A path to a temporary directory</p>
+</dd>
+</dl>
+<p>This should be used by source plugins directly instead of the tempfile
+module. This one will automatically cleanup in case of termination by
+catching the signal before os._exit(). It will also use the ‘mirror
+directory’ as expected for a source.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.source.Source.is_resolved">
+<span class="sig-name descname"><span class="pre">is_resolved</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#buildstream.source.Source.is_resolved" title="Link to this definition"></a></dt>
+<dd><p>Get whether the source is resolved.</p>
+<p>This has a default implementation that checks whether the source
+has a ref or not. If it has a ref, it is assumed to be resolved.</p>
+<p>Sources that never have a ref or have uncommon requirements can
+override this method to specify when they should be considered
+resolved</p>
+<p>Returns: whether the source is fully resolved or not</p>
+</dd></dl>
+
+</dd></dl>
+
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="buildstream.plugin.html" class="btn btn-neutral float-left" title="Plugin - Base plugin class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="buildstream.sourcemirror.html" class="btn btn-neutral float-right" title="SourceMirror - Base source mirror class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
