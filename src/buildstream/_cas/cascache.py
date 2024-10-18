@@ -153,9 +153,20 @@ class CASCache:
                 raise CASCacheError("Unsupported buildbox-casd version: FetchTree unimplemented") from e
             raise
 
-        # Check whether everything is available in the remote cache.
-        missing_blobs = self.missing_blobs_for_directory(digest, remote=self._default_remote)
-        return not missing_blobs
+        # Make sure everything is available in the remote cache (storage-service)
+        request = local_cas_pb2.UploadTreeRequest()
+        request.root_digest.CopyFrom(digest)
+        try:
+            local_cas.UploadTree(request)
+            return True
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                return False
+            if e.code() == grpc.StatusCode.UNIMPLEMENTED:
+                # Fallback path if buildbox-casd is too old to support UploadTree
+                missing_blobs = self.missing_blobs_for_directory(digest, remote=self._default_remote)
+                return not missing_blobs
+            raise
 
     # checkout():
     #
