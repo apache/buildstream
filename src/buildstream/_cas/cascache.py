@@ -61,7 +61,6 @@ class CASCache:
         os.makedirs(self.tmpdir, exist_ok=True)
 
         self._cache_usage_monitor = None
-        self._cache_usage_monitor_forbidden = False
 
         self._remote_cache = remote_cache
 
@@ -703,7 +702,6 @@ class CASCache:
     #     (CASCacheUsage): The current status
     #
     def get_cache_usage(self):
-        assert not self._cache_usage_monitor_forbidden
         return self._cache_usage_monitor.get_cache_usage()
 
     # get_casd()
