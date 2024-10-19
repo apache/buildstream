@@ -131,7 +131,7 @@ class SourceCache(AssetCache):
 
             try:
                 # Fetch source blobs
-                self.cas._fetch_directory(remote, source_digest)
+                self.cas.fetch_directory(remote, source_digest)
 
                 source.info("Pulled source {} <- {}".format(display_key, remote))
                 return True

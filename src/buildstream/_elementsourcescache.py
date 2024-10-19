@@ -295,7 +295,7 @@ class ElementSourcesCache(AssetCache):
             with utils.save_file_atomic(source_path, mode="wb") as f:
                 f.write(source.SerializeToString())
 
-            self.cas._fetch_directory(remote, source.files)
+            self.cas.fetch_directory(remote, source.files)
         except BlobNotFound:
             return False
         except CASRemoteError as e:
