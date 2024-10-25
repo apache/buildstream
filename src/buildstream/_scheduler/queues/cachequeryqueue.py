@@ -25,6 +25,7 @@ class CacheQueryQueue(Queue):
     action_name = "Cache-query"
     complete_name = "Cache queried"
     resources = [ResourceType.PROCESS, ResourceType.CACHE]
+    log_to_file = False
 
     def __init__(self, scheduler, *, sources=False, sources_if_cached=False):
         super().__init__(scheduler)
