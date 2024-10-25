@@ -124,16 +124,15 @@ class CASCache:
 
     # contains_directory():
     #
-    # Check whether the specified directory and subdirectories are in the cache,
-    # i.e non dangling.
+    # Check whether the specified directory, subdirectories and files are in the
+    # cache, i.e non dangling.
     #
     # Args:
     #     digest (Digest): The directory digest to check
-    #     with_files (bool): Whether to check files as well
     #
     # Returns: True if the directory is available in the local cache
     #
-    def contains_directory(self, digest, *, with_files):
+    def contains_directory(self, digest):
         local_cas = self.get_local_cas()
 
         # Without a remote cache, `FetchTree` simply checks the local cache.
@@ -141,7 +140,7 @@ class CASCache:
         request.root_digest.CopyFrom(digest)
         # Always fetch Directory protos as they are needed to enumerate subdirectories and files.
         # Don't implicitly fetch file blobs from the remote cache as we don't need them.
-        request.fetch_file_blobs = with_files and not self._remote_cache
+        request.fetch_file_blobs = not self._remote_cache
 
         try:
             local_cas.FetchTree(request)

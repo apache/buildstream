@@ -58,7 +58,7 @@ class SourceCache(AssetCache):
 
         # check files
         source_proto = self._get_source(ref)
-        return self.cas.contains_directory(source_proto.files, with_files=True)
+        return self.cas.contains_directory(source_proto.files)
 
     # commit()
     #
