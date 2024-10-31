@@ -649,7 +649,7 @@ def show(app, elements, deps, except_, order, format_):
 
         # Don't spend time interrogating the cache if we don't need to show element state
         if need_state:
-            app.stream.query_cache(dependencies)
+            app.stream.query_cache(dependencies, need_state=True)
 
         if order == "alpha":
             dependencies = sorted(dependencies)

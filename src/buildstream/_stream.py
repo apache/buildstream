@@ -190,13 +190,16 @@ class Stream:
     #    sources_of_cached_elements (bool): True to query the source cache for elements with a cached artifact
     #    only_sources (bool): True to only query the source cache
     #
-    def query_cache(self, elements, *, sources_of_cached_elements=False, only_sources=False):
+    def query_cache(self, elements, *, sources_of_cached_elements=False, only_sources=False, need_state=False):
         # It doesn't make sense to combine these flags
         assert not sources_of_cached_elements or not only_sources
 
         with self._context.messenger.simple_task("Query cache", silent_nested=True) as task:
-            # Enqueue complete build plan as this is required to determine `buildable` status.
-            plan = list(_pipeline.dependencies(elements, _Scope.ALL))
+            if need_state:
+                # Enqueue complete build plan as this is required to determine `buildable` status.
+                plan = list(_pipeline.dependencies(elements, _Scope.ALL))
+            else:
+                plan = elements
 
             if self._context.remote_cache_spec:
                 # Parallelize cache queries if a remote cache is configured
