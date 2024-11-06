@@ -308,7 +308,7 @@ class ElementSources:
             self._cached = False
             return False
 
-        if not cas.contains_directory(source_proto.files, with_files=True):
+        if not cas.contains_directory(source_proto.files):
             self._cached = False
             return False
 

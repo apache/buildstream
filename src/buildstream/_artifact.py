@@ -339,7 +339,7 @@ class Artifact:
 
         buildroot_digest = self._get_field_digest("buildroot")
         if buildroot_digest:
-            return self._cas.contains_directory(buildroot_digest, with_files=True)
+            return self._cas.contains_directory(buildroot_digest)
         else:
             return False
 
@@ -371,7 +371,7 @@ class Artifact:
 
         buildtree_digest = self._get_field_digest("buildtree")
         if buildtree_digest:
-            return self._cas.contains_directory(buildtree_digest, with_files=True)
+            return self._cas.contains_directory(buildtree_digest)
         else:
             return False
 
@@ -400,7 +400,7 @@ class Artifact:
 
         sources_digest = self._get_field_digest("sources")
         if sources_digest:
-            return self._cas.contains_directory(sources_digest, with_files=True)
+            return self._cas.contains_directory(sources_digest)
         else:
             return False
 
@@ -602,7 +602,7 @@ class Artifact:
             return False
 
         # Check whether 'files' subdirectory is available, with or without file contents
-        if str(artifact.files) and not self._cas.contains_directory(artifact.files, with_files=True):
+        if str(artifact.files) and not self._cas.contains_directory(artifact.files):
             self._cached = False
             return False
 
