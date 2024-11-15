@@ -56,7 +56,7 @@ _PROJECT_CONF_FILE = "project.conf"
 class ProjectConfig:
     def __init__(self):
         self.options = None  # OptionPool
-        self.base_variables = {}  # The base set of variables
+        self.base_variables = None  # The base set of variables
         self.element_overrides = {}  # Element specific configurations
         self.source_overrides = {}  # Source specific configurations
         self.mirrors = {}  # Dictionary of SourceMirror objects
