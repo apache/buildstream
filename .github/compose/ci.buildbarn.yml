@@ -19,11 +19,9 @@
 #  - docker-compose -f ci.buildbarn.yml up
 #  - docker-compose -f ci.buildbarn.yml down
 
-version: '3.4'
-
 services:
   bb-asset:
-    image: buildbarn/bb-remote-asset:20200903T103837Z-90136c4
+    image: ghcr.io/buildbarn/bb-remote-asset:20241031T230517Z-4926e8e
     command: /config/asset.jsonnet
     restart: unless-stopped
     ports:
@@ -37,7 +35,7 @@ services:
       target: /config
 
   bb-storage:
-    image: buildbarn/bb-storage:20200816T115912Z-d83e1f0
+    image: ghcr.io/buildbarn/bb-storage:20241121T154059Z-f5a181e
     command: /config/storage.jsonnet
     restart: unless-stopped
     ports:

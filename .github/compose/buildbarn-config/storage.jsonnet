@@ -1,26 +1,42 @@
 {
-  blobstore: {
-    contentAddressableStorage: {
-      circular: {
-        directory: '/cas',
-        offsetFileSizeBytes: 16 * 1024 * 1024,
-        offsetCacheSize: 10000,
-        dataFileSizeBytes: 10 * 1024 * 1024 * 1024,
-        dataAllocationChunkSizeBytes: 16 * 1024 * 1024,
+  contentAddressableStorage: {
+    backend: {
+      'local': {
+        keyLocationMapOnBlockDevice: {
+          file: {
+            path: '/cas/key_location_map',
+            sizeBytes: 16 * 1024 * 1024,
+          },
+        },
+        keyLocationMapMaximumGetAttempts: 16,
+        keyLocationMapMaximumPutAttempts: 64,
+        oldBlocks: 8,
+        currentBlocks: 24,
+        newBlocks: 3,
+        blocksOnBlockDevice: {
+          source: {
+            file: {
+              path: '/cas/blocks',
+              sizeBytes: 10 * 1024 * 1024 * 1024,
+            },
+          },
+          spareBlocks: 3,
+        },
       },
     },
-    actionCache: {
-      'error': {
-          code: 12, # UNIMPLEMENTED
-          message: "AC requests are not supported for this endpoint.",
-        }
-    },
+    getAuthorizer: { allow: {} },
+    putAuthorizer: { allow: {} },
+    findMissingAuthorizer: { allow: {} },
   },
-  httpListenAddress: ':6981',
+  global: { diagnosticsHttpServer: {
+    httpServers: [{
+      listenAddresses: [':6981'],
+      authenticationPolicy: { allow: {} },
+    }],
+  } },
   grpcServers: [{
     listenAddresses: [':7982'],
     authenticationPolicy: { allow: {} },
   }],
-  allowAcUpdatesForInstanceNamePrefixes: [''],
   maximumMessageSizeBytes: 16 * 1024 * 1024,
 }
