@@ -158,12 +158,7 @@ T1 = TypeVar("T1")
 _FILE = Union[None, int, IO[Any]]
 _TXT = Union[bytes, str]
 _STR_BYTES_PATH = Union[str, bytes, "os.PathLike[str]", "os.PathLike[bytes]"]
-if sys.version_info >= (3, 8):
-    _CMD = Union[_STR_BYTES_PATH, Sequence[_STR_BYTES_PATH]]
-else:
-    # Python 3.6 doesn't support _CMD being a single PathLike.
-    # See: https://bugs.python.org/issue31961
-    _CMD = Union[_TXT, Sequence[_STR_BYTES_PATH]]
+_CMD = Union[_STR_BYTES_PATH, Sequence[_STR_BYTES_PATH]]
 
 # _background_job_wrapper()
 #
