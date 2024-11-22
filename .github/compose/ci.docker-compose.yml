@@ -109,3 +109,8 @@ services:
     <<: *tests-template
     image: quay.io/pypa/manylinux_2_28_x86_64
     command: .github/wheel-helpers/test-wheel-manylinux.sh cp312 /opt/python/cp312-cp312/bin/python3
+
+  wheels-manylinux_2_28-cp313:
+    <<: *tests-template
+    image: quay.io/pypa/manylinux_2_28_x86_64
+    command: .github/wheel-helpers/test-wheel-manylinux.sh cp313 /opt/python/cp313-cp313/bin/python3
