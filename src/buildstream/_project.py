@@ -56,7 +56,7 @@ _PROJECT_CONF_FILE = "project.conf"
 class ProjectConfig:
     def __init__(self):
         self.options = None  # OptionPool
-        self.base_variables = {}  # The base set of variables
+        self.base_variables = None  # The base set of variables
         self.element_overrides = {}  # Element specific configurations
         self.source_overrides = {}  # Source specific configurations
         self.mirrors = {}  # Dictionary of SourceMirror objects
@@ -545,6 +545,15 @@ class Project:
             return
         assert self._partially_loaded
 
+        # Ensure that the parent project is fully loaded first
+        if self.junction:
+            self.junction._get_project().ensure_fully_loaded()
+
+            if self._fully_loaded:
+                # The parent project triggered the loading of this project,
+                # don't load this subproject twice.
+                return
+
         # Here we mark the project as fully loaded right away,
         # before doing the work.
         #
@@ -559,9 +568,6 @@ class Project:
         #     the loading of subprojects.
         #
         self._fully_loaded = True
-
-        if self.junction:
-            self.junction._get_project().ensure_fully_loaded()
 
         self._load_second_pass()
 

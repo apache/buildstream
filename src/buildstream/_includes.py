@@ -172,6 +172,11 @@ class Includes:
             # guaranteed at this stage to be fully loaded.
             #
             if current_loader != loader:
+                assert (
+                    current_loader.project.base_variables is not None
+                ), "{}: Attempted to include file from a subproject that isn't fully loaded".format(
+                    include.get_provenance()
+                )
                 variables_node = current_loader.project.base_variables.clone()
                 variables = Variables(variables_node)
                 variables.expand(self._loaded[key])

@@ -136,6 +136,25 @@ def test_nested(cli, tmpdir, datafiles, target, expected):
 
 
 #
+# Test successful builds of nested junctions with deep includes
+#
+@pytest.mark.datafiles(DATA_DIR)
+def test_nested_include(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "nested-include")
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Build, checkout
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+    result = cli.run(project=project, args=["artifact", "checkout", "target.bst", "--directory", checkoutdir])
+    result.assert_success()
+
+    # Check that the checkout contains the expected files from all subprojects
+    for filename in ["sub.txt", "subsub.txt"]:
+        assert os.path.exists(os.path.join(checkoutdir, filename))
+
+
+#
 # Test successful builds of deeply nested targets with both the top-level project
 # and a subproject configured to use `project.refs`
 #
