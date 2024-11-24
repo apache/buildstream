@@ -38,6 +38,7 @@ jobs:
         test-name:
           - debian-11
           - fedora-40
+          - fedora-41
           - fedora-missing-deps
           - ubuntu-22.04
           - lint
