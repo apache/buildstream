@@ -264,7 +264,9 @@ class Plugin:
     __TABLE = WeakValueDictionary()  # type: WeakValueDictionary[int, Plugin]
 
     try:
-        __multiprocessing_context: multiprocessing.context.BaseContext = multiprocessing.get_context("forkserver")
+        __multiprocessing_context: Union[
+            multiprocessing.context.ForkServerContext, multiprocessing.context.SpawnContext
+        ] = multiprocessing.get_context("forkserver")
     except ValueError:
         # We are on a system without `forkserver` support. Let's default to
         # spawn. This seems to be hanging however in some rare cases.

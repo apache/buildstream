@@ -52,7 +52,9 @@ class ElementProxy(PluginProxy):
     def sources(self) -> Iterator["Source"]:
         return cast("Element", self._plugin).sources()
 
-    def dependencies(self, selection: Sequence["Element"] = None, *, recurse: bool = True) -> Iterator["Element"]:
+    def dependencies(
+        self, selection: Optional[Sequence["Element"]] = None, *, recurse: bool = True
+    ) -> Iterator["Element"]:
         #
         # When dependencies() is called on a dependency of the main plugin Element,
         # we simply reroute the call to the original owning element, while specifying
@@ -92,7 +94,7 @@ class ElementProxy(PluginProxy):
         self,
         sandbox: "Sandbox",
         *,
-        path: str = None,
+        path: Optional[str] = None,
         action: str = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
@@ -114,9 +116,9 @@ class ElementProxy(PluginProxy):
     def stage_dependency_artifacts(
         self,
         sandbox: "Sandbox",
-        selection: Sequence["Element"] = None,
+        selection: Optional[Sequence["Element"]] = None,
         *,
-        path: str = None,
+        path: Optional[str] = None,
         action: str = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
@@ -164,7 +166,7 @@ class ElementProxy(PluginProxy):
         self,
         sandbox: "Sandbox",
         *,
-        path: str = None,
+        path: Optional[str] = None,
         action: str = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,

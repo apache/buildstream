@@ -128,7 +128,13 @@ class ElementError(BstError):
     """
 
     def __init__(
-        self, message: str, *, detail: str = None, reason: str = None, collect: str = None, temporary: bool = False
+        self,
+        message: str,
+        *,
+        detail: Optional[str] = None,
+        reason: Optional[str] = None,
+        collect: Optional[str] = None,
+        temporary: bool = False,
     ):
         super().__init__(message, detail=detail, domain=ErrorDomain.ELEMENT, reason=reason, temporary=temporary)
 
@@ -213,7 +219,7 @@ class Element(Plugin):
         load_element: "LoadElement",
         plugin_conf: Optional[str],
         *,
-        artifact_key: str = None,
+        artifact_key: Optional[str] = None,
     ):
 
         self.__cache_key_dict = None  # Dict for cache key calculation
@@ -431,7 +437,9 @@ class Element(Plugin):
         """
         return self.__sources.sources()
 
-    def dependencies(self, selection: Sequence["Element"] = None, *, recurse: bool = True) -> Iterator["Element"]:
+    def dependencies(
+        self, selection: Optional[Sequence["Element"]] = None, *, recurse: bool = True
+    ) -> Iterator["Element"]:
         """A generator function which yields the build dependencies of the given element.
 
         This generator gives the Element access to all of the dependencies which it is has
@@ -595,7 +603,7 @@ class Element(Plugin):
         self,
         sandbox: "Sandbox",
         *,
-        path: str = None,
+        path: Optional[str] = None,
         action: str = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
@@ -652,9 +660,9 @@ class Element(Plugin):
     def stage_dependency_artifacts(
         self,
         sandbox: "Sandbox",
-        selection: Sequence["Element"] = None,
+        selection: Optional[Sequence["Element"]] = None,
         *,
-        path: str = None,
+        path: Optional[str] = None,
         action: str = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
@@ -945,7 +953,7 @@ class Element(Plugin):
         self,
         sandbox: "Sandbox",
         *,
-        path: str = None,
+        path: Optional[str] = None,
         action: str = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,

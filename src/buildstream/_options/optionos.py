@@ -22,7 +22,7 @@ from .optionenum import OptionEnum
 #
 class OptionOS(OptionEnum):
 
-    OPTION_TYPE = "os"
+    OPTION_TYPE: str = "os"
 
     def load(self, node):
         super().load_special(node, allow_default_definition=False)

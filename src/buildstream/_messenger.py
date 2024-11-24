@@ -297,7 +297,7 @@ class Messenger:
     #
     @contextmanager
     def timed_activity(
-        self, activity_name: str, *, detail: str = None, silent_nested: bool = False, **kwargs
+        self, activity_name: str, *, detail: Optional[str] = None, silent_nested: bool = False, **kwargs
     ) -> Iterator[None]:
         with self.timed_suspendable() as timedata:
             try:
@@ -335,7 +335,13 @@ class Messenger:
     #
     @contextmanager
     def simple_task(
-        self, activity_name: str, *, task_name: str = None, detail: str = None, silent_nested: bool = False, **kwargs
+        self,
+        activity_name: str,
+        *,
+        task_name: Optional[str] = None,
+        detail: Optional[str] = None,
+        silent_nested: bool = False,
+        **kwargs
     ) -> Iterator[Optional[Task]]:
         # Bypass use of State when none exists (e.g. tests)
         if not self._state:

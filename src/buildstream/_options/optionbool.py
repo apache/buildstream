@@ -25,7 +25,7 @@ from .option import Option, OPTION_SYMBOLS
 #
 class OptionBool(Option):
 
-    OPTION_TYPE = "bool"
+    OPTION_TYPE: str = "bool"
 
     def load(self, node):
 

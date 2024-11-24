@@ -56,10 +56,10 @@ class Message:
         task_element_key: Optional[_DisplayKey] = None,
         element_name: Optional[str] = None,
         element_key: Optional[_DisplayKey] = None,
-        detail: str = None,
-        action_name: str = None,
+        detail: Optional[str] = None,
+        action_name: Optional[str] = None,
         elapsed: Optional[datetime.timedelta] = None,
-        logfile: str = None,
+        logfile: Optional[str] = None,
         sandbox: bool = False,
         scheduler: bool = False
     ):

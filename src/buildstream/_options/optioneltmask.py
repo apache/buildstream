@@ -25,7 +25,7 @@ from .optionflags import OptionFlags
 #
 class OptionEltMask(OptionFlags):
 
-    OPTION_TYPE = "element-mask"
+    OPTION_TYPE: str = "element-mask"
 
     def load(self, node):
         # Ask the parent constructor to disallow value definitions,

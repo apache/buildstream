@@ -171,7 +171,7 @@ class Sandbox:
         root_read_only: bool = False,
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
-        label: str = None
+        label: Optional[str] = None
     ) -> Optional[int]:
         """Run a command in the sandbox.
 
@@ -214,7 +214,7 @@ class Sandbox:
 
     @contextmanager
     def batch(
-        self, *, root_read_only: bool = False, label: str = None, collect: str = None
+        self, *, root_read_only: bool = False, label: Optional[str] = None, collect: Optional[str] = None
     ) -> Generator[None, None, None]:
         """Context manager for command batching
 
@@ -345,7 +345,7 @@ class Sandbox:
         flags: int,
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
-        label: str = None
+        label: Optional[str] = None
     ) -> Optional[int]:
         if not self.__allow_run:
             raise _SandboxBug("Element specified BST_RUN_COMMANDS as False but called Sandbox.run()")
