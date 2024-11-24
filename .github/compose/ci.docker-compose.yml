@@ -30,9 +30,9 @@ services:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:40-${CI_IMAGE_VERSION:-latest}
 
-  ubuntu-20.04:
+  ubuntu-22.04:
     <<: *tests-template
-    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:20.04-${CI_IMAGE_VERSION:-latest}
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:22.04-${CI_IMAGE_VERSION:-latest}
 
   # Ensure that tests also pass in the absence of a sandboxing tool
   fedora-missing-deps:
