@@ -81,4 +81,4 @@ def test_remote_autotools_build_no_cache(cli, datafiles):
 
     assert """WARNING Failed to initialize remote""" in result.stderr
     assert """Remote initialisation failed with status UNAVAILABLE""" in result.stderr
-    assert """DNS resolution failed""" in result.stderr
+    assert """DNS resolution failed""" in result.stderr or """address lookup failed""" in result.stderr
