@@ -20,7 +20,13 @@ from buildstream._cas import CASCache, CASDProcessManager, CASLogLevel
 @contextmanager
 def casd_cache(path, messenger=None):
     casd = CASDProcessManager(
-        str(path), os.path.join(str(path), "..", "logs", "_casd"), CASLogLevel.WARNING, None, None, True, None
+        str(path),
+        os.path.join(str(path), "..", "logs", "_casd"),
+        CASLogLevel.WARNING,
+        16 * 1024 * 1024,
+        None,
+        True,
+        None,
     )
     try:
         cascache = CASCache(str(path), casd=casd)
