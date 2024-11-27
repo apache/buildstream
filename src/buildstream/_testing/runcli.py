@@ -349,14 +349,6 @@ class Cli:
             if env is not None:
                 stack.enter_context(environment(env))
 
-            # Ensure we have a working stdout - required to work
-            # around a bug that appears to cause AIX to close
-            # sys.__stdout__ after setup.py
-            try:
-                sys.__stdout__.fileno()
-            except ValueError:
-                sys.__stdout__ = open("/dev/stdout", "w", encoding="utf-8")  # pylint: disable=consider-using-with
-
             result = self._invoke(bst_cli, bst_args, binary_capture=binary_capture)
 
         # Some informative stdout we can observe when anything fails

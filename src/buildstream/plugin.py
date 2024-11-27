@@ -158,12 +158,7 @@ T1 = TypeVar("T1")
 _FILE = Union[None, int, IO[Any]]
 _TXT = Union[bytes, str]
 _STR_BYTES_PATH = Union[str, bytes, "os.PathLike[str]", "os.PathLike[bytes]"]
-if sys.version_info >= (3, 8):
-    _CMD = Union[_STR_BYTES_PATH, Sequence[_STR_BYTES_PATH]]
-else:
-    # Python 3.6 doesn't support _CMD being a single PathLike.
-    # See: https://bugs.python.org/issue31961
-    _CMD = Union[_TXT, Sequence[_STR_BYTES_PATH]]
+_CMD = Union[_STR_BYTES_PATH, Sequence[_STR_BYTES_PATH]]
 
 # _background_job_wrapper()
 #
@@ -269,7 +264,9 @@ class Plugin:
     __TABLE = WeakValueDictionary()  # type: WeakValueDictionary[int, Plugin]
 
     try:
-        __multiprocessing_context: multiprocessing.context.BaseContext = multiprocessing.get_context("forkserver")
+        __multiprocessing_context: Union[
+            multiprocessing.context.ForkServerContext, multiprocessing.context.SpawnContext
+        ] = multiprocessing.get_context("forkserver")
     except ValueError:
         # We are on a system without `forkserver` support. Let's default to
         # spawn. This seems to be hanging however in some rare cases.

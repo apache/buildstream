@@ -761,7 +761,7 @@ class CasBasedDirectory(Directory):
         filter_callback: Optional[Callable[[str], bool]] = None,
         *,
         path_prefix: str = "",
-        origin: "CasBasedDirectory" = None,
+        origin: Optional["CasBasedDirectory"] = None,
         result: Optional[FileListResult]
     ) -> None:
         if origin is None:

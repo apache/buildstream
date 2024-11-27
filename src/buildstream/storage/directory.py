@@ -62,7 +62,7 @@ class DirectoryError(BstError):
     task where the error occurs and present the user with the error.
     """
 
-    def __init__(self, message: str, reason: str = None):
+    def __init__(self, message: str, reason: Optional[str] = None):
         super().__init__(message, domain=ErrorDomain.VIRTUAL_FS, reason=reason)
 
 

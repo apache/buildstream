@@ -30,9 +30,13 @@ services:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:40-${CI_IMAGE_VERSION:-latest}
 
-  ubuntu-20.04:
+  fedora-41:
     <<: *tests-template
-    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:20.04-${CI_IMAGE_VERSION:-latest}
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:41-${CI_IMAGE_VERSION:-latest}
+
+  ubuntu-22.04:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:22.04-${CI_IMAGE_VERSION:-latest}
 
   # Ensure that tests also pass in the absence of a sandboxing tool
   fedora-missing-deps:
@@ -90,11 +94,6 @@ services:
   # on the PyPA official 'manylinux' images that define the base ABI for
   # Python binary packages.
 
-  wheels-manylinux_2_28-cp38:
-    <<: *tests-template
-    image: quay.io/pypa/manylinux_2_28_x86_64
-    command: .github/wheel-helpers/test-wheel-manylinux.sh cp38 /opt/python/cp38-cp38/bin/python3
-
   wheels-manylinux_2_28-cp39:
     <<: *tests-template
     image: quay.io/pypa/manylinux_2_28_x86_64
@@ -114,3 +113,8 @@ services:
     <<: *tests-template
     image: quay.io/pypa/manylinux_2_28_x86_64
     command: .github/wheel-helpers/test-wheel-manylinux.sh cp312 /opt/python/cp312-cp312/bin/python3
+
+  wheels-manylinux_2_28-cp313:
+    <<: *tests-template
+    image: quay.io/pypa/manylinux_2_28_x86_64
+    command: .github/wheel-helpers/test-wheel-manylinux.sh cp313 /opt/python/cp313-cp313/bin/python3

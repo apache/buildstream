@@ -25,7 +25,7 @@ from .option import Option, OPTION_SYMBOLS
 #
 class OptionEnum(Option):
 
-    OPTION_TYPE = "enum"
+    OPTION_TYPE: str = "enum"
 
     def __init__(self, name, definition, pool):
         self.values = None

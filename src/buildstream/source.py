@@ -512,7 +512,7 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement set_ref()".format(self.get_kind()))
 
-    def track(self, *, previous_sources_dir: str = None) -> SourceRef:
+    def track(self, *, previous_sources_dir: Optional[str] = None) -> SourceRef:
         """Resolve a new ref from the plugin's track option
 
         Args:
@@ -539,7 +539,7 @@ class Source(Plugin):
         # Allow a non implementation
         return None
 
-    def fetch(self, *, previous_sources_dir: str = None) -> None:
+    def fetch(self, *, previous_sources_dir: Optional[str] = None) -> None:
         """Fetch remote sources and mirror them locally, ensuring at least
         that the specific reference is cached locally.
 
@@ -1263,7 +1263,7 @@ class Source(Plugin):
     # Args:
     #   previous_sources_dir (str): directory where previous sources are staged
     #
-    def _track(self, previous_sources_dir: str = None) -> SourceRef:
+    def _track(self, previous_sources_dir: Optional[str] = None) -> SourceRef:
         if self.BST_REQUIRES_PREVIOUS_SOURCES_TRACK:
             new_ref = self.__do_track(previous_sources_dir=previous_sources_dir)
         else:

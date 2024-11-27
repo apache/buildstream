@@ -34,7 +34,7 @@ from .optionenum import OptionEnum
 #
 class OptionArch(OptionEnum):
 
-    OPTION_TYPE = "arch"
+    OPTION_TYPE: str = "arch"
 
     def load(self, node):
         super().load_special(node, allow_default_definition=False)

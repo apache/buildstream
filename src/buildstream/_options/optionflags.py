@@ -25,7 +25,7 @@ from .option import Option, OPTION_SYMBOLS
 #
 class OptionFlags(Option):
 
-    OPTION_TYPE = "flags"
+    OPTION_TYPE: str = "flags"
 
     def __init__(self, name, definition, pool):
         self.values = None

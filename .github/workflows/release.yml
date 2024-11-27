@@ -8,7 +8,7 @@ on:
 jobs:
   build_docs:
     name: "Build documentation tarball"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -39,7 +39,7 @@ jobs:
 
   build_sdist:
     name: "Build Python source distribution tarball"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
       with:
@@ -58,7 +58,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04]
+        os: [ubuntu-22.04]
 
     steps:
       - uses: actions/checkout@v3
@@ -69,7 +69,7 @@ jobs:
         run: ${GITHUB_WORKSPACE}/.github/wheel-helpers/fetch-latest-buildbox-release.sh
 
       - name: Build wheels
-        run: pipx run cibuildwheel==v2.16.2
+        run: pipx run cibuildwheel==v2.22.0
 
       - uses: actions/upload-artifact@v4
         with:
@@ -79,18 +79,18 @@ jobs:
   test_wheels:
     name: "Test Python packages: ${{ matrix.test-name }}"
     needs: [build_wheels]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
         # The names here should map to a valid service defined in
         # "../compose/ci.docker-compose.yml"
         test-name:
-          - wheels-manylinux_2_28-cp38
           - wheels-manylinux_2_28-cp39
           - wheels-manylinux_2_28-cp310
           - wheels-manylinux_2_28-cp311
           - wheels-manylinux_2_28-cp312
+          - wheels-manylinux_2_28-cp313
 
     steps:
       - uses: actions/checkout@v3
@@ -109,7 +109,7 @@ jobs:
   upload_github_release:
     name: Upload GitHub release assets
     needs: [build_docs, build_sdist, build_wheels, test_wheels]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -129,7 +129,7 @@ jobs:
   upload_pypi_release:
     name: Upload PyPI release assets
     needs: [build_docs, build_sdist, build_wheels, test_wheels]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/download-artifact@v4
         with:
