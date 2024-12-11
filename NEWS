@@ -1,4 +1,36 @@
 =================
+buildstream 2.4.0
+=================
+
+  o Add new user configuration for the cache (#1950)
+
+  o docs: fix link to docker install instructions (#1952)
+
+  o Fix console warnings in newer python versions (#1958)
+
+  o Update github CI workflow actions (#1957)
+
+  o Fix `bst artifact show --long` for artifacts with symlinks (#1959)
+
+  o Fix race condition in public data handling (#1955)
+
+  o Cleanup deadcode (#1954)
+
+  o Make remote execution directory fetching more robust (#1962)
+
+  o Disable logging for frequent cache query jobs (#1963)
+
+  o Improve performance when using `storage-service` (#1966)
+
+  o Fixed issues with nested junctions (#1891, #1969, #1975)
+
+  o Drop support for Python 3.8 and add support for Python 3.13 (#1971)
+
+  o Load time optimization for commands which don't require cache queries (#1965)
+
+  o Address deprecation warnings from deprecated pkg_resources (#1948)
+
+=================
 buildstream 2.3.0
 =================
 
