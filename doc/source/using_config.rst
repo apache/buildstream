@@ -199,6 +199,8 @@ Attributes
   ``reserved-disk-space`` can be specified in the same way as ``quota``, with
   the exception of the special ``infinity`` value. The default is ``5%``.
 
+  *Since: 2.4*
+
 * ``low-watermark``
 
   This controls how much of the cache should be retained on cleanup.
@@ -207,6 +209,8 @@ Attributes
   as configured by ``quota`` and/or ``reserved-disk-space``. The default is
   ``80%``, which means that when cleanup is triggered, 20% of the cache will
   be pruned by removing CAS objects that haven't been used recently.
+
+  *Since: 2.4*
 
 * ``pull-buildtrees``
 
