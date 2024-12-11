@@ -217,6 +217,10 @@ class Loader:
 
         for junction_name in junction_path:
             loader = loader._get_loader(junction_name, provenance_node, load_subprojects=load_subprojects)
+            if not loader:
+                # `loader` should never be None if `load_subprojects` is True
+                assert not load_subprojects
+                return None
 
         if load_subprojects and provenance_node:
             del self._loader_search_provenances[name]
@@ -396,7 +400,8 @@ class Loader:
     #    load_subprojects (bool): Whether to load subprojects
     #
     # Returns:
-    #    (LoadElement): A LoadElement, which might be shallow loaded or fully loaded.
+    #    (LoadElement): A LoadElement, which might be shallow loaded or fully loaded,
+    #                   or None, if loading of the subproject is disabled.
     #
     def _load_one_file(self, filename, provenance_node, *, load_subprojects=True):
 
@@ -437,6 +442,11 @@ class Loader:
             link_target = element.link_target.as_str()  # pylint: disable=no-member
             _, filename, loader = self._parse_name(link_target, element.link_target, load_subprojects=load_subprojects)
 
+            if not loader:
+                # `loader` should never be None if `load_subprojects` is True
+                assert not load_subprojects
+                return None
+
             #
             # Redirect the loading of the file and it's dependencies to the appropriate loader,
             # which might or might not be the same loader.
@@ -459,11 +469,16 @@ class Loader:
     #    load_subprojects (bool): Whether to load subprojects
     #
     # Returns:
-    #    (LoadElement): A loaded LoadElement
+    #    (LoadElement): A loaded LoadElementor None, if loading of the subproject is disabled.
     #
     def _load_file(self, filename, provenance_node, *, load_subprojects=True):
 
         top_element = self._load_one_file(filename, provenance_node, load_subprojects=load_subprojects)
+
+        if not top_element:
+            # `_load_one_file` should not return None if `load_subprojects` is True
+            assert not load_subprojects
+            return None
 
         # Already loaded dependencies for a fully loaded element, early return.
         #
@@ -500,6 +515,11 @@ class Loader:
                 else:
 
                     dep_element = self._load_one_file(dep.name, dep.node, load_subprojects=load_subprojects)
+
+                    if not dep_element:
+                        # `_load_one_file` should not return None if `load_subprojects` is True
+                        assert not load_subprojects
+                        return None
 
                     # If the loaded element is not fully loaded, queue up the dependencies to be loaded in this loop.
                     #
@@ -773,6 +793,11 @@ class Loader:
             _, filename, loader = self._parse_name(
                 load_element.link_target.as_str(), load_element.link_target, load_subprojects=load_subprojects
             )
+            if not loader:
+                # `loader` should never be None if `load_subprojects` is True
+                assert not load_subprojects
+                return None
+
             return loader.get_loader(filename, load_element.link_target, load_subprojects=load_subprojects)
 
         # If we're only performing a lookup, we're done here.
