@@ -2817,9 +2817,15 @@ class Element(Plugin):
         project = self._get_project()
         platform = context.platform
 
+        config_node_properties = []
+        if config is not None:
+           config_node_properties.extend(config.output_node_properties)
+
         if self._get_workspace():
-            output_node_properties = ["mtime"]
-        else:
+            if "mtime" not in output_node_properties:
+                output_node_properties.append("mtime")
+
+        if not output_node_properties:
             output_node_properties = None
 
         if allow_remote and context.remote_execution_specs:
