@@ -29,6 +29,7 @@ installed.
 import argparse
 import subprocess
 import re
+import urllib.parse
 
 from graphviz import Digraph
 from ruamel.yaml import YAML
@@ -53,6 +54,22 @@ def parse_args():
         help='Open the rendered graph with the default application'
     )
     return parser.parse_args()
+
+
+def unique_node_name(s):
+    '''Generate unique node name for `s`.
+
+    Graphviz node names cannot contain colons or backslashes so we use
+    url-encoding to generate the unique node name. (A cryptographic hash could
+    be used instead but that would make the graphviz file less readable.)
+
+    Args:
+       s: element name
+
+    Returns:
+       A string containing the unique node name
+    '''
+    return urllib.parse.quote_plus(s)
 
 
 def parse_graph(lines):
@@ -99,12 +116,12 @@ def generate_graph(nodes, build_deps, runtime_deps):
        A graphviz.Digraph object
     '''
     graph = Digraph()
-    for node in nodes:
-        graph.node(node)
+    for name in nodes:
+        graph.node(unique_node_name(name), label=name)
     for source, target in build_deps:
-        graph.edge(source, target, label='build-dep')
+        graph.edge(unique_node_name(source), unique_node_name(target), label='build-dep')
     for source, target in runtime_deps:
-        graph.edge(source, target, label='runtime-dep')
+        graph.edge(unique_node_name(source), unique_node_name(target), label='runtime-dep')
     return graph
 
 
