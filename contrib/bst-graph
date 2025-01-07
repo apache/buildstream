@@ -133,9 +133,11 @@ def main():
     graph_lines = subprocess.check_output(cmd, universal_newlines=True)
     # NOTE: We generate nodes and edges before giving them to graphviz as
     # the library does not de-deuplicate them.
-    nodes, build_deps, runtime_deps = parse_graph(re.split("\|\|", graph_lines))
+    nodes, build_deps, runtime_deps = parse_graph(re.split(r"\|\|", graph_lines))
     graph = generate_graph(nodes, build_deps, runtime_deps)
+
     print(graph.source)
+
     if args.format:
         graph.render(cleanup=True,
                      filename='bst-graph',
