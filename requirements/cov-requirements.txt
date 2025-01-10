@@ -4,5 +4,5 @@ pytest==8.3.3
 Cython==3.0.11
 ## The following requirements were added by pip freeze:
 iniconfig==2.0.0
-packaging==24.1
+packaging==24.2
 pluggy==1.5.0
