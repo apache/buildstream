@@ -1,7 +1,7 @@
 click==8.1.7
 grpcio==1.68.0
 Jinja2==3.1.4
-packaging==24.2
+packaging==24.1
 pluginbase==1.0.1
 protobuf==5.28.3
 psutil==6.1.0
