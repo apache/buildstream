@@ -11,3 +11,4 @@ pyroaring==1.0.0
 ujson==5.10.0
 ## The following requirements were added by pip freeze:
 MarkupSafe==3.0.2
+setuptools==75.6.0
