@@ -121,6 +121,12 @@ class CASDProcessManager:
                     )
             if remote_cache_spec.keepalive_time is not None:
                 casd_args.append("--cas-keepalive-time={}".format(remote_cache_spec.keepalive_time))
+            if remote_cache_spec.retry_limit is not None:
+                casd_args.append("--cas-retry-limit={}".format(remote_cache_spec.retry_limit))
+            if remote_cache_spec.retry_delay is not None:
+                casd_args.append("--cas-retry-delay={}".format(remote_cache_spec.retry_delay))
+            if remote_cache_spec.request_timeout is not None:
+                casd_args.append("--cas-request-timeout={}".format(remote_cache_spec.request_timeout))
 
         casd_args.append(path)
 
