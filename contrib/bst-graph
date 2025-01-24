@@ -29,6 +29,7 @@ installed.
 import argparse
 import subprocess
 import re
+import urllib.parse
 
 from graphviz import Digraph
 from ruamel.yaml import YAML
@@ -53,6 +54,10 @@ def parse_args():
         help='Open the rendered graph with the default application'
     )
     return parser.parse_args()
+
+
+def escape(s):
+    return urllib.parse.quote_plus(s.encode())
 
 
 def parse_graph(lines):
@@ -99,12 +104,12 @@ def generate_graph(nodes, build_deps, runtime_deps):
        A graphviz.Digraph object
     '''
     graph = Digraph()
-    for node in nodes:
-        graph.node(node)
+    for name in nodes:
+        graph.node(escape(name), label=name)
     for source, target in build_deps:
-        graph.edge(source, target, label='build-dep')
+        graph.edge(escape(source), escape(target), label='build-dep')
     for source, target in runtime_deps:
-        graph.edge(source, target, label='runtime-dep')
+        graph.edge(escape(source), escape(target), label='runtime-dep')
     return graph
 
 
@@ -116,9 +121,11 @@ def main():
     graph_lines = subprocess.check_output(cmd, universal_newlines=True)
     # NOTE: We generate nodes and edges before giving them to graphviz as
     # the library does not de-deuplicate them.
-    nodes, build_deps, runtime_deps = parse_graph(re.split("\|\|", graph_lines))
+    nodes, build_deps, runtime_deps = parse_graph(re.split(r"\|\|", graph_lines))
     graph = generate_graph(nodes, build_deps, runtime_deps)
+
     print(graph.source)
+
     if args.format:
         graph.render(cleanup=True,
                      filename='bst-graph',
