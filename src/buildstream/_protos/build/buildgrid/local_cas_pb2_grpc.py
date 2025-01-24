@@ -201,6 +201,10 @@ class LocalContentAddressableStorageServicer(object):
         avoiding copies when it is known that files will not be needed after they
         are imported. If a server chooses not to move them, the source files will
         still exist after this request.
+
+        The `skip_upload` parameter is a hint to indicate that the files do not
+        need to be uploaded to the remote CAS. This can be useful for local-only
+        workflows where an upload step adds unnecessary latency.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -220,6 +224,10 @@ class LocalContentAddressableStorageServicer(object):
         avoiding copies when it is known that files will not be needed after they
         are imported. If a server chooses not to move them, the source files will
         still exist after this request.
+
+        The `skip_upload` parameter is a hint to indicate that the files do not
+        need to be uploaded to the remote CAS. This can be useful for local-only
+        workflows where an upload step adds unnecessary latency.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
