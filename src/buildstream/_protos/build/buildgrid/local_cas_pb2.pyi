@@ -102,7 +102,7 @@ class StageTreeResponse(_message.Message):
     def __init__(self, path: _Optional[str] = ...) -> None: ...
 
 class CaptureTreeRequest(_message.Message):
-    __slots__ = ("instance_name", "root", "path", "bypass_local_cache", "node_properties", "move_files", "output_directory_format")
+    __slots__ = ("instance_name", "root", "path", "bypass_local_cache", "node_properties", "move_files", "output_directory_format", "skip_upload")
     INSTANCE_NAME_FIELD_NUMBER: _ClassVar[int]
     ROOT_FIELD_NUMBER: _ClassVar[int]
     PATH_FIELD_NUMBER: _ClassVar[int]
@@ -110,6 +110,7 @@ class CaptureTreeRequest(_message.Message):
     NODE_PROPERTIES_FIELD_NUMBER: _ClassVar[int]
     MOVE_FILES_FIELD_NUMBER: _ClassVar[int]
     OUTPUT_DIRECTORY_FORMAT_FIELD_NUMBER: _ClassVar[int]
+    SKIP_UPLOAD_FIELD_NUMBER: _ClassVar[int]
     instance_name: str
     root: str
     path: _containers.RepeatedScalarFieldContainer[str]
@@ -117,7 +118,8 @@ class CaptureTreeRequest(_message.Message):
     node_properties: _containers.RepeatedScalarFieldContainer[str]
     move_files: bool
     output_directory_format: _remote_execution_pb2.Command.OutputDirectoryFormat
-    def __init__(self, instance_name: _Optional[str] = ..., root: _Optional[str] = ..., path: _Optional[_Iterable[str]] = ..., bypass_local_cache: bool = ..., node_properties: _Optional[_Iterable[str]] = ..., move_files: bool = ..., output_directory_format: _Optional[_Union[_remote_execution_pb2.Command.OutputDirectoryFormat, str]] = ...) -> None: ...
+    skip_upload: bool
+    def __init__(self, instance_name: _Optional[str] = ..., root: _Optional[str] = ..., path: _Optional[_Iterable[str]] = ..., bypass_local_cache: bool = ..., node_properties: _Optional[_Iterable[str]] = ..., move_files: bool = ..., output_directory_format: _Optional[_Union[_remote_execution_pb2.Command.OutputDirectoryFormat, str]] = ..., skip_upload: bool = ...) -> None: ...
 
 class CaptureTreeResponse(_message.Message):
     __slots__ = ("responses",)
@@ -137,20 +139,22 @@ class CaptureTreeResponse(_message.Message):
     def __init__(self, responses: _Optional[_Iterable[_Union[CaptureTreeResponse.Response, _Mapping]]] = ...) -> None: ...
 
 class CaptureFilesRequest(_message.Message):
-    __slots__ = ("instance_name", "root", "path", "bypass_local_cache", "node_properties", "move_files")
+    __slots__ = ("instance_name", "root", "path", "bypass_local_cache", "node_properties", "move_files", "skip_upload")
     INSTANCE_NAME_FIELD_NUMBER: _ClassVar[int]
     ROOT_FIELD_NUMBER: _ClassVar[int]
     PATH_FIELD_NUMBER: _ClassVar[int]
     BYPASS_LOCAL_CACHE_FIELD_NUMBER: _ClassVar[int]
     NODE_PROPERTIES_FIELD_NUMBER: _ClassVar[int]
     MOVE_FILES_FIELD_NUMBER: _ClassVar[int]
+    SKIP_UPLOAD_FIELD_NUMBER: _ClassVar[int]
     instance_name: str
     root: str
     path: _containers.RepeatedScalarFieldContainer[str]
     bypass_local_cache: bool
     node_properties: _containers.RepeatedScalarFieldContainer[str]
     move_files: bool
-    def __init__(self, instance_name: _Optional[str] = ..., root: _Optional[str] = ..., path: _Optional[_Iterable[str]] = ..., bypass_local_cache: bool = ..., node_properties: _Optional[_Iterable[str]] = ..., move_files: bool = ...) -> None: ...
+    skip_upload: bool
+    def __init__(self, instance_name: _Optional[str] = ..., root: _Optional[str] = ..., path: _Optional[_Iterable[str]] = ..., bypass_local_cache: bool = ..., node_properties: _Optional[_Iterable[str]] = ..., move_files: bool = ..., skip_upload: bool = ...) -> None: ...
 
 class CaptureFilesResponse(_message.Message):
     __slots__ = ("responses",)
@@ -192,7 +196,7 @@ class GetInstanceNameForRemoteResponse(_message.Message):
     def __init__(self, instance_name: _Optional[str] = ...) -> None: ...
 
 class Remote(_message.Message):
-    __slots__ = ("url", "instance_name", "server_cert", "client_key", "client_cert", "access_token_path", "access_token_reload_interval", "keepalive_time")
+    __slots__ = ("url", "instance_name", "server_cert", "client_key", "client_cert", "access_token_path", "access_token_reload_interval", "keepalive_time", "retry_limit", "retry_delay", "request_timeout")
     URL_FIELD_NUMBER: _ClassVar[int]
     INSTANCE_NAME_FIELD_NUMBER: _ClassVar[int]
     SERVER_CERT_FIELD_NUMBER: _ClassVar[int]
@@ -201,6 +205,9 @@ class Remote(_message.Message):
     ACCESS_TOKEN_PATH_FIELD_NUMBER: _ClassVar[int]
     ACCESS_TOKEN_RELOAD_INTERVAL_FIELD_NUMBER: _ClassVar[int]
     KEEPALIVE_TIME_FIELD_NUMBER: _ClassVar[int]
+    RETRY_LIMIT_FIELD_NUMBER: _ClassVar[int]
+    RETRY_DELAY_FIELD_NUMBER: _ClassVar[int]
+    REQUEST_TIMEOUT_FIELD_NUMBER: _ClassVar[int]
     url: str
     instance_name: str
     server_cert: bytes
@@ -209,7 +216,10 @@ class Remote(_message.Message):
     access_token_path: str
     access_token_reload_interval: _duration_pb2.Duration
     keepalive_time: _duration_pb2.Duration
-    def __init__(self, url: _Optional[str] = ..., instance_name: _Optional[str] = ..., server_cert: _Optional[bytes] = ..., client_key: _Optional[bytes] = ..., client_cert: _Optional[bytes] = ..., access_token_path: _Optional[str] = ..., access_token_reload_interval: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., keepalive_time: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ...) -> None: ...
+    retry_limit: int
+    retry_delay: _duration_pb2.Duration
+    request_timeout: _duration_pb2.Duration
+    def __init__(self, url: _Optional[str] = ..., instance_name: _Optional[str] = ..., server_cert: _Optional[bytes] = ..., client_key: _Optional[bytes] = ..., client_cert: _Optional[bytes] = ..., access_token_path: _Optional[str] = ..., access_token_reload_interval: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., keepalive_time: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., retry_limit: _Optional[int] = ..., retry_delay: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., request_timeout: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ...) -> None: ...
 
 class GetInstanceNameForRemotesRequest(_message.Message):
     __slots__ = ("instance_name", "content_addressable_storage", "remote_asset", "action_cache", "execution")

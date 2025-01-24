@@ -107,6 +107,10 @@ service LocalContentAddressableStorage {
   // avoiding copies when it is known that files will not be needed after they
   // are imported. If a server chooses not to move them, the source files will
   // still exist after this request.
+  //
+  // The `skip_upload` parameter is a hint to indicate that the files do not
+  // need to be uploaded to the remote CAS. This can be useful for local-only
+  // workflows where an upload step adds unnecessary latency.
   rpc CaptureTree(CaptureTreeRequest) returns (CaptureTreeResponse) {}
 
   // Capture files from the local filesystem.
@@ -122,6 +126,10 @@ service LocalContentAddressableStorage {
   // avoiding copies when it is known that files will not be needed after they
   // are imported. If a server chooses not to move them, the source files will
   // still exist after this request.
+  //
+  // The `skip_upload` parameter is a hint to indicate that the files do not
+  // need to be uploaded to the remote CAS. This can be useful for local-only
+  // workflows where an upload step adds unnecessary latency.
   rpc CaptureFiles(CaptureFilesRequest) returns (CaptureFilesResponse) {}
 
   // Configure remote CAS endpoint.
@@ -342,6 +350,12 @@ message CaptureTreeRequest {
   // of what was requested (e.g., interpreting DIRECTORY_ONLY as
   // TREE_AND_DIRECTORY).
   build.bazel.remote.execution.v2.Command.OutputDirectoryFormat output_directory_format = 7;
+
+  // Hints whether files should be uploaded to the remote CAS.
+  // This is mutually exclusive with `bypass_local_cache`. If both `skip_upload`
+  // and `bypass_local_cache` are set, the server MUST return an InvalidArgument
+  // error.
+  bool skip_upload = 8;
 }
 
 // A response message for
@@ -399,6 +413,12 @@ message CaptureFilesRequest {
   // If enabled, they MUST NOT be modified after issuing this request in order
   // to guarantee consistency.
   bool move_files = 5;
+
+  // Hints whether files should be uploaded to the remote CAS.
+  // This is mutually exclusive with `bypass_local_cache`. If both `skip_upload`
+  // and `bypass_local_cache` are set, the server MUST return an InvalidArgument
+  // error.
+  bool skip_upload = 7;
 }
 
 // A response message for
@@ -494,6 +514,20 @@ message Remote {
 
   // Remote keepalive time. Unset or empty is treated as disabling keepalive.
   google.protobuf.Duration keepalive_time = 6;
+
+  // The maximum number of time a request is retried on this remote
+  // A `retry_limit` of 0 indicates that
+  // there is no limit and the server can pick a retry_limit
+  int64 retry_limit = 9;
+
+  // The initial recommended retry delay before the first retry, the
+  // server might implement a backoff startegy.
+  // A `retry_delay` of unset or empty indicates
+  // that there is no delay recommended and the server can pick a retry_delay
+  google.protobuf.Duration retry_delay = 10;
+
+  // How long to wait for a response from the remote.
+  google.protobuf.Duration request_timeout = 11;
 }
 
 // A request message for
