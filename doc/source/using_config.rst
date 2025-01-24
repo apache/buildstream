@@ -154,6 +154,9 @@ toplevel of your configuration file, like so:
          access-token-reload-interval: 60
        connection-config:
          keepalive-time: 60
+         retry-limit: 4
+         retry-delay: 1000
+         request-timeout: 300
 
 
 Attributes
@@ -789,6 +792,9 @@ The ``connection-config`` block looks like this:
 
    connection-config:
      keepalive-time: 60
+     retry-limit: 4
+     retry-delay: 1000
+     request-timeout: 300
 
 
 Attributes
@@ -798,6 +804,20 @@ Attributes
 
   The interval in seconds between gRPC PING frames. Disabled by default.
   `gRPC keepalive guide <https://grpc.io/docs/guides/keepalive/>`_
+
+* ``retry-limit``
+
+  The maximum number of retries, not including the original request.
+
+* ``retry-delay``
+
+  The initial backoff in milliseconds for retries.
+  `gRPC retry guide <https://grpc.io/docs/guides/retry/>`_
+
+* ``request-timeout``
+
+  The timeout for gRPC requests in seconds. No timeout by default.
+  `gRPC deadline guide <https://grpc.io/docs/guides/deadlines/>`_
 
 
 .. _config_cache_servers:
@@ -841,6 +861,9 @@ Cache server configuration is declared in the following way:
        client-key: client.key
      connection-config:
        keepalive-time: 60
+       retry-limit: 4
+       retry-delay: 1000
+       request-timeout: 300
 
 
 Attributes
@@ -1167,6 +1190,9 @@ which looks like this:
      client-key: /keys/client.key
    connection-config:
      keepalive-time: 60
+     retry-limit: 4
+     retry-delay: 1000
+     request-timeout: 300
 
 **Attributes:**
 
