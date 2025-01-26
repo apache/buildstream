@@ -1654,3 +1654,24 @@ def artifact_delete(app, artifacts, deps):
     """Remove artifacts from the local cache"""
     with app.initialized():
         app.stream.artifact_delete(artifacts, selection=deps)
+
+
+###################################################################
+#                          Graph Command                          #
+###################################################################
+@cli.command(short_help="Output pipeline dependency graph.")
+@click.option(
+    "--format",
+    "-f",
+    "format_",
+    metavar="FORMAT",
+    default="dot",
+    type=click.STRING,
+    help="Output format: e.g. `dot` and `pkl`",
+)
+@click.argument("target", nargs=1, required=True, type=click.Path())
+@click.pass_obj
+def graph(app, target, format_):
+    """Output dependency graph."""
+    with app.initialized():
+        app.stream.graph(target, format_)

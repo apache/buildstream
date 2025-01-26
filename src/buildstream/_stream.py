@@ -24,6 +24,7 @@ import shlex
 import shutil
 import tarfile
 import tempfile
+
 from contextlib import contextmanager, suppress
 from collections import deque
 from typing import List, Tuple, Optional, Iterable, Callable
@@ -49,7 +50,7 @@ from ._remotespec import RemoteSpec
 from ._state import State
 from .types import _KeyStrength, _PipelineSelection, _Scope, _HostMount
 from .plugin import Plugin
-from . import utils, node, _yaml, _site, _pipeline
+from . import utils, node, _tree, _yaml, _site, _pipeline
 
 
 # Stream()
@@ -1230,6 +1231,36 @@ class Stream:
                 output_elements.add(e.name)
 
         return list(output_elements)
+
+    # graph()
+    #
+    # Outputs a dependency graph for the target element, in the given format.
+    # The dot file format can be rendered using graphviz.
+    #
+    # Args:
+    #    target (str): The target element from which to build a dependency graph.
+    #    format_ ('dot'/'pkl'): A .pkl dictionary or graphviz .dot file.
+    #
+    def graph(self, target, format_):
+        def _render(scope):
+            tree = _tree.Tree()
+            scope_name = {_Scope.BUILD: 'buildtime', _Scope.RUN: 'runtime'}[scope]
+
+            for element in self.load_selection([target], selection=_PipelineSelection.ALL, need_state=False):
+                dependencies = {d._get_full_name() for d in element._dependencies(scope, recurse=False) if d}
+
+                for dep in dependencies:
+                    tree.link(element._get_full_name(), dep)
+
+            path = os.path.basename(target)
+            path, _ = os.path.splitext(path)
+            path = f'{path}.{scope_name}'
+            tree.save(path, format_)
+
+            self._context.messenger.info(f'Rendered dependency graph: {path}')
+
+        _render(_Scope.BUILD)
+        _render(_Scope.RUN)
 
     # get_state()
     #
