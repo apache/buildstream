@@ -14,8 +14,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from functools import cmp_to_key
-
 from pyroaring import BitMap, FrozenBitMap  # pylint: disable=no-name-in-module
 
 from .._exceptions import LoadError
@@ -379,44 +377,15 @@ cdef class LoadElement:
         self._dep_cache = FrozenBitMap(self._dep_cache)
 
 
-def _dependency_cmp(Dependency dep_a, Dependency dep_b):
-    cdef LoadElement element_a = dep_a.element
-    cdef LoadElement element_b = dep_b.element
-
-    # Sort on inter element dependency first
-    if element_a.depends(element_b):
-        return 1
-    elif element_b.depends(element_a):
-        return -1
-
-    # If there are no inter element dependencies, place
-    # runtime only dependencies last
-    if dep_a.dep_type != dep_b.dep_type:
-        if dep_a.dep_type == DependencyType.RUNTIME:
-            return 1
-        elif dep_b.dep_type == DependencyType.RUNTIME:
-            return -1
-
-    # All things being equal, string comparison.
-    if element_a.name > element_b.name:
-        return 1
-    elif element_a.name < element_b.name:
-        return -1
-
-    # Sort local elements before junction elements
-    # and use string comparison between junction elements
-    if element_a.junction and element_b.junction:
-        if element_a.junction > element_b.junction:
-            return 1
-        elif element_a.junction < element_b.junction:
-            return -1
-    elif element_a.junction:
-        return -1
-    elif element_b.junction:
-        return 1
-
-    # This wont ever happen
-    return 0
+def _cmp_key(Dependency dep):
+    if dep.dep_type == DependencyType.RUNTIME:
+        position = 1
+    else:
+        position = 0
+    if element.junction:
+        return position, element.name, 1, element.junction
+    else:
+        return position, element.name, 0, ""
 
 
 # sort_dependencies():
@@ -456,7 +425,7 @@ def sort_dependencies(LoadElement element, set visited):
                 visited.add(dep.element)
                 working_elements.append(dep.element)
 
-        element.dependencies.sort(key=cmp_to_key(_dependency_cmp))
+        element.dependencies.sort(key=_cmp_key)
 
 
 # _parse_dependency_filename():
