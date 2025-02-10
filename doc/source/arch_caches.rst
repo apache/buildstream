@@ -30,11 +30,11 @@ The majority of data is stored in Content Addressable Storage or CAS, which
 indexes stored files by the SHA256 hash of their contents. This allows for a
 flat file structure as well as any repeated data to be shared across a CAS. In
 order to store directory structures BuildStream's CAS uses `protocol buffers`_
-for storing directory and file information as defined in Googles `REAPI`_.
+for storing directory and file information as defined in Google's `REAPI`_.
 
 The data itself is stored in CAS which is defined by the `remote execution protocol`_,
 and BuildStream also uses the `remote asset protocol`_ in order to address stored
-content using symbolic labesl, such as :ref:`artifact names <artifact_names>` for
+content using symbolic labels, such as :ref:`artifact names <artifact_names>` for
 artifacts.
 
 
