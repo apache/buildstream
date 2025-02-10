@@ -219,6 +219,7 @@ class BuildElement(Element):
     def configure_dependencies(self, dependencies):
 
         self.__layout = {}  # pylint: disable=attribute-defined-outside-init
+        self.__digest_environment = {}  # pylint: disable=attribute-defined-outside-init
 
         # FIXME: Currently this forcefully validates configurations
         #        for all BuildElement subclasses so they are unable to
@@ -227,14 +228,24 @@ class BuildElement(Element):
         for dep in dependencies:
             # Determine the location to stage each element, default is "/"
             location = "/"
+
+            # Determine the optional digest environment variable to stage each
+            # element,default is None
+            digest_environment = None
+
             if dep.config:
-                dep.config.validate_keys(["location"])
+                dep.config.validate_keys(["digest-environment", "location"])
                 location = dep.config.get_str("location")
+                if "digest-environment" in dep.config:
+                    digest_environment = dep.config.get_str("digest-environment")
+
             try:
                 element_list = self.__layout[location]
             except KeyError:
                 element_list = []
                 self.__layout[location] = element_list
+
+            self.__digest_environment[dep.path] = digest_environment
 
             element_list.append((dep.element, dep.path))
 
