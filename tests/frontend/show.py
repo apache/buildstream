@@ -438,8 +438,9 @@ def test_exceed_max_recursion_depth(cli, tmpdir, dependency_depth):
         ("%{deps}", "- import-dev.bst\n- import-links.bst\n- import-bin.bst"),
         ("%{build-deps}", "- import-dev.bst\n- import-links.bst"),
         ("%{runtime-deps}", "- import-links.bst\n- import-bin.bst"),
+        ("%{artifact-cas-digest}", "(no artifact CAS digest)"),
     ],
-    ids=["deps", "build-deps", "runtime-deps"],
+    ids=["deps", "build-deps", "runtime-deps", "artifact-cas-digest"],
 )
 def test_format_deps(cli, datafiles, dep_kind, expected_deps):
     project = str(datafiles)
