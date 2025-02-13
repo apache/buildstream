@@ -529,6 +529,9 @@ class CasBasedDirectory(Directory):
 
         self.__invalidate_digest()
 
+    def get_artifact_cas_digest(self):
+        return _get_digest(self)
+
     #############################################################
     #                      Private methods                      #
     #############################################################
