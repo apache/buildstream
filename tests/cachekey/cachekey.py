@@ -59,7 +59,7 @@ import pytest
 
 from buildstream._testing._cachekeys import check_cache_key_stability, _parse_output_keys
 from buildstream._testing.runcli import cli  # pylint: disable=unused-import
-from buildstream._testing._utils.site import HAVE_BZR, HAVE_GIT, IS_LINUX, MACHINE_ARCH
+from buildstream._testing._utils.site import IS_LINUX, MACHINE_ARCH
 from buildstream.plugin import CoreWarnings
 from buildstream import _yaml
 
@@ -71,13 +71,8 @@ DATA_DIR = os.path.join(
 )
 
 
-# The cache key test uses a project which exercises all plugins,
-# so we cant run it at all if we dont have them installed.
-#
 @pytest.mark.skipif(MACHINE_ARCH != "x86-64", reason="Cache keys depend on architecture")
 @pytest.mark.skipif(not IS_LINUX, reason="Only available on linux")
-@pytest.mark.skipif(HAVE_BZR is False, reason="bzr is not available")
-@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(DATA_DIR)
 def test_cache_key(datafiles, cli):
     project = str(datafiles)
