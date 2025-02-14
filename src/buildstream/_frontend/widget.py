@@ -437,6 +437,14 @@ class LogLine(Widget):
                 runtime_deps = [e._get_full_name() for e in element._dependencies(_Scope.RUN, recurse=False)]
                 line = p.fmt_subst(line, "runtime-deps", _yaml.roundtrip_dump_string(runtime_deps).rstrip("\n"))
 
+            # CAS Digest
+            if "%{cas-digest" in format_:
+                cas_digest = element._get_cas_digest()
+                if cas_digest is not None:
+                    line = p.fmt_subst(line, "cas-digest", cas_digest)
+                else:
+                    line = p.fmt_subst(line, "cas-digest", "(no CAS digest)", fg="yellow")
+
             report += line + "\n"
 
         return report.rstrip("\n")
