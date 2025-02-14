@@ -22,4 +22,14 @@ depends:
 - elements/import2.bst
 - elements/import3.bst
 - elements/script1.bst
+- elements/sort0.bst
+- elements/sort1.bst
+- elements/sort2.bst
+- elements/sort3.bst
+- elements/sort4.bst
+- elements/sort5.bst
+- elements/sort6.bst
+- elements/sort7.bst
+- elements/sort8.bst
+- elements/sort9.bst
 - elements/variables1.bst

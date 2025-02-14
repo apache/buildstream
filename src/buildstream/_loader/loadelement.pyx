@@ -379,6 +379,16 @@ cdef class LoadElement:
         self._dep_cache = FrozenBitMap(self._dep_cache)
 
 
+# Sort algorithm copied from Python 3.12
+cdef extern from "listsort.c":
+    int _list_sort(object list, object keyfunc) except -1
+
+
+# This comparison function does not impose a total ordering, which means
+# that the order of the sorted list depends on the order of inputs and
+# implementation details of the sort algorithm. Always use the sort
+# algorithm from Python 3.12 to ensure a deterministic result for a
+# given input order.
 def _dependency_cmp(Dependency dep_a, Dependency dep_b):
     cdef LoadElement element_a = dep_a.element
     cdef LoadElement element_b = dep_b.element
@@ -456,7 +466,7 @@ def sort_dependencies(LoadElement element, set visited):
                 visited.add(dep.element)
                 working_elements.append(dep.element)
 
-        element.dependencies.sort(key=cmp_to_key(_dependency_cmp))
+        _list_sort(element.dependencies, cmp_to_key(_dependency_cmp))
 
 
 # _parse_dependency_filename():
