@@ -37,3 +37,8 @@ Software deriving from third parties:
 
     This directory contains software developed by the BuildGrid authors:
     https://gitlab.com/BuildGrid/buildgrid
+
+  * src/buildstream/_loader/listsort.c
+
+    This file is derived from Python and licensed under the
+    Python Software Foundation License Version 2.
