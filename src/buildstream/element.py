@@ -1272,6 +1272,22 @@ class Element(Plugin):
         else:
             return self.__weak_cache_key
 
+    # _get_cas_digest():
+    #
+    # Returns the CAS digest
+    #
+    # Returns:
+    #    (str|None): The CAS digest for this Element, or None
+    #
+    # None is returned if no CAS artifact is available for this element.
+    #
+    def _get_cas_digest(self):
+        if self.__artifact is None:
+            return None
+        if not self.__artifact.query_cache():
+            return None
+        return self.__artifact.get_files().get_cas_digest()
+
     # _can_query_cache():
     #
     # Returns whether the cache key required for cache queries is available.
