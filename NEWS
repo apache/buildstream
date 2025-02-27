@@ -1,4 +1,18 @@
 =================
+buildstream 2.4.1
+=================
+
+  o Update default min-version for bst init to 2.4 (#1978)
+
+  o Use subprocess umask support (#1754)
+
+  o Don't use `preexec_fn` on Python 3.11+ (#1980)
+
+  o contrib/bst-graph: Escape names when using as node_id (#1979)
+
+  o _loader: Use the sort algorithm from Python 3.12 for dependencies (#1993)
+
+=================
 buildstream 2.4.0
 =================
 

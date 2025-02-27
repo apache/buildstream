@@ -14,7 +14,7 @@ PYTHON=$2
 dnf install -y bubblewrap
 
 "$PYTHON" -m venv /tmp/venv
-/tmp/venv/bin/pip3 install ./wheelhouse/BuildStream-*-$COMPATIBILITY_TAGS-*.whl buildstream-plugins
+/tmp/venv/bin/pip3 install ./wheelhouse/buildstream-*-$COMPATIBILITY_TAGS-*.whl buildstream-plugins
 
 cd doc/examples/autotools
 /tmp/venv/bin/bst build hello.bst
