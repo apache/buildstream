@@ -262,6 +262,12 @@ class SourceError(BstError):
 
 @dataclass
 class AliasSubstitution:
+    """AliasSubstitution()
+    An opaque data structure which may be passed through
+    :func:`SourceFetcher.fetch() <buildstream.source.SourceFetcher.fetch>` and in such cases
+    must be provided to :func:`Source.translate_url() <buildstream.source.Source.translate_url>`.
+    """
+
     _effective_alias: str
     _mirror: Union[SourceMirror, str]
 
@@ -293,8 +299,9 @@ class SourceFetcher:
 
         Args:
            alias_override: The alias to use instead of the default one
-               defined by the :ref:`aliases <project_source_aliases>` field
-               in the project's config.
+               defined by the :ref:`aliases <project_source_aliases>` field in the
+               project's config. If provided, it must be used when calling
+               :func:`Source.translate_url() <buildstream.source.Source.translate_url>`.
 
         Raises:
            :class:`.SourceError`
