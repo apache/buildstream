@@ -25,6 +25,46 @@ Any derived classes must write their own stage() and get_unique_key()
 implementation.
 
 
+Built-in functionality
+----------------------
+The DownloadableFileSource class provides built in keys which can be set when
+intantiating any Source which derives from DownloadableFileSource
+
+* Guess pattern
+
+  This ``version-guess-pattern`` sets the regular expression which will be used to attempt
+  to guess the version of a source when parsing the source's URI.
+
+  The DownloadableFileSource provides a default implementation of
+  :func:`Source.collect_source_info() <buildstream.source.Source.collect_source_info>`,
+  which will use the ``version-guess-pattern`` to attempt to extract a human readable
+  version string from the specified URI, in order to fill out the reported
+  :attr:`~buildstream.source.SourceInfo.version_guess`.
+
+  The URI will be *searched* using this regular expression, and is allowed to
+  yield a number of *groups*. For example the value ``(\\d+)_(\\d+)_(\\d+)`` would
+  report 3 *groups* if 3 numerical values separated by underscores were found in
+  the URI.
+
+  The default value for ``version-guess-pattern`` is ``\\d+\\.\\d+(?:\\.\\d+)?``.
+
+  **Since: 2.5**.
+
+Built-in functionality
+----------------------
+
+The  base class provides built in functionality that may be
+overridden by
+
+* Directory
+
+  The ``directory`` variable can be set for all sources of a type in project.conf
+  or per source within a element.
+
+  This sets the location within the build root that the content of the source
+  will be loaded in to. If the location does not exist, it will be created.
+
+
 SourceMirror extra data "http-auth"
 --------------------------------------------
 The DownloadableFileSource, and consequently any :class:`Source <buildstream.source.Source>`
@@ -85,13 +125,14 @@ DownloadableFileSource will add the following header to the ``GET`` request to d
 
 
 import os
+import re
 import urllib.request
 import urllib.error
 import contextlib
 import shutil
 import netrc
 
-from .source import Source, SourceError
+from .source import Source, SourceError, SourceInfo, SourceInfoMedium, SourceVersionType
 from . import utils
 
 
@@ -202,9 +243,10 @@ def _download_file(opener_creator, url, etag, directory, bearer_auth):
 class DownloadableFileSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
-    COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ["url", "ref"]
+    COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ["url", "ref", "version-guess-pattern"]
 
     __default_mirror_file = None
+    __default_guess_pattern = re.compile(r"\d+\.\d+(?:\.\d+)?")
 
     def configure(self, node):
         self.original_url = node.get_str("url")
@@ -215,6 +257,12 @@ class DownloadableFileSource(Source):
         self.bearer_auth = extra_data.get("http-auth") == "bearer"
 
         self._mirror_dir = os.path.join(self.get_mirror_directory(), utils.url_directory_name(self.original_url))
+
+        guess_pattern = node.get_str("version-guess-pattern", None)
+        if guess_pattern is None:
+            self._guess_pattern = self.__default_guess_pattern
+        else:
+            self._guess_pattern = re.compile(guess_pattern)
 
     def preflight(self):
         return
@@ -269,6 +317,21 @@ class DownloadableFileSource(Source):
             raise SourceError(
                 "File downloaded from {} has sha256sum '{}', not '{}'!".format(self.url, sha256, self.ref)
             )
+
+    def collect_source_info(self):
+        version_match = self._guess_pattern.search(self.original_url)
+        if not version_match:
+            version_guess = None
+        elif self._guess_pattern.groups == 0:
+            version_guess = version_match.group(0)
+        else:
+            version_guess = ".".join(version_match.groups())
+
+        return [
+            SourceInfo(
+                self.url, SourceInfoMedium.REMOTE_FILE, SourceVersionType.SHA256, self.ref, version_guess=version_guess
+            )
+        ]
 
     def _get_etag(self, ref):
         etagfilename = os.path.join(self._mirror_dir, "{}.etag".format(ref))
