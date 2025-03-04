@@ -91,7 +91,7 @@ import contextlib
 import shutil
 import netrc
 
-from .source import Source, SourceError
+from .source import Source, SourceError, SourceInfo, SourceInfoMedium, SourceVersionType
 from . import utils
 
 
@@ -269,6 +269,13 @@ class DownloadableFileSource(Source):
             raise SourceError(
                 "File downloaded from {} has sha256sum '{}', not '{}'!".format(self.url, sha256, self.ref)
             )
+
+    def collect_source_info(self):
+        #
+        # XXX remote sources are not necessarily archives, perhaps we should
+        # allow downloadablefilesource imlementations to choose the SourceInfoMedium
+        #
+        return [SourceInfo(self.url, SourceInfoMedium.ARCHIVE, SourceVersionType.SHA256, self.ref)]
 
     def _get_etag(self, ref):
         etagfilename = os.path.join(self._mirror_dir, "{}.etag".format(ref))
