@@ -110,6 +110,9 @@ class LocalSource(Source):
         #
         self.__do_stage(directory)
 
+    def collect_source_info(self):
+        return [SourceInfo(self.path, SourceInfoMedium.LOCAL, SourceVersionType.DIGEST, self.get_unique_key())]
+
     # As a core element, we speed up some scenarios when this is used for
     # a junction, by providing the local path to this content directly.
     #
