@@ -25,6 +25,48 @@ Any derived classes must write their own stage() and get_unique_key()
 implementation.
 
 
+.. _core_downloadable_source_builtins:
+
+Built-in functionality
+----------------------
+The DownloadableFileSource class provides built in keys which can be set when
+intantiating any Source which derives from DownloadableFileSource
+
+* Guess pattern
+
+  The ``version-guess-pattern`` sets the regular expression which will be used to attempt
+  to guess the version of a source when parsing the source's URI.
+
+  The DownloadableFileSource provides a default implementation of
+  :func:`Source.collect_source_info() <buildstream.source.Source.collect_source_info>`,
+  which will use the ``version-guess-pattern`` to attempt to extract a human readable
+  version string from the specified URI, in order to fill out the reported
+  :attr:`~buildstream.source.SourceInfo.version_guess`.
+
+  The URI will be *searched* using this regular expression, and is allowed to
+  yield a number of *groups*. For example the value ``(\\d+)_(\\d+)_(\\d+)`` would
+  report 3 *groups* if 3 numerical values separated by underscores were found in
+  the URI.
+
+  The default value for ``version-guess-pattern`` is ``\\d+\\.\\d+(?:\\.\\d+)?``.
+
+  .. note:
+
+     The version guessing mechanism will not be observed if ``version`` is specified.
+
+  **Since: 2.5**.
+
+* Version
+
+  The ``version`` explicitly sets the :attr:`~buildstream.source.SourceInfo.version_guess`
+  attribute of the :class:`SourceInfo <buildstream.source.SourceInfo>` reported for this
+  source, overriding any guessing.
+
+  This is useful for remote files which do not express their version in their filenames.
+
+  **Since: 2.5**.
+
+
 SourceMirror extra data "http-auth"
 --------------------------------------------
 The DownloadableFileSource, and consequently any :class:`Source <buildstream.source.Source>`
@@ -81,17 +123,38 @@ DownloadableFileSource will add the following header to the ``GET`` request to d
 
    Authorization: Bearer 1234
 
+
+.. _core_downloadable_source_info:
+
+Default reporting of :class:`.SourceInfo`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Source plugins which derive from the DownloadableFileSource, unless overridden
+and specified in the documentation of the specific source plugin, will behave
+as described here.
+
+The DownloadableFileSource reports the URL of the remote file as the *url*.
+
+Further, the DownloadableFileSourcebzr source reports the
+:attr:`SourceInfoMedium.REMOTE_FILE <buildstream.source.SourceInfoMedium.REMOTE_FILE>` *medium* and the
+:attr:`SourceVersionType.SHA256 <buildstream.source.SourceVersionType.SHA256>` *version_type*,
+for which it reports the sha256 checksum of the remote file content as the *version*.
+
+An attempt to guess the version based on the remote filename will be made
+for the reporting of the *guess_version*. Control over how the guess is made
+or overridden is explained above in the
+:ref:`built-in functionality documentation <core_downloadable_source_builtins>`.
 """
 
 
 import os
+import re
 import urllib.request
 import urllib.error
 import contextlib
 import shutil
 import netrc
 
-from .source import Source, SourceError
+from .source import Source, SourceError, SourceInfoMedium, SourceVersionType
 from . import utils
 
 
@@ -202,9 +265,10 @@ def _download_file(opener_creator, url, etag, directory, bearer_auth):
 class DownloadableFileSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
-    COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ["url", "ref"]
+    COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ["url", "ref", "version-guess-pattern", "version"]
 
     __default_mirror_file = None
+    __default_guess_pattern = re.compile(r"\d+\.\d+(?:\.\d+)?")
 
     def configure(self, node):
         self.original_url = node.get_str("url")
@@ -216,11 +280,28 @@ class DownloadableFileSource(Source):
 
         self._mirror_dir = os.path.join(self.get_mirror_directory(), utils.url_directory_name(self.original_url))
 
+        self._guess_pattern_string = node.get_str("version-guess-pattern", None)
+        if self._guess_pattern_string is None:
+            self._guess_pattern = self.__default_guess_pattern
+        else:
+            self._guess_pattern = re.compile(self._guess_pattern_string)
+
+        self._version = node.get_str("version", None)
+
     def preflight(self):
         return
 
     def get_unique_key(self):
-        return [self.original_url, self.ref]
+        unique_key = [self.original_url, self.ref]
+
+        # Backwards compatible method of supporting configuration
+        # attributes which affect SourceInfo generation.
+        if self._version is not None:
+            unique_key.append(self._version)
+        elif self._guess_pattern is not self.__default_guess_pattern:
+            unique_key.append(self._guess_pattern_string)
+
+        return unique_key
 
     def is_cached(self) -> bool:
         return os.path.isfile(self._get_mirror_file())
@@ -269,6 +350,24 @@ class DownloadableFileSource(Source):
             raise SourceError(
                 "File downloaded from {} has sha256sum '{}', not '{}'!".format(self.url, sha256, self.ref)
             )
+
+    def collect_source_info(self):
+        if self._version is None:
+            version_match = self._guess_pattern.search(self.original_url)
+            if not version_match:
+                version_guess = None
+            elif self._guess_pattern.groups == 0:
+                version_guess = version_match.group(0)
+            else:
+                version_guess = ".".join(version_match.groups())
+        else:
+            version_guess = self._version
+
+        return [
+            self.create_source_info(
+                self.url, SourceInfoMedium.REMOTE_FILE, SourceVersionType.SHA256, self.ref, version_guess=version_guess
+            )
+        ]
 
     def _get_etag(self, ref):
         etagfilename = os.path.join(self._mirror_dir, "{}.etag".format(ref))
