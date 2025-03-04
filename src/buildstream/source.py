@@ -224,7 +224,7 @@ from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
 from .sourcemirror import SourceMirror
-from .types import SourceRef, CoreWarnings
+from .types import SourceRef, CoreWarnings, FastEnum
 from ._exceptions import BstError, ImplError, PluginError
 from .exceptions import ErrorDomain
 from ._loader.metasource import MetaSource
@@ -270,6 +270,113 @@ class AliasSubstitution:
 
     _effective_alias: str
     _mirror: Union[SourceMirror, str]
+
+
+class SourceInfoMedium(FastEnum):
+    """
+    Indicates the meduim in which the source is obtained
+
+    *Since: 2.5*
+    """
+
+    LOCAL = "local"
+    """
+    Files stored locally in the project
+    """
+
+    ARCHIVE = "archive"
+    """
+    An archive file
+    """
+
+    GIT = "git"
+    """
+    A git repository
+    """
+
+
+class SourceVersionType(FastEnum):
+    """
+    Indicates the type of the version string
+
+    *Since: 2.5*
+    """
+
+    VERSION = "version"
+    """
+    The upstream version string, which may be semantic version
+    """
+
+    COMMIT = "commit"
+    """
+    A commit string which accurately represents a version in a source
+    code repository or VCS
+    """
+
+    SHA256 = "sha256"
+    """
+    An sha256 checksum
+    """
+
+    DIGEST = "digest"
+    """
+    A CAS digest representing the unique version of this source input
+    """
+
+
+class SourceInfo:
+    """SourceInfo()
+
+    An object representing the provenance of input reported by
+    :func:`Source.collect_source_info() <buildstream.source.Source.collect_source_info>`
+
+    *Since: 2.5*
+    """
+
+    def __init__(self, url: str, medium: str, version_type: str, version: str):
+        # XXX assert medium and version_type are valid values for the enums
+
+        self.url: str = url
+        """
+        The url of the source input
+        """
+
+        self.medium: str = medium
+        """
+        The :class:`.SourceInfoMedium` of the source input
+        """
+
+        self.version_type: str = version_type
+        """
+        The :class:`.SourceVersionType` of the source input
+        """
+
+        self.version: str = version
+        """
+        A string which represents a unique version of this source input
+        """
+
+    # _serialize()
+    #
+    # Produce a dictionary object suitable to be dumped in YAML format
+    # in the `bst show` command line interface.
+    #
+    # Returns: A dictionary used to dump this out on the CLI with _yaml.roundtrip_dump_string()
+    #
+    def _serialize(self) -> Dict[str, Any]:
+
+        #
+        # WARNING: This return value produces output for an API stable interface.
+        #
+        #          Dictionary member names cannot be removed, and the meaning of
+        #          their values cannot be changed.
+        #
+        return {
+            "url": self.url,
+            "medium": self.medium.value,
+            "version-type": self.version_type.value,
+            "version": self.version
+        }
 
 
 class SourceFetcher:
@@ -690,6 +797,19 @@ class Source(Plugin):
         Returns: whether the source is cached locally or not.
         """
         raise ImplError("Source plugin '{}' does not implement is_cached()".format(self.get_kind()))
+
+    def collect_source_info(self) -> Iterable[SourceInfo]:
+        """Get the :class:`.SourceInfo` objects describing this source
+
+        This method is guaranteed to only be called whenever
+        :func:`Source.is_resolved() <buildstream.source.Source.is_resolved>`
+        returns `True`.
+
+        Returns: the :class:`.SourceInfo` objects describing this source
+
+        *Since: 2.5*
+        """
+        raise ImplError("Source plugin '{}' does not implement collect_source_info()".format(self.get_kind()))
 
     #############################################################
     #                       Public Methods                      #
