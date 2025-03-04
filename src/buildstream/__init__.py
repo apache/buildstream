@@ -31,7 +31,15 @@ if "_BST_COMPLETION" not in os.environ:
     from .types import CoreWarnings, OverlapAction, FastEnum, SourceRef
     from .node import MappingNode, Node, ProvenanceInformation, ScalarNode, SequenceNode
     from .plugin import Plugin
-    from .source import Source, SourceError, SourceFetcher
+    from .source import (
+        Source,
+        SourceError,
+        SourceImplError,
+        SourceFetcher,
+        SourceInfo,
+        SourceInfoMedium,
+        SourceVersionType,
+    )
     from .sourcemirror import SourceMirror, SourceMirrorError
     from .downloadablefilesource import DownloadableFileSource
     from .element import Element, ElementError, DependencyConfiguration

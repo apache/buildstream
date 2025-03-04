@@ -21,9 +21,8 @@ Source - Base source class
 
 Built-in functionality
 ----------------------
-
-The Source base class provides built in functionality that may be overridden
-by individual plugins.
+The Source base class provides built in keys which can be set when instantiating
+any Source.
 
 * Directory
 
@@ -101,6 +100,15 @@ these methods are mandatory to implement.
 
   **Optional**: This is completely optional and will do nothing if left unimplemented.
 
+* :func:`Source.collect_source_info() <buildstream.source.Source.collect_source_info>`
+
+  Collect SourceInfo objects to describe the provenance of sources.
+
+  **Optional**: BuildStream will function correctly if this is unimplemented, but the
+  ability to generate SBoMs will be impaired, it is highly recommented to implement this.
+
+  See: :ref:`documentation on generating SourceInfo <core_source_info>`.
+
 
 .. _core_source_ref:
 
@@ -163,6 +171,10 @@ configuration which may effect how the source is :func:`staged <buildstream.sour
 as well as any configuration which uniquely identifies the source, which of course
 includes the :attr:`~buildstream.types.SourceRef`.
 
+When plugins :ref:`generate SourceInfo <core_source_info>`, it is also
+important that any configuration attributes which contribute to the
+generation of SourceInfo also be included in the unique key.
+
 
 Accessing previous sources
 --------------------------
@@ -195,6 +207,122 @@ guidelines:
 * Implementations must not introduce host contamination.
 
 
+.. _core_source_info:
+
+Generating SourceInfo for provenance information
+------------------------------------------------
+Source plugins should implement either of the
+:func:`Source.collect_source_info() <buildstream.source.Source.collect_source_info>` or
+:func:`SourceFetcher.get_source_info() <buildstream.source.SourceFetcher.get_source_info>`
+methods in order to properly report provenance information and contribute to reports
+such as SBoMs.
+
+To implement these methods, you must use
+:func:`Source.create_source_info() <buildstream.source.Source.create_source_info>` to
+instantiate the :class:`.SourceInfo` object to return from these methods.
+
+.. attention::
+
+   It is **not** recommented to consider the parameters used for implementing
+   tracking with :func:`Source.track() <buildstream.source.Source.track>`.
+
+   Instead, any versioning information reported should be congruent with the URL
+   and the *current* :ref:`source reference <core_source_ref>`.
+
+   Furthermore, if any of the configuration attributes implemented by the plugin
+   contribute to the generation of the SourceInfo objects, these configuration
+   values must be considered in the plugin's
+   :func:`Plugin.get_unique_key() <buildstream.plugin.Plugin.get_unique_key>`
+   implementation.
+
+What follows here, are some guidelines and conventions for doing this properly.
+
+
+The URL
+~~~~~~~
+The URL argument represents the location from which the source is obtained, and
+should normally be the translated URL, as returned by
+:func:`Source.translate_url() <buildstream.source.Source.translate_url>`.
+
+In the case of ``SourceInfoMedium.LOCAL``, the URL can instead be a project
+relative path to the local data.
+
+
+The medium and version_type arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+These refer to the medium by which the source data was obtained, and the
+meaning/type of the following "version" argument, respectively.
+
+When possible, you should use the :class:`.SourceInfoMedium` and
+:class:`.SourceVersionType` values which correspond to the the medium
+and version type which your Source plugin is using.
+
+In cases where there is not a suitable value available for your plugin,
+you can alternatively provide a freeform string which provides these.
+
+
+Documentation
+'''''''''''''
+Your plugin's module level docstring which is used for documenting your
+plugin, should have a section describing the meaning of these values.
+
+This is especially useful to promote interoperability with other tooling,
+which might want to perform some automations based on the :class:`.SourceInfo` object(s)
+which your plugin reports.
+
+
+Version
+~~~~~~~
+This is a string which uniquely identifies the version of the source, and its meaning
+is described by the "version_type" you specified.
+
+
+Version guess
+~~~~~~~~~~~~~
+This is a human readable simplified version, more suitable for a cursory reading
+of a report like an SBoM.
+
+Since it is, in most cases not possible to accurately automate the version string
+intended by upstream maintainers based on the knowledge you have, we refer to this
+as a *guessed version*. For example, just because you have a tarball named ``pony-1.2.3.tgz``
+somewhere, does not guarantee that this is really version ``1.2.3`` of the "pony" project.
+
+
+Configurability
+'''''''''''''''
+When implementing a technique for guessing the version based on the information
+you have at hand, it is recommended to provide some flexability to users of your
+plugin, who may have better knowledge about the conventions used by the upstream
+project and how they choose to express their versioning information.
+
+An example of this is the ``version-guess-pattern`` configuration made available
+in the :ref:`DownloadableFileSource built-in functionality <core_downloadable_source_builtins>`.
+
+
+Explicit versioning
+'''''''''''''''''''
+In some use cases, it is impossible to derive a guessed version from the information
+available to the plugin.
+
+For instance, consider an upstream which indexes their releases on a web page and
+then hosts their releases without namespacing their release archives. In such
+a case you might have a URL that looks something like:
+``https://flying-ponies.com/releases/9d0c936c78/pony-flight-release.tgz``
+
+For this reason, the implementing plugin should provide a way for users to manually
+annotate the source version.
+
+An example of this is the ``version`` configuration made available in the
+:ref:`DownloadableFileSource built-in functionality <core_downloadable_source_builtins>`.
+
+
+Extra data
+~~~~~~~~~~
+In the case that the existing fields are insufficient to accurately describe the
+provenance of this source, extra key/values can be specified when calling
+:func:`Source.create_source_info() <buildstream.source.Source.create_source_info>`.
+
+
 .. _core_source_fetcher:
 
 SourceFetcher - Object for fetching individual URLs
@@ -211,6 +339,13 @@ mentioned, these methods are mandatory to implement.
   Fetches the URL associated with this SourceFetcher, optionally taking an
   alias override.
 
+* :func:`SourceFetcher.get_source_info() <buildstream.source.SourceFetcher.get_source_info>`
+
+  Get a SourceInfo object to describe the provenance of this source.
+
+  **Optional**: BuildStream will function correctly if this is unimplemented, but the
+  ability to generate SBoMs will be impaired, it is highly recommented to implement this.
+
 Class Reference
 ---------------
 """
@@ -224,7 +359,7 @@ from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
 from .sourcemirror import SourceMirror
-from .types import SourceRef, CoreWarnings
+from .types import SourceRef, CoreWarnings, FastEnum
 from ._exceptions import BstError, ImplError, PluginError
 from .exceptions import ErrorDomain
 from ._loader.metasource import MetaSource
@@ -260,6 +395,19 @@ class SourceError(BstError):
         super().__init__(message, detail=detail, domain=ErrorDomain.SOURCE, reason=reason, temporary=temporary)
 
 
+class SourceImplError(BstError):
+    """This exception is expected to be raised from some unimplemented abstract methods.
+
+    There is no need to raise this exception, however some public abstract methods which
+    are intended to be called by plugins may advertize the raising of this exception
+    in the case of a source plugin which does not implement the said method, in which case
+    it must be handled by the calling plugin.
+    """
+
+    def __init__(self, message, reason=None):
+        super().__init__(message, domain=ErrorDomain.IMPL, reason=reason)
+
+
 @dataclass
 class AliasSubstitution:
     """AliasSubstitution()
@@ -270,6 +418,218 @@ class AliasSubstitution:
 
     _effective_alias: str
     _mirror: Union[SourceMirror, str]
+
+
+class SourceInfoMedium(FastEnum):
+    """
+    Indicates the medium in which the source is obtained
+
+    *Since: 2.5*
+    """
+
+    WORKSPACE = "workspace"
+    """
+    Files in an open workspace
+    """
+
+    LOCAL = "local"
+    """
+    Files stored locally in the project
+    """
+
+    REMOTE_FILE = "remote-file"
+    """
+    A remote file
+    """
+
+    GIT = "git"
+    """
+    A git repository
+    """
+
+    BAZAAR = "bzr"
+    """
+    The Bazaar revision control system
+    """
+
+    OCI_IMAGE = "oci-image"
+    """
+    An OCI image, such as docker or podman images.
+    """
+
+    PYTHON_PACKAGE_INDEX = "pypi"
+    """
+    A python package obtained from a python package index like https://pypi.org
+    """
+
+
+class SourceVersionType(FastEnum):
+    """
+    Indicates the type of the version string
+
+    *Since: 2.5*
+    """
+
+    COMMIT = "commit"
+    """
+    A commit string which accurately represents a version in a source
+    code repository or VCS
+    """
+
+    SHA256 = "sha256"
+    """
+    An sha256 checksum of the content of a file
+    """
+
+    CAS_DIGEST = "cas-digest"
+    """
+    A CAS digest expressed as ``{hash}/{size}``.
+
+    The ``hash`` and ``size`` components represent the members of a ``Digest`` message as
+    defined in the `remote execution protocol
+    <https://github.com/bazelbuild/remote-apis/blob/main/build/bazel/remote/execution/v2/remote_execution.proto>`_
+    """
+
+    OCI_DIGEST = "oci-digest"
+    """
+    An OCI image digest, as can be used to address images in a docker registry.
+    """
+
+    INDEXED_VERSION = "indexed-version"
+    """
+    This type of version is used in cases where we have repositories which
+    have an interface to index content by version, and that no additional validation
+    is performed to insure the uniqueness of the downloaded content (not recommended).
+
+    In the case of plugins which use this version type, it is probable that
+    ``SourceInfo.version_guess == SourceInfo.version``.
+    """
+
+
+class SourceInfo:
+    """SourceInfo()
+
+    An object representing the provenance of input reported by
+    :func:`Source.collect_source_info() <buildstream.source.Source.collect_source_info>`
+    and/or :func:`SourceFetcher.get_source_info() <buildstream.source.SourceFetcher.get_source_info>`
+
+    See: :ref:`documentation on generating SourceInfo <core_source_info>`.
+
+    .. attention::
+
+       A given SourceInfo for a given element is **not** guaranteed to be unique for
+       a given :ref:`cache key <cachekeys>`.
+
+       While it is true that plugins which :ref:`generate SourceInfo <core_source_info>`
+       must consider any configuration attributes in their cache keys, so as to produce
+       differing cache keys when source provenance information can be reported differently,
+       this does not account for the special nature of *urls*.
+
+       When considering the *urls* reported in SourceInfo, the urls are only guaranteed to be the
+       primary urls as defined by the project's :ref:`source aliases <project_source_aliases>`,
+       and arbitrary :ref:`mirror urls <project_essentials_mirrors>` will not be reported here.
+
+       Since these aliases are intentionally allowed to change without affecting cache
+       keys, or can be :ref:`redirected with junctions <project_junctions_source_aliases>`,
+       it possible to have a *differing* set of SourceInfo objects reported for a project which
+       reports identical *cache keys*, in cases where primary alias mappings are changed.
+
+    *Since: 2.5*
+    """
+
+    def __init__(
+        self,
+        kind: str,
+        url: str,
+        medium: Union[SourceInfoMedium, str],
+        version_type: Union[SourceVersionType, str],
+        version: str,
+        *,
+        version_guess: Optional[str] = None,
+        extra_data: Optional[Dict[str, str]] = None,
+    ):
+        self.kind: str = kind
+        """
+        The Source plugin kind which reported this SourceInfo
+        """
+
+        self.url: str = url
+        """
+        The url of the source input
+        """
+
+        self.medium: Union[SourceInfoMedium, str] = medium
+        """
+        The :class:`.SourceInfoMedium` of the source input, or in the case
+        that an appropriate medium is not defined, a freeform string of the plugin's
+        choice describing the medium.
+        """
+
+        self.version_type: Union[SourceVersionType, str] = version_type
+        """
+        The :class:`.SourceVersionType` of the source input version, or in the case
+        that an appropriate version type is not defined, a freeform string of the plugin's
+        choice depicting the type of version.
+        """
+
+        self.version: str = version
+        """
+        A string which represents a unique version of this source input
+        """
+
+        self.version_guess: Optional[str] = version_guess
+        """
+        A string representing the guessed human readable version of this source input
+        """
+
+        self.extra_data: Optional[Dict[str, str]] = extra_data
+        """
+        Additional plugin defined key/values
+        """
+
+    # _serialize()
+    #
+    # Produce a dictionary object suitable to be dumped in YAML format
+    # in the `bst show` command line interface.
+    #
+    # Returns: A dictionary used to dump this out on the CLI with _yaml.roundtrip_dump_string()
+    #
+    def _serialize(self) -> Dict[str, Any]:
+        #
+        # WARNING: This return value produces output for an API stable interface.
+        #
+        #          Dictionary member names cannot be removed, and the meaning of
+        #          their values cannot be changed.
+        #
+        version_info: Dict[str, Union[str, Dict[str, str]]]
+        medium_str: str
+        version_type_str: str
+
+        if isinstance(self.medium, SourceInfoMedium):
+            medium_str = str(self.medium.value)
+        else:
+            medium_str = self.medium
+
+        if isinstance(self.version_type, SourceVersionType):
+            version_type_str = str(self.version_type.value)
+        else:
+            version_type_str = self.version_type
+
+        version_info = {
+            "kind": self.kind,
+            "url": self.url,
+            "medium": medium_str,
+            "version-type": version_type_str,
+            "version": self.version,
+        }
+
+        if self.version_guess is not None:
+            version_info["version-guess"] = self.version_guess
+
+        if self.extra_data:
+            version_info["extra-data"] = self.extra_data
+
+        return version_info
 
 
 class SourceFetcher:
@@ -310,6 +670,25 @@ class SourceFetcher:
         network error or if the source reference could not be matched.
         """
         raise ImplError("SourceFetcher '{}' does not implement fetch()".format(type(self)))
+
+    def get_source_info(self) -> SourceInfo:
+        """Get the :class:`.SourceInfo` object describing this source
+
+        This method should only be called whenever
+        :func:`Source.is_resolved() <buildstream.source.Source.is_resolved>`
+        returns ``True``.
+
+        SourceInfo objects created by implementors should be created with
+        :func:`Source.create_source_info() <buildstream.source.Source.create_source_info>`.
+
+        Returns: the :class:`.SourceInfo` objects describing this source
+
+        Raises:
+           :class:`.SourceImplError`: if this method is unimplemented
+
+        *Since: 2.5*
+        """
+        raise SourceImplError("SourceFetcher '{}' does not implement get_source_info()".format(type(self)))
 
     #############################################################
     #                       Public Methods                      #
@@ -691,6 +1070,43 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement is_cached()".format(self.get_kind()))
 
+    def collect_source_info(self) -> Iterable[SourceInfo]:
+        """Get the :class:`.SourceInfo` objects describing this source
+
+        This method should only be called whenever
+        :func:`Source.is_resolved() <buildstream.source.Source.is_resolved>`
+        returns ``True``.
+
+        SourceInfo objects created by implementors should be created with
+        :func:`Source.create_source_info() <buildstream.source.Source.create_source_info>`.
+
+        Returns: the :class:`.SourceInfo` objects describing this source
+
+        Raises:
+           :class:`.SourceImplError`: if the source class does not implement this method and does not implement
+                                      :func:`SourceFether.get_source_info() <buildstream.source.SourceFetcher.get_source_info>`
+
+        .. note::
+
+           If your plugin uses :class:`.SourceFetcher` objects, you can implement
+           :func:`Source.collect_source_info() <buildstream.source.SourceFetcher.get_source_info>` instead.
+
+        *Since: 2.5*
+        """
+        source_info = []
+        for fetcher in self.get_source_fetchers():
+            source_info.append(fetcher.get_source_info())
+
+        # If there are source fetchers, they can either have returned
+        # SourceInfo objects, OR they may have raised SourceImplError, we need
+        # to raise ImplError here in the case there were no source fetchers.
+        if not source_info:
+            raise SourceImplError(
+                "Source plugin '{}' does not implement collect_source_info()".format(self.get_kind())
+            )
+
+        return source_info
+
     #############################################################
     #                       Public Methods                      #
     #############################################################
@@ -909,6 +1325,41 @@ class Source(Plugin):
         Returns: whether the source is fully resolved or not
         """
         return self.get_ref() is not None
+
+    def create_source_info(
+        self,
+        url: str,
+        medium: Union[SourceInfoMedium, str],
+        version_type: Union[SourceVersionType, str],
+        version: str,
+        *,
+        version_guess: Optional[str] = None,
+        extra_data: Optional[Dict[str, str]] = None,
+    ) -> SourceInfo:
+        """Create a :class:`.SourceInfo` object
+
+        This function should be used to generate SourceInfo objects in
+        :func:`Source.is_resolved() <buildstream.source.Source.collect_source_info>`
+        and :func:`Source.is_resolved() <buildstream.source.SourceFetcher.get_source_info>`
+        implementations.
+
+        Args:
+           url: The translated URL
+           medium: The :class:`.SourceInfoMedium` of the source input, or in the case
+                   that an appropriate medium is not defined, a freeform string of the plugin's
+                   choice describing the medium.
+           version_type: The :class:`.SourceVersionType` of the source input version, or in the case
+                         that an appropriate version type is not defined, a freeform string of the plugin's
+                         choice depicting the type of version.
+           version: A string which represents a unique version of this source input
+           version_guess: An optional string representing the guessed human readable version
+           extra_data: Additional plugin defined key/values
+
+        *Since: 2.5*
+        """
+        return SourceInfo(
+            self.get_kind(), url, medium, version_type, version, version_guess=version_guess, extra_data=extra_data
+        )
 
     #############################################################
     #       Private Abstract Methods used in BuildStream        #
