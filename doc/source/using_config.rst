@@ -145,6 +145,9 @@ toplevel of your configuration file, like so:
      # are used.
      connection-config:
        keepalive-time: 60
+       retry-limit: 4
+       retry-delay: 1000
+       request-timeout: 300
 
      #
      # Support CAS server as remote cache
