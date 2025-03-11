@@ -135,10 +135,9 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
     def Read(self, request, context):
         self.logger.debug("Reading %s", request.resource_name)
         try:
-            ret = self.bytestream.Read(request)
+            yield from self.bytestream.Read(request)
         except grpc.RpcError as err:
             context.abort(err.code(), err.details())
-        return ret
 
     def Write(self, request_iterator, context):
         # Note that we can't easily give more information because the
