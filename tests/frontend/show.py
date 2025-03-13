@@ -438,8 +438,9 @@ def test_exceed_max_recursion_depth(cli, tmpdir, dependency_depth):
         ("%{deps}", "- import-dev.bst\n- import-links.bst\n- import-bin.bst"),
         ("%{build-deps}", "- import-dev.bst\n- import-links.bst"),
         ("%{runtime-deps}", "- import-links.bst\n- import-bin.bst"),
+        ("%{artifact-cas-digest}", "(no artifact CAS digest)"),
     ],
-    ids=["deps", "build-deps", "runtime-deps"],
+    ids=["deps", "build-deps", "runtime-deps", "artifact-cas-digest"],
 )
 def test_format_deps(cli, datafiles, dep_kind, expected_deps):
     project = str(datafiles)
@@ -551,6 +552,64 @@ def test_strict_dependencies(cli, datafiles, target, expected_state):
     states = cli.get_element_states(project, ["base.bst", target])
     assert states["base.bst"] == "buildable"
     assert states[target] == expected_state
+
+
+# This tests that cache keys behave as expected when
+# dependencies have been specified as `strict` and
+# when building in strict mode.
+#
+# This test will:
+#
+#  * Build the target once (and assert that it is cached)
+#  * Modify some local files which are imported
+#    by an import element which the target depends on
+#  * Assert that the cached state of the target element
+#    is as expected
+#
+# We run the test twice, once with an element which strict
+# depends on the changing import element, and one which
+# depends on it regularly.
+#
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
+@pytest.mark.parametrize(
+    "target, expected_digests",
+    [
+        ("target.bst", {
+            "compose-all.bst": "c742f599e198f348ba7600bf50194ae45af6cba759e0005dcd980ad596c51959/78",
+            "import-bin.bst": "594334e3e9f15c9eac5b8325befc3f53af8ffbaa664424bb308484abb892944f/77",
+            "import-dev.bst": "42203f9284db4817a2fc2d57714c6c92ec318f82a23a25e5325852e5dd6effc3/77",
+            "target.bst": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855/0",
+        }),
+    ],
+)
+def test_format_artifact_cas_digest(cli, datafiles, target, expected_digests):
+    project = str(datafiles)
+    expected_no_digest = "(no artifact CAS digest)"
+
+    result = cli.run(project=project, silent=True, args=["show", "--format", "%{name},%{artifact-cas-digest}", target])
+    result.assert_success()
+
+    digests = dict(line.split(",", 2) for line in result.output.splitlines())
+
+    assert len(digests) == len(expected_digests)
+    for component, received in sorted(digests.items()):
+        expected = expected_no_digest
+        if received != expected:
+            raise AssertionError("Expected output:\n{}\nInstead received output:\n{}".format(expected, received))
+
+    result = cli.run(project=project, silent=True, args=["build", target])
+    result.assert_success()
+
+    result = cli.run(project=project, silent=True, args=["show", "--format", "%{name},%{artifact-cas-digest}", target])
+    result.assert_success()
+
+    digests = dict(line.split(",", 2) for line in result.output.splitlines())
+
+    assert len(digests) == len(expected_digests)
+    for component, received in sorted(digests.items()):
+        expected = expected_digests[component]
+        if received != expected:
+            raise AssertionError("Expected output:\n{}\nInstead received output:\n{}".format(expected, received))
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))

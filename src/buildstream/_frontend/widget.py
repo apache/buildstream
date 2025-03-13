@@ -437,6 +437,21 @@ class LogLine(Widget):
                 runtime_deps = [e._get_full_name() for e in element._dependencies(_Scope.RUN, recurse=False)]
                 line = p.fmt_subst(line, "runtime-deps", _yaml.roundtrip_dump_string(runtime_deps).rstrip("\n"))
 
+            # Artifact CAS Digest
+            if "%{artifact-cas-digest" in format_:
+                artifact = element._get_artifact()
+                if not artifact.query_cache():
+                    artifact = None
+                if artifact is not None:
+                    artifact_files = artifact.get_files()
+                    # We call the private CasBasedDirectory._get_digest() for
+                    # the moment, we should make it public on Directory.
+                    artifact_digest = artifact_files._get_digest()
+                    formated_artifact_digest = "{}/{}".format(artifact_digest.hash, artifact_digest.size_bytes)
+                    line = p.fmt_subst(line, "artifact-cas-digest", formated_artifact_digest)
+                else:
+                    line = p.fmt_subst(line, "artifact-cas-digest", "(no artifact CAS digest)", fg="yellow")
+
             report += line + "\n"
 
         return report.rstrip("\n")
