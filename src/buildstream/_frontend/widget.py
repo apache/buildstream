@@ -437,6 +437,23 @@ class LogLine(Widget):
                 runtime_deps = [e._get_full_name() for e in element._dependencies(_Scope.RUN, recurse=False)]
                 line = p.fmt_subst(line, "runtime-deps", _yaml.roundtrip_dump_string(runtime_deps).rstrip("\n"))
 
+            # Source Information
+            if "%{source-info" in format_:
+
+                # Get all the SourceInfo objects
+                #
+                all_source_infos = []
+                for source in element.sources():
+                    try:
+                        source_infos = source.collect_source_info()
+                    except ImplError as e:
+                        source.warn(str(e))
+                        continue
+                    all_source_infos += [s._serialize() for s in source_infos]
+
+                # Dump the SourceInfo provenance objects in yaml format
+                line = p.fmt_subst(line, "source-info", _yaml.roundtrip_dump_string(all_source_infos))
+
             report += line + "\n"
 
         return report.rstrip("\n")
