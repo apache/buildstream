@@ -226,6 +226,11 @@ class CASCache:
             fullpath = os.path.join(dest, symlinknode.name)
             os.symlink(symlinknode.target, fullpath)
 
+        node_properties = directory.node_properties
+        if node_properties.HasField("mtime"):
+            mtime = utils._parse_protobuf_timestamp(node_properties.mtime)
+            utils._set_file_mtime(dest, mtime)
+
     # ensure_tree():
     #
     # Make sure all blobs referenced by the given directory tree are available
