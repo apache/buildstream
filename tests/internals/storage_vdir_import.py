@@ -76,6 +76,9 @@ def generate_import_root(rootdir, filelist):
             (dirnames, filename) = os.path.split(path)
             os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
             os.symlink(content, os.path.join(rootdir, path))
+    # Set deterministic mtime for all directories
+    for (dirpath, _, _) in os.walk(rootdir):
+        _set_file_mtime(dirpath, MTIME)
 
 
 def generate_random_root(rootno, directory):
@@ -116,6 +119,9 @@ def generate_random_root(rootno, directory):
                 relative_link = os.path.relpath(symlink_destination, start=location)
                 os.symlink(relative_link, target)
         things.append(os.path.join(location, thingname))
+    # Set deterministic mtime for all directories
+    for (dirpath, _, _) in os.walk(rootdir):
+        _set_file_mtime(dirpath, MTIME)
 
 
 def file_contents(path):
