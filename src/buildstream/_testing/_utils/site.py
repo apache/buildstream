@@ -88,6 +88,12 @@ try:
 except (ProgramNotFoundError, OSError, subprocess.CalledProcessError):
     pass
 
+try:
+    utils.get_host_tool("buildbox-fuse")
+    HAVE_BUILDBOX_FUSE = True
+except ProgramNotFoundError:
+    HAVE_BUILDBOX_FUSE = False
+
 
 # Check if we have subsecond mtime support on the
 # filesystem where @directory is located.
