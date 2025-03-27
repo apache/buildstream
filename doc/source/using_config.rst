@@ -140,12 +140,6 @@ toplevel of your configuration file, like so:
      # Avoid caching build trees if we don't need them
      cache-buildtrees: auto
 
-     # Connection config is parameters given to grpc. It's completely
-     # optional. By default keepalive time is unset and grpc defaults
-     # are used.
-     connection-config:
-       keepalive-time: 60
-
      #
      # Support CAS server as remote cache
      # Useful to minimize network traffic with remote execution
@@ -158,6 +152,8 @@ toplevel of your configuration file, like so:
          client-key: client.key
          access-token: access.token
          access-token-reload-interval: 60
+       connection-config:
+         keepalive-time: 60
 
 
 Attributes
@@ -778,6 +774,32 @@ or sources without authentication. Authentication can be configured by setting
 ``access-token`` or both ``client-key`` and ``client-cert``.
 
 
+.. _config_connection_config:
+
+Connection configuration
+~~~~~~~~~~~~~~~~~~~~~~~~
+BuildStream uses gRPC to communicate with remote services.
+
+All remote service configuration blocks come with an optional ``connection-config``
+block which allows setting gRPC connection options.
+
+The ``connection-config`` block looks like this:
+
+.. code:: yaml
+
+   connection-config:
+     keepalive-time: 60
+
+
+Attributes
+''''''''''
+
+* ``keepalive-time``
+
+  The interval in seconds between gRPC PING frames. Disabled by default.
+  `gRPC keepalive guide <https://grpc.io/docs/guides/keepalive/>`_
+
+
 .. _config_cache_servers:
 
 Cache servers
@@ -817,6 +839,8 @@ Cache server configuration is declared in the following way:
        server-cert: server.crt
        client-cert: client.crt
        client-key: client.key
+     connection-config:
+       keepalive-time: 60
 
 
 Attributes
@@ -1141,6 +1165,8 @@ which looks like this:
      server-cert: /keys/server.crt
      client-cert: /keys/client.crt
      client-key: /keys/client.key
+   connection-config:
+     keepalive-time: 60
 
 **Attributes:**
 
