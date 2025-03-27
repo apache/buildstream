@@ -140,6 +140,9 @@ class RemoteSpec:
                 self.access_token_file,
                 self.access_token_reload_interval,
                 self.keepalive_time,
+                self.retry_limit,
+                self.retry_delay,
+                self.request_timeout,
             )
         )
 
@@ -195,6 +198,30 @@ class RemoteSpec:
             return self._connection_config.get_int("keepalive-time", None)
         return None
 
+    # grpc retry limit
+    #
+    @property
+    def retry_limit(self) -> Optional[int]:
+        if self._connection_config:
+            return self._connection_config.get_int("retry-limit", None)
+        return None
+
+    # grpc retry delay in milliseconds
+    #
+    @property
+    def retry_delay(self) -> Optional[int]:
+        if self._connection_config:
+            return self._connection_config.get_int("retry-delay", None)
+        return None
+
+    # grpc request timeout in seconds
+    #
+    @property
+    def request_timeout(self) -> Optional[int]:
+        if self._connection_config:
+            return self._connection_config.get_int("request-timeout", None)
+        return None
+
     # open_channel()
     #
     # Opens a gRPC channel based on this spec.
@@ -234,6 +261,12 @@ class RemoteSpec:
                 remote.access_token_reload_interval.FromSeconds(self.access_token_reload_interval * 60)
         if self.keepalive_time is not None:
             remote.keepalive_time.FromSeconds(self.keepalive_time)
+        if self.retry_limit is not None:
+            remote.retry_limit = self.retry_limit
+        if self.retry_delay is not None:
+            remote.retry_delay.FromMilliseconds(self.retry_delay)
+        if self.request_timeout is not None:
+            remote.request_timeout.FromSeconds(self.request_timeout)
 
     # new_from_node():
     #
