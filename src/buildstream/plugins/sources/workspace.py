@@ -21,20 +21,32 @@ workspace - stage an opened workspace directory
 
 The workspace plugin must not be directly used. This plugin is used as the
 kind for a synthetic node representing the sources of an element with an open
-workspace. The node constructed would be specified as follows:
+workspace.
 
-.. code:: yaml
 
-   # Specify the workspace source kind
-   kind: workspace
+Reporting :class:`.SourceInfo`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The workspace source reports the project relative or absolute path to the open
+workspace as the *url*.
 
-   # Specify the absolute path to the directory
-   path: /path/to/workspace
+Further, the workspace source reports the
+:attr:`SourceInfoMedium.WORKSPACE <buildstream.source.SourceInfoMedium.WORKSPACE>` *medium* and the
+:attr:`SourceVersionType.CAS_DIGEST <buildstream.source.SourceVersionType.CAS_DIGEST>` *version_type*,
+for which it reports the CAS digest of the workspace source as the *version*.
+
+The *guess_version* of a workspace source is meaningless and omitted.
+
+.. attention::
+
+   Observing a SourceInfo with the ``SourceInfoMedium.WORKSPACE`` in the output of
+   :ref:`bst show --format %{source-info} <invoking_show>` is most likely undesirable, given
+   that you are likely interested in observing the source provenance information of the
+   project in a clean state rather than in a state with open workspaces.
 """
 
 import os
 
-from buildstream import Source, SourceError, Directory, MappingNode
+from buildstream import Source, SourceError, SourceInfoMedium, SourceVersionType, Directory, MappingNode
 from buildstream.types import SourceRef
 
 
@@ -71,11 +83,7 @@ class WorkspaceSource(Source):
         # * Do the regular staging activity into the Directory
         # * Use the hash of the cached digest as the unique key
         #
-        if not self.__digest:
-            with self._cache_directory() as directory:
-                self.__do_stage(directory)
-                self.__digest = directory._get_digest()
-
+        self.__ensure_digest()
         return self.__digest.hash
 
     def get_ref(self) -> None:
@@ -108,11 +116,24 @@ class WorkspaceSource(Source):
         with self._cache_directory(digest=self.__digest) as cached_directory:
             directory._import_files_internal(cached_directory, collect_result=False)
 
+    def collect_source_info(self):
+        self.__ensure_digest()
+        version = "{}/{}".format(self.__digest.hash, self.__digest.size_bytes)
+        return [self.create_source_info(self.path, SourceInfoMedium.WORKSPACE, SourceVersionType.CAS_DIGEST, version)]
+
     # As a core element, we speed up some scenarios when this is used for
     # a junction, by providing the local path to this content directly.
     #
     def _get_local_path(self) -> str:
         return self.path
+
+    # Ensure that the digest is resolved
+    #
+    def __ensure_digest(self):
+        if not self.__digest:
+            with self._cache_directory() as directory:
+                self.__do_stage(directory)
+                self.__digest = directory._get_digest()
 
     # Staging is implemented internally, we preemptively put it in the CAS
     # as a side effect of resolving the cache key, at stage time we just
