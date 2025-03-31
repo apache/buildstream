@@ -34,7 +34,7 @@ workspace. The node constructed would be specified as follows:
 
 import os
 
-from buildstream import Source, SourceError, Directory, MappingNode
+from buildstream import Source, SourceError, SourceInfo, SourceInfoMedium, SourceVersionType, Directory, MappingNode
 from buildstream.types import SourceRef
 
 
@@ -107,6 +107,9 @@ class WorkspaceSource(Source):
         assert self.__digest is not None
         with self._cache_directory(digest=self.__digest) as cached_directory:
             directory._import_files_internal(cached_directory, collect_result=False)
+
+    def collect_source_info(self):
+        return [SourceInfo(self.path, SourceInfoMedium.WORKSPACE, SourceVersionType.DIGEST, self.get_unique_key())]
 
     # As a core element, we speed up some scenarios when this is used for
     # a junction, by providing the local path to this content directly.
