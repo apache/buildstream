@@ -734,6 +734,7 @@ class Context:
 
             assert self.logdir is not None, "log_directory is required for casd"
             log_dir = os.path.join(self.logdir, "_casd")
+            assert self.sched_builders is not None, "builders configuration is required"
             self._casd = CASDProcessManager(
                 self.cachedir,
                 log_dir,
@@ -744,6 +745,7 @@ class Context:
                 messenger=self.messenger,
                 reserved=self.config_cache_reserved,
                 low_watermark=self.config_cache_low_watermark,
+                local_jobs=self.sched_builders * self.effective_build_max_jobs,
             )
         return self._casd
 
