@@ -112,9 +112,11 @@ into the ``setup.py``, as such, whenever the frontend command line
 interface changes, the static man pages should be regenerated and
 committed with that.
 
-To do this, run the following from the the toplevel directory of BuildStream::
+To do this, make sure you know the version you are generating the docs
+for, which should usually be the *next* ``major.minor`` version of BuildStream,
+and then run the following from the the toplevel directory of BuildStream::
 
-  tox -e man
+  tox -e man -- <version>
 
 And commit the result, ensuring that you have added anything in
 the ``man/`` subdirectory, which will be automatically included
