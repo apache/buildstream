@@ -1,4 +1,4 @@
-.TH "BST BUILD" "1" "2024-08-08" "" "bst build Manual"
+.TH "BST BUILD" "1" "2025-04-24" "2.5" "bst build Manual"
 .SH NAME
 bst\-build \- Build elements in a pipeline
 .SH SYNOPSIS
@@ -7,23 +7,23 @@ bst\-build \- Build elements in a pipeline
 .SH DESCRIPTION
 Build elements in a pipeline
 .PP
-    Specifying no elements will result in building the default targets
-    of the project. If no default targets are configured, all project
-    elements will be built.
+Specifying no elements will result in building the default targets
+of the project. If no default targets are configured, all project
+elements will be built.
 .PP
-    When this command is executed from a workspace directory, the default
-    is to build the workspace element.
+When this command is executed from a workspace directory, the default
+is to build the workspace element.
 .PP
-    Specify `--deps` to control which dependencies must be built:
+Specify `--deps` to control which dependencies must be built:
 .PP
-    
-        none:  No dependencies, just the element itself
-        build: Build time dependencies, excluding the element itself
-        all:   All dependencies
+
+    none:  No dependencies, just the element itself
+    build: Build time dependencies, excluding the element itself
+    all:   All dependencies
 .PP
-    Dependencies that are consequently required to build the requested
-    elements will be built on demand.
-    
+Dependencies that are consequently required to build the requested
+elements will be built on demand.
+.PP
 .SH OPTIONS
 .TP
 \fB\-d,\fP \-\-deps [none|build|all]
