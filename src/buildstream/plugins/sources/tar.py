@@ -48,8 +48,16 @@ tar - stage files from tar archives
    # to an empty string.
    base-dir: '*'
 
-See :ref:`built-in functionality doumentation <core_source_builtins>` for
-details on common configuration options for sources.
+See :ref:`built-in base class functionality doumentation <core_source_builtins>`
+and :ref:`built-in downloadable file source functionality doumentation <core_downloadable_source_builtins>`
+for details on common configuration options applicable to this source.
+
+
+Reporting :class:`.SourceInfo`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The tar source does not override any of the DownloadableFileSource reporting functionality and
+as such, behaves as described in the :ref:`default reporting of SourceInfo <core_downloadable_source_info>`
+documentation.
 """
 
 import functools
