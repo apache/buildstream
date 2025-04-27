@@ -1810,7 +1810,7 @@ class Stream:
             self._session_start_callback()
 
         self._running = True
-        status = self._scheduler.run(self.queues, self._context.get_cascache().get_casd())
+        status = self._scheduler.run(self.queues, self._context.get_casd())
         self._running = False
 
         if status == SchedStatus.ERROR:

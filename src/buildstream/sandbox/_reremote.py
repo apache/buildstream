@@ -22,8 +22,8 @@ from .._exceptions import RemoteError
 
 
 class RERemote(CASRemote):
-    def __init__(self, cas_spec, remote_execution_specs, cascache):
-        super().__init__(cas_spec, cascache)
+    def __init__(self, cas_spec, remote_execution_specs, casd):
+        super().__init__(cas_spec, casd)
 
         self.remote_execution_specs = remote_execution_specs
         self.exec_service = None
@@ -31,7 +31,7 @@ class RERemote(CASRemote):
         self.ac_service = None
 
     def _configure_protocols(self):
-        local_cas = self.cascache.get_local_cas()
+        local_cas = self.casd.get_local_cas()
         request = local_cas_pb2.GetInstanceNameForRemotesRequest()
         if self.remote_execution_specs.storage_spec:
             self.remote_execution_specs.storage_spec.to_localcas_remote(request.content_addressable_storage)
@@ -50,10 +50,9 @@ class RERemote(CASRemote):
         response = local_cas.GetInstanceNameForRemotes(request)
         self.local_cas_instance_name = response.instance_name
 
-        casd = self.cascache.get_casd()
-        self.exec_service = casd.get_exec_service()
-        self.operations_service = casd.get_operations_service()
-        self.ac_service = casd.get_ac_service()
+        self.exec_service = self.casd.get_exec_service()
+        self.operations_service = self.casd.get_operations_service()
+        self.ac_service = self.casd.get_ac_service()
 
     def _check(self):
         super()._check()
