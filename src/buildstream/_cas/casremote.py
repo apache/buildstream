@@ -61,24 +61,6 @@ class CASRemote(BaseRemote):
         response = local_cas.GetInstanceNameForRemotes(request)
         self.local_cas_instance_name = response.instance_name
 
-    # push_message():
-    #
-    # Push the given protobuf message to a remote.
-    #
-    # Args:
-    #     message (Message): A protobuf message to push.
-    #
-    # Raises:
-    #     (CASRemoteError): if there was an error
-    #
-    def push_message(self, message):
-
-        message_buffer = message.SerializeToString()
-
-        self.init()
-
-        return self.cascache.add_object(buffer=message_buffer, instance_name=self.local_cas_instance_name)
-
 
 # Represents a batch of blobs queued for fetching.
 #
