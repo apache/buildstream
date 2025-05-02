@@ -131,6 +131,11 @@ class SandboxREAPI(Sandbox):
         if flags & _SandboxFlags.NETWORK_ENABLED:
             platform_dict["network"] = "on"
 
+        if config.remote_apis_socket_path:
+            platform_dict["remoteApisSocketPath"] = config.remote_apis_socket_path.lstrip(os.path.sep)
+            if config.remote_apis_socket_action_cache_update_enabled:
+                platform_dict["remoteApisSocketFeatures"] = "ActionCacheUpdateEnabled"
+
         # Remove unsupported platform properties from the dict
         supported_properties = self._supported_platform_properties()
         platform_dict = {key: value for (key, value) in platform_dict.items() if key in supported_properties}

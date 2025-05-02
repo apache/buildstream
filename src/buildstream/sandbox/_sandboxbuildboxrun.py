@@ -83,6 +83,9 @@ class SandboxBuildBoxRun(SandboxREAPI):
         if config.build_gid is not None and "platform:unixGID" not in cls._capabilities:
             raise SandboxUnavailableError("Configuring sandbox GID is not supported by buildbox-run.")
 
+        if config.remote_apis_socket_path is not None and "platform:remoteApisSocketPath" not in cls._capabilities:
+            raise SandboxUnavailableError("Configuring Remote APIs socket path is not supported by buildbox-run.")
+
     def _execute_action(self, action, flags):
         stdout, stderr = self._get_output()
 
@@ -240,4 +243,4 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 raise SandboxError("buildbox-run failed with returncode {}".format(returncode))
 
     def _supported_platform_properties(self):
-        return {"OSFamily", "ISA", "unixUID", "unixGID", "network"}
+        return {"OSFamily", "ISA", "unixUID", "unixGID", "network", "remoteApisSocketPath", "remoteApisSocketFeatures"}
