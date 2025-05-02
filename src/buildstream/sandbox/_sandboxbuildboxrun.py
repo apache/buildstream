@@ -83,12 +83,19 @@ class SandboxBuildBoxRun(SandboxREAPI):
         if config.build_gid is not None and "platform:unixGID" not in cls._capabilities:
             raise SandboxUnavailableError("Configuring sandbox GID is not supported by buildbox-run.")
 
+        if config.remote_apis_socket_path is not None and "platform:remoteApisSocketPath" not in cls._capabilities:
+            raise SandboxUnavailableError("Configuring Remote APIs socket path is not supported by buildbox-run.")
+
     def _execute_action(self, action, flags):
         stdout, stderr = self._get_output()
 
         context = self._get_context()
         cascache = context.get_cascache()
         casd = cascache.get_casd()
+        config = self._get_config()
+
+        if config.remote_apis_socket_path and context.remote_cache_spec:
+            raise SandboxError("'remote-apis-socket' is not currently supported with 'storage-service'.")
 
         with utils._tempnamedfile() as action_file, utils._tempnamedfile() as result_file:
             action_file.write(action.SerializeToString())
