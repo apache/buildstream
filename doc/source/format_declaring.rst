@@ -389,6 +389,24 @@ field in the ``Command`` uploaded. Whether this actually results in a building
 the element for the desired OS and architecture is dependent on the server
 having implemented these options the same as buildstream.
 
+.. code:: yaml
+
+   # Specify UNIX socket path for access to REAPI for (nested) remote execution
+   sandbox:
+     remote-apis-socket:
+       path: /run/reapi.sock
+
+Setting a path will add a UNIX socket to the sandbox that allows the use of
+`REAPI <https://github.com/bazelbuild/remote-apis>`_ clients such as
+`recc <https://buildgrid.gitlab.io/recc>`_.
+
+This enables more fine-grained caching of, e.g., individual compile commands
+to speed up rebuilds of elements with only small changes.
+
+This is supported with and without :ref:`remote execution <user_config_remote_execution>`.
+With remote execution configured, this additionally enables scaling out of,
+e.g., compile commands across a cluster of build machines.
+
 
 .. _format_dependencies:
 
