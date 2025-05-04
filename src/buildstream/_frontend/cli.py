@@ -613,6 +613,7 @@ def show(app, elements, deps, except_, order, format_):
         %{deps}           A list of all dependencies
         %{build-deps}     A list of build dependencies
         %{runtime-deps}   A list of runtime dependencies
+        %{cas-digest}     The CAS digest
 
     The value of the %{symbol} without the leading '%' character is understood
     as a pythonic formatting string, so python formatting features apply,
@@ -638,7 +639,8 @@ def show(app, elements, deps, except_, order, format_):
         state_match = re.search(r"%(\{(state)[^%]*?\})", format_)
         key_match = re.search(r"%(\{(key)[^%]*?\})", format_)
         full_key_match = re.search(r"%(\{(full-key)[^%]*?\})", format_)
-        need_state = bool(state_match or key_match or full_key_match)
+        cas_digest_match = re.search(r"%(\{(cas-digest)[^%]*?\})", format_)
+        need_state = bool(state_match or key_match or full_key_match or cas_digest_match)
 
         if not elements:
             elements = app.project.get_default_targets()
