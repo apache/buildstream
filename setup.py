@@ -52,7 +52,6 @@ if sys.version_info[0] != REQUIRED_PYTHON_MAJOR or sys.version_info[1] < REQUIRE
 
 try:
     from setuptools import setup, find_packages, Command, Extension
-    from setuptools.command.easy_install import ScriptWriter
 except ImportError:
     print(
         "BuildStream requires setuptools in order to build. Install it using"
@@ -154,50 +153,6 @@ def list_testing_datafiles():
     bst_dir = Path(os.path.dirname(os.path.abspath(__file__)))
     data_dir = bst_dir.joinpath("src", "buildstream", "_testing", "_sourcetests", "project")
     return [str(f) for f in data_dir.rglob("*")]
-
-
-#####################################################
-#    Monkey-patching setuptools for performance     #
-#####################################################
-#
-# The template of easy_install.ScriptWriter is inefficient in our case as it
-# imports pkg_resources. Patching the template only doesn't work because of the
-# old string formatting used (%). This forces us to overwrite the class function
-# as well.
-#
-# The patch was inspired from https://github.com/ninjaaron/fast-entry_points
-# which we believe was also inspired from the code from `setuptools` project.
-#
-# This also sets an environment variable to disable gRPC fork support as it
-# can cause problems in certain environments and BuildStream doesn't need it.
-TEMPLATE = """\
-# -*- coding: utf-8 -*-
-import os
-import sys
-
-from {0} import {1}
-
-if __name__ == '__main__':
-    os.environ['GRPC_ENABLE_FORK_SUPPORT'] = '0'
-    sys.exit({2}())"""
-
-
-# Modify the get_args() function of the ScriptWriter class
-# Note: the pylint no-member warning has been disabled as the functions: get_header(),
-# ensure_safe_name() and _get_script_args() are all members of this class.
-# pylint: disable=no-member
-@classmethod
-def get_args(cls, dist, header=None):
-    if header is None:
-        header = cls.get_header()
-    for name, ep in dist.get_entry_map("console_scripts").items():
-        cls._ensure_safe_name(name)
-        script_text = TEMPLATE.format(ep.module_name, ep.attrs[0], ".".join(ep.attrs))
-        args = cls._get_script_args("console", name, header, script_text)
-        yield from args
-
-
-ScriptWriter.get_args = get_args
 
 
 #####################################################
