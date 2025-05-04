@@ -13,8 +13,8 @@
 #
 [build-system]
 requires = [
-    # We need at least version 36.6.0 that introduced "build_meta"
-    "setuptools>=36.6.0",
+    # We need at least version 41.2.0 to support python 3.9
+    "setuptools>=41.2.0",
     # In order to build wheels, and as required by PEP 517
     "wheel",
     # Require a new enough cython for the python versions we support
