@@ -1,4 +1,4 @@
-.TH "BST SOURCE TRACK" "1" "2024-08-08" "" "bst source track Manual"
+.TH "BST SOURCE TRACK" "1" "2025-04-24" "2.5" "bst source track Manual"
 .SH NAME
 bst\-source\-track \- Track new source references
 .SH SYNOPSIS
@@ -6,26 +6,26 @@ bst\-source\-track \- Track new source references
 [OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
 Consults the specified tracking branches for new versions available
-    to build and updates the project with any newly available references.
+to build and updates the project with any newly available references.
 .PP
-    Specifying no elements will result in tracking the default targets
-    of the project. If no default targets are configured, all project
-    elements will be tracked.
+Specifying no elements will result in tracking the default targets
+of the project. If no default targets are configured, all project
+elements will be tracked.
 .PP
-    When this command is executed from a workspace directory, the default
-    is to track the workspace element.
+When this command is executed from a workspace directory, the default
+is to track the workspace element.
 .PP
-    If no default is declared, all elements in the project will be tracked
+If no default is declared, all elements in the project will be tracked
 .PP
-    By default this will track just the specified element, but you can also
-    update a whole tree of dependencies in one go.
+By default this will track just the specified element, but you can also
+update a whole tree of dependencies in one go.
 .PP
-    Specify `--deps` to control which sources to track:
+Specify `--deps` to control which sources to track:
 .PP
-    
-        none:  No dependencies, just the specified elements
-        all:   All dependencies of all specified elements
-    
+
+    none:  No dependencies, just the specified elements
+    all:   All dependencies of all specified elements
+.PP
 .SH OPTIONS
 .TP
 \fB\-\-except\fP PATH

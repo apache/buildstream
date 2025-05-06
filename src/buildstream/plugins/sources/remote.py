@@ -41,8 +41,16 @@ remote - stage files from remote urls
    # Specify the ref. It's a sha256sum of the file you download.
    ref: 6c9f6f68a131ec6381da82f2bff978083ed7f4f7991d931bfa767b7965ebc94b
 
-See :ref:`built-in functionality doumentation <core_source_builtins>` for
-details on common configuration options for sources.
+See :ref:`built-in base class functionality doumentation <core_source_builtins>`
+and :ref:`built-in downloadable file source functionality doumentation <core_downloadable_source_builtins>`
+for details on common configuration options applicable to this source.
+
+
+Reporting :class:`.SourceInfo`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The remote source does not override any of the DownloadableFileSource reporting functionality and
+as such, behaves as described in the :ref:`default reporting of SourceInfo <core_downloadable_source_info>`
+documentation.
 """
 import os
 from buildstream import DownloadableFileSource, SourceError, utils

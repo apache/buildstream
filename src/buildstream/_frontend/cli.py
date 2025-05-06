@@ -613,6 +613,7 @@ def show(app, elements, deps, except_, order, format_):
         %{deps}           A list of all dependencies
         %{build-deps}     A list of build dependencies
         %{runtime-deps}   A list of runtime dependencies
+        %{source-info}    Source provenance information
 
     The value of the %{symbol} without the leading '%' character is understood
     as a pythonic formatting string, so python formatting features apply,

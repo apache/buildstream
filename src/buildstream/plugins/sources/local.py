@@ -31,10 +31,23 @@ local - stage local files and directories
 
 See :ref:`built-in functionality doumentation <core_source_builtins>` for
 details on common configuration options for sources.
+
+
+Reporting :class:`.SourceInfo`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The local source reports the project relative path of the file or directory as the *url*.
+
+Further, the local source reports the
+:attr:`SourceInfoMedium.LOCAL <buildstream.source.SourceInfoMedium.LOCAL>` *medium* and the
+:attr:`SourceVersionType.CAS_DIGEST <buildstream.source.SourceVersionType.CAS_DIGEST>` *version_type*,
+for which it reports the CAS digest of the local source as the *version*.
+
+The *guess_version* of a local source is meaningless, as it is tied instead to
+the BuildStream project in which it is contained.
 """
 
 import os
-from buildstream import Source, SourceError, Directory
+from buildstream import Source, SourceError, SourceInfoMedium, SourceVersionType, Directory
 
 
 class LocalSource(Source):
@@ -67,11 +80,7 @@ class LocalSource(Source):
         # * Do the regular staging activity into the Directory
         # * Use the hash of the cached digest as the unique key
         #
-        if not self.__digest:
-            with self._cache_directory() as directory:
-                self.__do_stage(directory)
-                self.__digest = directory._get_digest()
-
+        self.__ensure_digest()
         return self.__digest.hash
 
     # We dont have a ref, we're a local file...
@@ -110,11 +119,24 @@ class LocalSource(Source):
         #
         self.__do_stage(directory)
 
+    def collect_source_info(self):
+        self.__ensure_digest()
+        version = "{}/{}".format(self.__digest.hash, self.__digest.size_bytes)
+        return [self.create_source_info(self.path, SourceInfoMedium.LOCAL, SourceVersionType.CAS_DIGEST, version)]
+
     # As a core element, we speed up some scenarios when this is used for
     # a junction, by providing the local path to this content directly.
     #
     def _get_local_path(self):
         return self.fullpath
+
+    # Ensure that the digest is resolved
+    #
+    def __ensure_digest(self):
+        if not self.__digest:
+            with self._cache_directory() as directory:
+                self.__do_stage(directory)
+                self.__digest = directory._get_digest()
 
     # Staging is implemented internally, we preemptively put it in the CAS
     # as a side effect of resolving the cache key, at stage time we just

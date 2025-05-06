@@ -20,6 +20,7 @@ import sys
 import shutil
 import pytest
 from buildstream._testing import cli  # pylint: disable=unused-import
+from buildstream._testing import create_repo
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream.types import CoreWarnings
@@ -575,3 +576,194 @@ def test_invalid_alias(cli, tmpdir, datafiles):
     configure_project(project, {"aliases": {"pony": "https://pony.org/tarballs", "horsy": "http://horsy.tv/shows"}})
     result = cli.run(project=project, silent=True, args=["show", "invalid-alias.bst"])
     result.assert_main_error(ErrorDomain.SOURCE, "invalid-source-alias")
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "source-info"))
+@pytest.mark.parametrize(
+    "target, expected_kind, expected_url, expected_medium, expected_version_type, expected_version, expected_guess_version",
+    [
+        (
+            "local.bst",
+            "local",
+            "files/testfile",
+            "local",
+            "cas-digest",
+            "9391a5943daf287b46520c4289d41cab5f6b33e643f7661bcf620de7f02c1c9b/82",
+            None,
+        ),
+        (
+            "tar.bst",
+            "tar",
+            "https://flying-ponies.com/releases/pony-flight-1.2.3.tgz",
+            "remote-file",
+            "sha256",
+            "9d0c936c78d0dfe3a67cae372c9a2330476ea87a2eec16b2daada64a664ca501",
+            "1.2.3",
+        ),
+        (
+            "tar-no-micro.bst",
+            "tar",
+            "https://flying-ponies.com/releases/pony-flight-1.2.tgz",
+            "remote-file",
+            "sha256",
+            "9d0c936c78d0dfe3a67cae372c9a2330476ea87a2eec16b2daada64a664ca501",
+            "1.2",
+        ),
+        (
+            "tar-custom-version.bst",
+            "tar",
+            "https://flying-ponies.com/releases/pony_v2_4_93.tgz",
+            "remote-file",
+            "sha256",
+            "9d0c936c78d0dfe3a67cae372c9a2330476ea87a2eec16b2daada64a664ca501",
+            "2.4.93",
+        ),
+        (
+            "tar-explicit.bst",
+            "tar",
+            "https://flying-ponies.com/releases/9d0c936c78/pony-flight-release.tgz",
+            "remote-file",
+            "sha256",
+            "9d0c936c78d0dfe3a67cae372c9a2330476ea87a2eec16b2daada64a664ca501",
+            "3.2.1",
+        ),
+        (
+            "testsource.bst",
+            "testsource",
+            "http://ponyfarm.com/ponies",
+            "pony-ride",
+            "pony-age",
+            "1234567",
+            "12",
+        ),
+    ],
+    ids=["local", "tar-full-version", "tar-no-micro", "tar-custom-version", "tar-explicit", "testsource"],
+)
+def test_source_info(
+    cli,
+    datafiles,
+    target,
+    expected_url,
+    expected_kind,
+    expected_medium,
+    expected_version_type,
+    expected_version,
+    expected_guess_version,
+):
+    project = str(datafiles)
+    result = cli.run(project=project, silent=True, args=["show", "--format", "%{name}:\n%{source-info}", target])
+    result.assert_success()
+
+    loaded = _yaml.load_data(result.output)
+    sources = loaded.get_sequence(target)
+    source_info = sources.mapping_at(0)
+
+    assert source_info.get_str("kind") == expected_kind
+    assert source_info.get_str("url") == expected_url
+    assert source_info.get_str("medium") == expected_medium
+    assert source_info.get_str("version-type") == expected_version_type
+    assert source_info.get_str("version") == expected_version
+
+    guess_version = source_info.get_str("version-guess", None)
+    if guess_version or expected_guess_version:
+        assert guess_version == expected_guess_version
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "source-info"))
+def test_source_info_extra_data(cli, datafiles):
+    project = str(datafiles)
+    result = cli.run(
+        project=project, silent=True, args=["show", "--format", "%{name}:\n%{source-info}", "extradata.bst"]
+    )
+    result.assert_success()
+
+    loaded = _yaml.load_data(result.output)
+    sources = loaded.get_sequence("extradata.bst")
+    source_info = sources.mapping_at(0)
+
+    assert source_info.get_str("kind") == "extradata"
+    assert source_info.get_str("url") == "http://ponyfarm.com/ponies"
+    assert source_info.get_str("medium") == "pony-ride"
+    assert source_info.get_str("version-type") == "pony-age"
+    assert source_info.get_str("version") == "1234567"
+    assert source_info.get_str("version-guess", None) == "12"
+
+    extra_data = source_info.get_mapping("extra-data", None)
+    assert extra_data is not None
+    assert extra_data.get_str("pony", "green")
+
+
+# Test what happens when encountering a source that doesn't implement collect_source_info()
+#
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "source-info"))
+def test_source_info_unimplemented(cli, datafiles):
+    project = str(datafiles)
+    result = cli.run(project=project, silent=True, args=["show", "--format", "%{source-info}", "unimplemented.bst"])
+    result.assert_success()
+
+    # Assert empty list but no errors for a source not implementing collect_source_info()
+    #
+    # Note that buildstream internal _yaml doesn't support loading a list as a toplevel element
+    # in the stream, so we just assert the string instead.
+    assert result.output == "[]\n\n"
+
+
+# This checks how Source.collect_source_info() works on a workspace,
+# in order to do this we use a workspace *on a tarball* which we generate,
+# so that we avoid the weird case of opening a workspace on a local source.
+#
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "source-info"))
+def test_source_info_workspace(cli, datafiles, tmpdir):
+    project = str(datafiles)
+    element_dir = os.path.join(project, "elements")
+    workspace_path = os.path.join(project, "workspace")
+
+    # Create a tar repo
+    repo = create_repo("tar", str(tmpdir))
+    repo.create(os.path.join(str(datafiles), "files"))
+
+    # Generate an import element for this tarball
+    input_config = {
+        "kind": "import",
+        "sources": [repo.source_config()],
+    }
+    input_file = os.path.join(element_dir, "test-workspace.bst")
+    _yaml.roundtrip_dump(input_config, input_file)
+
+    # Track the element so that there is a ref (required for workspace checkout)
+    result = cli.run(
+        project=project,
+        silent=True,
+        args=["source", "track", "test-workspace.bst"],
+    )
+    result.assert_success()
+
+    # Open a workspace on the tarball
+    result = cli.run(
+        project=project,
+        silent=True,
+        args=["workspace", "open", "--directory", workspace_path, "test-workspace.bst"],
+    )
+    result.assert_success()
+
+    # Lets see what happens
+    result = cli.run(
+        project=project, silent=True, args=["show", "--format", "%{name}:\n%{source-info}", "test-workspace.bst"]
+    )
+    result.assert_success()
+
+    # Lets check the results
+    loaded = _yaml.load_data(result.output)
+    sources = loaded.get_sequence("test-workspace.bst")
+    source_info = sources.mapping_at(0)
+
+    # The URL is a local path for a workspace, so we just check it exists
+    assert source_info.get_str("url") is not None
+    assert source_info.get_str("medium") == "workspace"
+    assert source_info.get_str("version-type") == "cas-digest"
+
+    # Tarball repo generation is not deterministic, so we just assert that there is a digest
+    assert source_info.get_str("version", None) is not None
+
+    # There is no version guessing for a workspace
+    assert source_info.get_str("version-guess", None) is None
