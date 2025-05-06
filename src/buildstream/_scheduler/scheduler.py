@@ -361,7 +361,7 @@ class Scheduler:
                     # Here the `queues` list will consists of the imperative queue along with
                     # any subsequent queues, this means elements will be carried only from the
                     # imerative queue onwards, and only post-imperative jobs will be processed.
-                    queues = self.queues[self.queues.index(queue) :]
+                    queues = self.queues[self.queues.index(queue) + 1 :]
                     break
             else:
                 # No imperative queue was marked, stop queueing any jobs
@@ -371,7 +371,7 @@ class Scheduler:
 
             # Pull elements forward through queues
             elements = []
-            for queue in queues:
+            for queue in self.queues:
                 queue.enqueue(elements)
                 elements = list(queue.dequeue())
 
