@@ -43,12 +43,9 @@ intantiating any Source which derives from DownloadableFileSource
   version string from the specified URI, in order to fill out the reported
   :attr:`~buildstream.source.SourceInfo.version_guess`.
 
-  The URI will be *searched* using this regular expression, and is allowed to
-  yield a number of *groups*. For example the value ``(\\d+)_(\\d+)_(\\d+)`` would
-  report 3 *groups* if 3 numerical values separated by underscores were found in
-  the URI.
-
-  The default value for ``version-guess-pattern`` is ``\\d+\\.\\d+(?:\\.\\d+)?``.
+  This is done using the :func:`utils.guess_version() <buildstream.utils.guess_version>`
+  utility function, please refer to that function documentation to understand how
+  the guessing mechanics works, and what kind of string you should provide here.
 
   .. note:
 
@@ -140,7 +137,7 @@ Further, the DownloadableFileSourcebzr source reports the
 for which it reports the sha256 checksum of the remote file content as the *version*.
 
 An attempt to guess the version based on the remote filename will be made
-for the reporting of the *guess_version*. Control over how the guess is made
+for the reporting of the *version_guess*. Control over how the guess is made
 or overridden is explained above in the
 :ref:`built-in functionality documentation <core_downloadable_source_builtins>`.
 """
@@ -268,7 +265,6 @@ class DownloadableFileSource(Source):
     COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ["url", "ref", "version-guess-pattern", "version"]
 
     __default_mirror_file = None
-    __default_guess_pattern = re.compile(r"\d+\.\d+(?:\.\d+)?")
 
     def configure(self, node):
         self.original_url = node.get_str("url")
@@ -281,9 +277,8 @@ class DownloadableFileSource(Source):
         self._mirror_dir = os.path.join(self.get_mirror_directory(), utils.url_directory_name(self.original_url))
 
         self._guess_pattern_string = node.get_str("version-guess-pattern", None)
-        if self._guess_pattern_string is None:
-            self._guess_pattern = self.__default_guess_pattern
-        else:
+        self._guess_pattern = None
+        if self._guess_pattern_string is not None:
             self._guess_pattern = re.compile(self._guess_pattern_string)
 
         self._version = node.get_str("version", None)
@@ -298,7 +293,7 @@ class DownloadableFileSource(Source):
         # attributes which affect SourceInfo generation.
         if self._version is not None:
             unique_key.append(self._version)
-        elif self._guess_pattern is not self.__default_guess_pattern:
+        elif self._guess_pattern_string is not None:
             unique_key.append(self._guess_pattern_string)
 
         return unique_key
@@ -352,16 +347,9 @@ class DownloadableFileSource(Source):
             )
 
     def collect_source_info(self):
-        if self._version is None:
-            version_match = self._guess_pattern.search(self.original_url)
-            if not version_match:
-                version_guess = None
-            elif self._guess_pattern.groups == 0:
-                version_guess = version_match.group(0)
-            else:
-                version_guess = ".".join(version_match.groups())
-        else:
-            version_guess = self._version
+        version_guess = self._version
+        if version_guess is None:
+            version_guess = utils.guess_version(self.original_url, pattern=self._guess_pattern)
 
         return [
             self.create_source_info(
