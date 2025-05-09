@@ -461,6 +461,25 @@ class LogLine(Widget):
                 # Dump the SourceInfo provenance objects in yaml format
                 line = p.fmt_subst(line, "source-info", _yaml.roundtrip_dump_string(all_source_infos))
 
+            # Artifact CAS Digest
+            if "%{artifact-cas-digest" in format_:
+                artifact = element._get_artifact()
+                if not artifact.query_cache():
+                    artifact = None
+                if artifact is not None:
+                    artifact_files = artifact.get_files()
+                    # We call the private CasBasedDirectory._get_digest() for
+                    # the moment, we should make it public on Directory.
+                    artifact_digest = artifact_files._get_digest()
+                    formated_artifact_digest = "{}/{}".format(artifact_digest.hash, artifact_digest.size_bytes)
+                    line = p.fmt_subst(line, "artifact-cas-digest", formated_artifact_digest)
+                else:
+                    # FIXME
+                    # We could instead collect all of the elements that are not
+                    # cached and issue a single warning message.
+                    line = p.fmt_subst(line, "artifact-cas-digest", "")
+                    element.warn("Cannot obtain CAS digest because artifact is not cached")
+
             report += line + "\n"
 
         return report.rstrip("\n")

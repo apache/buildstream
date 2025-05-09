@@ -1,4 +1,4 @@
-.TH "BST SHOW" "1" "2025-04-24" "2.5" "bst show Manual"
+.TH "BST SHOW" "1" "2025-05-09" "2.5" "bst show Manual"
 .SH NAME
 bst\-show \- Show elements in the pipeline
 .SH SYNOPSIS
@@ -7,60 +7,61 @@ bst\-show \- Show elements in the pipeline
 .SH DESCRIPTION
 Show elements in the pipeline
 .PP
-Specifying no elements will result in showing the default targets
-of the project. If no default targets are configured, all project
-elements will be shown.
+    Specifying no elements will result in showing the default targets
+    of the project. If no default targets are configured, all project
+    elements will be shown.
 .PP
-When this command is executed from a workspace directory, the default
-is to show the workspace element.
+    When this command is executed from a workspace directory, the default
+    is to show the workspace element.
 .PP
-By default this will show all of the dependencies of the
-specified target element.
+    By default this will show all of the dependencies of the
+    specified target element.
 .PP
-Specify ``--deps`` to control which elements to show:
+    Specify ``--deps`` to control which elements to show:
 .PP
-
-    none:  No dependencies, just the element itself
-    run:   Runtime dependencies, including the element itself
-    build: Build time dependencies, excluding the element itself
-    all:   All dependencies
+    
+        none:  No dependencies, just the element itself
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
+        all:   All dependencies
 .PP
-**FORMAT**
+    **FORMAT**
 .PP
-The ``--format`` option controls what should be printed for each element,
-the following symbols can be used in the format string:
+    The ``--format`` option controls what should be printed for each element,
+    the following symbols can be used in the format string:
 .PP
-
-    %{name}           The element name
-    %{description}    The element description, on a single line (Since: 2.3)
-    %{key}            The abbreviated cache key (if all sources are consistent)
-    %{full-key}       The full cache key (if all sources are consistent)
-    %{state}          cached, buildable, waiting, inconsistent or junction
-    %{config}         The element configuration
-    %{vars}           Variable configuration
-    %{env}            Environment settings
-    %{public}         Public domain data
-    %{workspaced}     If the element is workspaced
-    %{workspace-dirs} A list of workspace directories
-    %{deps}           A list of all dependencies
-    %{build-deps}     A list of build dependencies
-    %{runtime-deps}   A list of runtime dependencies
-    %{source-info}    Source provenance information
+    
+        %{name}           The element name
+        %{description}    The element description, on a single line (Since: 2.3)
+        %{key}            The abbreviated cache key (if all sources are consistent)
+        %{full-key}       The full cache key (if all sources are consistent)
+        %{state}          cached, buildable, waiting, inconsistent or junction
+        %{config}         The element configuration
+        %{vars}           Variable configuration
+        %{env}            Environment settings
+        %{public}         Public domain data
+        %{workspaced}     If the element is workspaced
+        %{workspace-dirs} A list of workspace directories
+        %{deps}           A list of all dependencies
+        %{build-deps}     A list of build dependencies
+        %{runtime-deps}   A list of runtime dependencies
+        %{source-info}    Source provenance information
+        %{artifact-cas-digest} The CAS digest of the built artifact
 .PP
-The value of the %{symbol} without the leading '%' character is understood
-as a pythonic formatting string, so python formatting features apply,
-example:
+    The value of the %{symbol} without the leading '%' character is understood
+    as a pythonic formatting string, so python formatting features apply,
+    example:
 .PP
-
-    bst show target.bst --format \
-        'Name: %{name: ^20} Key: %{key: ^8} State: %{state}'
+    
+        bst show target.bst --format \
+            'Name: %{name: ^20} Key: %{key: ^8} State: %{state}'
 .PP
-If you want to use a newline in a format string in bash, use the '$' modifier:
+    If you want to use a newline in a format string in bash, use the '$' modifier:
 .PP
-
-    bst show target.bst --format \
-        $'---------- %{name} ----------\n%{vars}'
-.PP
+    
+        bst show target.bst --format \
+            $'---------- %{name} ----------\n%{vars}'
+    
 .SH OPTIONS
 .TP
 \fB\-\-except\fP PATH
