@@ -697,12 +697,17 @@ def save_file_atomic(
 
 # get_umask():
 #
-# Get the process's file mode creation mask without changing it.
+# 
 #
 # Returns:
-#     (int) The process's file mode creation mask.
+#     (int) 
 #
-def get_umask():
+def get_umask() -> int:
+    """
+    Get the process's file mode creation mask without changing it.
+
+    Returns: The process's file mode creation mask.
+    """
     return _UMASK
 
 
