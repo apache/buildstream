@@ -35,7 +35,7 @@ import threading
 import itertools
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Callable, IO, Iterable, Iterator, Optional, Tuple, Union
+from typing import Callable, IO, Iterable, Iterator, Optional, Tuple, Union, Pattern
 from google.protobuf import timestamp_pb2
 
 import psutil
@@ -65,6 +65,10 @@ os.umask(_UMASK)
 # Only some operating systems have os.copy_file_range and even when present
 # it might not work
 _USE_CP_FILE_RANGE = hasattr(os, "copy_file_range")
+
+# The default version guessing pattern for utils.guess_version()
+#
+_DEFAULT_GUESS_PATTERN = re.compile(r"(\d+)\.(\d+)(?:\.(\d+))?")
 
 
 class UtilError(BstError):
@@ -697,10 +701,10 @@ def save_file_atomic(
 
 # get_umask():
 #
-# 
+#
 #
 # Returns:
-#     (int) 
+#     (int)
 #
 def get_umask() -> int:
     """
@@ -709,6 +713,73 @@ def get_umask() -> int:
     Returns: The process's file mode creation mask.
     """
     return _UMASK
+
+
+def guess_version(string: str, *, pattern: Optional[Pattern[str]] = None) -> Optional[str]:
+    """
+    Attempt to extract a version from an arbitrary string.
+
+    This function is used by sources who implement
+    :func:`Source.get_source_info() <buildstream.source.SourceFetcher.get_source_info>`
+    in order to provide a guess at what the version is, given some domain specific
+    knowledge such as a git tag or a tarball URL.
+
+    This function will be traverse the provided string for non-overlapping matches, and
+    in the case of *optional groups* being specified in the pattern; the match with the
+    greatest amount of matched groups will be preferred, allowing for correct handling
+    of cases like: ``https://example.com/releases/1.2/release-1.2.3.tgz`` which may
+    match the *pattern* multiple times.
+
+    The resulting version will be the captured groups, separated by ``.`` characters.
+
+    Args:
+       string: The domain specific string to scan for a version
+       pattern: A compiled regex pattern to scan *string*, or None for the default ``(\\d+)\\.(\\d+)(?:\\.(\\d+))?``.
+
+    Returns:
+       The guessed version, or None if no match was found.
+
+    .. note::
+
+       **Specifying a pattern**
+
+       When specifying the pattern, any number of capture groups may be specified, and
+       the match containing the most matching groups will be selected.
+
+       The capture groups must contain only the intended result and not any separating
+       characters.
+
+       For example, you may parse a string such as ``release-1_2_3-r2`` with the pattern:
+       ``(\\d+)_(\\d+)(?:_(\\d+))?(?:\\-(r\\d+))?``, and this would produce the parsed
+       version ``1.2.3.r2``.
+
+    **Since: 2.5**.
+    """
+    version_guess: Optional[str] = None
+    version_guess_groups = 0
+
+    if pattern is None:
+        pattern = _DEFAULT_GUESS_PATTERN
+
+    # Iterate over non-overlapping matches, and prefer a match which is more qualified (i.e. 1.2.3 is better than 1.2)
+    for version_match in pattern.finditer(string):
+
+        if not version_match:
+            iter_guess = None
+            iter_n_groups = 0
+        elif pattern.groups == 0:
+            iter_guess = str(version_match.group(0))
+            iter_n_groups = 1
+        else:
+            iter_groups = [group for group in version_match.groups() if group is not None]
+            iter_n_groups = len(iter_groups)
+            iter_guess = ".".join(iter_groups)
+
+        if version_guess is None or iter_n_groups > version_guess_groups:
+            version_guess = iter_guess
+            version_guess_groups = iter_n_groups
+
+    return version_guess
 
 
 # _get_host_tool_internal():
