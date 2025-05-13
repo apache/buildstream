@@ -1089,7 +1089,7 @@ class Source(Plugin):
         .. note::
 
            If your plugin uses :class:`.SourceFetcher` objects, you can implement
-           :func:`Source.collect_source_info() <buildstream.source.SourceFetcher.get_source_info>` instead.
+           :func:`Source.get_source_info() <buildstream.source.SourceFetcher.get_source_info>` instead.
 
         *Since: 2.5*
         """
