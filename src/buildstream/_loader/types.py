@@ -40,3 +40,4 @@ class Symbol:
     JUNCTION = "junction"
     SANDBOX = "sandbox"
     STRICT = "strict"
+    PROVENANCE = "provenance"

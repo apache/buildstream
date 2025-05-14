@@ -90,7 +90,7 @@ from .plugin import Plugin
 from .sandbox import _SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey
+from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey, _SourceProvenance
 from ._artifact import Artifact
 from ._elementproxy import ElementProxy
 from ._elementsources import ElementSources
@@ -2584,8 +2584,9 @@ class Element(Plugin):
                 0,
                 self.get_kind(),
                 "workspace",
-                Node.from_dict(workspace_node),
                 None,
+                None,
+                Node.from_dict(workspace_node),
                 load_element.first_pass,
             )
             meta_sources.append(meta)
@@ -2606,8 +2607,23 @@ class Element(Plugin):
                 directory = source.get_str(Symbol.DIRECTORY, default=None)
                 if directory:
                     del source[Symbol.DIRECTORY]
+
+                # Provenance is optional
+                provenance_node = source.get_mapping(Symbol.PROVENANCE, default=None)
+                provenance = None
+                if provenance_node:
+                    del source[Symbol.PROVENANCE]
+                    provenance = _SourceProvenance.new_from_node(provenance_node)
+
                 meta_source = MetaSource(
-                    self.name, index, self.get_kind(), kind.as_str(), source, directory, load_element.first_pass
+                    self.name,
+                    index,
+                    self.get_kind(),
+                    kind.as_str(),
+                    directory,
+                    provenance,
+                    source,
+                    load_element.first_pass,
                 )
                 meta_sources.append(meta_source)
 
