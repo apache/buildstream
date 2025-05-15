@@ -99,11 +99,11 @@ def test_show_artifact_cas_digest_cached(cli, tmpdir, datafiles, target, expecte
     assert received_digest == "{target},{digest}".format(target=target, digest=expected_digest)
 
 
-# This tests that the target and its dependencies are built
-# as expected and that all their artifact CAS digests are
-# available.
+# This tests that an import element which produces the same content
+# as it's dependency, has the same CAS digest as the dependency.
 #
-# The test is performed without a remote cache.
+# This is tested to ensure that we are indeed producing the content hash
+# of the files portion of the artifact, and that they are indeed a match.
 #
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
@@ -112,8 +112,9 @@ def test_show_artifact_cas_digest_cached(cli, tmpdir, datafiles, target, expecte
         (
             "dependencies.bst",
             {
+                # Note that these expect exactly the same cas digest !
                 "dependencies.bst": "7093d3c89029932ce1518bd2192e1d3cf60fd88e356b39195d10b87b598c78f0/168",
-                "import-symlinks.bst": "95947ea55021e26cec4fd4f9de90d2b7f4f7d803ccc91656b3e1f2c9923ddf19/131",
+                "import-basic-files.bst": "7093d3c89029932ce1518bd2192e1d3cf60fd88e356b39195d10b87b598c78f0/168",
             },
         ),
     ],
@@ -121,35 +122,12 @@ def test_show_artifact_cas_digest_cached(cli, tmpdir, datafiles, target, expecte
 )
 def test_show_artifact_cas_digest_dependencies(cli, tmpdir, datafiles, target, expected_digests):
     project = str(datafiles)
-    expected_no_digest = ""
-
-    # Check the target and its dependencies have not been built locally
-    for component in sorted(expected_digests.keys()):
-        assert (
-            # May be "buildable" or "waiting" but shouldn't be "cached"
-            cli.get_element_state(project, component)
-            != "cached"
-        )
-
-    # Check the target and its dependencies have no artifact digest
-    result = cli.run(project=project, silent=True, args=["show", "--format", "%{name},%{artifact-cas-digest}", target])
-    result.assert_success()
-
-    digests = dict(line.split(",", 2) for line in result.output.splitlines())
-    assert len(digests) == len(expected_digests)
-
-    for component, received in sorted(digests.items()):
-        assert received == expected_no_digest
 
     # Build the target and its dependencies locally
     result = cli.run(project=project, silent=True, args=["build", target])
     result.assert_success()
 
-    # Check the target and its dependencies have been built locally
-    for component in sorted(expected_digests.keys()):
-        assert cli.get_element_state(project, component) == "cached"
-
-    # Check the target and its dependencies have an artifact digest
+    # Check the target and its dependencies have the same CAS digest
     result = cli.run(project=project, silent=True, args=["show", "--format", "%{name},%{artifact-cas-digest}", target])
     result.assert_success()
 
