@@ -3,4 +3,4 @@ sources:
 - kind: local
   path: files/basic-files
 depends:
-- import-symlinks.bst
+- import-basic-files.bst
