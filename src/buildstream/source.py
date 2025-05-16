@@ -32,6 +32,25 @@ any Source.
   This sets the location within the build root that the content of the source
   will be loaded in to. If the location does not exist, it will be created.
 
+* Provenance
+
+  The ``provenance`` attribute depicts a dictionary which is used for users
+  to provide additional source provenance related metadata which will later
+  be reported in :class:`.SourceInfo` objects.
+
+  The ``provenance`` dictionary supports the following fields:
+
+  * Homepage
+
+    The ``homepage`` attribute can be used to specify the project homepage URL
+
+  * Issue Tracker
+
+    The ``issue-tracker`` attribute can be used to specify the project's issue tracking URL
+
+  *Since: 2.5*
+
+
 .. _core_source_abstract_methods:
 
 Abstract Methods
@@ -359,7 +378,7 @@ from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
 from .sourcemirror import SourceMirror
-from .types import SourceRef, CoreWarnings, FastEnum
+from .types import SourceRef, CoreWarnings, FastEnum, _SourceProvenance
 from ._exceptions import BstError, ImplError, PluginError
 from .exceptions import ErrorDomain
 from ._loader.metasource import MetaSource
@@ -537,10 +556,18 @@ class SourceInfo:
     *Since: 2.5*
     """
 
+    #
+    # NOTE: The constructor is not public API, and plugins must
+    #       call Source.create_source_info(), the docstring above
+    #       starting with `SourceInfo()` ensures that documentation
+    #       does not show constructor arguments.
+    #
     def __init__(
         self,
         kind: str,
         url: str,
+        homepage: Optional[str],
+        issue_tracker: Optional[str],
         medium: Union[SourceInfoMedium, str],
         version_type: Union[SourceVersionType, str],
         version: str,
@@ -556,6 +583,16 @@ class SourceInfo:
         self.url: str = url
         """
         The url of the source input
+        """
+
+        self.homepage: Optional[str] = homepage
+        """
+        The project homepage URL
+        """
+
+        self.issue_tracker: Optional[str] = issue_tracker
+        """
+        The project issue tracking URL
         """
 
         self.medium: Union[SourceInfoMedium, str] = medium
@@ -618,10 +655,16 @@ class SourceInfo:
         version_info = {
             "kind": self.kind,
             "url": self.url,
-            "medium": medium_str,
-            "version-type": version_type_str,
-            "version": self.version,
         }
+
+        if self.homepage is not None:
+            version_info["homepage"] = self.homepage
+        if self.issue_tracker is not None:
+            version_info["issue-tracker"] = self.issue_tracker
+
+        version_info["medium"] = medium_str
+        version_info["version-type"] = version_type_str
+        version_info["version"] = self.version
 
         if self.version_guess is not None:
             version_info["version-guess"] = self.version_guess
@@ -798,6 +841,9 @@ class Source(Plugin):
         self.__element_kind = meta.element_kind  # The kind of the element owning this source
         self._directory = meta.directory  # Staging relative directory
         self.__variables = variables  # The variables used to resolve the source's config
+        self.__provenance: Optional[
+            _SourceProvenance
+        ] = meta.provenance  # The _SourceProvenance for general user provided SourceInfo
 
         self.__key = None  # Cache key for source
 
@@ -822,7 +868,7 @@ class Source(Plugin):
 
         self.__is_cached = None
 
-    COMMON_CONFIG_KEYS = ["kind", "directory"]
+    COMMON_CONFIG_KEYS = ["kind", "directory", "provenance"]
     """Common source config keys
 
     Source config keys that must not be accessed in configure(), and
@@ -1357,8 +1403,22 @@ class Source(Plugin):
 
         *Since: 2.5*
         """
+        homepage = None
+        issue_tracker = None
+        if self.__provenance is not None:
+            homepage = self.__provenance.homepage
+            issue_tracker = self.__provenance.issue_tracker
+
         return SourceInfo(
-            self.get_kind(), url, medium, version_type, version, version_guess=version_guess, extra_data=extra_data
+            self.get_kind(),
+            url,
+            homepage,
+            issue_tracker,
+            medium,
+            version_type,
+            version,
+            version_guess=version_guess,
+            extra_data=extra_data,
         )
 
     #############################################################
@@ -1850,8 +1910,9 @@ class Source(Plugin):
             self.__element_index,
             self.__element_kind,
             self.get_kind(),
-            self.__config,
             self._directory,
+            self.__provenance,
+            self.__config,
             self.__first_pass,
         )
 
