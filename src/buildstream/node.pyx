@@ -329,8 +329,8 @@ cdef class ScalarNode(Node):
         else:
             provenance = self.get_provenance()
             path = provenance._toplevel._find(self)[-1]
-            raise LoadError("{}: Value of '{}' is not of the expected type '{}'"
-                            .format(provenance, path, bool.__name__, self.value),
+            raise LoadError("{}: Value of '{}' is not of the expected type 'boolean'"
+                            .format(provenance, path),
                             LoadErrorReason.INVALID_DATA)
 
     cpdef object as_enum(self, object constraint):
