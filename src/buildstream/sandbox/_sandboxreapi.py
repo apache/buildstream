@@ -131,10 +131,6 @@ class SandboxREAPI(Sandbox):
         if flags & _SandboxFlags.NETWORK_ENABLED:
             platform_dict["network"] = "on"
 
-        # Remove unsupported platform properties from the dict
-        supported_properties = self._supported_platform_properties()
-        platform_dict = {key: value for (key, value) in platform_dict.items() if key in supported_properties}
-
         # Create Platform message with properties sorted by name in code point order
         platform = remote_execution_pb2.Platform()
         for key, value in sorted(platform_dict.items()):
@@ -202,9 +198,6 @@ class SandboxREAPI(Sandbox):
 
     def _execute_action(self, action, flags):
         raise ImplError("Sandbox of type '{}' does not implement _execute_action()".format(type(self).__name__))
-
-    def _supported_platform_properties(self):
-        return {"OSFamily", "ISA"}
 
 
 # _SandboxREAPIBatch()

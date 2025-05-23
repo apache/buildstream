@@ -238,6 +238,3 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
             if returncode != 0:
                 raise SandboxError("buildbox-run failed with returncode {}".format(returncode))
-
-    def _supported_platform_properties(self):
-        return {"OSFamily", "ISA", "unixUID", "unixGID", "network"}
