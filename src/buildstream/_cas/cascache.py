@@ -683,11 +683,22 @@ class CASCache:
     #    digests (list): The Digests of Blobs to upload
     #
     def send_blobs(self, remote, digests):
+        print("*"*80)
+        print("Asked to send blobs")
+        for sha in sorted(digest.hash for digest in digests):
+            print(sha)
+        print("*"*80)
+
         if self._remote_cache:
             # First fetch missing blobs from the remote cache as we can't
             # transfer blobs directly from the remote cache to another remote.
 
             remote_missing_blobs = self.missing_blobs(digests, remote=remote)
+            print("*"*80)
+            print("Blobs missing from the remote")
+            for sha in sorted(digest.hash for digest in remote_missing_blobs):
+                print(sha)
+            print("*"*80)
 
             batch = _CASBatchRead(self._default_remote)
             for digest in remote_missing_blobs:
