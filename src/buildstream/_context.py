@@ -531,6 +531,13 @@ class Context:
 
         return self._sourcecache
 
+    @property
+    def effective_build_max_jobs(self) -> int:
+        # Based on some testing (mainly on AWS), maximum effective
+        # max-jobs value seems to be around 8-10 if we have enough cores
+        # users should set values based on workload and build infrastructure
+        return self.build_max_jobs or self.platform.get_cpu_count(8)
+
     # add_project():
     #
     # Add a project to the context.
