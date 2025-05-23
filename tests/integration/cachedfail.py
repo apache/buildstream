@@ -24,8 +24,11 @@ from buildstream.exceptions import ErrorDomain
 from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream._testing._utils.site import HAVE_SANDBOX
 
-from tests.testutils import create_artifact_share
-
+from tests.testutils import (
+    create_artifact_share,
+    assert_shared,
+    assert_not_shared,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -422,3 +425,61 @@ def test_nonstrict_delete_failed(cli, tmpdir, datafiles):
 
     # Assert that it's no longer cached, and returns to a buildable state
     assert cli.get_element_state(project, "target.bst") == "buildable"
+
+
+# Test that we do not keep scheduling builds after one build fails
+# with `--builders 1` and `--on-error quit`.
+#
+# Note that this depends on staging order (which is stable and a part of cache key calculation),
+# this test works because `base-fail.bst` is alphabetically less than `base-success.bst`, and
+# they are at the same dependency depth.
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_stop_building_after_failed(cli, datafiles):
+    project = str(datafiles)
+
+    # Set only 1 builder, and explicitly configure `--on-error quit`
+    cli.configure({"scheduler": {"builders": 1, "on-error": "quit"}})
+
+    # Try to build it, this should result in a failure that contains the content
+    result = cli.run(project=project, args=["build", "depends-on-base-fail-and-success.bst"])
+    result.assert_main_error(ErrorDomain.STREAM, None)
+
+    # Assert that the failed build is cached in a failed artifact, and that the successful element was never built
+    assert cli.get_element_state(project, "base-fail.bst") == "failed"
+    assert cli.get_element_state(project, "base-success.bst") == "buildable"
+
+
+# Test that we do push the failed build artifact, but we do not keep scheduling
+# builds after one build fails with `--builders 1` and `--on-error quit`.
+#
+# Note that this depends on staging order (which is stable and a part of cache key calculation),
+# this test works because `base-fail.bst` is alphabetically less than `base-success.bst`, and
+# they are at the same dependency depth.
+#
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_but_stop_building_after_failed(cli, tmpdir, datafiles):
+    project = str(datafiles)
+
+    with create_artifact_share(os.path.join(str(tmpdir), "remote")) as share:
+
+        # Set only 1 builder, and explicitly configure `--on-error quit`
+        cli.configure(
+            {
+                "scheduler": {"builders": 1, "on-error": "quit"},
+                "artifacts": {"servers": [{"url": share.repo, "push": True}]},
+            }
+        )
+
+        # Try to build it, this should result in a failure that contains the content
+        result = cli.run(project=project, args=["build", "depends-on-base-fail-and-success.bst"])
+        result.assert_main_error(ErrorDomain.STREAM, None)
+
+        # Assert that the failed build is cached in a failed artifact, and that the successful element was never built
+        assert cli.get_element_state(project, "base-fail.bst") == "failed"
+        assert cli.get_element_state(project, "base-success.bst") == "buildable"
+
+        assert_shared(cli, share, project, "base-fail.bst")
+        assert_not_shared(cli, share, project, "base-success.bst")
