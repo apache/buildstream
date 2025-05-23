@@ -30,43 +30,24 @@ from tests.testutils import create_artifact_share
 pytestmark = pytest.mark.integration
 
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
+DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cached-fail")
 
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
 def test_build_checkout_cached_fail(cli, datafiles):
     project = str(datafiles)
-    element_path = os.path.join(project, "elements", "element.bst")
     checkout = os.path.join(cli.directory, "checkout")
 
-    # Write out our test target
-    element = {
-        "kind": "script",
-        "depends": [
-            {
-                "filename": "base.bst",
-                "type": "build",
-            },
-        ],
-        "config": {
-            "commands": [
-                "touch %{install-root}/foo",
-                "false",
-            ],
-        },
-    }
-    _yaml.roundtrip_dump(element, element_path)
-
     # Try to build it, this should result in a failure that contains the content
-    result = cli.run(project=project, args=["build", "element.bst"])
+    result = cli.run(project=project, args=["build", "base-fail.bst"])
     result.assert_main_error(ErrorDomain.STREAM, None)
 
     # Assert that it's cached in a failed artifact
-    assert cli.get_element_state(project, "element.bst") == "failed"
+    assert cli.get_element_state(project, "base-fail.bst") == "failed"
 
     # Now check it out
-    result = cli.run(project=project, args=["artifact", "checkout", "element.bst", "--directory", checkout])
+    result = cli.run(project=project, args=["artifact", "checkout", "base-fail.bst", "--directory", checkout])
     result.assert_success()
 
     # Check that the checkout contains the file created before failure
@@ -78,58 +59,20 @@ def test_build_checkout_cached_fail(cli, datafiles):
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
 def test_build_depend_on_cached_fail(cli, datafiles):
     project = str(datafiles)
-    dep_path = os.path.join(project, "elements", "dep.bst")
-    target_path = os.path.join(project, "elements", "target.bst")
-
-    dep = {
-        "kind": "script",
-        "depends": [
-            {
-                "filename": "base.bst",
-                "type": "build",
-            },
-        ],
-        "config": {
-            "commands": [
-                "touch %{install-root}/foo",
-                "false",
-            ],
-        },
-    }
-    _yaml.roundtrip_dump(dep, dep_path)
-    target = {
-        "kind": "script",
-        "depends": [
-            {
-                "filename": "base.bst",
-                "type": "build",
-            },
-            {
-                "filename": "dep.bst",
-                "type": "build",
-            },
-        ],
-        "config": {
-            "commands": [
-                "test -e /foo",
-            ],
-        },
-    }
-    _yaml.roundtrip_dump(target, target_path)
 
     # Try to build it, this should result in caching a failure to build dep
-    result = cli.run(project=project, args=["build", "dep.bst"])
+    result = cli.run(project=project, args=["build", "base-fail.bst"])
     result.assert_main_error(ErrorDomain.STREAM, None)
 
     # Assert that it's cached in a failed artifact
-    assert cli.get_element_state(project, "dep.bst") == "failed"
+    assert cli.get_element_state(project, "base-fail.bst") == "failed"
 
     # Now we should fail because we've a cached fail of dep
-    result = cli.run(project=project, args=["build", "target.bst"])
+    result = cli.run(project=project, args=["build", "depends-on-base-fail-expect-foo.bst"])
     result.assert_main_error(ErrorDomain.STREAM, None)
 
     # Assert that it's not yet built, since one of its dependencies isn't ready.
-    assert cli.get_element_state(project, "target.bst") == "waiting"
+    assert cli.get_element_state(project, "depends-on-base-fail-expect-foo.bst") == "waiting"
 
 
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
@@ -218,38 +161,20 @@ def test_host_tools_errors_are_not_cached(cli, datafiles, tmp_path):
     os.symlink(utils._get_host_tool_internal("buildbox-casd", search_subprojects_dir="buildbox"), str(buildbox_casd))
 
     project = str(datafiles)
-    element_path = os.path.join(project, "elements", "element.bst")
-
-    # Write out our test target
-    element = {
-        "kind": "script",
-        "depends": [
-            {
-                "filename": "base.bst",
-                "type": "build",
-            },
-        ],
-        "config": {
-            "commands": [
-                "true",
-            ],
-        },
-    }
-    _yaml.roundtrip_dump(element, element_path)
 
     # Build without access to host tools, this will fail
     result1 = cli.run(
         project=project,
-        args=["build", "element.bst"],
+        args=["build", "base-success.bst"],
         env={"PATH": str(tmp_path.joinpath("bin"))},
     )
     result1.assert_task_error(ErrorDomain.SANDBOX, "unavailable-local-sandbox")
-    assert cli.get_element_state(project, "element.bst") == "buildable"
+    assert cli.get_element_state(project, "base-success.bst") == "buildable"
 
     # When rebuilding, this should work
-    result2 = cli.run(project=project, args=["build", "element.bst"])
+    result2 = cli.run(project=project, args=["build", "base-success.bst"])
     result2.assert_success()
-    assert cli.get_element_state(project, "element.bst") == "cached"
+    assert cli.get_element_state(project, "base-success.bst") == "cached"
 
 
 # Tests that failed builds will be retried if --retry-failed is specified
@@ -261,7 +186,6 @@ def test_host_tools_errors_are_not_cached(cli, datafiles, tmp_path):
 @pytest.mark.parametrize("strict", (True, False), ids=["strict", "non-strict"])
 def test_retry_failed(cli, tmpdir, datafiles, use_share, retry, strict):
     project = str(datafiles)
-    target_path = os.path.join(project, "elements", "target.bst")
 
     # Use separate cache directories for each iteration of this test
     # even though we're using cli_integration
@@ -269,47 +193,31 @@ def test_retry_failed(cli, tmpdir, datafiles, use_share, retry, strict):
     # Global nonstrict configuration ensures all commands will be non-strict
     cli.configure({"cachedir": cli.directory, "projects": {"test": {"strict": strict}}})
 
-    def generate_target():
-        return {
-            "kind": "manual",
-            "depends": [
-                "base.bst",
-            ],
-            "config": {
-                "build-commands": [
-                    "test -e /foo",
-                ],
-            },
-        }
-
     with ExitStack() as stack:
 
         if use_share:
             share = stack.enter_context(create_artifact_share(os.path.join(str(tmpdir), "artifactshare")))
             cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
-        target = generate_target()
-        _yaml.roundtrip_dump(target, target_path)
-
         # Try to build it, this should result in caching a failure of the target
-        result = cli.run(project=project, args=["build", "target.bst"])
+        result = cli.run(project=project, args=["build", "base-fail.bst"])
         result.assert_main_error(ErrorDomain.STREAM, None)
 
         # Assert that it's cached in a failed artifact
-        assert cli.get_element_state(project, "target.bst") == "failed"
+        assert cli.get_element_state(project, "base-fail.bst") == "failed"
 
         if use_share:
             # Delete the local cache, provoke pulling of the failed build
-            cli.remove_artifact_from_cache(project, "target.bst")
+            cli.remove_artifact_from_cache(project, "base-fail.bst")
 
             # Assert that the failed build has been removed
-            assert cli.get_element_state(project, "target.bst") == "buildable"
+            assert cli.get_element_state(project, "base-fail.bst") == "buildable"
 
         # Even though we are in non-strict mode, the failed build should be retried
         if retry:
-            result = cli.run(project=project, args=["build", "--retry-failed", "target.bst"])
+            result = cli.run(project=project, args=["build", "--retry-failed", "base-fail.bst"])
         else:
-            result = cli.run(project=project, args=["build", "target.bst"])
+            result = cli.run(project=project, args=["build", "base-fail.bst"])
 
         # If we did not modify the cache key, we want to assert that we did not
         # in fact attempt to rebuild the failed artifact.
@@ -319,17 +227,17 @@ def test_retry_failed(cli, tmpdir, datafiles, use_share, retry, strict):
         #
         result.assert_main_error(ErrorDomain.STREAM, None)
         if retry:
-            assert "target.bst" in result.get_built_elements()
-            assert "target.bst" in result.get_discarded_elements()
+            assert "base-fail.bst" in result.get_built_elements()
+            assert "base-fail.bst" in result.get_discarded_elements()
         else:
-            assert "target.bst" not in result.get_built_elements()
-            assert "target.bst" not in result.get_discarded_elements()
+            assert "base-fail.bst" not in result.get_built_elements()
+            assert "base-fail.bst" not in result.get_discarded_elements()
 
         if use_share:
             # Assert that we did indeed go through the motions of downloading the failed
             # build, and possibly discarded the failed artifact if the strong key did not match
             #
-            assert "target.bst" in result.get_pulled_elements()
+            assert "base-fail.bst" in result.get_pulled_elements()
 
 
 # Tests that failed builds will be retried in strict mode when dependencies have changed.
