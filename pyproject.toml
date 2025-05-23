@@ -18,7 +18,7 @@ requires = [
     # In order to build wheels, and as required by PEP 517
     "wheel",
     # Require a new enough cython for the python versions we support
-    "Cython>=0.29.25",
+    "Cython>=0.29.25,!=3.1.1",
     "packaging",
 ]
 build-backend = "setuptools.build_meta"
