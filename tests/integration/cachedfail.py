@@ -24,8 +24,11 @@ from buildstream.exceptions import ErrorDomain
 from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream._testing._utils.site import HAVE_SANDBOX
 
-from tests.testutils import create_artifact_share
-
+from tests.testutils import (
+    create_artifact_share,
+    assert_shared,
+    assert_not_shared,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -422,3 +425,78 @@ def test_nonstrict_delete_failed(cli, tmpdir, datafiles):
 
     # Assert that it's no longer cached, and returns to a buildable state
     assert cli.get_element_state(project, "target.bst") == "buildable"
+
+
+# Test that we do not keep scheduling builds after one build fails
+# with `--builders 1` and `--on-error quit`.
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_stop_building_after_failed(cli, datafiles):
+    project = str(datafiles)
+
+    # Since integration tests share a local artifact cache (for test performance, avoiding
+    # downloading a runtime in every test), we reset the local cache state here by
+    # deleting the two failing artifacts we are testing with
+    #
+    cli.remove_artifact_from_cache(project, "base-fail.bst")
+    cli.remove_artifact_from_cache(project, "base-also-fail.bst")
+
+    # Set only 1 builder, and explicitly configure `--on-error quit`
+    cli.configure({"scheduler": {"builders": 1, "on-error": "quit"}})
+
+    # Try to build it, this should result in only one failure
+    result = cli.run(project=project, args=["build", "depends-on-two-failures.bst"])
+    result.assert_main_error(ErrorDomain.STREAM, None)
+
+    # Assert that out of the two elements, only one of them failed, the other one is
+    # buildable because they both depend on base.bst which must have succeeded.
+    states = cli.get_element_states(project, ["base-fail.bst", "base-also-fail.bst"], deps="none")
+    assert "failed" in states.values()
+    assert "buildable" in states.values()
+
+
+# Test that we do push the failed build artifact, but we do not keep scheduling
+# builds after one build fails with `--builders 1` and `--on-error quit`.
+#
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_but_stop_building_after_failed(cli, tmpdir, datafiles):
+    project = str(datafiles)
+
+    # Since integration tests share a local artifact cache (for test performance, avoiding
+    # downloading a runtime in every test), we reset the local cache state here by
+    # deleting the two failing artifacts we are testing with
+    #
+    cli.remove_artifact_from_cache(project, "base-fail.bst")
+    cli.remove_artifact_from_cache(project, "base-also-fail.bst")
+
+    with create_artifact_share(os.path.join(str(tmpdir), "remote")) as share:
+
+        # Set only 1 builder, and explicitly configure `--on-error quit`
+        cli.configure(
+            {
+                "scheduler": {"builders": 1, "on-error": "quit"},
+                "artifacts": {"servers": [{"url": share.repo, "push": True}]},
+            }
+        )
+
+        # Try to build it, this should result in only one failure
+        result = cli.run(project=project, args=["build", "depends-on-two-failures.bst"])
+        result.assert_main_error(ErrorDomain.STREAM, None)
+
+        # Assert that out of the two elements, only one of them failed, the other one is
+        # buildable because they both depend on base.bst which must have succeeded.
+        states = cli.get_element_states(project, ["base-fail.bst", "base-also-fail.bst"], deps="none")
+        assert "failed" in states.values()
+        assert "buildable" in states.values()
+
+        # Assert that the failed build is cached in a failed artifact, and that the other build
+        # which would have failed, of course never made it to the artifact cache.
+        for element_name, state in states.items():
+            if state == "buildable":
+                assert_not_shared(cli, share, project, element_name)
+            elif state == "failed":
+                assert_shared(cli, share, project, element_name)
+            else:
+                assert False, "Unreachable code reached !"
