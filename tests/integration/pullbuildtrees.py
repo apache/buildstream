@@ -179,7 +179,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
 
 # Ensure that only valid pull-buildtrees boolean options make it through the loading
 # process.
-@pytest.mark.parametrize("value,success", [(True, True), (False, True), ("pony", False), ("1", False)])
+@pytest.mark.parametrize("value,success", [(True, True), (False, True), ("pony", False), ("2", False), ("1", True)])
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_cache_pullbuildtrees(cli, datafiles, value, success):
     project = str(datafiles)

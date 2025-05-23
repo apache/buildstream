@@ -306,8 +306,8 @@ cdef class ScalarNode(Node):
     cpdef bint as_bool(self) except *:
         """Get the value of the node as a boolean.
 
-        .. note:: BuildStream treats the values 'True' and 'true' as True,
-                  and the values 'False' and 'false' as False.  Any other
+        .. note:: BuildStream treats the values 'True', 'true' and '1' as True,
+                  and the values 'False', 'false' and '0' as False.  Any other
                   string values (such as the valid YAML 'TRUE' or 'FALSE'
                   will be considered as an error)
 
@@ -322,15 +322,15 @@ cdef class ScalarNode(Node):
             return self.value
 
         # Don't coerce strings to booleans, this makes "False" strings evaluate to True
-        if self.value in ('True', 'true'):
+        if self.value in ('True', 'true', '1'):
             return True
-        elif self.value in ('False', 'false'):
+        elif self.value in ('False', 'false', '0'):
             return False
         else:
             provenance = self.get_provenance()
             path = provenance._toplevel._find(self)[-1]
-            raise LoadError("{}: Value of '{}' is not of the expected type '{}'"
-                            .format(provenance, path, bool.__name__, self.value),
+            raise LoadError("{}: Value of '{}' is not of the expected type 'boolean'"
+                            .format(provenance, path),
                             LoadErrorReason.INVALID_DATA)
 
     cpdef object as_enum(self, object constraint):
