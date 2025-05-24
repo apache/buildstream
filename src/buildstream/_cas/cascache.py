@@ -702,7 +702,7 @@ class CASCache:
         batch.send()
 
     def _send_directory(self, remote, digest):
-        required_blobs = self.required_blobs_for_directory(digest)
+        required_blobs = list(self.required_blobs_for_directory(digest))
 
         # Upload any blobs missing on the server.
         # buildbox-casd will call FindMissingBlobs before the actual upload
