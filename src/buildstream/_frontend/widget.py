@@ -453,7 +453,7 @@ class LogLine(Widget):
 
                     serialized_sources = []
                     for s in source_infos:
-                        serialized = s._serialize()
+                        serialized = s.serialize()
                         serialized_sources.append(serialized)
 
                     all_source_infos += serialized_sources

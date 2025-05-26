@@ -587,14 +587,12 @@ class SourceInfo:
         Additional plugin defined key/values
         """
 
-    # _serialize()
-    #
-    # Produce a dictionary object suitable to be dumped in YAML format
-    # in the `bst show` command line interface.
-    #
-    # Returns: A dictionary used to dump this out on the CLI with _yaml.roundtrip_dump_string()
-    #
-    def _serialize(self) -> Dict[str, Any]:
+    def serialize(self) -> Dict[str, Union[str, Dict[str, str]]]:
+        """Produce a dictionary object suitable for serialization into formats like json or yaml.
+
+        Returns: A dictionary object with strings as keys and values, except for the
+                 extra_data which, if present, is also a dictionary with strings as keys and values.
+        """
         #
         # WARNING: This return value produces output for an API stable interface.
         #
