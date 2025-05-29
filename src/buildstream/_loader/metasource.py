@@ -26,14 +26,17 @@ class MetaSource:
     #    element_index: The index of the source in the owning element's source list
     #    element_kind: The kind of the owning element
     #    kind: The kind of the source
+    #    directory: A subdirectory where to stage the source
+    #    provenance: The user provided provenance information (e.g. homepage, issue tracking, etc).
     #    config: The configuration data for the source
     #    first_pass: This source will be used with first project pass configuration (used for junctions).
     #
-    def __init__(self, element_name, element_index, element_kind, kind, config, directory, first_pass):
+    def __init__(self, element_name, element_index, element_kind, kind, directory, provenance, config, first_pass):
         self.element_name = element_name
         self.element_index = element_index
         self.element_kind = element_kind
         self.kind = kind
-        self.config = config
         self.directory = directory
+        self.provenance = provenance
+        self.config = config
         self.first_pass = first_pass
