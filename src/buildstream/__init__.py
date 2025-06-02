@@ -34,7 +34,6 @@ if "_BST_COMPLETION" not in os.environ:
     from .source import (
         Source,
         SourceError,
-        SourceImplError,
         SourceFetcher,
         SourceInfo,
         SourceInfoMedium,

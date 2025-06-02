@@ -23,7 +23,6 @@ import click
 
 from .profile import Profile
 from ..types import _Scope
-from ..source import SourceImplError
 from .. import _yaml
 from .. import __version__ as bst_version
 from .. import FileType
@@ -445,18 +444,15 @@ class LogLine(Widget):
                 #
                 all_source_infos = []
                 for source in element.sources():
-                    try:
-                        source_infos = source.collect_source_info()
-                    except SourceImplError as e:
-                        source.warn(str(e))
-                        continue
+                    source_infos = source.collect_source_info()
 
-                    serialized_sources = []
-                    for s in source_infos:
-                        serialized = s.serialize()
-                        serialized_sources.append(serialized)
+                    if source_infos is not None:
+                        serialized_sources = []
+                        for s in source_infos:
+                            serialized = s.serialize()
+                            serialized_sources.append(serialized)
 
-                    all_source_infos += serialized_sources
+                        all_source_infos += serialized_sources
 
                 # Dump the SourceInfo provenance objects in yaml format
                 line = p.fmt_subst(line, "source-info", _yaml.roundtrip_dump_string(all_source_infos))
