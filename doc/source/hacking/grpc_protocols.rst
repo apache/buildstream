@@ -36,3 +36,6 @@ To actually regenerate the code::
 
   ./setup.py build_grpc
 
+The ``requirements/requirements.in`` file needs to be updated to match the
+protobuf version requirements of the ``grpcio-tools`` version used to
+generate the code.
