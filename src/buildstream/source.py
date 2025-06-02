@@ -395,19 +395,6 @@ class SourceError(BstError):
         super().__init__(message, detail=detail, domain=ErrorDomain.SOURCE, reason=reason, temporary=temporary)
 
 
-class SourceImplError(BstError):
-    """This exception is expected to be raised from some unimplemented abstract methods.
-
-    There is no need to raise this exception, however some public abstract methods which
-    are intended to be called by plugins may advertize the raising of this exception
-    in the case of a source plugin which does not implement the said method, in which case
-    it must be handled by the calling plugin.
-    """
-
-    def __init__(self, message, reason=None):
-        super().__init__(message, domain=ErrorDomain.IMPL, reason=reason)
-
-
 @dataclass
 class AliasSubstitution:
     """AliasSubstitution()
@@ -669,7 +656,7 @@ class SourceFetcher:
         """
         raise ImplError("SourceFetcher '{}' does not implement fetch()".format(type(self)))
 
-    def get_source_info(self) -> SourceInfo:
+    def get_source_info(self) -> Optional[SourceInfo]:
         """Get the :class:`.SourceInfo` object describing this source
 
         This method should only be called whenever
@@ -679,14 +666,12 @@ class SourceFetcher:
         SourceInfo objects created by implementors should be created with
         :func:`Source.create_source_info() <buildstream.source.Source.create_source_info>`.
 
-        Returns: the :class:`.SourceInfo` objects describing this source
-
-        Raises:
-           :class:`.SourceImplError`: if this method is unimplemented
+        Returns: the :class:`.SourceInfo` object describing this source, or ``None`` if the
+                 SourceFetcher does not implement this method.
 
         *Since: 2.5*
         """
-        raise SourceImplError("SourceFetcher '{}' does not implement get_source_info()".format(type(self)))
+        return None
 
     #############################################################
     #                       Public Methods                      #
@@ -1068,7 +1053,7 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement is_cached()".format(self.get_kind()))
 
-    def collect_source_info(self) -> Iterable[SourceInfo]:
+    def collect_source_info(self) -> Optional[Iterable[SourceInfo]]:
         """Get the :class:`.SourceInfo` objects describing this source
 
         This method should only be called whenever
@@ -1078,11 +1063,8 @@ class Source(Plugin):
         SourceInfo objects created by implementors should be created with
         :func:`Source.create_source_info() <buildstream.source.Source.create_source_info>`.
 
-        Returns: the :class:`.SourceInfo` objects describing this source
-
-        Raises:
-           :class:`.SourceImplError`: if the source class does not implement this method and does not implement
-                                      :func:`SourceFether.get_source_info() <buildstream.source.SourceFetcher.get_source_info>`
+        Returns: the :class:`.SourceInfo` objects describing this source, or ``None`` if the
+                 Source does not implement this method.
 
         .. note::
 
@@ -1093,15 +1075,22 @@ class Source(Plugin):
         """
         source_info = []
         for fetcher in self.get_source_fetchers():
-            source_info.append(fetcher.get_source_info())
+            info = fetcher.get_source_info()
+            if info is not None:
+                source_info.append(info)
 
         # If there are source fetchers, they can either have returned
-        # SourceInfo objects, OR they may have raised SourceImplError, we need
-        # to raise ImplError here in the case there were no source fetchers.
+        # SourceInfo objects, or None.
+        #
+        # We need to issue the warning here and return None in the case that no source info
+        # was reported.
+        #
         if not source_info:
-            raise SourceImplError(
-                "Source plugin '{}' does not implement collect_source_info()".format(self.get_kind())
+            self.warn(
+                "{}: Source.collect_source_info() is not implemented in this plugin".format(self),
+                warning_token=CoreWarnings.UNAVAILABLE_SOURCE_INFO,
             )
+            return None
 
         return source_info
 

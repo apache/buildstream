@@ -117,6 +117,12 @@ class CoreWarnings:
     :ref:`alias <project_source_aliases>`
     """
 
+    UNAVAILABLE_SOURCE_INFO = "unavailable-source-info"
+    """
+    A source was queried for its provenance information but did not implement
+    :func:`Source.collect_source_info() <buildstream.source.Source.collect_source_info>`.
+    """
+
 
 class OverlapAction(FastEnum):
     """OverlapAction()
