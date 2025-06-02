@@ -695,17 +695,28 @@ def test_source_info_extra_data(cli, datafiles):
 
 # Test what happens when encountering a source that doesn't implement collect_source_info()
 #
-@pytest.mark.datafiles(os.path.join(DATA_DIR, "source-info"))
-def test_source_info_unimplemented(cli, datafiles):
-    project = str(datafiles)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "source-info-unimplemented"))
+@pytest.mark.parametrize(
+    "subdir, expect_fatal",
+    [
+        ("non-fatal", False),
+        ("fatal", True),
+    ],
+    ids=["non-fatal", "fatal"],
+)
+def test_source_info_unimplemented(cli, datafiles, subdir, expect_fatal):
+    project = os.path.join(str(datafiles), subdir)
     result = cli.run(project=project, silent=True, args=["show", "--format", "%{source-info}", "unimplemented.bst"])
-    result.assert_success()
-
-    # Assert empty list but no errors for a source not implementing collect_source_info()
-    #
-    # Note that buildstream internal _yaml doesn't support loading a list as a toplevel element
-    # in the stream, so we just assert the string instead.
-    assert result.output == "[]\n\n"
+    if expect_fatal:
+        result.assert_main_error(ErrorDomain.PLUGIN, CoreWarnings.UNAVAILABLE_SOURCE_INFO)
+    else:
+        # Assert empty list but no errors for a source not implementing collect_source_info()
+        #
+        # Note that buildstream internal _yaml doesn't support loading a list as a toplevel element
+        # in the stream, so we just assert the string instead.
+        result.assert_success()
+        assert result.output == "[]\n\n"
+        assert "WARNING [unavailable-source-info]" in result.stderr
 
 
 # This checks how Source.collect_source_info() works on a workspace,
