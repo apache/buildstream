@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 #    build_arch: A canonical machine architecture name, as defined by Platform.canonicalize_arch()
 #    build_uid: The UID for the sandbox process
 #    build_gid: The GID for the sandbox process
+#    remote_apis_socket_path: The path to a UNIX socket providing REAPI access for nested remote execution
 #
 # If the build_uid or build_gid is unspecified, then the underlying sandbox implementation
 # does not guarantee what UID/GID will be used, but generally UID/GID 0 will be used in a
@@ -45,12 +46,19 @@ if TYPE_CHECKING:
 #
 class SandboxConfig:
     def __init__(
-        self, *, build_os: str, build_arch: str, build_uid: Optional[int] = None, build_gid: Optional[int] = None
+        self,
+        *,
+        build_os: str,
+        build_arch: str,
+        build_uid: Optional[int] = None,
+        build_gid: Optional[int] = None,
+        remote_apis_socket_path: Optional[str] = None
     ):
         self.build_os = build_os
         self.build_arch = build_arch
         self.build_uid = build_uid
         self.build_gid = build_gid
+        self.remote_apis_socket_path = remote_apis_socket_path
 
     # to_dict():
     #
@@ -66,7 +74,7 @@ class SandboxConfig:
     # Returns:
     #    A dictionary representation of this SandboxConfig
     #
-    def to_dict(self) -> Dict[str, Union[str, int]]:
+    def to_dict(self) -> Dict[str, Union[str, int, bool]]:
 
         # Assign mandatory portions of the sandbox configuration
         #
@@ -74,7 +82,7 @@ class SandboxConfig:
         #     the sandbox configuration, as that would result in
         #     breaking cache key stability.
         #
-        sandbox_dict: Dict[str, Union[str, int]] = {"build-os": self.build_os, "build-arch": self.build_arch}
+        sandbox_dict: Dict[str, Union[str, int, bool]] = {"build-os": self.build_os, "build-arch": self.build_arch}
 
         # Assign optional portions of the sandbox configuration
         #
@@ -86,6 +94,9 @@ class SandboxConfig:
             sandbox_dict["build-uid"] = self.build_uid
         if self.build_gid is not None:
             sandbox_dict["build-gid"] = self.build_gid
+
+        if self.remote_apis_socket_path is not None:
+            sandbox_dict["remote-apis-socket-path"] = self.remote_apis_socket_path
 
         return sandbox_dict
 
@@ -108,7 +119,7 @@ class SandboxConfig:
     #
     @classmethod
     def new_from_node(cls, config: "MappingNode[Node]", *, platform: Optional[Platform] = None) -> "SandboxConfig":
-        config.validate_keys(["build-uid", "build-gid", "build-os", "build-arch"])
+        config.validate_keys(["build-uid", "build-gid", "build-os", "build-arch", "remote-apis-socket"])
 
         build_os: str
         build_arch: str
@@ -132,4 +143,17 @@ class SandboxConfig:
         build_uid = config.get_int("build-uid", None)
         build_gid = config.get_int("build-gid", None)
 
-        return cls(build_os=build_os, build_arch=build_arch, build_uid=build_uid, build_gid=build_gid)
+        remote_apis_socket = config.get_mapping("remote-apis-socket", default=None)
+        if remote_apis_socket:
+            remote_apis_socket.validate_keys(["path"])
+            remote_apis_socket_path = remote_apis_socket.get_str("path")
+        else:
+            remote_apis_socket_path = None
+
+        return cls(
+            build_os=build_os,
+            build_arch=build_arch,
+            build_uid=build_uid,
+            build_gid=build_gid,
+            remote_apis_socket_path=remote_apis_socket_path,
+        )
