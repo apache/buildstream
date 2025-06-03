@@ -632,7 +632,14 @@ class TestArtifact:
 
         normal_name = element_name.replace(os.sep, "-")
         cache_dir = os.path.splitext(os.path.join(cache_dir, "test", normal_name))[0]
-        shutil.rmtree(cache_dir)
+
+        # Don't cause a failure here if the artifact is not there, we use this in integration
+        # tests where the cache is shared and we just want to clean up some artifacts
+        # regardless of whether they have already been built or not.
+        try:
+            shutil.rmtree(cache_dir)
+        except FileNotFoundError:
+            pass
 
     # is_cached():
     #
