@@ -1,4 +1,37 @@
 =================
+buildstream 2.5.0
+=================
+
+  o Fix directory mtime to support latest buildbox-casd (#2001)
+
+  o Fix test cases to work with latest buildbox (#1999)
+
+  o Support gRPC retry and timeout configuration for all remote services (#1987)
+
+  o Fix our setup.py for surprise update of setuptools (#2007)
+
+  o Add Source.collect_source_info() and SourceFetcher.get_source_info() methods,
+    support showing introspected source provenance information in `bst show`,
+    make it possible for absence of implementations of these new methods be fatal,
+    and export some related utilities to help plugins support such (#1997, #2008, #2016, #2018)
+
+  o Some minor fixes to documentation (#1992)
+
+  o Support showing artifact content digests in `bst show` (#1994)
+
+  o Better support for parsing boolean configuration that is exported from
+    project options (#2011, #2006)
+
+  o Better error handling in remote execution if services do not support
+    required sandbox options (#2013)
+
+  o Fix pushing artifacts with remote caches (#2015)
+
+  o Fix build warnings stemming from using outdated grpcio tools (#2017)
+
+  o Fix additional jobs being scheduled after the user has asked to quit (#2005, #1787)
+
+=================
 buildstream 2.4.1
 =================
 
