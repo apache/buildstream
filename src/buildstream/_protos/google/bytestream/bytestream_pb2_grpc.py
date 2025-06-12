@@ -5,7 +5,7 @@ import warnings
 
 from buildstream._protos.google.bytestream import bytestream_pb2 as google_dot_bytestream_dot_bytestream__pb2
 
-GRPC_GENERATED_VERSION = '1.68.0'
+GRPC_GENERATED_VERSION = '1.73.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 

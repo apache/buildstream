@@ -4,7 +4,7 @@ Jinja2 >= 2.10
 importlib_metadata >= 3.6; python_version < "3.10"
 packaging
 pluginbase
-protobuf <6.0dev,>=5.26.1
+protobuf<7.0.0,>=6.30.0
 psutil
 ruamel.yaml >= 0.16.7
 ruamel.yaml.clib >= 0.1.2

@@ -6,7 +6,8 @@ from google.rpc import status_pb2 as _status_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
+from collections.abc import Iterable as _Iterable, Mapping as _Mapping
+from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -32,7 +33,7 @@ class FetchBlobRequest(_message.Message):
     uris: _containers.RepeatedScalarFieldContainer[str]
     qualifiers: _containers.RepeatedCompositeFieldContainer[Qualifier]
     digest_function: _remote_execution_pb2.DigestFunction.Value
-    def __init__(self, instance_name: _Optional[str] = ..., timeout: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., oldest_content_accepted: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., uris: _Optional[_Iterable[str]] = ..., qualifiers: _Optional[_Iterable[_Union[Qualifier, _Mapping]]] = ..., digest_function: _Optional[_Union[_remote_execution_pb2.DigestFunction.Value, str]] = ...) -> None: ...
+    def __init__(self, instance_name: _Optional[str] = ..., timeout: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., oldest_content_accepted: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., uris: _Optional[_Iterable[str]] = ..., qualifiers: _Optional[_Iterable[_Union[Qualifier, _Mapping]]] = ..., digest_function: _Optional[_Union[_remote_execution_pb2.DigestFunction.Value, str]] = ...) -> None: ...
 
 class FetchBlobResponse(_message.Message):
     __slots__ = ("status", "uri", "qualifiers", "expires_at", "blob_digest", "digest_function")
@@ -48,7 +49,7 @@ class FetchBlobResponse(_message.Message):
     expires_at: _timestamp_pb2.Timestamp
     blob_digest: _remote_execution_pb2.Digest
     digest_function: _remote_execution_pb2.DigestFunction.Value
-    def __init__(self, status: _Optional[_Union[_status_pb2.Status, _Mapping]] = ..., uri: _Optional[str] = ..., qualifiers: _Optional[_Iterable[_Union[Qualifier, _Mapping]]] = ..., expires_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., blob_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., digest_function: _Optional[_Union[_remote_execution_pb2.DigestFunction.Value, str]] = ...) -> None: ...
+    def __init__(self, status: _Optional[_Union[_status_pb2.Status, _Mapping]] = ..., uri: _Optional[str] = ..., qualifiers: _Optional[_Iterable[_Union[Qualifier, _Mapping]]] = ..., expires_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., blob_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., digest_function: _Optional[_Union[_remote_execution_pb2.DigestFunction.Value, str]] = ...) -> None: ...
 
 class FetchDirectoryRequest(_message.Message):
     __slots__ = ("instance_name", "timeout", "oldest_content_accepted", "uris", "qualifiers", "digest_function")
@@ -64,7 +65,7 @@ class FetchDirectoryRequest(_message.Message):
     uris: _containers.RepeatedScalarFieldContainer[str]
     qualifiers: _containers.RepeatedCompositeFieldContainer[Qualifier]
     digest_function: _remote_execution_pb2.DigestFunction.Value
-    def __init__(self, instance_name: _Optional[str] = ..., timeout: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., oldest_content_accepted: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., uris: _Optional[_Iterable[str]] = ..., qualifiers: _Optional[_Iterable[_Union[Qualifier, _Mapping]]] = ..., digest_function: _Optional[_Union[_remote_execution_pb2.DigestFunction.Value, str]] = ...) -> None: ...
+    def __init__(self, instance_name: _Optional[str] = ..., timeout: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., oldest_content_accepted: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., uris: _Optional[_Iterable[str]] = ..., qualifiers: _Optional[_Iterable[_Union[Qualifier, _Mapping]]] = ..., digest_function: _Optional[_Union[_remote_execution_pb2.DigestFunction.Value, str]] = ...) -> None: ...
 
 class FetchDirectoryResponse(_message.Message):
     __slots__ = ("status", "uri", "qualifiers", "expires_at", "root_directory_digest", "digest_function")
@@ -80,7 +81,7 @@ class FetchDirectoryResponse(_message.Message):
     expires_at: _timestamp_pb2.Timestamp
     root_directory_digest: _remote_execution_pb2.Digest
     digest_function: _remote_execution_pb2.DigestFunction.Value
-    def __init__(self, status: _Optional[_Union[_status_pb2.Status, _Mapping]] = ..., uri: _Optional[str] = ..., qualifiers: _Optional[_Iterable[_Union[Qualifier, _Mapping]]] = ..., expires_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., root_directory_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., digest_function: _Optional[_Union[_remote_execution_pb2.DigestFunction.Value, str]] = ...) -> None: ...
+    def __init__(self, status: _Optional[_Union[_status_pb2.Status, _Mapping]] = ..., uri: _Optional[str] = ..., qualifiers: _Optional[_Iterable[_Union[Qualifier, _Mapping]]] = ..., expires_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., root_directory_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., digest_function: _Optional[_Union[_remote_execution_pb2.DigestFunction.Value, str]] = ...) -> None: ...
 
 class PushBlobRequest(_message.Message):
     __slots__ = ("instance_name", "uris", "qualifiers", "expire_at", "blob_digest", "references_blobs", "references_directories", "digest_function")
@@ -100,7 +101,7 @@ class PushBlobRequest(_message.Message):
     references_blobs: _containers.RepeatedCompositeFieldContainer[_remote_execution_pb2.Digest]
     references_directories: _containers.RepeatedCompositeFieldContainer[_remote_execution_pb2.Digest]
     digest_function: _remote_execution_pb2.DigestFunction.Value
-    def __init__(self, instance_name: _Optional[str] = ..., uris: _Optional[_Iterable[str]] = ..., qualifiers: _Optional[_Iterable[_Union[Qualifier, _Mapping]]] = ..., expire_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., blob_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., references_blobs: _Optional[_Iterable[_Union[_remote_execution_pb2.Digest, _Mapping]]] = ..., references_directories: _Optional[_Iterable[_Union[_remote_execution_pb2.Digest, _Mapping]]] = ..., digest_function: _Optional[_Union[_remote_execution_pb2.DigestFunction.Value, str]] = ...) -> None: ...
+    def __init__(self, instance_name: _Optional[str] = ..., uris: _Optional[_Iterable[str]] = ..., qualifiers: _Optional[_Iterable[_Union[Qualifier, _Mapping]]] = ..., expire_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., blob_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., references_blobs: _Optional[_Iterable[_Union[_remote_execution_pb2.Digest, _Mapping]]] = ..., references_directories: _Optional[_Iterable[_Union[_remote_execution_pb2.Digest, _Mapping]]] = ..., digest_function: _Optional[_Union[_remote_execution_pb2.DigestFunction.Value, str]] = ...) -> None: ...
 
 class PushBlobResponse(_message.Message):
     __slots__ = ()
@@ -124,7 +125,7 @@ class PushDirectoryRequest(_message.Message):
     references_blobs: _containers.RepeatedCompositeFieldContainer[_remote_execution_pb2.Digest]
     references_directories: _containers.RepeatedCompositeFieldContainer[_remote_execution_pb2.Digest]
     digest_function: _remote_execution_pb2.DigestFunction.Value
-    def __init__(self, instance_name: _Optional[str] = ..., uris: _Optional[_Iterable[str]] = ..., qualifiers: _Optional[_Iterable[_Union[Qualifier, _Mapping]]] = ..., expire_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., root_directory_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., references_blobs: _Optional[_Iterable[_Union[_remote_execution_pb2.Digest, _Mapping]]] = ..., references_directories: _Optional[_Iterable[_Union[_remote_execution_pb2.Digest, _Mapping]]] = ..., digest_function: _Optional[_Union[_remote_execution_pb2.DigestFunction.Value, str]] = ...) -> None: ...
+    def __init__(self, instance_name: _Optional[str] = ..., uris: _Optional[_Iterable[str]] = ..., qualifiers: _Optional[_Iterable[_Union[Qualifier, _Mapping]]] = ..., expire_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., root_directory_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., references_blobs: _Optional[_Iterable[_Union[_remote_execution_pb2.Digest, _Mapping]]] = ..., references_directories: _Optional[_Iterable[_Union[_remote_execution_pb2.Digest, _Mapping]]] = ..., digest_function: _Optional[_Union[_remote_execution_pb2.DigestFunction.Value, str]] = ...) -> None: ...
 
 class PushDirectoryResponse(_message.Message):
     __slots__ = ()

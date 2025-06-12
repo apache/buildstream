@@ -5,7 +5,7 @@ import warnings
 
 from buildstream._protos.build.bazel.remote.asset.v1 import remote_asset_pb2 as build_dot_bazel_dot_remote_dot_asset_dot_v1_dot_remote__asset__pb2
 
-GRPC_GENERATED_VERSION = '1.68.0'
+GRPC_GENERATED_VERSION = '1.73.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
