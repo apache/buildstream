@@ -525,6 +525,8 @@ class LogLine(Widget):
 
         if context.remote_cache_spec:
             values["Cache Storage Service"] = format_spec(context.remote_cache_spec)
+        if context.remote_action_cache_spec:
+            values["Action Cache Service"] = format_spec(context.remote_action_cache_spec)
 
         text += self._format_values(values)
 

@@ -61,6 +61,7 @@ _REQUIRED_CASD_MICRO = 0
 #     cache_quota (int): User configured cache quota
 #     reserved (int): User configured reserved disk space
 #     remote_cache_spec (RemoteSpec): Optional remote cache server
+#     remote_action_cache_spec (RemoteSpec): Optional remote action cache server
 #     protect_session_blobs (bool): Disable expiry for blobs used in the current session
 #     messenger (Messenger): The messenger to report warnings through the UI
 #
@@ -72,6 +73,7 @@ class CASDProcessManager:
         log_level,
         cache_quota,
         remote_cache_spec,
+        remote_action_cache_spec,
         protect_session_blobs,
         messenger,
         *,
@@ -139,6 +141,30 @@ class CASDProcessManager:
                 casd_args.append("--cas-retry-delay={}".format(remote_cache_spec.retry_delay))
             if remote_cache_spec.request_timeout is not None:
                 casd_args.append("--cas-request-timeout={}".format(remote_cache_spec.request_timeout))
+
+        if remote_action_cache_spec:
+            casd_args.append("--ac-remote={}".format(remote_action_cache_spec.url))
+            if remote_action_cache_spec.instance_name:
+                casd_args.append("--ac-instance={}".format(remote_action_cache_spec.instance_name))
+            if remote_action_cache_spec.server_cert_file:
+                casd_args.append("--ac-server-cert={}".format(remote_action_cache_spec.server_cert_file))
+            if remote_action_cache_spec.client_key_file:
+                casd_args.append("--ac-client-key={}".format(remote_action_cache_spec.client_key_file))
+                casd_args.append("--ac-client-cert={}".format(remote_action_cache_spec.client_cert_file))
+            if remote_action_cache_spec.access_token_file:
+                casd_args.append("--ac-access-token={}".format(remote_action_cache_spec.access_token_file))
+                if remote_action_cache_spec.access_token_reload_interval is not None:
+                    casd_args.append(
+                        "--ac-token-reload-interval={}".format(remote_action_cache_spec.access_token_reload_interval)
+                    )
+            if remote_action_cache_spec.keepalive_time is not None:
+                casd_args.append("--ac-keepalive-time={}".format(remote_action_cache_spec.keepalive_time))
+            if remote_action_cache_spec.retry_limit is not None:
+                casd_args.append("--ac-retry-limit={}".format(remote_action_cache_spec.retry_limit))
+            if remote_action_cache_spec.retry_delay is not None:
+                casd_args.append("--ac-retry-delay={}".format(remote_action_cache_spec.retry_delay))
+            if remote_action_cache_spec.request_timeout is not None:
+                casd_args.append("--ac-request-timeout={}".format(remote_action_cache_spec.request_timeout))
 
         casd_args.append(path)
 

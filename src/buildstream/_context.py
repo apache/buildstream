@@ -194,6 +194,9 @@ class Context:
         # Remote cache server
         self.remote_cache_spec: Optional[RemoteSpec] = None
 
+        # Remote action cache server
+        self.remote_action_cache_spec: Optional[RemoteSpec] = None
+
         # Whether or not to attempt to pull build trees globally
         self.pull_buildtrees: Optional[bool] = None
 
@@ -369,7 +372,15 @@ class Context:
         # casdir - the casdir may not have been created yet.
         cache = defaults.get_mapping("cache")
         cache.validate_keys(
-            ["quota", "reserved-disk-space", "low-watermark", "storage-service", "pull-buildtrees", "cache-buildtrees"]
+            [
+                "quota",
+                "reserved-disk-space",
+                "low-watermark",
+                "storage-service",
+                "action-cache-service",
+                "pull-buildtrees",
+                "cache-buildtrees",
+            ]
         )
 
         cas_volume = self.casdir
@@ -415,6 +426,15 @@ class Context:
         remote_cache = cache.get_mapping("storage-service", default=None)
         if remote_cache:
             self.remote_cache_spec = RemoteSpec.new_from_node(remote_cache)
+
+        remote_action_cache = cache.get_mapping("action-cache-service", default=None)
+        if remote_action_cache:
+            if not remote_cache:
+                raise LoadError(
+                    "{}: 'action-cache-service' cannot be configured without 'storage-service'.".format(provenance),
+                    LoadErrorReason.INVALID_DATA,
+                )
+            self.remote_action_cache_spec = RemoteSpec.new_from_node(remote_action_cache)
 
         # Load global artifact cache configuration
         cache_config = defaults.get_mapping("artifacts", default={})
@@ -741,6 +761,7 @@ class Context:
                 log_level,
                 self.config_cache_quota,
                 self.remote_cache_spec,
+                self.remote_action_cache_spec,
                 protect_session_blobs=True,
                 messenger=self.messenger,
                 reserved=self.config_cache_reserved,
