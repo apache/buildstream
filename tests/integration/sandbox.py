@@ -48,3 +48,14 @@ def test_build_arch(cli, datafiles):
 
     result = cli.run(project=project, args=["build", element_name])
     assert result.exit_code == 0
+
+
+# Test that the REAPI socket is created in the sandbox.
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.datafiles(DATA_DIR)
+def test_remote_apis_socket(cli, datafiles):
+    project = str(datafiles)
+    element_name = "sandbox/remote-apis-socket.bst"
+
+    result = cli.run(project=project, args=["build", element_name])
+    assert result.exit_code == 0
