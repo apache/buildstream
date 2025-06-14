@@ -10,7 +10,8 @@ from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
+from collections.abc import Iterable as _Iterable, Mapping as _Mapping
+from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -28,7 +29,7 @@ class Action(_message.Message):
     do_not_cache: bool
     salt: bytes
     platform: Platform
-    def __init__(self, command_digest: _Optional[_Union[Digest, _Mapping]] = ..., input_root_digest: _Optional[_Union[Digest, _Mapping]] = ..., timeout: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., do_not_cache: bool = ..., salt: _Optional[bytes] = ..., platform: _Optional[_Union[Platform, _Mapping]] = ...) -> None: ...
+    def __init__(self, command_digest: _Optional[_Union[Digest, _Mapping]] = ..., input_root_digest: _Optional[_Union[Digest, _Mapping]] = ..., timeout: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., do_not_cache: bool = ..., salt: _Optional[bytes] = ..., platform: _Optional[_Union[Platform, _Mapping]] = ...) -> None: ...
 
 class Command(_message.Message):
     __slots__ = ("arguments", "environment_variables", "output_files", "output_directories", "output_paths", "platform", "working_directory", "output_node_properties", "output_directory_format")
@@ -108,7 +109,7 @@ class NodeProperties(_message.Message):
     properties: _containers.RepeatedCompositeFieldContainer[NodeProperty]
     mtime: _timestamp_pb2.Timestamp
     unix_mode: _wrappers_pb2.UInt32Value
-    def __init__(self, properties: _Optional[_Iterable[_Union[NodeProperty, _Mapping]]] = ..., mtime: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., unix_mode: _Optional[_Union[_wrappers_pb2.UInt32Value, _Mapping]] = ...) -> None: ...
+    def __init__(self, properties: _Optional[_Iterable[_Union[NodeProperty, _Mapping]]] = ..., mtime: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., unix_mode: _Optional[_Union[_wrappers_pb2.UInt32Value, _Mapping]] = ...) -> None: ...
 
 class FileNode(_message.Message):
     __slots__ = ("name", "digest", "is_executable", "node_properties")
@@ -174,7 +175,7 @@ class ExecutedActionMetadata(_message.Message):
     output_upload_start_timestamp: _timestamp_pb2.Timestamp
     output_upload_completed_timestamp: _timestamp_pb2.Timestamp
     auxiliary_metadata: _containers.RepeatedCompositeFieldContainer[_any_pb2.Any]
-    def __init__(self, worker: _Optional[str] = ..., queued_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., worker_start_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., worker_completed_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., input_fetch_start_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., input_fetch_completed_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., execution_start_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., execution_completed_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., virtual_execution_duration: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., output_upload_start_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., output_upload_completed_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., auxiliary_metadata: _Optional[_Iterable[_Union[_any_pb2.Any, _Mapping]]] = ...) -> None: ...
+    def __init__(self, worker: _Optional[str] = ..., queued_timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., worker_start_timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., worker_completed_timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., input_fetch_start_timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., input_fetch_completed_timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., execution_start_timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., execution_completed_timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., virtual_execution_duration: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., output_upload_start_timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., output_upload_completed_timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., auxiliary_metadata: _Optional[_Iterable[_Union[_any_pb2.Any, _Mapping]]] = ...) -> None: ...
 
 class ActionResult(_message.Message):
     __slots__ = ("output_files", "output_file_symlinks", "output_symlinks", "output_directories", "output_directory_symlinks", "exit_code", "stdout_raw", "stdout_digest", "stderr_raw", "stderr_digest", "execution_metadata")
