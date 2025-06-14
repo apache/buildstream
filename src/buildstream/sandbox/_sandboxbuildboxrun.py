@@ -94,8 +94,10 @@ class SandboxBuildBoxRun(SandboxREAPI):
         casd = cascache.get_casd()
         config = self._get_config()
 
-        if config.remote_apis_socket_path and context.remote_cache_spec:
-            raise SandboxError("'remote-apis-socket' is not currently supported with 'storage-service'.")
+        if config.remote_apis_socket_path and context.remote_cache_spec and not context.remote_action_cache_spec:
+            raise SandboxError(
+                "'remote-apis-socket' is not supported with 'storage-service' without 'action-cache-service'."
+            )
 
         with utils._tempnamedfile() as action_file, utils._tempnamedfile() as result_file:
             action_file.write(action.SerializeToString())

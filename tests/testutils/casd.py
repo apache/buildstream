@@ -25,6 +25,7 @@ def casd_cache(path, messenger=None):
         CASLogLevel.WARNING,
         16 * 1024 * 1024,
         None,
+        None,
         True,
         None,
     )
