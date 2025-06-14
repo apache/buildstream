@@ -131,6 +131,9 @@ class SandboxREAPI(Sandbox):
         if flags & _SandboxFlags.NETWORK_ENABLED:
             platform_dict["network"] = "on"
 
+        if config.remote_apis_socket_path:
+            platform_dict["remoteApisSocketPath"] = config.remote_apis_socket_path.lstrip(os.path.sep)
+
         # Create Platform message with properties sorted by name in code point order
         platform = remote_execution_pb2.Platform()
         for key, value in sorted(platform_dict.items()):

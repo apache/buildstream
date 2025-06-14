@@ -45,9 +45,9 @@ _CASD_TIMEOUT = 300  # in seconds
 #
 # Minimum required version of buildbox-casd
 #
-_REQUIRED_CASD_MAJOR = 0
-_REQUIRED_CASD_MINOR = 0
-_REQUIRED_CASD_MICRO = 58
+_REQUIRED_CASD_MAJOR = 1
+_REQUIRED_CASD_MINOR = 2
+_REQUIRED_CASD_MICRO = 0
 
 
 # CASDProcessManager
@@ -76,7 +76,8 @@ class CASDProcessManager:
         messenger,
         *,
         reserved=None,
-        low_watermark=None
+        low_watermark=None,
+        local_jobs=None
     ):
         os.makedirs(path, exist_ok=True)
 
@@ -103,6 +104,17 @@ class CASDProcessManager:
 
         if protect_session_blobs:
             casd_args.append("--protect-session-blobs")
+
+        if local_jobs is not None:
+            try:
+                buildbox_run = utils._get_host_tool_internal("buildbox-run", search_subprojects_dir="buildbox")
+                casd_args.append("--buildbox-run={}".format(buildbox_run))
+                casd_args.append("--jobs={}".format(local_jobs))
+            except utils.ProgramNotFoundError:
+                # Not fatal as buildbox-run is not needed for remote execution
+                # and buildbox-casd local execution will never be used if
+                # buildbox-run is not available.
+                pass
 
         if remote_cache_spec:
             casd_args.append("--cas-remote={}".format(remote_cache_spec.url))
