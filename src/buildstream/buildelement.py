@@ -219,6 +219,7 @@ class BuildElement(Element):
     def configure_dependencies(self, dependencies):
 
         self.__layout = {}  # pylint: disable=attribute-defined-outside-init
+        self.__digest_environment = {}  # pylint: disable=attribute-defined-outside-init
 
         # FIXME: Currently this forcefully validates configurations
         #        for all BuildElement subclasses so they are unable to
@@ -227,9 +228,18 @@ class BuildElement(Element):
         for dep in dependencies:
             # Determine the location to stage each element, default is "/"
             location = "/"
+
             if dep.config:
-                dep.config.validate_keys(["location"])
-                location = dep.config.get_str("location")
+                dep.config.validate_keys(["digest-environment", "location"])
+
+                location = dep.config.get_str("location", "/")
+
+                digest_var_name = dep.config.get_str("digest-environment", None)
+
+                if digest_var_name is not None:
+                    element_list = self.__digest_environment.setdefault(digest_var_name, [])
+                    element_list.append((dep.element, dep.path))
+
             try:
                 element_list = self.__layout[location]
             except KeyError:
@@ -268,6 +278,16 @@ class BuildElement(Element):
             }
             dictionary["layout"] = layout_key
 
+        # Specify the layout in the key, if buildstream is to generate an environmenta
+        # variable with the digest
+        #
+        if self.__digest_environment:
+            sorted_envs = sorted(self.__digest_environment)
+            digest_key = {
+                env: [dependency_path for _, dependency_path in self.__digest_environment[env]] for env in sorted_envs
+            }
+            dictionary["digest-enviornment"] = digest_key
+
         return dictionary
 
     def configure_sandbox(self, sandbox):
@@ -286,10 +306,20 @@ class BuildElement(Element):
         sandbox.set_work_directory(command_dir)
 
         # Setup environment
-        sandbox.set_environment(self.get_environment())
+        env = self.get_environment()
+
+        # Add "CAS digest" environment variables
+        sorted_envs = sorted(self.__digest_environment)
+        for digest_variable in sorted_envs:
+            element_list = [element for element, _ in self.__digest_environment[digest_variable]]
+            with self.subsandbox(sandbox) as subsandbox:
+                self.stage_dependency_artifacts(subsandbox, element_list)
+                digest = subsandbox.get_virtual_directory()._get_digest()
+            env[digest_variable] = "{}/{}".format(digest.hash, digest.size_bytes)
+
+        sandbox.set_environment(env)
 
     def stage(self, sandbox):
-
         # First stage it all
         #
         sorted_locations = sorted(self.__layout)
