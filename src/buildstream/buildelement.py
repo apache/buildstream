@@ -192,6 +192,7 @@ artifact collection purposes.
 import os
 
 from .element import Element
+from .sandbox import SandboxDummy
 
 
 _command_steps = ["configure-commands", "build-commands", "install-commands", "strip-commands"]
@@ -219,6 +220,7 @@ class BuildElement(Element):
     def configure_dependencies(self, dependencies):
 
         self.__layout = {}  # pylint: disable=attribute-defined-outside-init
+        self.__digest_environment = {}  # pylint: disable=attribute-defined-outside-init
 
         # FIXME: Currently this forcefully validates configurations
         #        for all BuildElement subclasses so they are unable to
@@ -227,9 +229,18 @@ class BuildElement(Element):
         for dep in dependencies:
             # Determine the location to stage each element, default is "/"
             location = "/"
+
             if dep.config:
-                dep.config.validate_keys(["location"])
-                location = dep.config.get_str("location")
+                dep.config.validate_keys(["digest-environment", "location"])
+
+                location = dep.config.get_str("location", "/")
+
+                digest_var_name = dep.config.get_str("digest-environment", None)
+
+                if digest_var_name is not None:
+                    element_list = self.__digest_environment.setdefault(digest_var_name, [])
+                    element_list.append(dep.element)
+
             try:
                 element_list = self.__layout[location]
             except KeyError:
@@ -285,10 +296,19 @@ class BuildElement(Element):
             command_dir = build_root
         sandbox.set_work_directory(command_dir)
 
-        # Setup environment
-        sandbox.set_environment(self.get_environment())
-
     def stage(self, sandbox):
+        # Setup environment
+        env = self.get_environment()
+
+        for digest_variable, element_list in self.__digest_environment.items():
+            dummy_sandbox = SandboxDummy(
+                self._get_context(), self._get_project(), plugin=self, stdout=None, stderr=None, config={}
+            )
+            self.stage_dependency_artifacts(dummy_sandbox, element_list)
+            digest = dummy_sandbox.get_virtual_directory()._get_digest()
+            env[digest_variable] = "{}/{}".format(digest.hash, digest.size_bytes)
+
+        sandbox.set_environment(env)
 
         # First stage it all
         #
