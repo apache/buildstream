@@ -4,7 +4,8 @@ from google.protobuf import duration_pb2 as _duration_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
+from collections.abc import Iterable as _Iterable, Mapping as _Mapping
+from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -219,7 +220,7 @@ class Remote(_message.Message):
     retry_limit: int
     retry_delay: _duration_pb2.Duration
     request_timeout: _duration_pb2.Duration
-    def __init__(self, url: _Optional[str] = ..., instance_name: _Optional[str] = ..., server_cert: _Optional[bytes] = ..., client_key: _Optional[bytes] = ..., client_cert: _Optional[bytes] = ..., access_token_path: _Optional[str] = ..., access_token_reload_interval: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., keepalive_time: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., retry_limit: _Optional[int] = ..., retry_delay: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., request_timeout: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ...) -> None: ...
+    def __init__(self, url: _Optional[str] = ..., instance_name: _Optional[str] = ..., server_cert: _Optional[bytes] = ..., client_key: _Optional[bytes] = ..., client_cert: _Optional[bytes] = ..., access_token_path: _Optional[str] = ..., access_token_reload_interval: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., keepalive_time: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., retry_limit: _Optional[int] = ..., retry_delay: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ..., request_timeout: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ...) -> None: ...
 
 class GetInstanceNameForRemotesRequest(_message.Message):
     __slots__ = ("instance_name", "content_addressable_storage", "remote_asset", "action_cache", "execution")
