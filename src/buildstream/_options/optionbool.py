@@ -24,11 +24,9 @@ from .option import Option, OPTION_SYMBOLS
 # A boolean project option
 #
 class OptionBool(Option):
-
     OPTION_TYPE: str = "bool"
 
     def load(self, node):
-
         super().load(node)
         node.validate_keys(OPTION_SYMBOLS + ["default"])
         self.value = node.get_bool("default")

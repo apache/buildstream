@@ -41,7 +41,6 @@ def make_loader(basedir):
 ##############################################################
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "onefile"))
 def test_one_file(datafiles):
-
     basedir = str(datafiles)
     with make_loader(basedir) as loader:
         element = loader.load(["elements/onefile.bst"])[0]
@@ -52,7 +51,6 @@ def test_one_file(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "onefile"))
 def test_missing_file(datafiles):
-
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
         loader.load(["elements/missing.bst"])
@@ -62,7 +60,6 @@ def test_missing_file(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "onefile"))
 def test_invalid_reference(datafiles):
-
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
         loader.load(["elements/badreference.bst"])
@@ -72,7 +69,6 @@ def test_invalid_reference(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "onefile"))
 def test_invalid_yaml(datafiles):
-
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
         loader.load(["elements/badfile.bst"])
@@ -82,7 +78,6 @@ def test_invalid_yaml(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "onefile"))
 def test_fail_fullpath_target(datafiles):
-
     basedir = str(datafiles)
     fullpath = os.path.join(basedir, "elements", "onefile.bst")
 
@@ -94,7 +89,6 @@ def test_fail_fullpath_target(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "onefile"))
 def test_invalid_key(datafiles):
-
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
         loader.load(["elements/invalidkey.bst"])
@@ -104,7 +98,6 @@ def test_invalid_key(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "onefile"))
 def test_invalid_directory_load(datafiles):
-
     basedir = str(datafiles)
     os.makedirs(os.path.join(basedir, "element.bst"))
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:

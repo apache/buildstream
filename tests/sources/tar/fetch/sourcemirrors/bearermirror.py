@@ -23,7 +23,6 @@ class Sample(SourceMirror):
         source_url: str,
         extra_data: Optional[Dict[str, Any]],
     ) -> str:
-
         if extra_data is not None:
             extra_data["http-auth"] = "bearer"
 
@@ -32,5 +31,4 @@ class Sample(SourceMirror):
 
 # Plugin entry point
 def setup():
-
     return Sample

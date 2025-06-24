@@ -24,7 +24,7 @@ try:
     import pytest
 except ImportError:
     module_name = globals()["__name__"]
-    msg = "Could not import pytest:\n" "To use the {} module, you must have pytest installed.".format(module_name)
+    msg = "Could not import pytest:\nTo use the {} module, you must have pytest installed.".format(module_name)
     raise ImportError(msg)
 
 from buildstream import _yaml

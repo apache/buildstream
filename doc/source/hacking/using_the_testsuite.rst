@@ -193,7 +193,7 @@ consists of running the ``pylint`` tool, run the following::
 Formatting code
 ~~~~~~~~~~~~~~~
 Similar to linting, code formatting is also done via a ``tox`` environment. To
-format the code using the ``black`` tool, run the following::
+format the code using the ``ruff`` tool, run the following::
 
    tox -e format
 

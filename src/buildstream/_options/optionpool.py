@@ -70,9 +70,7 @@ class OptionPool:
     #    node (dict): The loaded YAML options
     #
     def load(self, options):
-
         for option_name, option_definition in options.items():
-
             # Assert that the option name is a valid symbol
             _assert_symbol_name(option_name, "option name", ref_node=option_definition, allow_dashes=False)
 
@@ -178,7 +176,6 @@ class OptionPool:
     # root of "node",
     #
     def process_node(self, node, *, restricted=None):
-
         # A conditional will result in composition, which can
         # in turn add new conditionals to the root.
         #
@@ -216,7 +213,6 @@ class OptionPool:
     #    LoadError: If the expression failed to resolve for any reason
     #
     def _evaluate(self, expression):
-
         #
         # Variables must be resolved at this point.
         #

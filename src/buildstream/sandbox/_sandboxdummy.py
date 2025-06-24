@@ -22,10 +22,9 @@ class SandboxDummy(Sandbox):
         self._reason = kwargs.get("dummy_reason", "no reason given")
 
     def _run(self, command, *, flags, cwd, env):
-
         if not self._has_command(command[0], env):
             raise SandboxCommandError(
-                "Staged artifacts do not provide command " "'{}'".format(command[0]), reason="missing-command"
+                "Staged artifacts do not provide command '{}'".format(command[0]), reason="missing-command"
             )
 
         raise SandboxError(

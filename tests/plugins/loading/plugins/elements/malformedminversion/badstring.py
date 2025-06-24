@@ -3,7 +3,6 @@ from buildstream import Element
 
 
 class MalformedMinVersion(Element):
-
     BST_MIN_VERSION = "1.pony"
 
 

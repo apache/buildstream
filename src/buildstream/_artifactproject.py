@@ -37,11 +37,9 @@ if TYPE_CHECKING:
 #    project_name: The name of this project
 #
 class ArtifactProject(Project):
-
     __loaded_artifact_projects = {}  # type: Dict[str, ArtifactProject]
 
     def __init__(self, project_name: str, context: Context):
-
         #
         # Chain up to the Project constructor, and allow it to initialize
         # without loading anything

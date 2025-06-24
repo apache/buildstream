@@ -113,9 +113,10 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
     project_config_file = str(project_dir.join("project.conf"))
     _yaml.roundtrip_dump(project_config, file=project_config_file)
 
-    with runcli.configured(str(tmpdir), user_config) as user_config_file, dummy_context(
-        config=user_config_file
-    ) as context:
+    with (
+        runcli.configured(str(tmpdir), user_config) as user_config_file,
+        dummy_context(config=user_config_file) as context,
+    ):
         project = Project(str(project_dir), context)
         project.ensure_fully_loaded()
 

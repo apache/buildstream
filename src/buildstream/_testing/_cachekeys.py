@@ -69,7 +69,6 @@ def _element_filename(project_dir, element_name, alt_suffix=None):
     # the option of changing the .bst suffix to something else
     #
     if alt_suffix:
-
         # Just in case...
         assert element_name.endswith(".bst")
 

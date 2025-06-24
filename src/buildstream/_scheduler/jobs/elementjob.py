@@ -76,6 +76,5 @@ class ElementJob(Job):
         self._complete_cb(self, self._element, status, self._result)
 
     def child_process(self):
-
         # Run the action
         return self._action_cb(self._element)

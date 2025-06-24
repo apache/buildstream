@@ -24,11 +24,9 @@ from .app import App
 # to the terminal.
 #
 def _osc_777_supported():
-
     term = os.environ.get("TERM")
 
     if term and (term.startswith("xterm") or term.startswith("vte")):
-
         # Since vte version 4600, upstream silently ignores
         # the OSC 777 without printing garbage to the terminal.
         #
@@ -52,7 +50,6 @@ def _osc_777_supported():
 #
 class LinuxApp(App):
     def notify(self, title, text):
-
         # Currently we only try this notification method
         # of sending an escape sequence to the terminal
         #

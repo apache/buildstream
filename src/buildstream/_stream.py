@@ -67,7 +67,6 @@ class Stream:
     def __init__(
         self, context, session_start, *, session_start_callback=None, interrupt_callback=None, ticker_callback=None
     ):
-
         #
         # Public members
         #
@@ -390,7 +389,6 @@ class Stream:
         ignore_project_source_remotes: bool = False,
         retry_failed: bool = False,
     ):
-
         # Flag the build state
         self._context.build = True
 
@@ -461,7 +459,6 @@ class Stream:
         source_remotes: Iterable[RemoteSpec] = (),
         ignore_project_source_remotes: bool = False,
     ):
-
         if self._context.remote_cache_spec:
             self._context.messenger.warn(
                 "Cache Storage Service is configured, fetched sources may not be available in the local cache"
@@ -495,7 +492,6 @@ class Stream:
     # are rewritten inline.
     #
     def track(self, targets, *, selection=_PipelineSelection.REDIRECT, except_targets=None, cross_junctions=False):
-
         elements = self._load_tracking(
             targets, selection=selection, except_targets=except_targets, cross_junctions=cross_junctions
         )
@@ -539,7 +535,6 @@ class Stream:
         source_remotes: Iterable[RemoteSpec] = (),
         ignore_project_source_remotes: bool = False,
     ):
-
         elements = self._load(
             targets,
             selection=selection,
@@ -584,7 +579,6 @@ class Stream:
         artifact_remotes: Iterable[RemoteSpec] = (),
         ignore_project_artifact_remotes: bool = False,
     ):
-
         if self._context.remote_cache_spec:
             self._context.messenger.warn(
                 "Cache Storage Service is configured, pulled artifacts may not be available in the local cache"
@@ -638,7 +632,6 @@ class Stream:
         artifact_remotes: Iterable[RemoteSpec] = (),
         ignore_project_artifact_remotes: bool = False,
     ):
-
         elements = self._load(
             targets,
             selection=selection,
@@ -696,7 +689,6 @@ class Stream:
         artifact_remotes: Iterable[RemoteSpec] = (),
         ignore_project_artifact_remotes: bool = False,
     ):
-
         elements = self._load(
             (target,),
             selection=selection,
@@ -734,7 +726,7 @@ class Stream:
                 self._export_artifact(tar, location, compression, element, hardlinks, virdir)
         except BstError as e:
             raise StreamError(
-                "Error while staging dependencies into a sandbox" ": '{}'".format(e), detail=e.detail, reason=e.reason
+                "Error while staging dependencies into a sandbox: '{}'".format(e), detail=e.detail, reason=e.reason
             ) from e
 
     # _export_artifact()
@@ -930,7 +922,6 @@ class Stream:
         source_remotes: Iterable[RemoteSpec] = (),
         ignore_project_source_remotes: bool = False,
     ):
-
         self._check_location_writable(location, force=force, tar=tar)
 
         elements = self._load(
@@ -951,9 +942,7 @@ class Stream:
         try:
             self._source_checkout(elements, location, force, deps, tar, compression, include_build_scripts)
         except BstError as e:
-            raise StreamError(
-                "Error while writing sources" ": '{}'".format(e), detail=e.detail, reason=e.reason
-            ) from e
+            raise StreamError("Error while writing sources: '{}'".format(e), detail=e.detail, reason=e.reason) from e
 
         self._context.messenger.info("Checked out sources to '{}'".format(location))
 
@@ -1000,7 +989,6 @@ class Stream:
         expanded_directories = []
         #  To try to be more atomic, loop through the elements and raise any errors we can early
         for target in elements:
-
             if not list(target.sources()):
                 build_depends = [x.name for x in target._dependencies(_Scope.BUILD, recurse=False)]
                 if not build_depends:
@@ -1372,7 +1360,6 @@ class Stream:
     #
     def _load_artifacts(self, artifact_names):
         with self._context.messenger.simple_task("Loading artifacts") as task:
-
             # Use a set here to avoid duplicates.
             #
             # ArtifactElement.new_from_artifact_name() will take care of ensuring
@@ -1404,7 +1391,6 @@ class Stream:
     #    (tuple of lists): A tuple of Element object lists, grouped corresponding to target_groups
     #
     def _load_elements(self, target_groups):
-
         # First concatenate all the lists for the loader's sake
         targets = list(itertools.chain(*target_groups))
 
@@ -1443,7 +1429,6 @@ class Stream:
         rewritable: bool = False,
         valid_artifact_names: bool = False,
     ) -> Tuple[List[Element], List[Element], List[Element]]:
-
         # First determine which of the user specified targets are artifact
         # names and which are element names.
         element_names, artifact_names = self._expand_and_classify_targets(
@@ -1575,7 +1560,6 @@ class Stream:
     #    (list of Element): The filtered or asserted result
     #
     def _track_cross_junction_filter(self, project, elements, cross_junction_requested):
-
         # First filter out cross junctioned elements
         if not cross_junction_requested:
             elements = [element for element in elements if element._get_project() is project]
@@ -1798,7 +1782,6 @@ class Stream:
     #    announce_session (bool): Whether to announce the session in the frontend.
     #
     def _run(self, *, announce_session: bool = False):
-
         # Inform the frontend of the full list of elements
         # and the list of elements which will be processed in this run
         #
@@ -1827,7 +1810,6 @@ class Stream:
     #    announce_session (bool): Whether to announce the session in the frontend
     #
     def _fetch(self, elements: List[Element], *, fetch_original: bool = False, announce_session: bool = False):
-
         # Assert consistency for the fetch elements
         _pipeline.assert_consistent(self._context, elements)
 
@@ -1952,7 +1934,6 @@ class Stream:
 
     # Write a master build script to the sandbox
     def _write_master_build_script(self, directory, elements):
-
         module_string = ""
         for element in elements:
             module_string += shlex.quote(element.normal_name) + " "
@@ -2058,7 +2039,6 @@ class Stream:
 
         # Expand globs for elements
         if element_globs:
-
             # Bail out if an element glob is specified without providing a project directory
             if not self._project:
                 raise StreamError(

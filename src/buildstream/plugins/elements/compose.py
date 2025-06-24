@@ -83,7 +83,6 @@ class ComposeElement(Element):
         pass
 
     def stage(self, sandbox):
-
         # Stage deps in the sandbox root
         with self.timed_activity("Staging dependencies", silent_nested=True):
             self.stage_dependency_artifacts(sandbox)
@@ -110,7 +109,6 @@ class ComposeElement(Element):
         if self.integration:
             with self.timed_activity("Integrating sandbox"):
                 if require_split:
-
                     # Make a snapshot of all the files before integration-commands are run.
                     snapshot = set(vbasedir.list_relative_paths())
 

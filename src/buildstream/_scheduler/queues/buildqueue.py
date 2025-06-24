@@ -23,7 +23,6 @@ from ..jobs import JobStatus
 # A queue which assembles elements
 #
 class BuildQueue(Queue):
-
     action_name = "Build"
     complete_name = "Built"
     resources = [ResourceType.PROCESS, ResourceType.CACHE]
@@ -41,7 +40,6 @@ class BuildQueue(Queue):
         return QueueStatus.READY
 
     def done(self, job, element, result, status):
-
         # Inform element in main process that assembly is done
         element._assemble_done(status is JobStatus.OK)
 

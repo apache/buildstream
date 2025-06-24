@@ -24,7 +24,6 @@ from .option import Option, OPTION_SYMBOLS
 # A flags project option
 #
 class OptionFlags(Option):
-
     OPTION_TYPE: str = "flags"
 
     def __init__(self, name, definition, pool):

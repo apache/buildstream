@@ -36,7 +36,6 @@ class PluginOriginLocal(PluginOrigin):
         return path, defaults, "project directory: {}".format(self._path)
 
     def load_config(self, origin_node):
-
         origin_node.validate_keys(["path", *PluginOrigin._COMMON_CONFIG_KEYS])
 
         path_node = origin_node.get_scalar("path")

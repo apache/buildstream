@@ -17,6 +17,7 @@ Repo - Utility class for testing source plugins
 
 
 """
+
 import os
 import shutil
 
@@ -36,7 +37,6 @@ class Repo:
     """
 
     def __init__(self, directory, subdir="repo"):
-
         # The working directory for the repo object
         #
         self.directory = os.path.abspath(directory)

@@ -39,7 +39,6 @@ if TYPE_CHECKING:
 #    ref (str): The artifact ref
 #
 class ArtifactElement(Element):
-
     # A hash of ArtifactElement by ref
     __instantiated_artifacts: Dict[str, "ArtifactElement"] = {}
 
@@ -70,7 +69,6 @@ class ArtifactElement(Element):
     #
     @classmethod
     def new_from_artifact_name(cls, artifact_name: str, context: "Context", task: Optional["Task"] = None):
-
         # Initial lookup for already loaded artifact.
         with suppress(KeyError):
             return cls.__instantiated_artifacts[artifact_name]

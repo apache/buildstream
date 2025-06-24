@@ -81,7 +81,6 @@ def reset_signals_on_exit(func):
 #
 class Scheduler:
     def __init__(self, context, start_time, state, interrupt_callback, ticker_callback):
-
         #
         # Public members
         #
@@ -134,7 +133,6 @@ class Scheduler:
     #
     @reset_signals_on_exit
     def run(self, queues, casd_process_manager):
-
         # Hold on to the queues to process
         self.queues = queues
 
@@ -231,7 +229,6 @@ class Scheduler:
     #       remain blocked after Scheduler.run() returns.
     #
     def terminate(self):
-
         # Set this right away, the frontend will check this
         # attribute to decide whether or not to print status info
         # etc and the following code block will trigger some callbacks.
@@ -327,7 +324,6 @@ class Scheduler:
     #    job (Job): The job to start
     #
     def _start_job(self, job):
-
         # From the scheduler perspective, the following
         # is considered atomic; started jobs are always in the
         # active_jobs list, and jobs in the active_jobs list
@@ -367,7 +363,6 @@ class Scheduler:
                 queues_to_process = []
 
         while process_queues:
-
             # Pull elements forward through all queues, regardless of whether we're processing those
             # queues. The main reason to do this is to ensure we propagate finished jobs from the
             # imperative queue.
@@ -412,7 +407,6 @@ class Scheduler:
     #
     def _sched(self):
         def real_schedule():
-
             # Reset the scheduling handle before queuing any jobs.
             #
             # We do this right away because starting jobs can result
@@ -428,7 +422,6 @@ class Scheduler:
             self._sched_handle = None
 
             if not self.terminated:
-
                 #
                 # Run as many jobs as the queues can handle for the
                 # available resources
@@ -477,7 +470,6 @@ class Scheduler:
     # A loop registered event callback for keyboard interrupts
     #
     def _interrupt_event(self):
-
         # The event loop receives a copy of all signals that are sent while it is running
         # This means that even though we catch the SIGINT in the question to the user,
         # the loop will receive it too, and thus we need to skip it here.

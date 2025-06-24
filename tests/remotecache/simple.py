@@ -30,6 +30,7 @@ pytestmark = pytest.mark.remotecache
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
+
 # Test building an executable with a remote cache:
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)

@@ -61,9 +61,7 @@ def test_push(cli, tmpdir, datafiles):
 
     # Set up two artifact shares.
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare1")) as share1:
-
         with create_artifact_share(os.path.join(str(tmpdir), "artifactshare2")) as share2:
-
             # Try pushing with no remotes configured. This should fail.
             result = cli.run(project=project, args=["artifact", "push", "target.bst"])
             result.assert_main_error(ErrorDomain.STREAM, None)
@@ -120,7 +118,6 @@ def test_push_artifact(cli, tmpdir, datafiles):
     cli.configure({"cachedir": local_cache})
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-
         # First build it without the artifact cache configured
         result = cli.run(project=project, args=["build", element])
         result.assert_success()
@@ -174,7 +171,6 @@ def test_push_artifact_glob(cli, tmpdir, datafiles):
     cli.configure({"cachedir": local_cache})
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-
         # First build it without the artifact cache configured
         result = cli.run(project=project, args=["build", element])
         result.assert_success()
@@ -243,7 +239,6 @@ def test_push_fails_with_on_error_continue(cli, tmpdir, datafiles):
 
     # Set up the share
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-
         # First build the target (and its deps)
         result = cli.run(project=project, args=["build", "target.bst"])
         assert cli.get_element_state(project, "target.bst") == "cached"
@@ -303,7 +298,6 @@ def test_push_deps(cli, tmpdir, datafiles, deps, expected_states):
     runtime_dep = "import-bin.bst"
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-
         # First build it without the artifact cache configured
         result = cli.run(project=project, args=["build", target])
         result.assert_success()
@@ -354,7 +348,6 @@ def test_push_artifacts_all_deps_fails(cli, tmpdir, datafiles):
     cli.configure({"cachedir": local_cache})
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-
         # First build it without the artifact cache configured
         result = cli.run(project=project, args=["build", element])
         result.assert_success()
@@ -400,10 +393,10 @@ def test_push_after_pull(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     # Set up two artifact shares.
-    with create_artifact_share(os.path.join(str(tmpdir), "artifactshare1")) as share1, create_artifact_share(
-        os.path.join(str(tmpdir), "artifactshare2")
-    ) as share2:
-
+    with (
+        create_artifact_share(os.path.join(str(tmpdir), "artifactshare1")) as share1,
+        create_artifact_share(os.path.join(str(tmpdir), "artifactshare2")) as share2,
+    ):
         # Set the scene: share1 has the artifact, share2 does not.
         #
         cli.configure(
@@ -465,7 +458,6 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     # Create an artifact share (remote artifact cache) in the tmpdir/artifactshare
     # Set a 22 MB quota
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare"), quota=int(22e6)) as share:
-
         # Configure bst to push to the cache
         cli.configure(
             {
@@ -523,7 +515,6 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
     # Create an artifact share (remote cache) in tmpdir/artifactshare
     # Mock a file system with 5 MB total space
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare"), quota=int(5e6)) as share:
-
         # Configure bst to push to the remote cache
         cli.configure(
             {
@@ -580,7 +571,6 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
     # Create an artifact share (remote cache) in tmpdir/artifactshare
     # Set a 22 MB quota
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare"), quota=int(22e6)) as share:
-
         # Configure bst to push to the cache
         cli.configure(
             {
@@ -669,7 +659,6 @@ def test_push_already_cached(caplog, cli, tmpdir, datafiles):
     caplog.set_level(1)
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-
         cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
         result = cli.run(project=project, args=["build", "target.bst"])
 
@@ -691,10 +680,11 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles, use_remote, ignore_
     project = str(datafiles)
     caplog.set_level(1)
 
-    with create_artifact_share(os.path.join(str(tmpdir), "artifactshare1")) as shareuser, create_artifact_share(
-        os.path.join(str(tmpdir), "artifactshare2")
-    ) as shareproject, create_artifact_share(os.path.join(str(tmpdir), "artifactshare3")) as sharecli:
-
+    with (
+        create_artifact_share(os.path.join(str(tmpdir), "artifactshare1")) as shareuser,
+        create_artifact_share(os.path.join(str(tmpdir), "artifactshare2")) as shareproject,
+        create_artifact_share(os.path.join(str(tmpdir), "artifactshare3")) as sharecli,
+    ):
         # Add shareproject repo url to project.conf
         with open(os.path.join(project, "project.conf"), "a", encoding="utf-8") as projconf:
             projconf.write("artifacts:\n- url: {}\n  push: True".format(shareproject.repo))

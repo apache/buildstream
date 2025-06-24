@@ -118,7 +118,6 @@ class _Profiler:
 
     @contextlib.contextmanager
     def profile(self, topic, key, message=None):
-
         # Check if the user enabled topics are valid
         # NOTE: This is done in the first PROFILER.profile() call and
         # not __init__ to ensure we handle the exception. This also means

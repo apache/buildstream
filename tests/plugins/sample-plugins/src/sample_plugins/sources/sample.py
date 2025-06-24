@@ -28,5 +28,4 @@ class Sample(Source):
 
 # Plugin entry point
 def setup():
-
     return Sample

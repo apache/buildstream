@@ -107,7 +107,6 @@ def test_cache_key(datafiles, cli):
     ],
 )
 def test_cache_key_fatal_warnings(cli, tmpdir, first_warnings, second_warnings, identical_keys):
-
     # Builds project, Runs bst show, gathers cache keys
     def run_get_cache_key(project_name, warnings):
         config = {"name": "test", "min-version": "2.0", "element-path": "elements", "fatal-warnings": warnings}

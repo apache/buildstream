@@ -321,7 +321,6 @@ class AssetCache:
     # Release resources used by AssetCache.
     #
     def release_resources(self):
-
         # Close all remotes and their gRPC channels
         for remote in self._remotes.values():
             if remote.index:
@@ -338,7 +337,6 @@ class AssetCache:
     #    project_specs: List of specs for each project
     #
     def setup_remotes(self, specs: Iterable[RemoteSpec], project_specs: Dict[str, List[RemoteSpec]]):
-
         # Hold on to the project specs
         self._project_specs = project_specs
 
@@ -387,7 +385,6 @@ class AssetCache:
         index_remotes = []
         storage_remotes = []
         for spec in project_specs:
-
             if push and not spec.push:
                 continue
 

@@ -33,7 +33,6 @@ from .sourcemirrorfactory import SourceMirrorFactory
 #    (PluginOrigin): The newly created PluginOrigin
 #
 def load_plugin_origin(project, origin_node):
-
     origin_type = origin_node.get_enum("origin", PluginOriginType)
 
     if origin_type == PluginOriginType.LOCAL:

@@ -171,7 +171,6 @@ class OverlapAction(FastEnum):
 # Element._dependencies().
 #
 class _Scope(FastEnum):
-
     # All elements which the given element depends on, following
     # all elements required for building. Including the element itself.
     #
@@ -197,7 +196,6 @@ class _Scope(FastEnum):
 # Strength of cache key
 #
 class _KeyStrength(FastEnum):
-
     # Includes strong cache keys of all build dependencies and their
     # runtime dependencies.
     STRONG = 1
@@ -230,7 +228,6 @@ class _DisplayKey:
 # Actions the scheduler can take on error
 #
 class _SchedulerErrorAction(FastEnum):
-
     # Continue building the rest of the tree
     CONTINUE = "continue"
 
@@ -246,7 +243,6 @@ class _SchedulerErrorAction(FastEnum):
 # When to cache build trees
 #
 class _CacheBuildTrees(FastEnum):
-
     # Always store build trees
     ALWAYS = "always"
 
@@ -263,7 +259,6 @@ class _CacheBuildTrees(FastEnum):
 # A policy for which URIs to access when fetching and tracking
 #
 class _SourceUriPolicy(FastEnum):
-
     # Use all URIs from default aliases and mirrors
     ALL = "all"
 
@@ -289,7 +284,6 @@ class _SourceUriPolicy(FastEnum):
 # These values correspond to the CLI `--deps` arguments for convenience.
 #
 class _PipelineSelection(FastEnum):
-
     # Select only the target elements in the associated targets
     NONE = "none"
 
@@ -335,7 +329,6 @@ class _ProjectInformation:
 #
 class _HostMount:
     def __init__(self, path: str, host_path: Optional[str] = None, optional: bool = False) -> None:
-
         # Support environment variable expansion in host mounts
         path = os.path.expandvars(path)
         if host_path is None:

@@ -104,7 +104,6 @@ class FileListResult:
     """
 
     def __init__(self):
-
         self.overwritten = []
         """List of files which were overwritten in the target directory"""
 
@@ -188,8 +187,7 @@ def list_relative_paths(directory: str) -> Iterator[str]:
     Yields:
        Relative filenames in `directory`
     """
-    for (dirpath, dirnames, filenames) in os.walk(directory):
-
+    for dirpath, dirnames, filenames in os.walk(directory):
         # os.walk does not decend into symlink directories, which
         # makes sense because otherwise we might have redundant
         # directories, or end up descending into directories outside
@@ -440,7 +438,7 @@ def copy_files(
     *,
     filter_callback: Optional[Callable[[str], bool]] = None,
     ignore_missing: bool = False,
-    report_written: bool = False
+    report_written: bool = False,
 ) -> FileListResult:
     """Copy files from source to destination.
 
@@ -490,7 +488,7 @@ def link_files(
     *,
     filter_callback: Optional[Callable[[str], bool]] = None,
     ignore_missing: bool = False,
-    report_written: bool = False
+    report_written: bool = False,
 ) -> FileListResult:
     """Hardlink files from source to destination.
 
@@ -571,8 +569,7 @@ def get_bst_version() -> Tuple[int, int]:
 
     if versions[0] == "0+untagged":
         raise UtilError(
-            "Your git repository has no tags - BuildStream can't "
-            "determine its version. Please run `git fetch --tags`."
+            "Your git repository has no tags - BuildStream can't determine its version. Please run `git fetch --tags`."
         )
 
     try:
@@ -630,7 +627,7 @@ def save_file_atomic(
     newline: Optional[str] = None,
     closefd: bool = True,
     opener: Optional[Callable[[str, int], int]] = None,
-    tempdir: Optional[str] = None
+    tempdir: Optional[str] = None,
 ) -> Iterator[IO]:
     """Save a file with a temporary name and rename it into place when ready.
 
@@ -763,7 +760,6 @@ def guess_version(string: str, *, pattern: Optional[Pattern[str]] = None) -> Opt
 
     # Iterate over non-overlapping matches, and prefer a match which is more qualified (i.e. 1.2.3 is better than 1.2)
     for version_match in pattern.finditer(string):
-
         if not version_match:
             iter_guess = None
             iter_n_groups = 0
@@ -1043,7 +1039,7 @@ def _copy_directories(srcdir, destdir, target):
                 os.makedirs(new_dir)
                 yield (new_dir, mode)
             else:
-                raise UtilError("Source directory tree has file where " "directory expected: {}".format(old_dir))
+                raise UtilError("Source directory tree has file where directory expected: {}".format(old_dir))
     else:
         if not os.access(new_dir, os.W_OK):
             # If the destination directory is not writable, change permissions to make it
@@ -1102,7 +1098,6 @@ def _ensure_real_directory(root, path):
 def _process_list(
     srcdir, destdir, actionfunc, result, filter_callback=None, ignore_missing=False, report_written=False
 ):
-
     # Keep track of directory permissions, since these need to be set
     # *after* files have been written.
     permissions = []
@@ -1228,9 +1223,9 @@ def _tempdir(*, suffix="", prefix="tmp", dir):  # pylint: disable=redefined-buil
     # Do not allow fallback to a global temp directory. Due to the chmod
     # below, this method is not safe to be used in global temp
     # directories such as /tmp.
-    assert (
-        dir
-    ), "Creating directories in the public fallback `/tmp` is dangerous. Please use a directory with tight access controls."
+    assert dir, (
+        "Creating directories in the public fallback `/tmp` is dangerous. Please use a directory with tight access controls."
+    )
 
     tempdir = tempfile.mkdtemp(suffix=suffix, prefix=prefix, dir=dir)
 
@@ -1275,9 +1270,10 @@ def _tempnamedfile(mode="w+b", encoding=None, suffix="", prefix="tmp", dir=None)
         if temp is not None:
             temp.close()
 
-    with _signals.terminator(close_tempfile), tempfile.NamedTemporaryFile(
-        mode=mode, encoding=encoding, suffix=suffix, prefix=prefix, dir=dir
-    ) as temp:
+    with (
+        _signals.terminator(close_tempfile),
+        tempfile.NamedTemporaryFile(mode=mode, encoding=encoding, suffix=suffix, prefix=prefix, dir=dir) as temp,
+    ):
         yield temp
 
 
@@ -1325,7 +1321,6 @@ def _kill_process_tree(pid):
 #    (str): The program output.
 #
 def _call(*popenargs, terminate=False, **kwargs):
-
     kwargs["start_new_session"] = True
 
     process = None
@@ -1335,7 +1330,6 @@ def _call(*popenargs, terminate=False, **kwargs):
     # Handle termination, suspend and resume
     def kill_proc():
         if process:
-
             # Some callers know that their subprocess can be
             # gracefully terminated, make an attempt first
             if terminate:
@@ -1375,9 +1369,11 @@ def _call(*popenargs, terminate=False, **kwargs):
             group_id = os.getpgid(process.pid)
             os.killpg(group_id, signal.SIGCONT)
 
-    with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc), subprocess.Popen(
-        *popenargs, universal_newlines=True, **kwargs
-    ) as process:
+    with (
+        _signals.suspendable(suspend_proc, resume_proc),
+        _signals.terminator(kill_proc),
+        subprocess.Popen(*popenargs, universal_newlines=True, **kwargs) as process,
+    ):
         # Here, we don't use `process.communicate()` directly without a timeout
         # This is because, if we were to do that, and the process would never
         # output anything, the control would never be given back to the python
@@ -1589,7 +1585,6 @@ def _get_compression(tar):
 #    UtilError: In the case of a malformed version string
 #
 def _parse_version(version: str) -> Tuple[int, int]:
-
     try:
         versions = version.split(".")
         major = int(versions[0])
@@ -1612,7 +1607,6 @@ def _parse_version(version: str) -> Tuple[int, int]:
 #    A 2-tuple of form (major version, minor version)
 #
 def _get_bst_api_version() -> Tuple[int, int]:
-
     bst_major, bst_minor = get_bst_version()
 
     if bst_major < 2:

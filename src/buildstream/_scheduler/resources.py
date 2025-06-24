@@ -81,7 +81,6 @@ class Resources:
         #        about.
         #
         for resource in resources - exclusive:
-
             # If our job wants this resource exclusively, we never
             # check this, so we can get away with not (temporarily)
             # removing it from the set.

@@ -198,12 +198,10 @@ _command_steps = ["configure-commands", "build-commands", "install-commands", "s
 
 
 class BuildElement(Element):
-
     #############################################################
     #             Abstract Method Implementations               #
     #############################################################
     def configure(self, node):
-
         self.__commands = {}  # pylint: disable=attribute-defined-outside-init
 
         # FIXME: Currently this forcefully validates configurations
@@ -217,7 +215,6 @@ class BuildElement(Element):
             self.__commands[command_name] = node.get_str_list(command_name, [])
 
     def configure_dependencies(self, dependencies):
-
         self.__layout = {}  # pylint: disable=attribute-defined-outside-init
 
         # FIXME: Currently this forcefully validates configurations
@@ -289,7 +286,6 @@ class BuildElement(Element):
         sandbox.set_environment(self.get_environment())
 
     def stage(self, sandbox):
-
         # First stage it all
         #
         sorted_locations = sorted(self.__layout)
@@ -311,9 +307,7 @@ class BuildElement(Element):
         self.stage_sources(sandbox, self.get_variable("build-root"))
 
     def assemble(self, sandbox):
-
         with sandbox.batch(root_read_only=True, label="Running commands"):
-
             # We need to ensure that configure-commands are only called
             # once in workspaces, because the changes will persist across
             # incremental builds - not desirable, for example, in the case

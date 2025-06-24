@@ -53,7 +53,6 @@ class LinkElement(Element):
     BST_FORBID_SOURCES = True
 
     def configure(self, node):
-
         node.validate_keys(["target"])
 
         # Hold onto the node, keep it around for provenance.

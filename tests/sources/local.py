@@ -115,7 +115,6 @@ def test_stage_directory(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "symlink"))
 def test_stage_symlink(cli, tmpdir, datafiles):
-
     project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 

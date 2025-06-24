@@ -171,7 +171,7 @@ class Sandbox:
         root_read_only: bool = False,
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
-        label: Optional[str] = None
+        label: Optional[str] = None,
     ) -> Optional[int]:
         """Run a command in the sandbox.
 
@@ -345,7 +345,7 @@ class Sandbox:
         flags: int,
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
-        label: Optional[str] = None
+        label: Optional[str] = None,
     ) -> Optional[int]:
         if not self.__allow_run:
             raise _SandboxBug("Element specified BST_RUN_COMMANDS as False but called Sandbox.run()")
@@ -571,7 +571,6 @@ class Sandbox:
 # Flags indicating how the sandbox should be run.
 #
 class _SandboxFlags:
-
     # Use default sandbox configuration.
     #
     NONE = 0

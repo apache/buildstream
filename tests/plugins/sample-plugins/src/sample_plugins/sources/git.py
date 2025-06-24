@@ -155,7 +155,6 @@ This plugin also utilises the following configurable
   The provided ref was not found in the provided track in the element's git repository.
 """
 
-
 import os
 import re
 import shutil
@@ -204,7 +203,6 @@ def _strip_tag(rev):
 #
 class GitMirror(SourceFetcher):
     def __init__(self, source, path, url, ref, *, primary=False, tags=None):
-
         super().__init__()
         self.source = source
         self.path = path
@@ -579,7 +577,6 @@ class GitMirror(SourceFetcher):
             included = set()
             shallow = set()
             for _, commit_ref, _ in self.tags:
-
                 if commit_ref == self.ref:
                     # rev-list does not work in case of same rev
                     shallow.add(self.ref)
@@ -832,7 +829,6 @@ class GitSource(Source):
                     del node["tags"]
 
     def track(self):  # pylint: disable=arguments-differ
-
         # If self.tracking is not specified it's not an error, just silently return
         if not self.tracking:
             # Is there a better way to check if a ref is given.

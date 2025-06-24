@@ -351,7 +351,6 @@ class JunctionElement(Element):
     BST_FORBID_RDEPENDS = True
 
     def configure(self, node):
-
         node.validate_keys(["path", "options", "overrides", "aliases", "map-aliases"])
 
         self.path = node.get_str("path", default="")
@@ -363,7 +362,6 @@ class JunctionElement(Element):
         self.overrides = {}
         overrides_node = node.get_mapping("overrides", {})
         for key, junction_name in overrides_node.items():
-
             # Cannot override a subproject with the project itself
             #
             if junction_name.as_str() == self.name:

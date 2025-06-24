@@ -23,7 +23,6 @@ from ..exceptions import LoadErrorReason
 # A type of plugin
 #
 class PluginType(FastEnum):
-
     # A Source plugin
     SOURCE = "source"
 
@@ -42,7 +41,6 @@ class PluginType(FastEnum):
 # An enumeration depicting the type of plugin origin
 #
 class PluginOriginType(FastEnum):
-
     # A local plugin
     LOCAL = "local"
 
@@ -69,12 +67,10 @@ class PluginConfiguration:
 # Base class holding common properties of all origins.
 #
 class PluginOrigin:
-
     # Common fields valid for all plugin origins
     _COMMON_CONFIG_KEYS = ["origin", "sources", "elements", "source-mirrors", "allow-deprecated"]
 
     def __init__(self, origin_type):
-
         # Public
         self.origin_type = origin_type  # The PluginOriginType
         self.elements = {}  # A dictionary of PluginConfiguration
@@ -102,7 +98,6 @@ class PluginOrigin:
     #    origin_node (MappingNode): The node defining this origin
     #
     def initialize(self, project, origin_node):
-
         self.provenance_node = origin_node
         self.project = project
         self.load_config(origin_node)
@@ -167,9 +162,7 @@ class PluginOrigin:
     #    dictionary (dict): The location to store the results
     #
     def _load_plugin_configurations(self, sequence_node, dictionary):
-
         for node in sequence_node:
-
             # Parse as a simple string
             if type(node) is ScalarNode:  # pylint: disable=unidiomatic-typecheck
                 kind = node.as_str()

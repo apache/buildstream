@@ -90,7 +90,7 @@ class Project:
         parent_loader: Optional[Loader] = None,
         provenance_node: Optional[ProvenanceInformation] = None,
         search_for_project: bool = True,
-        fetch_subprojects=None
+        fetch_subprojects=None,
     ):
         #
         # Public members
@@ -240,7 +240,6 @@ class Project:
     # fully qualified urls based on the shorthand which is allowed
     # to be specified in the YAML
     def translate_url(self, url, *, source, first_pass=False):
-
         if url and utils._ALIAS_SEPARATOR in url:
             url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
             alias_url = self.get_alias_url(url_alias, first_pass=first_pass)
@@ -312,14 +311,14 @@ class Project:
         if full_path.is_symlink():
             provenance = node.get_provenance()
             raise LoadError(
-                "{}: Specified path '{}' must not point to " "symbolic links ".format(provenance, path_str),
+                "{}: Specified path '{}' must not point to symbolic links ".format(provenance, path_str),
                 LoadErrorReason.PROJ_PATH_INVALID_KIND,
             )
 
         if path.parts and path.parts[0] == "..":
             provenance = node.get_provenance()
             raise LoadError(
-                "{}: Specified path '{}' first component must " "not be '..'".format(provenance, path_str),
+                "{}: Specified path '{}' first component must not be '..'".format(provenance, path_str),
                 LoadErrorReason.PROJ_PATH_INVALID,
             )
 
@@ -338,23 +337,23 @@ class Project:
         if not is_inside:
             provenance = node.get_provenance()
             raise LoadError(
-                "{}: Specified path '{}' must not lead outside of the "
-                "project directory".format(provenance, path_str),
+                "{}: Specified path '{}' must not lead outside of the project directory".format(provenance, path_str),
                 LoadErrorReason.PROJ_PATH_INVALID,
             )
 
         if path.is_absolute():
             provenance = node.get_provenance()
             raise LoadError(
-                "{}: Absolute path: '{}' invalid.\n"
-                "Please specify a path relative to the project's root.".format(provenance, path),
+                "{}: Absolute path: '{}' invalid.\nPlease specify a path relative to the project's root.".format(
+                    provenance, path
+                ),
                 LoadErrorReason.PROJ_PATH_INVALID,
             )
 
         if full_resolved_path.is_socket() or (full_resolved_path.is_fifo() or full_resolved_path.is_block_device()):
             provenance = node.get_provenance()
             raise LoadError(
-                "{}: Specified path '{}' points to an unsupported " "file kind".format(provenance, path_str),
+                "{}: Specified path '{}' points to an unsupported file kind".format(provenance, path_str),
                 LoadErrorReason.PROJ_PATH_INVALID_KIND,
             )
 
@@ -456,7 +455,6 @@ class Project:
     def get_alias_uris(
         self, alias: str, *, first_pass: bool = False, tracking: bool = False
     ) -> Sequence[Optional[AliasSubstitution]]:
-
         if first_pass:
             config = self.first_pass_config
         else:
@@ -504,7 +502,6 @@ class Project:
     #    (list): A list of loaded Element
     #
     def load_elements(self, targets):
-
         with self._context.messenger.simple_task("Loading elements", silent_nested=True) as task:
             self.load_context.set_task(task)
             load_elements = self.loader.load(targets)
@@ -587,7 +584,6 @@ class Project:
     # This is for commands that accept multiple target elements.
     #
     def get_default_targets(self):
-
         # If _invoked_from_workspace_element has a value,
         # a workspace element was found before a project config
         # Therefore the workspace does not contain a project
@@ -626,7 +622,6 @@ class Project:
     #    (bool): Whether the loader is specified as duplicate
     #
     def junction_is_duplicated(self, project_name, loader):
-
         junctions = self._junction_duplicates.get(project_name, {})
 
         # Iterate over all paths specified by this project and see
@@ -656,7 +651,6 @@ class Project:
     #    (bool): Whether the loader is specified as internal
     #
     def junction_is_internal(self, loader):
-
         # Iterate over all paths specified by this project and see
         # if we find a match for the specified loader.
         #
@@ -760,7 +754,6 @@ class Project:
     # Raises: LoadError if there was a problem with the project.conf
     #
     def _validate_version(self, config_node):
-
         bst_major, bst_minor = utils._get_bst_api_version()
 
         # Use a custom error message for the absence of the required "min-version"
@@ -823,7 +816,6 @@ class Project:
     # Raises: LoadError if there was a problem with the project.conf
     #
     def _load(self, *, parent_loader=None, provenance_node=None):
-
         # Load builtin default
         projectfile = os.path.join(self.directory, _PROJECT_CONF_FILE)
         self._default_config_node = _yaml.load(_site.default_project_config, shortname="projectconfig.yaml")
@@ -1017,7 +1009,6 @@ class Project:
     #    ignore_unknown (bool) - Whether option loader shoud ignore unknown options.
     #
     def _load_pass(self, config, output, *, ignore_unknown=False):
-
         # Load project options
         options_node = config.get_mapping("options", default={})
         output.options.load(options_node)
