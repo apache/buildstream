@@ -17,7 +17,7 @@
 #
 import os
 
-import pkg_resources
+import importlib.metadata
 import pytest
 
 from buildstream._testing import register_repo_kind, sourcetests_collection_hook
@@ -132,7 +132,7 @@ register_repo_kind("tar", Tar, None)
 def pytest_sessionstart(session):
     if session.config.getvalue("plugins"):
         # Enable all plugins that implement the 'buildstream.tests.source_plugins' hook
-        for entrypoint in pkg_resources.iter_entry_points("buildstream.tests.source_plugins"):
+        for entrypoint in importlib.metadata.entry_points(group="buildstream.tests.source_plugins"):
             module = entrypoint.load()
             module.register_sources()
 
