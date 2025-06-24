@@ -7,7 +7,6 @@ pytest-env==1.1.5
 pytest-xdist==3.6.1
 pytest-timeout==2.3.1
 pyftpdlib==2.0.1
-setuptools==75.6.0
 ## The following requirements were added by pip freeze:
 astroid==3.3.7
 dill==0.3.9
