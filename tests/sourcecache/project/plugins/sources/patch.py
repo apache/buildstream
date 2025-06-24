@@ -88,7 +88,6 @@ class PatchSource(Source):
 
     def stage(self, directory):
         with self.timed_activity("Applying local patch: {}".format(self.path)):
-
             # Bail out with a comprehensive message if the target directory is empty
             if not os.listdir(directory):
                 raise SourceError(

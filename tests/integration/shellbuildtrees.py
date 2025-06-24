@@ -219,7 +219,6 @@ def share_without_buildtrees(tmp_path_factory, integration_cache):
 #    pull_buildtree (bool): Whether to also pull buildtrees
 #
 def maybe_pull_deps(cli, project, element_name, pull_deps, pull_buildtree):
-
     # Optionally pull the buildtree along with `bst artifact pull`
     if pull_deps:
         args = []

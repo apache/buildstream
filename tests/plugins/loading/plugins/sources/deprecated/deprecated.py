@@ -30,5 +30,4 @@ class Deprecated(Source):
 
 # Plugin entry point
 def setup():
-
     return Deprecated

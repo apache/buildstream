@@ -32,10 +32,10 @@ if TYPE_CHECKING:
 
     # pylint: enable=cyclic-import
 
+
 # An ElementSources object represents the combined sources of an element.
 class ElementSources:
     def __init__(self, context: Context, project: "Project", plugin: Plugin):
-
         self._context = context
         self._project = project
         self._plugin = plugin
@@ -396,8 +396,9 @@ class ElementSources:
             from .element import ElementError  # pylint: disable=cyclic-import
 
             raise ElementError(
-                "{}: {} cannot be the first source of an element "
-                "as it requires access to previous sources".format(self, self._sources[0])
+                "{}: {} cannot be the first source of an element as it requires access to previous sources".format(
+                    self, self._sources[0]
+                )
             )
 
         # Preflight the sources

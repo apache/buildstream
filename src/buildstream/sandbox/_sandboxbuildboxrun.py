@@ -171,7 +171,6 @@ class SandboxBuildBoxRun(SandboxREAPI):
             os.killpg(group_id, signal.SIGCONT)
 
         with ExitStack() as stack:
-
             # We want to launch buildbox-run in a new session in non-interactive
             # mode so that we handle the SIGTERM and SIGTSTP signals separately
             # from the nested process, but in interactive mode this causes

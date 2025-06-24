@@ -52,7 +52,7 @@ class SandboxConfig:
         build_arch: str,
         build_uid: Optional[int] = None,
         build_gid: Optional[int] = None,
-        remote_apis_socket_path: Optional[str] = None
+        remote_apis_socket_path: Optional[str] = None,
     ):
         self.build_os = build_os
         self.build_arch = build_arch
@@ -75,7 +75,6 @@ class SandboxConfig:
     #    A dictionary representation of this SandboxConfig
     #
     def to_dict(self) -> Dict[str, Union[str, int]]:
-
         # Assign mandatory portions of the sandbox configuration
         #
         # /!\ No additional mandatory members can ever be added to

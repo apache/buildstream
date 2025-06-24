@@ -33,7 +33,6 @@ from .optionenum import OptionEnum
 # specifically specified
 #
 class OptionArch(OptionEnum):
-
     OPTION_TYPE: str = "arch"
 
     def load(self, node):
@@ -71,7 +70,6 @@ class OptionArch(OptionEnum):
         return default_value
 
     def resolve(self):
-
         # Validate that the default machine arch reported by uname() is
         # explicitly supported by the project, only if it was not
         # overridden by user configuration or cli.

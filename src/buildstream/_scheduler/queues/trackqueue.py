@@ -27,7 +27,6 @@ from ..jobs import JobStatus
 # A queue which tracks sources
 #
 class TrackQueue(Queue):
-
     action_name = "Track"
     complete_name = "Sources Tracked"
     resources = [ResourceType.DOWNLOAD]
@@ -38,7 +37,6 @@ class TrackQueue(Queue):
     def status(self, element):
         # We can skip elements without any sources
         if not any(element.sources()):
-
             # But we still have to mark them as tracked
             element._tracking_done()
             return QueueStatus.SKIP
@@ -46,7 +44,6 @@ class TrackQueue(Queue):
         return QueueStatus.READY
 
     def done(self, _, element, result, status):
-
         if status is JobStatus.FAIL:
             return
 

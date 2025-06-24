@@ -53,7 +53,6 @@ class PluginProxyError(Exception):
 #
 class PluginProxy:
     def __init__(self, owner: Plugin, plugin: Plugin):
-
         # These members are considered internal, they are accessed by subclasses
         # which extend the PluginProxy, but hidden from the client Plugin implementations
         # which the proxy objects are handed off to.

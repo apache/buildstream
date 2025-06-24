@@ -61,7 +61,7 @@ class Message:
         elapsed: Optional[datetime.timedelta] = None,
         logfile: Optional[str] = None,
         sandbox: bool = False,
-        scheduler: bool = False
+        scheduler: bool = False,
     ):
         self.message_type: str = message_type  # Message type
         self.message: str = message  # The message string

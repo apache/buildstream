@@ -4,7 +4,6 @@ from buildstream import Element, OverlapAction
 # A testing element to test the behavior of staging overlapping files
 #
 class OverlapElement(Element):
-
     BST_MIN_VERSION = "2.0"
 
     def configure(self, node):

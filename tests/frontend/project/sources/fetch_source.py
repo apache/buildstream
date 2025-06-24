@@ -32,7 +32,6 @@ class FetchFetcher(SourceFetcher):
 
 
 class FetchSource(Source):
-
     BST_MIN_VERSION = "2.0"
 
     # Read config to know which URLs to fetch

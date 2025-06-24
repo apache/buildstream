@@ -28,7 +28,6 @@ class PluginOriginJunction(PluginOrigin):
         self._junction = None
 
     def get_plugin_paths(self, kind, plugin_type):
-
         # Get access to the project indicated by the junction,
         # possibly loading it as a side effect.
         #
@@ -82,7 +81,6 @@ class PluginOriginJunction(PluginOrigin):
         return location, defaults, "junction: {} ({})".format(project_path, display)
 
     def load_config(self, origin_node):
-
         origin_node.validate_keys(["junction", *PluginOrigin._COMMON_CONFIG_KEYS])
 
         self._junction = origin_node.get_str("junction")

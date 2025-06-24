@@ -32,5 +32,4 @@ class Sample(SourceMirror):
 
 # Plugin entry point
 def setup():
-
     return Sample

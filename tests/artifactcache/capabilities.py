@@ -67,6 +67,6 @@ def test_artifact_cache_with_missing_capabilities_is_skipped(cli, tmpdir, datafi
             # Initialize remotes
             context.initialize_remotes(True, True, None, None)
 
-            assert (
-                not artifactcache.has_fetch_remotes()
-            ), "System didn't realize the artifact cache didn't support BuildStream"
+            assert not artifactcache.has_fetch_remotes(), (
+                "System didn't realize the artifact cache didn't support BuildStream"
+            )

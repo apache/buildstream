@@ -79,7 +79,6 @@ class Job:
     _id_generator = itertools.count(1)
 
     def __init__(self, scheduler, action_name, logfile, *, max_retries=0):
-
         #
         # Public members
         #
@@ -120,7 +119,6 @@ class Job:
     # Starts the job.
     #
     def start(self):
-
         assert not self._terminated, "Attempted to start a job which was already terminated"
 
         self._tries += 1
@@ -206,7 +204,7 @@ class Job:
             message,
             element_name=self._message_element_name,
             element_key=self._message_element_key,
-            **kwargs
+            **kwargs,
         )
         self._messenger.message(message)
 
@@ -382,7 +380,6 @@ class Job:
                     #
                     return _ReturnCode.FAIL if retry_flag else _ReturnCode.PERM_FAIL, None
                 except Exception:  # pylint: disable=broad-except
-
                     # If an unhandled (not normalized to BstError) occurs, that's a bug,
                     # send the traceback and formatted exception back to the frontend
                     # and print it to the log file.

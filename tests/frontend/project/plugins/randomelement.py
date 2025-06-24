@@ -4,7 +4,6 @@ from buildstream import Element
 
 
 class RandomElement(Element):
-
     BST_MIN_VERSION = "2.0"
 
     def configure(self, node):

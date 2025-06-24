@@ -59,9 +59,11 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
     cwd = str(tmpdir)
 
     # Create artifact shares for pull & push testing
-    with create_artifact_share(os.path.join(str(tmpdir), "share1")) as share1, create_artifact_share(
-        os.path.join(str(tmpdir), "share2")
-    ) as share2, create_artifact_share(os.path.join(str(tmpdir), "share3")) as share3:
+    with (
+        create_artifact_share(os.path.join(str(tmpdir), "share1")) as share1,
+        create_artifact_share(os.path.join(str(tmpdir), "share2")) as share2,
+        create_artifact_share(os.path.join(str(tmpdir), "share3")) as share3,
+    ):
         cli2.configure(
             {
                 "artifacts": {"servers": [{"url": share1.repo, "push": True}]},

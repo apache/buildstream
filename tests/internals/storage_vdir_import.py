@@ -61,7 +61,7 @@ def generate_import_roots(rootno, directory):
 def generate_import_root(rootdir, filelist):
     if os.path.exists(rootdir):
         return
-    for (path, typesymbol, content) in filelist:
+    for path, typesymbol, content in filelist:
         if typesymbol == "F":
             (dirnames, filename) = os.path.split(path)
             os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
@@ -77,7 +77,7 @@ def generate_import_root(rootdir, filelist):
             os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
             os.symlink(content, os.path.join(rootdir, path))
     # Set deterministic mtime for all directories
-    for (dirpath, _, _) in os.walk(rootdir):
+    for dirpath, _, _ in os.walk(rootdir):
         _set_file_mtime(dirpath, MTIME)
 
 
@@ -120,7 +120,7 @@ def generate_random_root(rootno, directory):
                 os.symlink(relative_link, target)
         things.append(os.path.join(location, thingname))
     # Set deterministic mtime for all directories
-    for (dirpath, _, _) in os.walk(rootdir):
+    for dirpath, _, _ in os.walk(rootdir):
         _set_file_mtime(dirpath, MTIME)
 
 
@@ -190,7 +190,6 @@ def directory_not_empty(path):
 
 
 def _import_test(tmpdir, original, overlay, generator_function, verify_contents=False):
-
     # Skip this test if we do not have support for subsecond precision mtimes
     #
     if not have_subsecond_mtime(str(tmpdir)):

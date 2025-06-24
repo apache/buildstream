@@ -247,7 +247,6 @@ class ArtifactCache(AssetCache):
     #     missing_blobs (list): The Digests of the blobs to fetch
     #
     def fetch_missing_blobs(self, project, missing_blobs):
-
         index_remotes, _ = self.get_remotes(project.name, False)
         for remote in index_remotes:
             if not missing_blobs:
@@ -389,7 +388,6 @@ class ArtifactCache(AssetCache):
     #    artifact already existing.
     #
     def _push_artifact_proto(self, element, artifact, artifact_digest, remote):
-
         artifact_proto = artifact._get_proto()
 
         keys = list(utils._deduplicate([artifact_proto.strong_key, artifact_proto.weak_key]))

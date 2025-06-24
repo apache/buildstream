@@ -62,7 +62,6 @@ def test_conditionals(cli, datafiles, system, value, expected):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_unsupported_arch(cli, datafiles):
-
     with override_platform_uname(system="ULTRIX"):
         project = os.path.join(datafiles, "option-os")
         result = cli.run(

@@ -25,7 +25,6 @@ from ..._exceptions import SkipJob
 # A queue which pulls element artifacts
 #
 class PullQueue(Queue):
-
     action_name = "Pull"
     complete_name = "Artifacts Pulled"
     resources = [ResourceType.DOWNLOAD, ResourceType.CACHE]
@@ -40,7 +39,6 @@ class PullQueue(Queue):
             return QueueStatus.SKIP
 
     def done(self, _, element, result, status):
-
         if status is JobStatus.FAIL:
             return
 

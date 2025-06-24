@@ -93,7 +93,6 @@ except (ProgramNotFoundError, OSError, subprocess.CalledProcessError):
 # filesystem where @directory is located.
 #
 def have_subsecond_mtime(directory):
-
     try:
         test_file, test_filename = tempfile.mkstemp(dir=directory)
         os.close(test_file)

@@ -81,7 +81,6 @@ class CASRemote(BaseRemote):
     #     (CASRemoteError): if there was an error
     #
     def push_message(self, message):
-
         message_buffer = message.SerializeToString()
 
         self.init()

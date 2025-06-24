@@ -248,7 +248,6 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
     result = cli.run(project=project, args=args)
 
     if ref_storage == "inline":
-
         if cross_junction == "cross":
             #
             # Cross junction tracking is not allowed when the toplevel project

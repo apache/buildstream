@@ -21,7 +21,6 @@ from .optionenum import OptionEnum
 # OptionOS
 #
 class OptionOS(OptionEnum):
-
     OPTION_TYPE: str = "os"
 
     def load(self, node):
@@ -31,7 +30,6 @@ class OptionOS(OptionEnum):
         return platform.uname().system
 
     def resolve(self):
-
         # Validate that the default OS reported by uname() is explicitly
         # supported by the project, if not overridden by user config or cli.
         self.validate(self.value)
