@@ -21,11 +21,11 @@ import grpc
 from ._sandboxreapi import SandboxREAPI
 from .. import _signals
 from .._remote import BaseRemote
-from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
+from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .._protos.build.buildgrid import local_cas_pb2
 from .._protos.google.rpc import code_pb2
 from .._exceptions import BstError, SandboxError
-from .._protos.google.longrunning import operations_pb2, operations_pb2_grpc
+from .._protos.google.longrunning import operations_pb2
 from .._cas import CASRemote
 
 
@@ -46,21 +46,10 @@ class ExecutionRemote(BaseRemote):
         local_cas = self.casd.get_local_cas()
         request = local_cas_pb2.GetInstanceNameForRemotesRequest()
         self.spec.to_localcas_remote(request.execution)
-        try:
-            response = local_cas.GetInstanceNameForRemotes(request)
-            self.instance_name = response.instance_name
-            self.exec_service = self.casd.get_exec_service()
-            self.operations_service = self.casd.get_operations_service()
-        except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.UNIMPLEMENTED or e.code() == grpc.StatusCode.INVALID_ARGUMENT:
-                # buildbox-casd is too old to support execution service remotes.
-                # Fall back to direct connection.
-                self.instance_name = self.spec.instance_name
-                self.channel = self.spec.open_channel()
-                self.exec_service = remote_execution_pb2_grpc.ExecutionStub(self.channel)
-                self.operations_service = operations_pb2_grpc.OperationsStub(self.channel)
-            else:
-                raise
+        response = local_cas.GetInstanceNameForRemotes(request)
+        self.instance_name = response.instance_name
+        self.exec_service = self.casd.get_exec_service()
+        self.operations_service = self.casd.get_operations_service()
 
 
 class ActionCacheRemote(BaseRemote):
@@ -78,19 +67,9 @@ class ActionCacheRemote(BaseRemote):
         local_cas = self.casd.get_local_cas()
         request = local_cas_pb2.GetInstanceNameForRemotesRequest()
         self.spec.to_localcas_remote(request.action_cache)
-        try:
-            response = local_cas.GetInstanceNameForRemotes(request)
-            self.instance_name = response.instance_name
-            self.ac_service = self.casd.get_ac_service()
-        except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.UNIMPLEMENTED or e.code() == grpc.StatusCode.INVALID_ARGUMENT:
-                # buildbox-casd is too old to support action cache remotes.
-                # Fall back to direct connection.
-                self.instance_name = self.spec.instance_name
-                self.channel = self.spec.open_channel()
-                self.ac_service = remote_execution_pb2_grpc.ActionCacheStub(self.channel)
-            else:
-                raise
+        response = local_cas.GetInstanceNameForRemotes(request)
+        self.instance_name = response.instance_name
+        self.ac_service = self.casd.get_ac_service()
 
 
 # SandboxRemote()

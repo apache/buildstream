@@ -47,9 +47,6 @@ class SandboxBuildBoxRun(SandboxREAPI):
         if exit_code == 0:
             # buildbox-run --capabilities prints one capability per line
             cls._capabilities = set(output.split("\n"))
-        elif "Invalid option --capabilities" in output:
-            # buildbox-run is too old to support extra capabilities
-            cls._capabilities = set()
         else:
             # buildbox-run is not functional
             raise SandboxError(
