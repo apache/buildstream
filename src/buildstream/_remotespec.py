@@ -14,9 +14,6 @@
 
 import os
 from typing import Optional, Tuple, List, cast
-from urllib.parse import urlparse
-import grpc
-from grpc import ChannelCredentials, Channel
 
 from ._exceptions import LoadError, RemoteError
 from .exceptions import LoadErrorReason
@@ -114,9 +111,6 @@ class RemoteSpec:
         self._client_cert: Optional[bytes] = None
         self._cred_files_loaded: bool = False
 
-        # The grpc credentials object
-        self._credentials: Optional[ChannelCredentials] = None
-
         # Various connection parameters for grpc connection
         self._connection_config: Optional[MappingNode] = connection_config
 
@@ -178,18 +172,6 @@ class RemoteSpec:
         self._load_credential_files()
         return self._client_cert
 
-    # credentials()
-    #
-    @property
-    def credentials(self) -> ChannelCredentials:
-        if not self._credentials:
-            self._credentials = grpc.ssl_channel_credentials(
-                root_certificates=self.server_cert,
-                private_key=self.client_key,
-                certificate_chain=self.client_cert,
-            )
-        return self._credentials
-
     # grpc keepalive time
     #
     @property
@@ -221,25 +203,6 @@ class RemoteSpec:
         if self._connection_config:
             return self._connection_config.get_int("request-timeout", None)
         return None
-
-    # open_channel()
-    #
-    # Opens a gRPC channel based on this spec.
-    #
-    def open_channel(self) -> Channel:
-        url = urlparse(self.url)
-
-        if url.scheme == "http":
-            channel = grpc.insecure_channel("{}:{}".format(url.hostname, url.port or 80))
-        elif url.scheme == "https":
-            channel = grpc.secure_channel("{}:{}".format(url.hostname, url.port or 443), self.credentials)
-        else:
-            message = "Only 'http' and 'https' protocols are supported, but '{}' was supplied.".format(url.scheme)
-            if self._spec_node:
-                message = "{}: {}".format(self._spec_node.get_provenance(), message)
-            raise RemoteError(message)
-
-        return channel
 
     # to_localcas_remote()
     #
