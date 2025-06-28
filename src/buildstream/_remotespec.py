@@ -239,6 +239,7 @@ class RemoteSpec:
     #    spec_node: The configuration node describing the spec.
     #    basedir: The base directory from which to find certificates.
     #    remote_execution: Whether this spec is used for remote execution (some keys are invalid)
+    #    action_cache: Whether this spec is used for remote execution action cache
     #
     # Returns:
     #    The described RemoteSpec instance.
@@ -248,7 +249,12 @@ class RemoteSpec:
     #
     @classmethod
     def new_from_node(
-        cls, spec_node: MappingNode, basedir: Optional[str] = None, *, remote_execution: bool = False
+        cls,
+        spec_node: MappingNode,
+        basedir: Optional[str] = None,
+        *,
+        remote_execution: bool = False,
+        action_cache: bool = False,
     ) -> "RemoteSpec":
         server_cert: Optional[str] = None
         client_key: Optional[str] = None
@@ -261,8 +267,10 @@ class RemoteSpec:
         valid_keys: List[str] = ["url", "instance-name", "auth", "connection-config"]
         if not remote_execution:
             remote_type = cast(str, spec_node.get_enum("type", RemoteType, default=RemoteType.ALL))
+            valid_keys += ["type"]
+        if not remote_execution or action_cache:
             push = spec_node.get_bool("push", default=False)
-            valid_keys += ["push", "type"]
+            valid_keys += ["push"]
 
         spec_node.validate_keys(valid_keys)
 
@@ -500,9 +508,9 @@ class RemoteSpec:
 #
 class RemoteExecutionSpec:
     def __init__(
-        self, exec_spec: RemoteSpec, storage_spec: Optional[RemoteSpec], action_spec: Optional[RemoteSpec]
+        self, exec_spec: Optional[RemoteSpec], storage_spec: Optional[RemoteSpec], action_spec: Optional[RemoteSpec]
     ) -> None:
-        self.exec_spec: RemoteSpec = exec_spec
+        self.exec_spec: Optional[RemoteSpec] = exec_spec
         self.storage_spec: Optional[RemoteSpec] = storage_spec
         self.action_spec: Optional[RemoteSpec] = action_spec
 
@@ -526,7 +534,7 @@ class RemoteExecutionSpec:
     ) -> "RemoteExecutionSpec":
         node.validate_keys(["execution-service", "storage-service", "action-cache-service"])
 
-        exec_node = node.get_mapping("execution-service")
+        exec_node = node.get_mapping("execution-service", default=None)
         storage_node = node.get_mapping("storage-service", default=None)
         if not storage_node and not remote_cache:
             provenance = node.get_provenance()
@@ -538,7 +546,20 @@ class RemoteExecutionSpec:
             )
         action_node = node.get_mapping("action-cache-service", default=None)
 
-        exec_spec = RemoteSpec.new_from_node(exec_node, basedir, remote_execution=True)
+        if not exec_node and not action_node:
+            provenance = node.get_provenance()
+            raise LoadError(
+                "{}: At least one of `execution-service` or `action-cache-service` need to be specified in the 'remote-execution' section".format(
+                    provenance
+                ),
+                LoadErrorReason.INVALID_DATA,
+            )
+
+        exec_spec: Optional[RemoteSpec]
+        if exec_node:
+            exec_spec = RemoteSpec.new_from_node(exec_node, basedir, remote_execution=True)
+        else:
+            exec_spec = None
 
         storage_spec: Optional[RemoteSpec]
         if storage_node:
@@ -548,7 +569,7 @@ class RemoteExecutionSpec:
 
         action_spec: Optional[RemoteSpec]
         if action_node:
-            action_spec = RemoteSpec.new_from_node(action_node, basedir, remote_execution=True)
+            action_spec = RemoteSpec.new_from_node(action_node, basedir, remote_execution=True, action_cache=True)
         else:
             action_spec = None
 
