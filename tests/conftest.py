@@ -16,8 +16,8 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 #
 import os
+import sys
 
-import pkg_resources
 import pytest
 
 from buildstream._testing import register_repo_kind, sourcetests_collection_hook
@@ -28,6 +28,11 @@ from buildstream._testing._fixtures import (  # pylint: disable=unused-import
 from buildstream._testing.integration import integration_cache  # pylint: disable=unused-import
 
 from tests.testutils.repo.tar import Tar
+
+if sys.version_info >= (3, 10):
+    from importlib.metadata import entry_points
+else:
+    from importlib_metadata import entry_points
 
 
 #
@@ -132,7 +137,7 @@ register_repo_kind("tar", Tar, None)
 def pytest_sessionstart(session):
     if session.config.getvalue("plugins"):
         # Enable all plugins that implement the 'buildstream.tests.source_plugins' hook
-        for entrypoint in pkg_resources.iter_entry_points("buildstream.tests.source_plugins"):
+        for entrypoint in entry_points(group="buildstream.tests.source_plugins"):
             module = entrypoint.load()
             module.register_sources()
 

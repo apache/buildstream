@@ -20,10 +20,10 @@
 # to test that BuildStream works when integrated in your system.
 #
 def pip_sample_packages():
-    import pkg_resources
+    import importlib.metadata
 
     required = {"sample-plugins"}
-    installed = {pkg.key for pkg in pkg_resources.working_set}  # pylint: disable=not-an-iterable
+    installed = {dist.name for dist in importlib.metadata.distributions()}
     missing = required - installed
 
     if missing:
