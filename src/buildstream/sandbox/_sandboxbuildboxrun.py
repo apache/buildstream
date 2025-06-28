@@ -17,6 +17,7 @@ import subprocess
 import sys
 from contextlib import ExitStack
 
+import grpc
 import psutil
 
 from .. import utils, _signals
@@ -24,6 +25,7 @@ from . import _SandboxFlags
 from .._exceptions import SandboxError, SandboxUnavailableError
 from .._platform import Platform
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+from ._reremote import RERemote
 from ._sandboxreapi import SandboxREAPI
 
 
@@ -32,6 +34,27 @@ from ._sandboxreapi import SandboxREAPI
 # BuildBox-based sandbox implementation.
 #
 class SandboxBuildBoxRun(SandboxREAPI):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        context = self._get_context()
+        cascache = context.get_cascache()
+
+        re_specs = context.remote_execution_specs
+        if re_specs and re_specs.action_spec:
+            self.re_remote = RERemote(context.remote_cache_spec, re_specs, cascache)
+            try:
+                self.re_remote.init()
+                self.re_remote.check()
+            except grpc.RpcError as e:
+                urls = set()
+                if re_specs.storage_spec:
+                    urls.add(re_specs.storage_spec.url)
+                urls.add(re_specs.action_spec.url)
+                raise SandboxError("Failed to contact remote cache endpoint at {}: {}".format(sorted(urls), e)) from e
+        else:
+            self.re_remote = None
+
     @classmethod
     def __buildbox_run(cls):
         return utils._get_host_tool_internal("buildbox-run", search_subprojects_dir="buildbox")
@@ -91,8 +114,10 @@ class SandboxBuildBoxRun(SandboxREAPI):
         casd = cascache.get_casd()
         config = self._get_config()
 
-        if config.remote_apis_socket_path and context.remote_cache_spec:
-            raise SandboxError("'remote-apis-socket' is not currently supported with 'storage-service'.")
+        if config.remote_apis_socket_path and context.remote_cache_spec and not self.re_remote:
+            raise SandboxError(
+                "Using 'remote-apis-socket' with 'storage-service' requires 'action-cache-service' or 'execution-service' configured in the 'remote-execution' section."
+            )
 
         with utils._tempnamedfile() as action_file, utils._tempnamedfile() as result_file:
             action_file.write(action.SerializeToString())
@@ -104,6 +129,9 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 "--action={}".format(action_file.name),
                 "--action-result={}".format(result_file.name),
             ]
+
+            if self.re_remote:
+                buildbox_command.append("--instance={}".format(self.re_remote.local_cas_instance_name))
 
             # Do not redirect stdout/stderr
             if "no-logs-capture" in self._capabilities:
@@ -145,7 +173,14 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 interactive=(flags & _SandboxFlags.INTERACTIVE),
             )
 
-            return remote_execution_pb2.ActionResult().FromString(result_file.read())
+            action_result = remote_execution_pb2.ActionResult().FromString(result_file.read())
+
+        if self.re_remote and context.remote_execution_specs.storage_spec and context.remote_cache_spec:
+            # This ensures that the outputs are uploaded to the cache storage-service
+            # in case different CAS remotes have been configured in the `cache` and `remote-execution` sections.
+            self._fetch_action_result_outputs(self.re_remote, action_result)
+
+        return action_result
 
     def _run_buildbox(self, argv, stdin, stdout, stderr, *, interactive):
         def kill_proc():

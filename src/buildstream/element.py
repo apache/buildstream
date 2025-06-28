@@ -2822,7 +2822,7 @@ class Element(Plugin):
         else:
             output_node_properties = None
 
-        if allow_remote and context.remote_execution_specs:
+        if allow_remote and context.remote_execution_specs and context.remote_execution_specs.exec_spec:
             with SandboxRemote(
                 context,
                 project,

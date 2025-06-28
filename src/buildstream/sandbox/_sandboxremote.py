@@ -40,7 +40,7 @@ class SandboxRemote(SandboxREAPI):
         cascache = context.get_cascache()
 
         specs = context.remote_execution_specs
-        if specs is None:
+        if specs is None or specs.exec_spec is None:
             return
 
         self.storage_spec = specs.storage_spec
