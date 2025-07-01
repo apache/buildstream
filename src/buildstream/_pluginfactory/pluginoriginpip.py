@@ -72,7 +72,7 @@ class PluginOriginPip(PluginOrigin):
                 reason="package-not-found",
             ) from e
 
-        if dist.version not in package.specifier:
+        if not package.specifier.contains(dist.version, prereleases=True):
             raise PluginError(
                 "{}: Version conflict encountered while loading {} plugin '{}'".format(
                     self.provenance_node.get_provenance(), plugin_type, kind
