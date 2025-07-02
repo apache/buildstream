@@ -63,7 +63,6 @@ class ImportElement(Element):
         pass
 
     def assemble(self, sandbox):
-
         # Stage sources into the input directory
         self.stage_sources(sandbox, "input")
 

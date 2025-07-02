@@ -43,10 +43,10 @@ def test_push_pull(cli, tmpdir, datafiles):
     project = os.path.join(str(datafiles), "parent")
     base_project = os.path.join(str(project), "base")
 
-    with create_artifact_share(os.path.join(str(tmpdir), "artifactshare-parent")) as share, create_artifact_share(
-        os.path.join(str(tmpdir), "artifactshare-base")
-    ) as base_share:
-
+    with (
+        create_artifact_share(os.path.join(str(tmpdir), "artifactshare-parent")) as share,
+        create_artifact_share(os.path.join(str(tmpdir), "artifactshare-base")) as base_share,
+    ):
         # First build it without the artifact cache configured
         result = cli.run(project=project, args=["build", "target.bst"])
         assert result.exit_code == 0

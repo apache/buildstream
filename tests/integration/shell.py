@@ -367,7 +367,6 @@ def test_integration_external_workspace(cli, tmpdir_factory, datafiles, build_sh
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
 def test_integration_partial_artifact(cli, datafiles, tmpdir, integration_cache):
-
     project = str(datafiles)
     element_name = "autotools/amhello.bst"
 

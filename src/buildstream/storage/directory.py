@@ -41,7 +41,6 @@ root boundary will be evaluated as the root directory. This behavior matches POS
 of filesystem root directories.
 """
 
-
 from contextlib import contextmanager
 from tarfile import TarFile
 from typing import Callable, Optional, Union, List, IO, Iterator
@@ -96,7 +95,6 @@ class FileStat:
     def __init__(
         self, file_type: int, *, executable: bool = False, size: int = 0, mtime: float = BST_ARBITRARY_TIMESTAMP
     ) -> None:
-
         self.file_type: int = file_type
         """The :class:`.FileType` of this file"""
 
@@ -167,7 +165,7 @@ class Directory:
         external_pathspec: Union["Directory", str],
         *,
         filter_callback: Optional[Callable[[str], bool]] = None,
-        collect_result: bool = True
+        collect_result: bool = True,
     ) -> Optional[FileListResult]:
         """Imports some or all files from external_path into this directory.
 
@@ -406,7 +404,7 @@ class Directory:
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
         properties: Optional[List[str]] = None,
-        collect_result: bool = True
+        collect_result: bool = True,
     ) -> Optional[FileListResult]:
         return self._import_files(
             external_pathspec,
@@ -445,7 +443,7 @@ class Directory:
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
         properties: Optional[List[str]] = None,
-        collect_result: bool = True
+        collect_result: bool = True,
     ) -> Optional[FileListResult]:
         raise NotImplementedError()
 

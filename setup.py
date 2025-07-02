@@ -98,9 +98,9 @@ def list_buildbox_binaries():
         if missing_binaries:
             paths_text = "\n".join(["  * {}".format(path) for path in missing_binaries])
             print(
-                "Expected BuildBox binaries were not found. "
-                "Set BST_BUNDLE_BUILDBOX=0 or provide:\n\n"
-                "{}\n".format(paths_text),
+                "Expected BuildBox binaries were not found. Set BST_BUNDLE_BUILDBOX=0 or provide:\n\n{}\n".format(
+                    paths_text
+                ),
                 file=sys.stderr,
             )
             raise SystemExit(1)

@@ -4,7 +4,6 @@ WARNING_A = "warning-a"
 
 
 class WarningA(Element):
-
     BST_MIN_VERSION = "2.0"
 
     def configure(self, node):

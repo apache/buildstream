@@ -51,7 +51,6 @@ class ScriptElement(buildstream.ScriptElement):
 
     def configure_dependencies(self, dependencies):
         for dep in dependencies:
-
             # Determine the location to stage each element, default is "/"
             location = "/"
             if dep.config:

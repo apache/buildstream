@@ -160,6 +160,7 @@ _TXT = Union[bytes, str]
 _STR_BYTES_PATH = Union[str, bytes, "os.PathLike[str]", "os.PathLike[bytes]"]
 _CMD = Union[_STR_BYTES_PATH, Sequence[_STR_BYTES_PATH]]
 
+
 # _background_job_wrapper()
 #
 # Wrapper for running jobs in the background, transparently for users
@@ -286,7 +287,6 @@ class Plugin:
         type_tag: str,
         unique_id: Optional[int] = None,
     ):
-
         self.name = name
         """The plugin name
 
@@ -589,7 +589,7 @@ class Plugin:
         activity_name: str,
         *,
         detail: Optional[str] = None,
-        silent_nested: bool = False
+        silent_nested: bool = False,
     ) -> T1:
         """Execute a blocking activity in the background.
 

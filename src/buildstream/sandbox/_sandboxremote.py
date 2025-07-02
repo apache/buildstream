@@ -185,8 +185,9 @@ class SandboxRemote(SandboxREAPI):
                     grpc.StatusCode.DEADLINE_EXCEEDED,
                 ):
                     raise SandboxError(
-                        "Failed contacting remote execution server at {}."
-                        "{}: {}".format(self.exec_spec.url, status_code.name, e.details())
+                        "Failed contacting remote execution server at {}.{}: {}".format(
+                            self.exec_spec.url, status_code.name, e.details()
+                        )
                     )
 
                 if running_operation and status_code == grpc.StatusCode.UNIMPLEMENTED:
@@ -199,9 +200,12 @@ class SandboxRemote(SandboxREAPI):
 
         # Set up signal handler to trigger cancel_operation on SIGTERM
         operation = None
-        with self._get_context().messenger.timed_activity(
-            "Waiting for the remote build to complete", element_name=self._get_element_name()
-        ), _signals.terminator(self.cancel_operation):
+        with (
+            self._get_context().messenger.timed_activity(
+                "Waiting for the remote build to complete", element_name=self._get_element_name()
+            ),
+            _signals.terminator(self.cancel_operation),
+        ):
             operation = __run_remote_command(stub, execute_request=request)
             if operation is None:
                 return None
@@ -227,7 +231,7 @@ class SandboxRemote(SandboxREAPI):
                 pass
             else:
                 raise SandboxError(
-                    "Failed trying to send CancelOperation request: " "{} ({})".format(e.details(), e.code().name)
+                    "Failed trying to send CancelOperation request: {} ({})".format(e.details(), e.code().name)
                 )
 
     def _fetch_missing_blobs(self, vdir):

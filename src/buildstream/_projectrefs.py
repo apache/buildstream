@@ -25,7 +25,6 @@ from .exceptions import LoadErrorReason
 #
 # Indicates the type of ref storage
 class ProjectRefStorage:
-
     # Source references are stored inline
     #
     INLINE = "inline"
@@ -102,11 +101,9 @@ class ProjectRefs:
     #    (node): The YAML dictionary where the ref is stored
     #
     def lookup_ref(self, project, element, source_index, *, write=False):
-
         node = self._lookup(self._toplevel_node, project, element, source_index)
 
         if write:
-
             # If we couldnt find the orignal, create a new one.
             #
             if node is None:

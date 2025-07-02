@@ -37,6 +37,7 @@ from .storage._casbaseddirectory import CasBasedDirectory
 from .sandbox._config import SandboxConfig
 from ._variables import Variables
 
+
 # An Artifact class to abstract artifact operations
 # from the Element class
 #
@@ -48,7 +49,6 @@ from ._variables import Variables
 #     weak_key (str): The elements weak cache key
 #
 class Artifact:
-
     version = 2
 
     def __init__(self, element, context, *, strong_key=None, strict_key=None, weak_key=None):
@@ -214,7 +214,6 @@ class Artifact:
         environment,
         sandboxconfig,
     ):
-
         context = self._context
         element = self._element
         size = 0
@@ -336,7 +335,6 @@ class Artifact:
     #             if a buildroot is present, not its contents.
     #
     def cached_buildroot(self):
-
         buildroot_digest = self._get_field_digest("buildroot")
         if buildroot_digest:
             return self._cas.contains_directory(buildroot_digest)
@@ -352,7 +350,6 @@ class Artifact:
     #     (bool): True if artifact was created with buildroot
     #
     def buildroot_exists(self):
-
         artifact = self._get_proto()
         return bool(str(artifact.buildroot))
 
@@ -368,7 +365,6 @@ class Artifact:
     #             if a buildtree is present, not its contents.
     #
     def cached_buildtree(self):
-
         buildtree_digest = self._get_field_digest("buildtree")
         if buildtree_digest:
             return self._cas.contains_directory(buildtree_digest)
@@ -384,7 +380,6 @@ class Artifact:
     #     (bool): True if artifact was created with buildtree
     #
     def buildtree_exists(self):
-
         artifact = self._get_proto()
         return bool(str(artifact.buildtree))
 
@@ -397,7 +392,6 @@ class Artifact:
     #             are not available.
     #
     def cached_sources(self):
-
         sources_digest = self._get_field_digest("sources")
         if sources_digest:
             return self._cas.contains_directory(sources_digest)
@@ -412,7 +406,6 @@ class Artifact:
     #    (dict): The artifacts cached public data
     #
     def load_public_data(self):
-
         # Load the public data from the artifact
         artifact = self._get_proto()
         with self._cas.open(artifact.public_data) as meta_file:
@@ -429,7 +422,6 @@ class Artifact:
     #    The stored SandboxConfig object
     #
     def load_sandbox_config(self) -> SandboxConfig:
-
         # Load the sandbox data from the artifact
         artifact = self._get_proto()
         meta_file = self._cas.objpath(artifact.low_diversity_meta)
@@ -449,7 +441,6 @@ class Artifact:
     #    The environment variables
     #
     def load_environment(self) -> Dict[str, str]:
-
         # Load the sandbox data from the artifact
         artifact = self._get_proto()
         meta_file = self._cas.objpath(artifact.low_diversity_meta)
@@ -469,7 +460,6 @@ class Artifact:
     #    The element variables
     #
     def load_variables(self) -> Variables:
-
         # Load the sandbox data from the artifact
         artifact = self._get_proto()
         meta_file = self._cas.objpath(artifact.high_diversity_meta)
@@ -489,7 +479,6 @@ class Artifact:
     #    (str): Detailed description of the result
     #
     def load_build_result(self):
-
         artifact = self._get_proto()
         build_result = (artifact.build_success, artifact.build_error, artifact.build_error_details)
 
@@ -505,7 +494,6 @@ class Artifact:
     #    The weak key
     #
     def get_metadata_keys(self) -> Tuple[str, str, str]:
-
         if self._metadata_keys is not None:
             return self._metadata_keys
 
@@ -528,7 +516,6 @@ class Artifact:
     #    (bool): Whether the given artifact was workspaced
     #
     def get_metadata_workspaced(self):
-
         if self._metadata_workspaced is not None:
             return self._metadata_workspaced
 
@@ -547,7 +534,6 @@ class Artifact:
     #    (list): List of which dependencies are workspaced
     #
     def get_metadata_workspaced_dependencies(self):
-
         if self._metadata_workspaced_dependencies is not None:
             return self._metadata_workspaced_dependencies
 

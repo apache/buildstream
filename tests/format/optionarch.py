@@ -63,7 +63,6 @@ def test_conditional(cli, datafiles, machine, value, expected):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_unsupported_arch(cli, datafiles):
-
     with override_platform_uname(machine="x86_64"):
         project = os.path.join(datafiles, "option-arch")
         result = cli.run(
@@ -75,7 +74,6 @@ def test_unsupported_arch(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_alias(cli, datafiles):
-
     with override_platform_uname(machine="arm"):
         project = os.path.join(datafiles, "option-arch-alias")
         result = cli.run(
@@ -87,7 +85,6 @@ def test_alias(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_unknown_host_arch(cli, datafiles):
-
     with override_platform_uname(machine="x86_128"):
         project = os.path.join(datafiles, "option-arch")
         result = cli.run(
@@ -99,7 +96,6 @@ def test_unknown_host_arch(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_unknown_project_arch(cli, datafiles):
-
     project = os.path.join(datafiles, "option-arch-unknown")
     result = cli.run(
         project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]

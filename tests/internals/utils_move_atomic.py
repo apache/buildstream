@@ -112,7 +112,6 @@ def test_move_to_existing_non_empty_dir(src, tmp_path):
 
 
 def test_move_to_empty_dir_set_mtime(src, tmp_path):
-
     # Skip this test if we do not have support for subsecond precision mtimes
     #
     if not have_subsecond_mtime(str(tmp_path)):

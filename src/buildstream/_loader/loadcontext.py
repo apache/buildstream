@@ -25,7 +25,6 @@ from ..types import _ProjectInformation
 #
 class ProjectLoaders:
     def __init__(self, project_name):
-
         # The project name
         self._name = project_name
 
@@ -153,7 +152,6 @@ class ProjectLoaders:
     #    (str): A string representing how this loader was loaded
     #
     def _loader_description(self, loader, duplicates, internals):
-
         line = "{}\n".format(loader)
 
         # Mention projects which have marked this project as a duplicate
@@ -180,7 +178,6 @@ class ProjectLoaders:
 #
 class LoadContext:
     def __init__(self, context):
-
         # Keep track of global context required throughout the recursive load
         self.context = context
         self.rewritable = False

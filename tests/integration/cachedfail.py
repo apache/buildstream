@@ -197,7 +197,6 @@ def test_retry_failed(cli, tmpdir, datafiles, use_share, retry, strict):
     cli.configure({"cachedir": cli.directory, "projects": {"test": {"strict": strict}}})
 
     with ExitStack() as stack:
-
         if use_share:
             share = stack.enter_context(create_artifact_share(os.path.join(str(tmpdir), "artifactshare")))
             cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
@@ -291,7 +290,6 @@ def test_nonstrict_retry_failed(cli, tmpdir, datafiles, use_share, success):
         }
 
     with ExitStack() as stack:
-
         if use_share:
             share = stack.enter_context(create_artifact_share(os.path.join(str(tmpdir), "artifactshare")))
             cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
@@ -472,7 +470,6 @@ def test_push_but_stop_building_after_failed(cli, tmpdir, datafiles):
     cli.remove_artifact_from_cache(project, "base-also-fail.bst")
 
     with create_artifact_share(os.path.join(str(tmpdir), "remote")) as share:
-
         # Set only 1 builder, and explicitly configure `--on-error quit`
         cli.configure(
             {

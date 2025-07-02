@@ -341,7 +341,7 @@ class Messenger:
         task_name: Optional[str] = None,
         detail: Optional[str] = None,
         silent_nested: bool = False,
-        **kwargs
+        **kwargs,
     ) -> Iterator[Optional[Task]]:
         # Bypass use of State when none exists (e.g. tests)
         if not self._state:
@@ -428,10 +428,8 @@ class Messenger:
         os.makedirs(directory, exist_ok=True)
 
         with open(self._locals.log_filename, "a", encoding="utf-8") as logfile:
-
             # Write one last line to the log and flush it to disk
             def flush_log():
-
                 # If the process currently had something happening in the I/O stack
                 # then trying to reenter the I/O stack will fire a runtime error.
                 #
@@ -522,7 +520,6 @@ class Messenger:
     #    message: The message to record
     #
     def _record_message(self, message: Message) -> None:
-
         if self._locals.log_handle is None:
             return
 

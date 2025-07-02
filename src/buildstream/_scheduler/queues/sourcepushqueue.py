@@ -22,7 +22,6 @@ from ..._exceptions import SkipJob
 # A queue which pushes staged sources
 #
 class SourcePushQueue(Queue):
-
     action_name = "Src-push"
     complete_name = "Sources Pushed"
     resources = [ResourceType.UPLOAD]

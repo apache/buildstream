@@ -274,7 +274,6 @@ class Workspace:
     #
     @classmethod
     def from_dict(cls, toplevel_project, dictionary):
-
         # Just pass the dictionary as kwargs
         return cls(toplevel_project, **dictionary)
 
@@ -487,8 +486,9 @@ class Workspaces:
         if version < 4:
             # bst 1.x workspaces do not separate source and build files.
             raise LoadError(
-                "Workspace configuration format version {} not supported."
-                "Please recreate this workspace.".format(version),
+                "Workspace configuration format version {} not supported.Please recreate this workspace.".format(
+                    version
+                ),
                 LoadErrorReason.INVALID_DATA,
             )
 

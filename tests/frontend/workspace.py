@@ -96,7 +96,6 @@ class WorkspaceCreator:
         return element_name, element_path, workspace_dir
 
     def create_workspace_elements(self, kinds, suffixs=None, workspace_dir_usr=None, element_attrs=None):
-
         element_tuples = []
 
         if suffixs is None:
@@ -119,7 +118,6 @@ class WorkspaceCreator:
         return element_tuples
 
     def open_workspaces(self, kinds, suffixs=None, workspace_dir=None, element_attrs=None, no_checkout=False):
-
         element_tuples = self.create_workspace_elements(kinds, suffixs, workspace_dir, element_attrs)
         os.makedirs(self.workspace_cmd, exist_ok=True)
 

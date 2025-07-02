@@ -21,7 +21,6 @@ from ...types import _KeyStrength
 # A queue which queries the cache for artifacts and sources
 #
 class CacheQueryQueue(Queue):
-
     action_name = "Cache-query"
     complete_name = "Cache queried"
     resources = [ResourceType.PROCESS, ResourceType.CACHE]

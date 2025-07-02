@@ -122,7 +122,6 @@ class DummyArtifactShare(BaseArtifactShare):
 #
 class ArtifactShare(BaseArtifactShare):
     def __init__(self, directory, *, quota=None, index_only=False):
-
         # The working directory for the artifact share (in case it
         # needs to do something outside of its backend's storage folder).
         #
@@ -162,7 +161,6 @@ class ArtifactShare(BaseArtifactShare):
     # Returns:
     #    (bool): True if the object exists in the share, otherwise false.
     def has_object(self, digest):
-
         assert isinstance(digest, remote_execution_pb2.Digest)
 
         object_path = self.cas.objpath(digest)
@@ -220,7 +218,6 @@ class ArtifactShare(BaseArtifactShare):
             channel.close()
 
     def get_cas_files(self, artifact_proto_digest):
-
         reachable = set()
 
         def reachable_dir(digest):

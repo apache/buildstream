@@ -195,7 +195,6 @@ class ScriptElement(Element):
         }
 
     def configure_sandbox(self, sandbox):
-
         # Setup the environment and work directory
         sandbox.set_work_directory(self.__cwd)
 
@@ -206,11 +205,9 @@ class ScriptElement(Element):
         sandbox.mark_directory(self.__install_root)
 
     def stage(self, sandbox):
-
         # If self.layout_add() was never called, do the default staging of
         # everything in "/" and run the integration commands
         if not self.__layout:
-
             with self.timed_activity("Staging dependencies", silent_nested=True):
                 self.stage_dependency_artifacts(sandbox)
 

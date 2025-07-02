@@ -3,7 +3,6 @@ from buildstream import Element
 
 
 class MalformedMinVersion(Element):
-
     BST_MIN_VERSION = {"major": 2, "minor": 0}
 
 

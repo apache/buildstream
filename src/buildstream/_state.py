@@ -28,7 +28,6 @@ from .types import _DisplayKey
 #
 class TaskGroup:
     def __init__(self, name: str, state: "State", complete_name: Optional[str] = None) -> None:
-
         #
         # Public members
         #
@@ -106,7 +105,6 @@ class Task:
     def __init__(
         self, state: "State", task_id: str, action_name: str, full_name: str, elapsed_offset: datetime.timedelta
     ) -> None:
-
         #
         # Public members
         #
@@ -203,7 +201,6 @@ class Task:
 #
 class State:
     def __init__(self, session_start: datetime.datetime) -> None:
-
         #
         # Public members
         #

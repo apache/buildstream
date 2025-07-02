@@ -47,7 +47,7 @@ class _IndexEntry:
         target: Optional[str] = None,
         is_executable: bool = False,
         directory: Optional["CasBasedDirectory"] = None,
-        mtime: Optional[timestamp_pb2.Timestamp] = None  # pylint: disable=no-member
+        mtime: Optional[timestamp_pb2.Timestamp] = None,  # pylint: disable=no-member
     ) -> None:
         # The CAS cache
         self.cas_cache: CASCache = cas_cache
@@ -132,7 +132,7 @@ class CasBasedDirectory(Directory):
         *,
         digest=None,
         parent: Optional["CasBasedDirectory"] = None,
-        filename: Optional[str] = None
+        filename: Optional[str] = None,
     ) -> None:
         # The CAS cache
         self.__cas_cache: CASCache = cas_cache
@@ -358,7 +358,7 @@ class CasBasedDirectory(Directory):
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
         properties: Optional[List[str]] = None,
-        collect_result: bool = True
+        collect_result: bool = True,
     ) -> Optional[FileListResult]:
         result = FileListResult() if collect_result else None
 
@@ -762,7 +762,7 @@ class CasBasedDirectory(Directory):
         *,
         path_prefix: str = "",
         origin: Optional["CasBasedDirectory"] = None,
-        result: Optional[FileListResult]
+        result: Optional[FileListResult],
     ) -> None:
         if origin is None:
             origin = self
@@ -853,10 +853,10 @@ class CasBasedDirectory(Directory):
         if prefix != "":
             yield prefix
 
-        for (k, v) in sorted(file_list):
+        for k, v in sorted(file_list):
             yield os.path.join(prefix, k)
 
-        for (k, v) in sorted(directory_list):
+        for k, v in sorted(directory_list):
             subdir = v.get_directory(self)
             yield from subdir.__list_prefixed_relative_paths(prefix=os.path.join(prefix, k))
 

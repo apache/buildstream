@@ -41,7 +41,6 @@ if TYPE_CHECKING:
 #
 class OverlapCollector:
     def __init__(self, element: "Element"):
-
         # The Element we are staging for, on which we'll issue warnings
         self._element = element  # type: Element
 
@@ -109,7 +108,6 @@ class OverlapCollector:
 #
 class OverlapCollectorSession:
     def __init__(self, element: "Element", action: str, location: str):
-
         # The Element we are staging for, on which we'll issue warnings
         self._element = element  # type: Element
 
@@ -137,14 +135,11 @@ class OverlapCollectorSession:
     #    result (FileListResult): The result of Element.stage_artifact()
     #
     def collect_stage_result(self, element: "Element", result: FileListResult):
-
         for overwritten_file in result.overwritten:
-
             overlap_list = None
             try:
                 overlap_list = self._overlaps[overwritten_file]
             except KeyError:
-
                 # Create a fresh list
                 #
                 self._overlaps[overwritten_file] = overlap_list = []
@@ -178,7 +173,6 @@ class OverlapCollectorSession:
     #    sessions (list): List of previously completed sessions
     #
     def warnings(self, sessions: List["OverlapCollectorSession"]):
-
         # Collect a table of filenames which overlapped something from outside of this session.
         #
         external_overlaps = {}  # type: Dict[str, int]
@@ -190,7 +184,6 @@ class OverlapCollectorSession:
             overlap_warning = False
             detail = "Staged files overwrite existing files in staging area: {}\n".format(self._location)
             for filename, element_ids in self._overlaps.items():
-
                 # If there is only one element in the overlap list, it means it has
                 # overlapped a file from a previous session.
                 #

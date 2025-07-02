@@ -77,7 +77,6 @@ class RemoteSpec:
         connection_config: Optional[MappingNode] = None,
         spec_node: Optional[MappingNode] = None,
     ) -> None:
-
         #
         # Public members
         #
@@ -394,7 +393,6 @@ class RemoteSpec:
                             )
                         )
                 elif key == "push":
-
                     # Provide a sensible error for `bst artifact push --remote url=http://pony.com,push=False ...`
                     if purpose != RemoteSpecPurpose.ALL:
                         raise RemoteError("The 'push' key is invalid and assumed to be {}".format(push))
@@ -467,7 +465,6 @@ class RemoteSpec:
     def _parse_auth(
         cls, auth_node: MappingNode, basedir: Optional[str] = None
     ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str], Optional[int]]:
-
         auth_path_keys = ["server-cert", "client-key", "client-cert", "access-token"]
         auth_int_keys = ["access-token-reload-interval"]
         auth_values = {}

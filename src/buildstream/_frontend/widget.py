@@ -48,7 +48,6 @@ class FormattingError(Exception):
 #
 class Widget:
     def __init__(self, context, content_profile, format_profile):
-
         # The context
         self.context = context
 
@@ -89,7 +88,6 @@ class WallclockTime(Widget):
         super().__init__(context, content_profile, format_profile)
 
     def render(self, message):
-
         fields = [
             self.content_profile.fmt("{:02d}".format(x))
             for x in [
@@ -148,7 +146,6 @@ class TimeCode(Widget):
 
 # A widget for rendering the MessageType
 class TypeName(Widget):
-
     _action_colors = {
         MessageType.DEBUG: "cyan",
         MessageType.STATUS: "cyan",
@@ -208,7 +205,6 @@ class CacheKey(Widget):
         self._key_length = context.log_key_length
 
     def render(self, message):
-
         if not self._key_length:
             return ""
 
@@ -439,7 +435,6 @@ class LogLine(Widget):
 
             # Source Information
             if "%{source-info" in format_:
-
                 # Get all the SourceInfo objects
                 #
                 all_source_infos = []
@@ -632,7 +627,6 @@ class LogLine(Widget):
     #    log_file (file): An optional file handle for additional logging
     #
     def print_summary(self, stream, log_file):
-
         # Early silent return if there are no queues, can happen
         # only in the case that the stream early returned due to
         # an inconsistent pipeline state.
@@ -713,7 +707,6 @@ class LogLine(Widget):
     ###################################################
 
     def render(self, message):
-
         # Track logfiles for later use
         element_name = message.element_name
         if message.message_type in ERROR_MESSAGES and element_name is not None:
@@ -752,7 +745,6 @@ class LogLine(Widget):
         return logfile_tokens
 
     def _render(self, message):
-
         # Render the column widgets first
         text = ""
         for widget in self._columns:
@@ -764,7 +756,6 @@ class LogLine(Widget):
 
         # Now add some custom things
         if message.detail:
-
             # Identify frontend messages, we never abbreviate these
             frontend_message = not message.element_name
 
@@ -894,7 +885,6 @@ class LogLine(Widget):
             max_key_len = max(len(key), max_key_len)
 
         for key, value in values.items():
-
             key = str(key)
             text += self._indent * indent
             if style_key:
@@ -978,7 +968,6 @@ class LogLine(Widget):
         text = ""
 
         for element_name, directory in values.items():
-
             text += self.format_profile.fmt("  {}:".format(element_name))
 
             rendered_files = []
@@ -1023,7 +1012,6 @@ class LogLine(Widget):
         report = ""
         p = Profile()
         for element in targets:
-
             #
             # Here we selectively show the element name or artifact name
             # depending on whether we were asked about an artifact or an element.

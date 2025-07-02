@@ -44,7 +44,6 @@ def create_element_size(name, project_dir, elements_path, dependencies, size):
     repo = create_repo("tar", repodir, subdir=name)
 
     with utils._tempdir(dir=project_dir) as tmp:
-
         # We use a data/ subdir in the git repo we create,
         # and we set the import element to only extract that
         # part; this ensures we never include a .git/ directory

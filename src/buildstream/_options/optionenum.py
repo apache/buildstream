@@ -24,7 +24,6 @@ from .option import Option, OPTION_SYMBOLS
 # An enumeration project option
 #
 class OptionEnum(Option):
-
     OPTION_TYPE: str = "enum"
 
     def __init__(self, name, definition, pool):

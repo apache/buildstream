@@ -28,5 +28,4 @@ class Found(Source):
 
 # Plugin entry point
 def setup():
-
     return Found

@@ -212,9 +212,7 @@ def suspendable(suspend_callback, resume_callback):
 #
 @contextmanager
 def blocked(signal_list, ignore=True):
-
     with ExitStack() as stack:
-
         # Optionally add the ignored() context manager to this context
         if ignore:
             stack.enter_context(ignored(signal_list))
@@ -239,7 +237,6 @@ def blocked(signal_list, ignore=True):
 #
 @contextmanager
 def ignored(signal_list):
-
     orig_handlers = {}
     for sig in signal_list:
         orig_handlers[sig] = signal.signal(sig, signal.SIG_IGN)
