@@ -311,6 +311,70 @@ class _PipelineSelection(FastEnum):
         return str(self.value)
 
 
+# _ElementKind()
+#
+# Used to indicate which values you are interested in when dumping the
+# pipeline to a serializable format.
+class _ElementKind(FastEnum):
+
+    # Show all available pipeline information
+    ALL = "all"
+
+    # Show the short version of an element key
+    KEY = "key"
+
+    # Show the full key information
+    KEY_FULL = "key-full"
+
+    # Show the Element State
+    STATE = "state"
+
+    # Show source provenance information
+    SOURCES = "source"
+
+    # Dependencies
+    DEPENDENCIES = "dependences"
+
+    # Build dependencies
+    BUILD_DEPENDENCIES = "build-dependencies"
+
+    # Runtime dependencies
+    RUNTIME_DEPENDENCIES = "runtime-dependencies"
+
+    # CAS Artifacts
+    CAS_ARTIFACTS = "cas-artifacts"
+
+    # Element Variables
+    VARIABLES = "variables"
+
+    # Element Environment
+    ENVIRONMENT = "environment"
+
+
+# Used to indicate the state of a given element
+class _ElementState(FastEnum):
+    # Cannot determine the element state
+    NO_REFERENCE = "no-reference"
+
+    # The element has failed
+    FAILED = "failed"
+
+    # The element is a junction
+    JUNCTION = "junction"
+
+    # The element is waiting
+    WAITING = "waiting"
+
+    # The element is cached
+    CACHED = "cached"
+
+    # The element needs to be loaded from a remote source
+    FETCH_NEEDED = "fetch-needed"
+
+    # The element my be built
+    BUILDABLE = "buildable"
+
+
 # _ProjectInformation()
 #
 # A descriptive object about a project.

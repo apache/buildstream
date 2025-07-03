@@ -14,6 +14,7 @@
 import os
 import re
 import sys
+import json
 from functools import partial
 
 import shutil
@@ -21,7 +22,7 @@ import click
 from .. import _yaml
 from .._exceptions import BstError, LoadError, AppError, RemoteError
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
-from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection, _HostMount, _Scope
+from ..types import _CacheBuildTrees, _ElementKind, _SchedulerErrorAction, _PipelineSelection, _HostMount, _Scope
 from .._remotespec import RemoteSpec, RemoteSpecPurpose
 from ..utils import UtilError
 
@@ -73,6 +74,7 @@ class RemoteSpecType(click.ParamType):
 ##################################################################
 #            Override of click's main entry point                #
 ##################################################################
+
 
 # search_command()
 #
@@ -538,6 +540,7 @@ def build(
 @click.option(
     "--except", "except_", multiple=True, type=click.Path(readable=False), help="Except certain dependencies"
 )
+@click.option("--json", "as_json", is_flag=True, help="Output the information as machine readable JSON")
 @click.option(
     "--deps",
     "-d",
@@ -552,7 +555,29 @@ def build(
             _PipelineSelection.ALL,
         ],
     ),
-    help="The dependencies to show",
+    help="Types of Elements to Show",
+)
+@click.option(
+    "--kind",
+    "-k",
+    default=[],
+    show_default=True,
+    multiple=True,
+    type=FastEnumType(
+        _ElementKind,
+        [
+            _ElementKind.ALL,
+            _ElementKind.KEY,
+            _ElementKind.KEY_FULL,
+            _ElementKind.STATE,
+            _ElementKind.SOURCES,
+            _ElementKind.DEPENDENCIES,
+            _ElementKind.BUILD_DEPENDENCIES,
+            _ElementKind.RUNTIME_DEPENDENCIES,
+            _ElementKind.CAS_ARTIFACTS,
+        ],
+    ),
+    help="Kinds of element information to display in JSON",
 )
 @click.option(
     "--order",
@@ -572,7 +597,7 @@ def build(
 )
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def show(app, elements, deps, except_, order, format_):
+def show(app, elements, deps, as_json, except_, order, kind, format_):
     """Show elements in the pipeline
 
     Specifying no elements will result in showing the default targets
@@ -629,19 +654,44 @@ def show(app, elements, deps, except_, order, format_):
     \b
         bst show target.bst --format \\
             $'---------- %{name} ----------\\n%{vars}'
+
+    **JSON OUTPUT**
+
+    The ``--json`` flag will cause bst to output information in machine readable
+    JSON. When using this flag you may also specify ``--kind`` to control the
+    type of information that is output.
+
+    To dump everything:
+    \b
+        bst show --json --kind all
     """
     with app.initialized():
+
+        if as_json and format_:
+            raise AppError("--format and --json are mutually exclusive")
+
+        if format_ and kind:
+            raise AppError("--format does not support --kind")
 
         if not format_:
             format_ = app.context.log_element_format
 
         # First determine whether we need to go about querying the local cache
         # and spending time setting up remotes.
-        state_match = re.search(r"%(\{(state)[^%]*?\})", format_)
-        key_match = re.search(r"%(\{(key)[^%]*?\})", format_)
-        full_key_match = re.search(r"%(\{(full-key)[^%]*?\})", format_)
-        artifact_cas_digest_match = re.search(r"%(\{(artifact-cas-digest)[^%]*?\})", format_)
-        need_state = bool(state_match or key_match or full_key_match or artifact_cas_digest_match)
+        need_state = False
+        if not as_json:
+            state_match = re.search(r"%(\{(state)[^%]*?\})", format_)
+            key_match = re.search(r"%(\{(key)[^%]*?\})", format_)
+            full_key_match = re.search(r"%(\{(full-key)[^%]*?\})", format_)
+            artifact_cas_digest_match = re.search(r"%(\{(artifact-cas-digest)[^%]*?\})", format_)
+            need_state = bool(state_match or key_match or full_key_match or artifact_cas_digest_match)
+        else:
+            need_state = bool(
+                _ElementKind.STATE in kind
+                or _ElementKind.KEY in kind
+                or _ElementKind.KEY_FULL in kind
+                or _ElementKind.CAS_ARTIFACTS in kind
+            )
 
         if not elements:
             elements = app.project.get_default_targets()
@@ -657,8 +707,12 @@ def show(app, elements, deps, except_, order, format_):
         if order == "alpha":
             dependencies = sorted(dependencies)
 
-        report = app.logger.show_pipeline(dependencies, format_)
-        click.echo(report)
+        if as_json:
+            serialized = app.logger.dump_pipeline(dependencies, kind)
+            print(json.dumps(serialized))
+        else:
+            report = app.logger.show_pipeline(dependencies, format_)
+            click.echo(report)
 
 
 ##################################################################
