@@ -22,7 +22,7 @@ import textwrap
 import click
 
 from .profile import Profile
-from ..types import _Scope
+from ..types import _Scope, _ElementKind, _ElementState
 from .. import _yaml
 from .. import __version__ as bst_version
 from .. import FileType
@@ -327,6 +327,120 @@ class LogLine(Widget):
         logfile_tokens = self._parse_logfile_format(context.log_message_format, content_profile, format_profile)
         self._columns.extend(logfile_tokens)
 
+    def _read_state(self, element):
+        try:
+            if not element._has_all_sources_resolved():
+                return _ElementState.NO_REFERENCE
+            else:
+                if element.get_kind() == "junction":
+                    return _ElementState.JUNCTION
+                elif not element._can_query_cache():
+                    return _ElementState.WAITING
+                elif element._cached_failure():
+                    return _ElementState.FAILED
+                elif element._cached_success():
+                    return _ElementState.CACHED
+                elif not element._can_query_source_cache():
+                    return _ElementState.WAITING
+                elif element._fetch_needed():
+                    return _ElementState.FETCH_NEEDED
+                elif element._buildable():
+                    return _ElementState.BUILDABLE
+                else:
+                    return _ElementState.WAITING
+        except BstError as e:
+            # Provide context to plugin error
+            e.args = ("Failed to determine state for {}: {}".format(element._get_full_name(), str(e)),)
+            raise e
+
+    # Dump the pipeline as a serializable object
+    def dump_pipeline(self, dependencies, kinds=[]):
+
+        show_all = _ElementKind.ALL in kinds
+
+        elements = []
+
+        for element in dependencies:
+
+            # Default values always output
+            serialized_element = {
+                "name": element._get_full_name(),
+            }
+
+            description = " ".join(element._description.splitlines())
+            if description:
+                serialized_element["description"] = description
+
+            workspace = element._get_workspace()
+            if workspace:
+                serialized_element["workspace"] = workspace
+
+            if show_all or _ElementKind.STATE in kinds:
+                serialized_element["state"] = self._read_state(element).value
+
+            if show_all or _ElementKind.KEY in kinds:
+                serialized_element["key"] = element._get_display_key().brief
+
+            if show_all or _ElementKind.KEY_FULL in kinds:
+                serialized_element["key_full"] = element._get_display_key().full
+
+            if show_all or _ElementKind.VARIABLES in kinds:
+                serialized_element["variables"] = dict(element._Element__variables)
+
+            if show_all or _ElementKind.ENVIRONMENT in kinds:
+                serialized_element["environment"] = dict(element._Element__environment)
+
+            if show_all or _ElementKind.CAS_ARTIFACTS in kinds:
+                # BUG: Due to the assersion within .get_artifact this will 
+                # error but there is no other way to determine if an artifact
+                # exists and we only want to show this value for informational 
+                # purposes.
+                try:
+                    artifact = element._get_artifact()
+                    if artifact.cached():
+                        serialized_element["artifact"] = {
+                            "files": artifact.get_files(),
+                            "digest": artifact_files._get_digest(),
+                        }
+                except:
+                    pass
+
+            if show_all or _ElementKind.SOURCES in kinds:
+                all_source_infos = []
+                for source in element.sources():
+                    source_infos = source.collect_source_info()
+
+                    if source_infos is not None:
+                        serialized_sources = []
+                        for s in source_infos:
+                            serialized = s.serialize()
+                            serialized_sources.append(serialized)
+
+                        all_source_infos += serialized_sources
+                serialized_element["sources"] = all_source_infos
+
+            # Show dependencies
+            if show_all or _ElementKind.DEPENDENCIES in kinds:
+                serialized_element["dependencies"] = [
+                    e._get_full_name() for e in element._dependencies(_Scope.ALL, recurse=False)
+                ]
+
+            # Show build dependencies
+            if show_all or _ElementKind.BUILD_DEPENDENCIES in kinds:
+                serialized_element["build-dependencies"] = [
+                    e._get_full_name() for e in element._dependencies(_Scope.BUILD, recurse=False)
+                ]
+
+            # Show runtime dependencies
+            if show_all or _ElementKind.RUNTIME_DEPENDENCIES in kinds:
+                serialized_element["runtime-dependencies"] = [
+                    e._get_full_name() for e in element._dependencies(_Scope.RUN, recurse=False)
+                ]
+
+            elements.append(serialized_element)
+
+        return elements
+
     # show_pipeline()
     #
     # Display a list of elements in the specified format.
@@ -359,30 +473,23 @@ class LogLine(Widget):
             line = p.fmt_subst(line, "full-key", key.full, fg="yellow", dim=dim_keys)
             line = p.fmt_subst(line, "description", description, fg="yellow", dim=dim_keys)
 
-            try:
-                if not element._has_all_sources_resolved():
-                    line = p.fmt_subst(line, "state", "no reference", fg="red")
-                else:
-                    if element.get_kind() == "junction":
-                        line = p.fmt_subst(line, "state", "junction", fg="magenta")
-                    elif not element._can_query_cache():
-                        line = p.fmt_subst(line, "state", "waiting", fg="blue")
-                    elif element._cached_failure():
-                        line = p.fmt_subst(line, "state", "failed", fg="red")
-                    elif element._cached_success():
-                        line = p.fmt_subst(line, "state", "cached", fg="magenta")
-                    elif not element._can_query_source_cache():
-                        line = p.fmt_subst(line, "state", "waiting", fg="blue")
-                    elif element._fetch_needed():
-                        line = p.fmt_subst(line, "state", "fetch needed", fg="red")
-                    elif element._buildable():
-                        line = p.fmt_subst(line, "state", "buildable", fg="green")
-                    else:
-                        line = p.fmt_subst(line, "state", "waiting", fg="blue")
-            except BstError as e:
-                # Provide context to plugin error
-                e.args = ("Failed to determine state for {}: {}".format(element._get_full_name(), str(e)),)
-                raise e
+            element_state = self._read_state(element)
+            if element_state == _ElementState.NO_REFERENCE:
+                line = p.fmt_subst(line, "state", "no reference", fg="red")
+            elif element_state == _ElementState.JUNCTION:
+                line = p.fmt_subst(line, "state", "junction", fg="magenta")
+            elif element_state == _ElementState.FAILED:
+                line = p.fmt_subst(line, "state", "failed", fg="red")
+            elif element_state == _ElementState.CACHED:
+                line = p.fmt_subst(line, "state", "cached", fg="magenta")
+            elif element_state == _ElementState.WAITING:
+                line = p.fmt_subst(line, "state", "waiting", fg="blue")
+            elif element_state == _ElementState.FETCH_NEEDED:
+                line = p.fmt_subst(line, "state", "fetch needed", fg="red")
+            elif element_state == _ElementState.BUILDABLE:
+                line = p.fmt_subst(line, "state", "buildable", fg="green")
+            else:
+                raise BstError(f"Unreachable State: {element_state}")
 
             # Element configuration
             if "%{config" in format_:
