@@ -1117,7 +1117,8 @@ are the lowest priority configuration.
 Remote execution
 ~~~~~~~~~~~~~~~~
 BuildStream supports building remotely using the
-`Google Remote Execution API (REAPI). <https://github.com/bazelbuild/remote-apis>`_.
+`Google Remote Execution API (REAPI) <https://github.com/bazelbuild/remote-apis>`_.
+There is also limited support to build locally while still using a remote action cache.
 
 You can configure the remote execution services globally in your user configuration
 using the ``remote-execution`` key, like so:
@@ -1148,6 +1149,8 @@ Attributes
   how to connect with the main *execution service*, this service is the main controlling
   entity in a remote execution build cluster.
 
+  Skip the configuration of this service to enable local builds with a remote action cache.
+
 * ``storage-service``
 
   A :ref:`service configuration <user_config_remote_execution_service>` specifying
@@ -1171,6 +1174,15 @@ Attributes
 
   This service is optional in a remote execution build cluster, if your remote
   execution service provides an action cache, then you should configure it here.
+
+  For local builds with a remote action cache, set ``push`` to ``true`` to
+  upload action results to the server. By default, action results are downloaded
+  from the server but not uploaded.
+
+  If remote execution is not enabled, the remote action cache is currently only
+  used for REAPI clients in the sandbox, not for BuildStream element build jobs.
+  For more information about REAPI clients in the sandbox, see ``remote-apis-socket``
+  in the :ref:`sandbox configuration <format_sandbox>`.
 
 
 .. _user_config_remote_execution_service:

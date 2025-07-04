@@ -19,8 +19,14 @@ package build.buildgrid;
 import "build/bazel/remote/execution/v2/remote_execution.proto";
 import "google/rpc/status.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
 
 service LocalContentAddressableStorage {
+  // Retrieves the configuration details for the local CAS server.
+  // This RPC allows clients to obtain information such as the hostname,
+  // user ID, and storage root of the local CAS server.
+  rpc GetLocalServerDetails(GetLocalServerDetailsRequest) returns (LocalServerDetails) {}
+
   // Fetch blobs from a remote CAS to the local cache.
   //
   // This request is equivalent to ByteStream `Read` or `BatchReadBlobs`
@@ -156,6 +162,41 @@ service LocalContentAddressableStorage {
 
   // Query total space used by the local cache.
   rpc GetLocalDiskUsage(GetLocalDiskUsageRequest) returns (GetLocalDiskUsageResponse) {}
+}
+
+// A request message for
+// [LocalContentAddressableStorage.GetLocalServerDetails][build.buildgrid.v2.LocalContentAddressableStorage.GetLocalServerDetails].
+message GetLocalServerDetailsRequest
+{
+    // The instance of the execution system to operate against. A server may
+    // support multiple instances of the execution system (with their own
+    // workers, storage, caches, etc.). The server MAY require use of this
+    // field to select between them in an implementation-defined fashion,
+    // otherwise it can be omitted.
+    string instance_name = 1;
+}
+
+// A response message for
+// [LocalContentAddressableStorage.GetLocalServerDetails][build.buildgrid.v2.LocalContentAddressableStorage.GetLocalServerDetails].
+message LocalServerDetails
+{
+    // The hostname where the local CAS server is running.
+    // This is used to determine if the client is running on the same host as
+    // the server. When running on the same host, you may access the
+    // storage_root directly.
+    string hostname = 1;
+
+    // The user ID (UID) which owns the local CAS process.
+    // This is used to determine if the client is running as the same user as
+    // the server. When running as the same user, hardlinking from the
+    // storage_root is dangerous.
+    int64 process_uid = 2;
+
+    // The absolute path to the local CAS cache directory.
+    // The storage_root contains locally stored blobs for digests in CAS.
+    // The local path to a blob has the following format:
+    //     storage_root/objects/{hash[:2]}/{hash[2:]}
+    string storage_root = 3;
 }
 
 // A request message for
@@ -302,6 +343,36 @@ message StageTreeRequest {
   // This will be used to ensure that the files have the right permissions
   // for access without risking corruption of files in the local cache.
   Credentials access_credentials = 4;
+
+  // The path, relative to the staging directory, where a server socket should
+  // be created for access to the Remote Execution API.
+  string remote_apis_socket_path = 7;
+
+  // The commands to run against the tree before it is cleaned.
+  // Each command must be an absolute path to an executable which can be run as
+  // `/path/to/command <path-to-stage-dir>`.
+  // The working directory of launched commands will be the same as the LocalCAS
+  // server process.
+  // The server SHOULD maintain an allowlist of commands that can be launched.
+  repeated string pre_unstage_commands = 5;
+
+  enum StagingMode {
+    // The staging mode is not specified. The LocalCAS server will use the default
+    // staging mode chosen from its configuration and environment.
+    DEFAULT = 0;
+
+    // The tree will be staged using libfuse.
+    FUSE = 1;
+
+    // The tree will be staged by copying or linking files from the local
+    // cache. The exact behavior depends on the filesystem, contents of the
+    // tree and the credentials of the client.
+    COPY_OR_LINK = 2;
+  }
+
+  // The staging mode to use for the tree.
+  // `INVALID_ARGUMENT` is returned if the server does not support the requested mode.
+  StagingMode staging_mode = 6;
 }
 
 // A response message for
@@ -356,6 +427,11 @@ message CaptureTreeRequest {
   // and `bypass_local_cache` are set, the server MUST return an InvalidArgument
   // error.
   bool skip_upload = 8;
+
+  // The mask to apply to the files and directories being captured.
+  // For example, a mask of `0222` will result in contents being captured as read-only.
+  // This is only effective when the unix_mode property is captured.
+  google.protobuf.UInt32Value unix_mode_mask = 9;
 }
 
 // A response message for
@@ -419,6 +495,11 @@ message CaptureFilesRequest {
   // and `bypass_local_cache` are set, the server MUST return an InvalidArgument
   // error.
   bool skip_upload = 7;
+
+  // The mask to apply to the files being captured.
+  // For example, a mask of `0222` will result in contents being captured as read-only.
+  // This is only effective when the unix_mode property is captured.
+  google.protobuf.UInt32Value unix_mode_mask = 8;
 }
 
 // A response message for
@@ -528,6 +609,9 @@ message Remote {
 
   // How long to wait for a response from the remote.
   google.protobuf.Duration request_timeout = 11;
+
+  // If set, don't upload any blobs, action results or assets to the remote.
+  bool read_only = 12;
 }
 
 // A request message for

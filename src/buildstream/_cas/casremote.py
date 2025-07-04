@@ -12,8 +12,6 @@
 #  limitations under the License.
 #
 
-import grpc
-
 from .._protos.google.rpc import code_pb2
 from .._protos.build.buildgrid import local_cas_pb2
 
@@ -60,14 +58,7 @@ class CASRemote(BaseRemote):
         local_cas = self.cascache.get_local_cas()
         request = local_cas_pb2.GetInstanceNameForRemotesRequest()
         self.spec.to_localcas_remote(request.content_addressable_storage)
-        try:
-            response = local_cas.GetInstanceNameForRemotes(request)
-        except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.UNIMPLEMENTED:
-                raise CASRemoteError(
-                    "Unsupported buildbox-casd version: GetInstanceNameForRemotes unimplemented"
-                ) from e
-            raise
+        response = local_cas.GetInstanceNameForRemotes(request)
         self.local_cas_instance_name = response.instance_name
 
     # push_message():

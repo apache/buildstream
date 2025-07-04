@@ -34,7 +34,6 @@ class BaseRemote:
 
     def __init__(self, spec):
         self.spec = spec
-        self.channel = None
         self._initialized = False
         self._lock = threading.Lock()
 
@@ -72,10 +71,6 @@ class BaseRemote:
             self._initialized = True
 
     def close(self):
-        if self.channel:
-            self.channel.close()
-            self.channel = None
-
         self._initialized = False
 
     # check():
