@@ -24,7 +24,7 @@ from .._remote import BaseRemote
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.build.buildgrid import local_cas_pb2
 from .._protos.google.rpc import code_pb2
-from .._exceptions import BstError, SandboxError
+from .._exceptions import SandboxError
 from .._protos.google.longrunning import operations_pb2, operations_pb2_grpc
 from .._cas import CASRemote
 
@@ -247,9 +247,7 @@ class SandboxRemote(SandboxREAPI):
         stdout, stderr = self._get_output()
 
         context = self._get_context()
-        project = self._get_project()
         cascache = context.get_cascache()
-        artifactcache = context.artifactcache
 
         action_digest = cascache.add_object(buffer=action.SerializeToString())
 
@@ -268,15 +266,6 @@ class SandboxRemote(SandboxREAPI):
                     missing_blobs = list(cascache.missing_blobs_for_directory(input_root_digest, remote=casremote))
                 except grpc.RpcError as e:
                     raise SandboxError("Failed to determine missing blobs: {}".format(e)) from e
-
-                # Check if any blobs are also missing locally (partial artifact)
-                # and pull them from the artifact cache.
-                try:
-                    local_missing_blobs = cascache.missing_blobs(missing_blobs)
-                    if local_missing_blobs:
-                        artifactcache.fetch_missing_blobs(project, local_missing_blobs)
-                except (grpc.RpcError, BstError) as e:
-                    raise SandboxError("Failed to pull missing blobs from artifact cache: {}".format(e)) from e
 
                 # Add command and action messages to blob list to push
                 missing_blobs.append(action.command_digest)
