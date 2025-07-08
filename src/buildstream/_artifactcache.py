@@ -238,58 +238,6 @@ class ArtifactCache(AssetCache):
 
         utils.safe_link(os.path.join(self._basedir, oldref), os.path.join(self._basedir, newref))
 
-    # fetch_missing_blobs():
-    #
-    # Fetch missing blobs from configured remote repositories.
-    #
-    # Args:
-    #     project (Project): The current project
-    #     missing_blobs (list): The Digests of the blobs to fetch
-    #
-    def fetch_missing_blobs(self, project, missing_blobs):
-
-        index_remotes, _ = self.get_remotes(project.name, False)
-        for remote in index_remotes:
-            if not missing_blobs:
-                break
-
-            remote.init()
-
-            # fetch_blobs() will return the blobs that are still missing
-            missing_blobs = self.cas.fetch_blobs(remote, missing_blobs, allow_partial=True)
-
-        if missing_blobs:
-            raise ArtifactError("Blobs not found on configured artifact servers")
-
-    # find_missing_blobs():
-    #
-    # Find missing blobs from configured push remote repositories.
-    #
-    # Args:
-    #     project (Project): The current project
-    #     missing_blobs (list): The Digests of the blobs to check
-    #
-    # Returns:
-    #     (list): The Digests of the blobs missing on at least one push remote
-    #
-    def find_missing_blobs(self, project, missing_blobs):
-        if not missing_blobs:
-            return []
-
-        _, push_remotes = self.get_remotes(project.name, True)
-        remote_missing_blobs_list = []
-
-        for remote in push_remotes:
-            remote.init()
-
-            remote_missing_blobs = self.cas.missing_blobs(missing_blobs, remote=remote)
-
-            for blob in remote_missing_blobs:
-                if blob not in remote_missing_blobs_list:
-                    remote_missing_blobs_list.append(blob)
-
-        return remote_missing_blobs_list
-
     # check_remotes_for_element()
     #
     # Check if the element is available in any of the remotes
