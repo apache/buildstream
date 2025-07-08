@@ -40,7 +40,7 @@ class SandboxREAPI(Sandbox):
 
         if not self._has_command(command[0], env):
             raise SandboxCommandError(
-                "Staged artifacts do not provide command " "'{}'".format(command[0]), reason="missing-command"
+                "Staged artifacts do not provide command '{}'".format(command[0]), reason="missing-command"
             )
 
         # Ensure working directory exists
@@ -60,7 +60,6 @@ class SandboxREAPI(Sandbox):
         read_write_directories = []
         mount_sources = self._get_mount_sources()
         for directory in self._get_marked_directories():
-
             if directory in mount_sources:
                 # Bind mount
                 mount_point = directory.lstrip(os.path.sep)

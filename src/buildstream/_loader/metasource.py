@@ -16,7 +16,6 @@
 
 
 class MetaSource:
-
     # MetaSource()
     #
     # An abstract object holding data suitable for constructing a Source

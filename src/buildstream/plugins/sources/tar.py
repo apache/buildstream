@@ -166,16 +166,18 @@ class TarSource(DownloadableFileSource):
         final_path = os.path.abspath(os.path.join(target_dir, member.path))
         if not final_path.startswith(target_dir):
             raise SourceError(
-                "{}: Tarfile attempts to extract outside the staging area: "
-                "{} -> {}".format(self, member.path, final_path)
+                "{}: Tarfile attempts to extract outside the staging area: {} -> {}".format(
+                    self, member.path, final_path
+                )
             )
 
         if member.islnk():
             linked_path = os.path.abspath(os.path.join(target_dir, member.linkname))
             if not linked_path.startswith(target_dir):
                 raise SourceError(
-                    "{}: Tarfile attempts to hardlink outside the staging area: "
-                    "{} -> {}".format(self, member.path, final_path)
+                    "{}: Tarfile attempts to hardlink outside the staging area: {} -> {}".format(
+                        self, member.path, final_path
+                    )
                 )
 
         # Don't need to worry about symlinks because they're just
@@ -226,16 +228,13 @@ class TarSource(DownloadableFileSource):
     # is not enough because some tarballs simply do not contain the leading
     # directory paths for the archived files.
     def _list_tar_paths(self, tar):
-
         visited = set()
         for member in tar.getmembers():
-
             # Remove any possible leading './', offer more consistent behavior
             # across tarballs encoded with or without a leading '.'
             member_name = member.name.lstrip("./")
 
             if not member.isdir():
-
                 # Loop over the components of a path, for a path of a/b/c/d
                 # we will first visit 'a', then 'a/b' and then 'a/b/c', excluding
                 # the final component

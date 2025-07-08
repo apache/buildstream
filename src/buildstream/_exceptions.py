@@ -252,7 +252,6 @@ class PipelineError(BstError):
 #
 class StreamError(BstError):
     def __init__(self, message=None, *, detail=None, reason=None, terminated=False):
-
         # The empty string should never appear to a user,
         # this only allows us to treat this internal error as
         # a BstError from the frontend.

@@ -6,7 +6,6 @@ class CustomError(Exception):
 
 
 class ConsistencyBugSource(Source):
-
     BST_MIN_VERSION = "2.0"
 
     def configure(self, node):
@@ -22,7 +21,6 @@ class ConsistencyBugSource(Source):
         return True
 
     def is_cached(self):
-
         # Raise an unhandled exception (not a BstError)
         raise CustomError("Something went terribly wrong")
 

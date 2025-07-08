@@ -2,7 +2,6 @@ from buildstream import Source, SourceError
 
 
 class ConsistencyErrorSource(Source):
-
     BST_MIN_VERSION = "2.0"
 
     def configure(self, node):
@@ -18,7 +17,6 @@ class ConsistencyErrorSource(Source):
         return True
 
     def is_cached(self):
-
         # Raise an error unconditionally
         raise SourceError("Something went terribly wrong", reason="the-consistency-error")
 

@@ -3,7 +3,6 @@ from buildstream import Element
 
 # Copies files from the dependent element but inserts split-rules using dynamic data
 class DynamicElement(Element):
-
     BST_MIN_VERSION = "2.0"
 
     def configure(self, node):

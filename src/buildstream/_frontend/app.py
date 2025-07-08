@@ -55,7 +55,6 @@ INDENT = 4
 #
 class App:
     def __init__(self, main_options):
-
         #
         # Public members
         #
@@ -285,7 +284,6 @@ class App:
                     fetch_subprojects=self.stream.fetch_subprojects,
                 )
             except LoadError as e:
-
                 # If there was no project.conf at all then there was just no project found.
                 #
                 # Don't error out in this case, as Stream() supports some operations which
@@ -454,7 +452,6 @@ class App:
     #    (str): The formatted prompt to display in the shell
     #
     def shell_prompt(self, element):
-
         element_name = element._get_full_name()
         display_key = element._get_display_key()
 
@@ -524,7 +521,6 @@ class App:
     # Exception handler
     #
     def _global_exception_handler(self, etype, value, tb, exc=True):
-
         # Print the regular BUG message
         formatted = None
         if exc:
@@ -586,7 +582,6 @@ class App:
     # Handle ^C SIGINT interruptions in the scheduling main loop
     #
     def _interrupt_handler(self):
-
         # Only handle ^C interactively in interactive mode
         if not self.interactive:
             self._status.clear()
@@ -679,7 +674,6 @@ class App:
 
         # Handle non interactive mode setting of what to do when a job fails.
         if not self._interactive_failures:
-
             if self.context.sched_error_action == _SchedulerErrorAction.TERMINATE:
                 self.stream.terminate()
             elif self.context.sched_error_action == _SchedulerErrorAction.QUIT:
@@ -690,7 +684,6 @@ class App:
 
         # Interactive mode for element failures
         with self._interrupted():
-
             summary = (
                 "\n{} failure on element: {}\n".format(failure.action_name, full_name)
                 + "\n"
@@ -826,7 +819,6 @@ class App:
     # Handle messages from the pipeline
     #
     def _message_handler(self, message, is_silenced):
-
         # Drop status messages from the UI if not verbose, we'll still see
         # info messages and status messages will still go to the log files.
         if not self.context.log_verbose and message.message_type == MessageType.STATUS:
@@ -907,7 +899,6 @@ class App:
     #    element_path (str): The user selected element path
     #
     def _init_project_interactive(self, project_name, min_version, element_path):
-
         bst_major, bst_minor = utils._get_bst_api_version()
 
         def project_name_proc(user_input):

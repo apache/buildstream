@@ -109,7 +109,6 @@ def complete_path(path_type, incomplete, base_directory="."):
         return os.path.isdir(entry)
 
     def fix_path(path):
-
         # Append slashes to any entries which are directories, or
         # spaces for other files since they cannot be further completed
         if entry_is_dir(path) and not path.endswith(os.sep):
@@ -142,13 +141,11 @@ def complete_path(path_type, incomplete, base_directory="."):
 #   https://github.com/pallets/click/issues/780
 #
 def get_param_type_completion(param_type, incomplete):
-
     if isinstance(param_type, click.Choice):
         return [c + " " for c in param_type.choices]
     elif isinstance(param_type, click.File):
         return complete_path("File", incomplete)
     elif isinstance(param_type, click.Path):
-
         # Workaround click 8.x API break:
         #
         #    https://github.com/pallets/click/issues/2037

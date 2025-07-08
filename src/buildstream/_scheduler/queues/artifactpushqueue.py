@@ -24,7 +24,6 @@ from ..._exceptions import SkipJob
 # A queue which pushes element artifacts
 #
 class ArtifactPushQueue(Queue):
-
     action_name = "Push"
     complete_name = "Artifacts Pushed"
     resources = [ResourceType.UPLOAD]

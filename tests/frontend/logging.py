@@ -143,7 +143,6 @@ def test_failed_build_listing(cli, datafiles):
 #
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "logging"))
 def test_log_line_element_names(cli, datafiles):
-
     project = str(datafiles)
 
     # First discover the cache keys, this will give us a dictionary

@@ -28,6 +28,7 @@ from tests.testutils import create_artifact_share
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
+
 #
 # Test modes of `bst artifact checkout --pull` when given an artifact name
 #

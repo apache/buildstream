@@ -28,6 +28,7 @@ from tests.testutils import create_artifact_share
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
+
 #
 # Test modes of `bst artifact pull` when given an artifact
 #
@@ -51,7 +52,6 @@ def test_pull(cli, tmpdir, datafiles, deps, expect_cached, with_project):
     project = str(datafiles)
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-
         # Build the element to push it to cache, and explicitly configure local cache so we can check it
         local_cache = os.path.join(str(tmpdir), "cache")
         cli.configure({"cachedir": local_cache, "artifacts": {"servers": [{"url": share.repo, "push": True}]}})

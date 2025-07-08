@@ -29,7 +29,6 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_load_yaml(datafiles):
-
     filename = os.path.join(datafiles, "basics.yaml")
 
     loaded = _yaml.load(filename, shortname=None)
@@ -48,7 +47,6 @@ def assert_provenance(filename, line, col, node):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_basic_provenance(datafiles):
-
     filename = os.path.join(datafiles, "basics.yaml")
 
     loaded = _yaml.load(filename, shortname=None)
@@ -59,7 +57,6 @@ def test_basic_provenance(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_member_provenance(datafiles):
-
     filename = os.path.join(datafiles, "basics.yaml")
 
     loaded = _yaml.load(filename, shortname=None)
@@ -69,7 +66,6 @@ def test_member_provenance(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_element_provenance(datafiles):
-
     filename = os.path.join(datafiles, "basics.yaml")
 
     loaded = _yaml.load(filename, shortname=None)
@@ -79,7 +75,6 @@ def test_element_provenance(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_mapping_validate_keys(datafiles):
-
     valid = os.path.join(datafiles, "basics.yaml")
     invalid = os.path.join(datafiles, "invalid.yaml")
 
@@ -97,7 +92,6 @@ def test_mapping_validate_keys(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_node_get(datafiles):
-
     filename = os.path.join(datafiles, "basics.yaml")
 
     base = _yaml.load(filename, shortname=None)
@@ -119,7 +113,6 @@ def test_node_get(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_node_set(datafiles):
-
     filename = os.path.join(datafiles, "basics.yaml")
 
     base = _yaml.load(filename, shortname=None)
@@ -131,7 +124,6 @@ def test_node_set(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_node_set_overwrite(datafiles):
-
     filename = os.path.join(datafiles, "basics.yaml")
 
     base = _yaml.load(filename, shortname=None)
@@ -149,7 +141,6 @@ def test_node_set_overwrite(datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_node_set_list_element(datafiles):
-
     filename = os.path.join(datafiles, "basics.yaml")
 
     base = _yaml.load(filename, shortname=None)
@@ -166,7 +157,6 @@ def test_node_set_list_element(datafiles):
 #
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_composite_preserve_originals(datafiles):
-
     filename = os.path.join(datafiles, "basics.yaml")
     overlayfile = os.path.join(datafiles, "composite.yaml")
 

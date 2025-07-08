@@ -24,7 +24,6 @@ from .optionflags import OptionFlags
 # names as values.
 #
 class OptionEltMask(OptionFlags):
-
     OPTION_TYPE: str = "element-mask"
 
     def load(self, node):

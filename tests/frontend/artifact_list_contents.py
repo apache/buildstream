@@ -65,9 +65,9 @@ def test_artifact_list_exact_contents(cli, datafiles, target, with_project):
     if not with_project:
         os.remove(os.path.join(project, "project.conf"))
 
-    expected_output_bin = ("{target}:\n" "\tusr\n" "\tusr/bin\n" "\tusr/bin/hello\n\n").format(target=arg_bin)
+    expected_output_bin = ("{target}:\n\tusr\n\tusr/bin\n\tusr/bin/hello\n\n").format(target=arg_bin)
     expected_output_links = (
-        "{target}:\n" "\tbasicfile\n" "\tbasicfolder\n" "\tbasicfolder/basicsymlink\n" "\tbasicfolder/subdir-file\n\n"
+        "{target}:\n\tbasicfile\n\tbasicfolder\n\tbasicfolder/basicsymlink\n\tbasicfolder/subdir-file\n\n"
     ).format(target=arg_links)
 
     for arg, expected_output in [(arg_bin, expected_output_bin), (arg_links, expected_output_links)]:

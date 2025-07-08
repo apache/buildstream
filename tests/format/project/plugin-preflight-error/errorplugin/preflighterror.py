@@ -2,14 +2,12 @@ from buildstream import Source, SourceError
 
 
 class PreflightErrorSource(Source):
-
     BST_MIN_VERSION = "2.0"
 
     def configure(self, node):
         pass
 
     def preflight(self):
-
         # Raise a preflight error unconditionally
         raise SourceError("Unsatisfied requirements in preflight, raising this error", reason="the-preflight-error")
 

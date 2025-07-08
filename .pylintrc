@@ -95,7 +95,7 @@ confidence=
 #    be nice, but too much work atm.
 #
 # 3) Messages related to code formatting
-#    Since we use Black to format code automatically, there's no need for
+#    Since we use Ruff to format code automatically, there's no need for
 #    pylint to also check for those things.
 #
 
@@ -146,7 +146,7 @@ disable=,
 	unused-private-member,
 
         ##################################################
-        # Formatting-related messages, enforced by Black #
+        # Formatting-related messages, enforced by Ruff #
         ##################################################
 
         line-too-long,

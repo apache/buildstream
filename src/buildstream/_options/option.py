@@ -36,7 +36,6 @@ OPTION_SYMBOLS = ["type", "description", "variable"]
 # instances.
 #
 class Option:
-
     # Subclasses use this to specify the type name used
     # for the yaml format and error messages
     OPTION_TYPE = None  # type: Optional[str]

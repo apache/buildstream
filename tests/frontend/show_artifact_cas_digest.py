@@ -54,8 +54,7 @@ def test_show_artifact_cas_digest_uncached(cli, tmpdir, datafiles, target):
     # Check the target has not been built locally and is not existing in the remote cache
     assert (
         # May be "buildable" or "waiting" but shouldn't be "cached"
-        cli.get_element_state(project, target)
-        != "cached"
+        cli.get_element_state(project, target) != "cached"
     )
 
     # Check the target has no artifact digest
@@ -161,7 +160,6 @@ def test_show_artifact_cas_digest_remote(cli, tmpdir, datafiles):
     cli.configure({"cachedir": local_cache})
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-
         cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
         # Test a target cached neither locally or remotely has no digest

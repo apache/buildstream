@@ -24,7 +24,6 @@ runcli - Test fixtures used for running BuildStream commands
 
 """
 
-
 import os
 import re
 import sys
@@ -75,7 +74,6 @@ class Result:
         # in the case that the exit code reported is 0 (success).
         #
         if self.exit_code != 0:
-
             # Check if buildstream failed to handle an
             # exception, topevel CLI exit should always
             # be a SystemExit exception.
@@ -128,9 +126,7 @@ class Result:
                 Exception: {}
                 Domain:    {}
                 Reason:    {}
-                """.format(
-                    self.exit_code, self.exception, self.exception.domain, self.exception.reason
-                )
+                """.format(self.exit_code, self.exception, self.exception.domain, self.exception.reason)
             )
         assert self.exit_code == -1, fail_message
         assert self.exc is not None, fail_message
@@ -156,7 +152,6 @@ class Result:
     #    (AssertionError): If any of the assertions fail
     #
     def assert_task_error(self, error_domain, error_reason, fail_message=""):
-
         assert self.exit_code == -1, fail_message
         assert self.exc is not None, fail_message
         assert self.exception is not None, fail_message
@@ -307,7 +302,6 @@ class Cli:
     #    binary_capture (bool): Whether to capture the stdout/stderr as binary
     #
     def run(self, project=None, silent=False, env=None, cwd=None, options=None, args=None, binary_capture=False):
-
         # We don't want to carry the state of one bst invocation into another
         # bst invocation. Since node _FileInfo objects hold onto BuildStream
         # projects, this means that they would be also carried forward. This
@@ -482,7 +476,6 @@ class Cli:
 
 
 class CliIntegration(Cli):
-
     # run()
     #
     # This supports the same arguments as Cli.run(), see run_project_config().
@@ -506,7 +499,6 @@ class CliIntegration(Cli):
     # will be composited on top of the already loaded project.conf
     #
     def run_project_config(self, *, project_config=None, **kwargs):
-
         # First load the project.conf and substitute {project_dir}
         #
         # Save the original project.conf, because we will run more than
@@ -527,7 +519,6 @@ class CliIntegration(Cli):
         config = config.format(project_dir=project_directory)
 
         if project_config is not None:
-
             # If a custom project configuration dictionary was
             # specified, composite it on top of the already
             # substituted base project configuration
@@ -538,7 +529,6 @@ class CliIntegration(Cli):
             # dictionaries need to be loaded via _yaml.load_data() first
             #
             with tempfile.TemporaryDirectory(dir=project_directory) as scratchdir:
-
                 temp_project = os.path.join(scratchdir, "project.conf")
                 with open(temp_project, "w", encoding="utf-8") as f:
                     _yaml.roundtrip_dump(project_config, f)
@@ -550,7 +540,6 @@ class CliIntegration(Cli):
             _yaml.roundtrip_dump(base_config, project_filename)
 
         else:
-
             # Otherwise, just dump it as is
             with open(project_filename, "w", encoding="utf-8") as f:
                 f.write(config)
@@ -559,7 +548,6 @@ class CliIntegration(Cli):
 
 
 class CliRemote(CliIntegration):
-
     # ensure_services():
     #
     # Make sure that required services are configured and that
@@ -617,7 +605,6 @@ class CliRemote(CliIntegration):
 
 
 class TestArtifact:
-
     # remove_artifact_from_cache():
     #
     # Remove given element artifact from artifact cache
@@ -627,7 +614,6 @@ class TestArtifact:
     #    element_name (str): The name of the element artifact
     #
     def remove_artifact_from_cache(self, cache_dir, element_name):
-
         cache_dir = os.path.join(cache_dir, "artifacts", "refs")
 
         normal_name = element_name.replace(os.sep, "-")
@@ -654,7 +640,6 @@ class TestArtifact:
     #   (bool): If the cache contains the element's artifact
     #
     def is_cached(self, cache_dir, element, element_key):
-
         # cas = CASCache(str(cache_dir))
         artifact_ref = element.get_artifact_name(element_key)
         return os.path.exists(os.path.join(cache_dir, "artifacts", "refs", artifact_ref))
@@ -672,7 +657,6 @@ class TestArtifact:
     #   (Digest): The digest stored in the ref
     #
     def get_digest(self, cache_dir, element, element_key):
-
         artifact_ref = element.get_artifact_name(element_key)
         artifact_dir = os.path.join(cache_dir, "artifacts", "refs")
         artifact_proto = artifact_pb2.Artifact()
@@ -837,7 +821,6 @@ def chdir(directory):
 
 @contextmanager
 def environment(env):
-
     old_env = {}
     for key, value in env.items():
         old_env[key] = os.environ.get(key)
@@ -857,7 +840,6 @@ def environment(env):
 
 @contextmanager
 def configured(directory, config=None):
-
     # Ensure we've at least relocated the caches to a temp directory
     if not config:
         config = {}

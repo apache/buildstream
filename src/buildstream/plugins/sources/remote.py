@@ -52,6 +52,7 @@ The remote source does not override any of the DownloadableFileSource reporting 
 as such, behaves as described in the :ref:`default reporting of SourceInfo <core_downloadable_source_info>`
 documentation.
 """
+
 import os
 from buildstream import DownloadableFileSource, SourceError, utils
 
@@ -81,7 +82,6 @@ class RemoteSource(DownloadableFileSource):
         # are not write protected in the sandbox.
         dest = os.path.join(directory, self.filename)
         with self.timed_activity("Staging remote file to {}".format(dest)):
-
             utils.safe_copy(self._get_mirror_file(), dest)
 
             # To prevent user's umask introducing variability here, explicitly set

@@ -32,7 +32,6 @@ class PluginOriginPip(PluginOrigin):
         self._package_name = None
 
     def get_plugin_paths(self, kind, plugin_type):
-
         from packaging.requirements import Requirement, InvalidRequirement
 
         if sys.version_info >= (3, 10):
@@ -105,6 +104,5 @@ class PluginOriginPip(PluginOrigin):
         )
 
     def load_config(self, origin_node):
-
         origin_node.validate_keys(["package-name", *PluginOrigin._COMMON_CONFIG_KEYS])
         self._package_name = origin_node.get_str("package-name")

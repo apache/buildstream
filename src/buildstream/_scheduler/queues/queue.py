@@ -55,7 +55,6 @@ class QueueStatus(FastEnum):
 #    scheduler (Scheduler): The Scheduler
 #
 class Queue:
-
     # These should be overridden on class data of of concrete Queue implementations
     action_name = None  # type: Optional[str]
     complete_name = None  # type: Optional[str]
@@ -64,7 +63,6 @@ class Queue:
     log_to_file = True
 
     def __init__(self, scheduler, *, imperative=False):
-
         #
         # Private members
         #
@@ -307,7 +305,6 @@ class Queue:
     # See the Job object for an explanation of the call signature
     #
     def _job_done(self, job, element, status, result):
-
         # Now release the resources we reserved
         #
         self._resources.release(self.resources)
@@ -322,7 +319,6 @@ class Queue:
         try:
             self.done(job, element, result, status)
         except BstError as e:
-
             # Report error and mark as failed
             #
             self._message(element, MessageType.ERROR, "Post processing error", detail=str(e))
@@ -336,7 +332,6 @@ class Queue:
             set_last_task_error(e.domain, e.reason)
 
         except Exception:  # pylint: disable=broad-except
-
             # Report unhandled exceptions and mark as failed
             #
             self._message(

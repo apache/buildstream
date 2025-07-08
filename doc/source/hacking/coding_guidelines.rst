@@ -32,7 +32,7 @@ Approximate PEP-8 Style
 ~~~~~~~~~~~~~~~~~~~~~~~
 Python coding style for BuildStream is approximately `pep8 <https://www.python.org/dev/peps/pep-0008/>`_.
 
-The coding style is automatically enforced by `black <https://black.readthedocs.io/en/stable/>`_.
+The coding style is automatically enforced by `ruff <https://docs.astral.sh/ruff/>`_.
 
 Formatting will be checked automatically when running the testsuite on CI. For
 details on how to format your code locally, see :ref:`formatting code <contributing_formatting_code>`.

@@ -119,7 +119,6 @@ class StackElement(Element):
         pass
 
     def preflight(self):
-
         # Assert that all dependencies are both build and runtime dependencies.
         #
         all_deps = list(self._dependencies(_Scope.ALL, recurse=False))
@@ -146,7 +145,6 @@ class StackElement(Element):
         pass
 
     def assemble(self, sandbox):
-
         # Just create a dummy empty artifact, its existence is a statement
         # that all this stack's dependencies are built.
         vrootdir = sandbox.get_virtual_directory()

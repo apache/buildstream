@@ -142,7 +142,6 @@ or overridden is explained above in the
 :ref:`built-in functionality documentation <core_downloadable_source_builtins>`.
 """
 
-
 import os
 import re
 import urllib.request
@@ -328,7 +327,6 @@ class DownloadableFileSource(Source):
         return new_ref
 
     def fetch(self):  # pylint: disable=arguments-differ
-
         # Just a defensive check, it is impossible for the
         # file to be already cached because Source.fetch() will
         # not be called if the source is already cached.

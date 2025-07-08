@@ -76,7 +76,6 @@ class _CacheConfig:
 #
 class Context:
     def __init__(self, *, use_casd: bool = True) -> None:
-
         # Whether we are running as part of a test suite. This is only relevant
         # for developing BuildStream itself.
         self.is_running_in_test_suite: bool = "BST_TEST_SUITE" in os.environ
@@ -601,7 +600,6 @@ class Context:
         ignore_project_artifact_remotes: bool = False,
         ignore_project_source_remotes: bool = False,
     ) -> None:
-
         # Ensure all projects are fully loaded.
         for project in self._projects:
             project.ensure_fully_loaded()
@@ -782,7 +780,6 @@ class Context:
         override_key: str,
         project_attribute: str,
     ) -> List[RemoteSpec]:
-
         # Early return if the CLI is taking full control
         if cli_override and cli_remotes:
             return list(cli_remotes)

@@ -149,7 +149,6 @@ class DependencyConfiguration:
     """
 
     def __init__(self, element: "Element", path: str, config: Optional["MappingNode"]):
-
         self.element = element  # type: Element
         """The dependency Element"""
 
@@ -221,7 +220,6 @@ class Element(Plugin):
         *,
         artifact_key: Optional[str] = None,
     ):
-
         self.__cache_key_dict = None  # Dict for cache key calculation
         self.__cache_key: Optional[str] = None  # Our cached cache key
 
@@ -848,7 +846,6 @@ class Element(Plugin):
     #    (Element): The dependencies in `scope`, in deterministic staging order
     #
     def _dependencies(self, scope, *, recurse=True, visited=None):
-
         # The format of visited is (BitMap(), BitMap()), with the first BitMap
         # containing element that have been visited for the `_Scope.BUILD` case
         # and the second one relating to the `_Scope.RUN` case.
@@ -918,7 +915,6 @@ class Element(Plugin):
     #    (Element): The dependency element, or None if not found.
     #
     def _search(self, scope, name):
-
         for dep in self._dependencies(scope):
             if dep.name == name:
                 return dep
@@ -960,7 +956,6 @@ class Element(Plugin):
         orphans: bool = True,
         owner: Optional["Element"] = None,
     ) -> FileListResult:
-
         owner = owner or self
         assert owner._overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
 
@@ -1034,7 +1029,6 @@ class Element(Plugin):
     #
     @classmethod
     def _new_from_load_element(cls, load_element, task=None):
-
         if not load_element.first_pass:
             load_element.project.ensure_fully_loaded()
 
@@ -1069,13 +1063,11 @@ class Element(Plugin):
                 # then the assertion will be raised by the LoadElement.
                 #
                 if custom_configurations is not None:
-
                     # Create a proxy for the dependency
                     dep_proxy = cast("Element", ElementProxy(element, dependency))
 
                     # Class supports dependency configuration
                     if dep.config_nodes:
-
                         # Ensure variables are substituted first
                         #
                         for config in dep.config_nodes:
@@ -1409,7 +1401,6 @@ class Element(Plugin):
     #
     @contextmanager
     def _prepare_sandbox(self, scope, shell=False, integrate=True, usebuildtree=False):
-
         # Assert first that we have a sandbox configuration
         if not self.__sandbox_config:
             raise ElementError(
@@ -1421,7 +1412,6 @@ class Element(Plugin):
         # bst shell and bst artifact checkout require a local sandbox.
         # pylint: disable-next=contextmanager-generator-missing-cleanup
         with self.__sandbox(config=self.__sandbox_config, allow_remote=False) as sandbox:
-
             # Configure always comes first, and we need it.
             self.__configure_sandbox(sandbox)
 
@@ -1456,7 +1446,6 @@ class Element(Plugin):
     #     directory (str): An absolute path to stage the sources at
     #
     def _stage_sources_in_sandbox(self, sandbox, directory):
-
         # Stage all sources that need to be copied
         sandbox_vroot = sandbox.get_virtual_directory()
         host_vdirectory = sandbox_vroot.open_directory(directory.lstrip(os.sep), create=True)
@@ -1470,11 +1459,9 @@ class Element(Plugin):
     #     vdirectory (Union[str, Directory]): A virtual directory object or local path to stage sources to.
     #
     def _stage_sources_at(self, vdirectory):
-
         # It's advantageous to have this temporary directory on
         # the same file system as the rest of our cache.
         with self.timed_activity("Staging sources", silent_nested=True):
-
             if not isinstance(vdirectory, Directory):
                 vdirectory = FileBasedDirectory(vdirectory)
             if vdirectory:
@@ -1645,7 +1632,6 @@ class Element(Plugin):
     #   - Cache the resulting artifact
     #
     def _assemble(self):
-
         # Only do this the first time around (i.e. __assemble_done is False)
         # to allow for retrying the job
         if self._cached_failure() and not self.__assemble_done:
@@ -1670,12 +1656,10 @@ class Element(Plugin):
 
         context = self._get_context()
         with self._output_file() as output_file:
-
             # Explicitly clean it up, keep the build dir around if exceptions are raised
             os.makedirs(context.builddir, exist_ok=True)
 
             with self.__sandbox(output_file, output_file, self.__sandbox_config) as sandbox:
-
                 # Ensure that the plugin does not run commands if it said that it wouldn't
                 #
                 # We only disable commands here in _assemble() instead of __sandbox() because
@@ -1712,7 +1696,6 @@ class Element(Plugin):
                     self._cache_artifact(sandbox, collect)
 
     def _cache_artifact(self, sandbox, collect):
-
         context = self._get_context()
         buildresult = self.__build_result
         with self.__dynamic_public_guard:
@@ -1773,8 +1756,7 @@ class Element(Plugin):
 
         if collect is not None and collectvdir is None:
             raise ElementError(
-                "Directory '{}' was not found inside the sandbox, "
-                "unable to collect artifact contents".format(collect)
+                "Directory '{}' was not found inside the sandbox, unable to collect artifact contents".format(collect)
             )
 
     # _fetch_done()
@@ -1876,7 +1858,6 @@ class Element(Plugin):
             if artifact.cached() and ignore_failed_artifact:
                 success, _, _ = artifact.load_build_result()
                 if not success:
-
                     self.info(
                         "Discarded failed build",
                         detail="Discarded '{}'\n".format(artifact.strong_key)
@@ -1928,7 +1909,6 @@ class Element(Plugin):
                 # equal to the resolved strict key.
                 #
                 if ignore_failed_artifact or artifact.strong_key != self.__strict_cache_key:
-
                     if ignore_failed_artifact:
                         reason = "because retrying failed builds is enabled."
                     else:
@@ -2035,7 +2015,6 @@ class Element(Plugin):
     #
     # Returns: Exit code
     def _shell(self, scope=None, *, mounts=None, isolate=False, prompt=None, command=None, usebuildtree=False):
-
         with self._prepare_sandbox(scope, shell=True, usebuildtree=usebuildtree) as sandbox:
             environment = self.get_environment()
             environment = copy.copy(environment)
@@ -2052,7 +2031,6 @@ class Element(Plugin):
 
             # Special configurations for non-isolated sandboxes
             if not isolate:
-
                 # Open the network, and reuse calling uid/gid
                 #
                 flags |= _SandboxFlags.NETWORK_ENABLED | _SandboxFlags.INHERIT_UID
@@ -2677,7 +2655,6 @@ class Element(Plugin):
     # Internal method for calling public abstract configure_sandbox() method.
     #
     def __configure_sandbox(self, sandbox):
-
         self.configure_sandbox(sandbox)
 
     # __stage():
@@ -2685,7 +2662,6 @@ class Element(Plugin):
     # Internal method for calling public abstract stage() method.
     #
     def __stage(self, sandbox):
-
         # Enable the overlap collector during the staging process
         with self.__collect_overlaps():
             self.stage(sandbox)
@@ -2696,7 +2672,6 @@ class Element(Plugin):
     # the element and its sources.
     #
     def __preflight(self):
-
         if self.BST_FORBID_RDEPENDS and self.BST_FORBID_BDEPENDS:
             if any(self._dependencies(_Scope.RUN, recurse=False)) or any(
                 self._dependencies(_Scope.BUILD, recurse=False)
@@ -2769,7 +2744,6 @@ class Element(Plugin):
     #
     def __get_tainted(self, recalculate=False):
         if recalculate or self.__tainted is None:
-
             # Whether this artifact has a workspace
             workspaced = self.__artifact.get_metadata_workspaced()
 
@@ -2854,7 +2828,6 @@ class Element(Plugin):
     # Normal element initialization procedure.
     #
     def __initialize_from_yaml(self, load_element: "LoadElement", plugin_conf: Optional[str]):
-
         context = self._get_context()
         project = self._get_project()
 
@@ -2923,7 +2896,6 @@ class Element(Plugin):
 
     @classmethod
     def __compose_default_splits(cls, project, defaults, first_pass):
-
         element_public = defaults.get_mapping(Symbol.PUBLIC, default={})
         element_bst = element_public.get_mapping("bst", default={})
         element_splits = element_bst.get_mapping("split-rules", default={})

@@ -29,6 +29,7 @@ DATA_DIR = os.path.join(
     "link",
 )
 
+
 #
 # Test links to elements, this tests both specifying the link as
 # the main target, and also as a dependency of the main target.

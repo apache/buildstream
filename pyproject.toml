@@ -23,23 +23,6 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
-[tool.black]
-line-length = 119
-exclude = '''
-(
-  /(
-      \.eggs
-    | \.git
-    | \.mypy_cache
-    | \.tox
-    | _build
-    | build
-    | dist
-  )/
-  | src/buildstream/_protos
-)
-'''
-
 [tool.cibuildwheel]
 build-frontend = "build"
 environment = { BST_BUNDLE_BUILDBOX = "1" }
@@ -64,3 +47,9 @@ skip = [
   # The prebuilt BuildBox binaries link against GLibc so will work on manylinux but not musllinux
   "*-musllinux_*",
 ]
+
+[tool.ruff]
+extend-exclude = [
+  "src/buildstream/_protos",
+]
+line-length = 119

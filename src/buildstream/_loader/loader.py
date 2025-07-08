@@ -45,7 +45,6 @@ from .loadelement import LoadElement, Dependency, DependencyType, extract_depend
 #
 class Loader:
     def __init__(self, project, *, parent=None, provenance_node=None):
-
         # Ensure we have an absolute path for the base directory
         basedir = project.element_path
         if not os.path.isabs(basedir):
@@ -111,14 +110,14 @@ class Loader:
     #    (list): The corresponding LoadElement instances matching the `targets`
     #
     def load(self, targets):
-
         for filename in targets:
             if os.path.isabs(filename):
                 # XXX Should this just be an assertion ?
                 # Expect that the caller gives us the right thing at least ?
                 raise LoadError(
-                    "Target '{}' was not specified as a relative "
-                    "path to the base project directory: {}".format(filename, self._basedir),
+                    "Target '{}' was not specified as a relative path to the base project directory: {}".format(
+                        filename, self._basedir
+                    ),
                     LoadErrorReason.INVALID_DATA,
                 )
 
@@ -200,7 +199,6 @@ class Loader:
 
         circular_provenance_node = self._loader_search_provenances.get(name, None)
         if circular_provenance_node and load_subprojects:
-
             assert provenance_node
 
             detail = None
@@ -274,7 +272,6 @@ class Loader:
     #    (LoadElement): A partially-loaded LoadElement
     #
     def _load_file_no_deps(self, filename, provenance_node=None):
-
         self._assert_element_name(filename, provenance_node)
 
         # Load the data and process any conditional statements therein
@@ -285,7 +282,6 @@ class Loader:
             )
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_FILE:
-
                 if self.project.junction:
                     message = "Could not find element '{}' in project referred to by junction element '{}'".format(
                         filename, self.project.junction.name
@@ -379,7 +375,6 @@ class Loader:
     #    (str): The same path with any links expanded
     #
     def _expand_link(self, path):
-
         # FIXME: This simply returns the first link, maybe
         #        this needs to be more iterative, or sorted by
         #        number of path components, or smth
@@ -404,7 +399,6 @@ class Loader:
     #                   or None, if loading of the subproject is disabled.
     #
     def _load_one_file(self, filename, provenance_node, *, load_subprojects=True):
-
         element = None
 
         # First check the cache, the cache might contain shallow loaded
@@ -421,7 +415,6 @@ class Loader:
                 return element
 
         except KeyError:
-
             # Shallow load if it's not yet loaded.
             element = self._load_file_no_deps(filename, provenance_node)
 
@@ -472,7 +465,6 @@ class Loader:
     #    (LoadElement): A loaded LoadElementor None, if loading of the subproject is disabled.
     #
     def _load_file(self, filename, provenance_node, *, load_subprojects=True):
-
         top_element = self._load_one_file(filename, provenance_node, load_subprojects=load_subprojects)
 
         if not top_element:
@@ -513,7 +505,6 @@ class Loader:
                     dep_element = loader._load_file(dep.name, dep.node)
 
                 else:
-
                     dep_element = self._load_one_file(dep.name, dep.node, load_subprojects=load_subprojects)
 
                     if not dep_element:
@@ -524,7 +515,6 @@ class Loader:
                     # If the loaded element is not fully loaded, queue up the dependencies to be loaded in this loop.
                     #
                     if not dep_element.fully_loaded:
-
                         # Mark the dep_element as fully_loaded, as we're already queueing it's deps
                         dep_element.mark_fully_loaded()
 
@@ -563,7 +553,6 @@ class Loader:
     #
     @staticmethod
     def _check_circular_deps(top_element):
-
         sequence = [top_element]
         sequence_indices = [0]
         check_elements = set(sequence)
@@ -682,7 +671,6 @@ class Loader:
     #    (Loader): The loader to use, in case @filename was overridden, otherwise None.
     #
     def _search_for_override_loader(self, filename):
-
         overriding_loaders = self._search_for_overrides(filename)
 
         # If there are any overriding loaders, use the highest one in
@@ -890,7 +878,8 @@ class Loader:
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
                 message = (
-                    provenance_str() + "Could not find the project.conf file in the project "
+                    provenance_str()
+                    + "Could not find the project.conf file in the project "
                     "referred to by junction element '{}'.".format(element.name)
                 )
                 if element.path:
@@ -932,7 +921,6 @@ class Loader:
         # are not consequential.
         #
         for override_path, override_target in junction.overrides.items():
-
             # Ensure that we resolve indirect links, in case that shallow loading
             # an element results in loading a link, we need to discover if it's
             # target is also a link.

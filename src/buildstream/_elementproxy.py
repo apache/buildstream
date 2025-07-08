@@ -98,9 +98,8 @@ class ElementProxy(PluginProxy):
         action: str = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
-        orphans: bool = True
+        orphans: bool = True,
     ) -> FileListResult:
-
         owner = cast("Element", self._owner)
         element = cast("Element", self._plugin)
 
@@ -122,7 +121,7 @@ class ElementProxy(PluginProxy):
         action: str = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
-        orphans: bool = True
+        orphans: bool = True,
     ) -> None:
         #
         # Same approach used here as in Element.dependencies()
@@ -171,7 +170,7 @@ class ElementProxy(PluginProxy):
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         orphans: bool = True,
-        owner: Optional["Element"] = None
+        owner: Optional["Element"] = None,
     ) -> FileListResult:
         owner = cast("Element", self._owner)
         element = cast("Element", self._plugin)

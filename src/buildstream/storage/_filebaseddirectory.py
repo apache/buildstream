@@ -27,6 +27,7 @@ from .. import utils
 from ..utils import BST_ARBITRARY_TIMESTAMP
 from ..utils import FileListResult
 
+
 # FileBasedDirectory intentionally doesn't call its superclass constuctor,
 # which is meant to be unimplemented.
 # pylint: disable=super-init-not-called
@@ -205,7 +206,6 @@ class FileBasedDirectory(Directory):
                 raise DirectoryError("Error removing '{}': {}".format(newpath, e))
 
     def rename(self, src: str, dest: str) -> None:
-
         self._validate_path(src)
         self._validate_path(dest)
         src_paths = src.split("/")
@@ -234,9 +234,8 @@ class FileBasedDirectory(Directory):
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
         properties: Optional[List[str]] = None,
-        collect_result: bool = True
+        collect_result: bool = True,
     ) -> FileListResult:
-
         # See if we can get a source directory to copy from
         source_directory: Optional[str] = None
         if isinstance(external_pathspec, str):
@@ -366,7 +365,6 @@ class FileBasedDirectory(Directory):
     # Convert an os.stat_result into a FileStat
     #
     def __convert_filestat(self, st: os.stat_result) -> FileStat:
-
         file_type: int = 0
 
         if stat.S_ISREG(st.st_mode):
@@ -404,12 +402,10 @@ class FileBasedDirectory(Directory):
         *,
         path_prefix: str = "",
         update_mtime: Optional[float] = None,
-        result: FileListResult
+        result: FileListResult,
     ) -> None:
-
         # Iterate over entries in the source directory
         for name in source_directory:
-
             # The destination filename, relative to the root where the import started
             relative_pathname = os.path.join(path_prefix, name)
 

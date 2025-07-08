@@ -18,7 +18,6 @@
 import os
 
 if "_BST_COMPLETION" not in os.environ:
-
     # Special sauce to get the version from versioneer
     from ._version import get_versions
 

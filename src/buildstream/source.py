@@ -1156,7 +1156,6 @@ class Source(Plugin):
         # implicitly (the Source being constructed with an __alias_override).
         #
         if alias_override or self.__alias_override:
-
             url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
             project_alias_url = project.get_alias_url(url_alias, first_pass=self.__first_pass)
 
@@ -1213,10 +1212,10 @@ class Source(Plugin):
             if primary:
                 expected_alias = _extract_alias(url)
 
-                assert (
-                    self.__expected_alias is None or self.__expected_alias == expected_alias
-                ), "Attempt to mark primary URL with {}, already marked with {}".format(
-                    expected_alias, self.__expected_alias
+                assert self.__expected_alias is None or self.__expected_alias == expected_alias, (
+                    "Attempt to mark primary URL with {}, already marked with {}".format(
+                        expected_alias, self.__expected_alias
+                    )
                 )
 
                 self.__expected_alias = expected_alias
@@ -1237,9 +1236,9 @@ class Source(Plugin):
             # the case for git submodules which might be automatically
             # discovered.
             #
-            assert url in self.__marked_urls or not _extract_alias(
-                url
-            ), "URL was not seen at configure time: {}".format(url)
+            assert url in self.__marked_urls or not _extract_alias(url), (
+                "URL was not seen at configure time: {}".format(url)
+            )
 
         alias = _extract_alias(url)
 
@@ -1529,7 +1528,6 @@ class Source(Plugin):
         # the elements themselves.
         #
         if project.ref_storage == ProjectRefStorage.PROJECT_REFS:
-
             # First warn if there is a ref already loaded, and reset it
             redundant_ref = self.get_ref()  # pylint: disable=assignment-from-no-return
             if redundant_ref is not None:
@@ -1560,7 +1558,6 @@ class Source(Plugin):
     #    (SourceError): In the case we encounter errors saving a file to disk
     #
     def _set_ref(self, new_ref, *, save):
-
         context = self._get_context()
         project = self._get_project()
         toplevel = context.get_toplevel_project()
@@ -1871,7 +1868,6 @@ class Source(Plugin):
         # Use the source fetchers if they are provided
         #
         if source_fetchers:
-
             # Use a contorted loop here, this is to allow us to
             # silence the messages which can result from consuming
             # the items of source_fetchers, if it happens to be a generator.
@@ -1879,7 +1875,6 @@ class Source(Plugin):
             source_fetchers = iter(source_fetchers)
 
             while True:
-
                 with context.messenger.silence():
                     try:
                         fetcher = next(source_fetchers)
@@ -1921,7 +1916,6 @@ class Source(Plugin):
 
             last_error = None
             for mirror in project.get_alias_uris(alias, first_pass=self.__first_pass, tracking=False):
-
                 new_source = self.__clone_for_uri(mirror)
                 try:
                     new_source.fetch(**kwargs)

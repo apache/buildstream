@@ -74,6 +74,7 @@ class RemoteSpecType(click.ParamType):
 #            Override of click's main entry point                #
 ##################################################################
 
+
 # search_command()
 #
 # Helper function to get a command and context object
@@ -179,7 +180,6 @@ def complete_artifact(orig_args, args, incomplete):
     from .._context import Context
 
     with Context(use_casd=False) as ctx:
-
         config = None
         if orig_args:
             for i, arg in enumerate(orig_args):
@@ -245,12 +245,10 @@ def validate_output_streams():
 
 
 def override_main(self, args=None, prog_name=None, complete_var=None, standalone_mode=True, **extra):
-
     # Hook for the Bash completion.  This only activates if the Bash
     # completion is actually enabled, otherwise this is quite a fast
     # noop.
     if main_bashcomplete(self, prog_name, partial(override_completions, args)):
-
         # If we're running tests we cant just go calling exit()
         # from the main process.
         #
@@ -631,7 +629,6 @@ def show(app, elements, deps, except_, order, format_):
             $'---------- %{name} ----------\\n%{vars}'
     """
     with app.initialized():
-
         if not format_:
             format_ = app.context.log_element_format
 
@@ -1206,7 +1203,6 @@ def workspace_reset(app, soft, all_, elements):
 
     # Check that the workspaces in question exist
     with app.initialized():
-
         if not (all_ or elements):
             element = app.project.get_default_target()
             if element:
@@ -1392,8 +1388,7 @@ def artifact_checkout(
             sys.exit(-1)
         if compression and inferred_compression != "" and inferred_compression != compression:
             click.echo(
-                "WARNING: File extension and compression differ."
-                "File extension has been overridden by --compression",
+                "WARNING: File extension and compression differ.File extension has been overridden by --compression",
                 err=True,
             )
         if not compression:

@@ -146,7 +146,6 @@ def test_non_strict_pull_build_strict_checkout(datafiles, cli, tmpdir):
     element_name = "target.bst"
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-
         cli.configure({"artifacts": {"servers": [{"url": share.repo}]}})
 
         # First build it in non-strict mode with an artifact server configured.
@@ -181,7 +180,6 @@ def test_non_strict_checkout_uncached(datafiles, cli, tmpdir):
     element_name = "target.bst"
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-
         cli.configure({"artifacts": {"servers": [{"url": share.repo}]}})
 
         # Attempt to checkout an uncached artifact with remote artifact server
@@ -1076,7 +1074,6 @@ def test_partial_artifact_checkout_fetch(cli, datafiles, tmpdir):
     _yaml.roundtrip_dump(input_config, input_file)
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-
         cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
         result = cli.run(project=project, args=["source", "track", input_name])
@@ -1111,7 +1108,6 @@ def test_partial_checkout_fail(tmpdir, datafiles, cli):
     checkout_dir = os.path.join(str(tmpdir), "checkout")
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-
         cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
         res = cli.run(project=project, args=["artifact", "checkout", build_elt, "--directory", checkout_dir])

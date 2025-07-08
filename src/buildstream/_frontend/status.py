@@ -42,12 +42,10 @@ from .widget import TimeCode
 #    stream (Stream): The Stream
 #
 class Status:
-
     # Table of the terminal capabilities we require and use
     _TERM_CAPABILITIES = {"move_up": "cuu1", "move_x": "hpa", "clear_eol": "el"}
 
     def __init__(self, context, state, content_profile, format_profile, success_profile, error_profile, stream):
-
         self._context = context
         self._state = state
         self._content_profile = content_profile
@@ -86,7 +84,6 @@ class Status:
     #   status.render()
     #
     def clear(self):
-
         if not self._term_caps:
             return
 
@@ -103,7 +100,6 @@ class Status:
     # the status area, for instance in a timeout, then it is
     # not necessary to call clear().
     def render(self):
-
         if not self._term_caps:
             return
 
@@ -176,7 +172,6 @@ class Status:
     #                 of the required capabilities.
     #
     def _init_terminal(self):
-
         # We need both output streams to be connected to a terminal
         if not (sys.stdout.isatty() and sys.stderr.isatty()):
             return None
@@ -326,7 +321,6 @@ class Status:
 #
 class _StatusHeader:
     def __init__(self, context, state, content_profile, format_profile, success_profile, error_profile, stream):
-
         #
         # Public members
         #
@@ -384,7 +378,6 @@ class _StatusHeader:
 
         # Format and calculate size for each queue progress
         for index, task_group in enumerate(self._state.task_groups.values()):
-
             # Add spacing
             if index > 0:
                 size += 2

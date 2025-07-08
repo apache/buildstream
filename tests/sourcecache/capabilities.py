@@ -66,6 +66,6 @@ def test_artifact_cache_with_missing_capabilities_is_skipped(cli, tmpdir, datafi
             # Create a local artifact cache handle
             sourcecache = context.sourcecache
 
-            assert (
-                not sourcecache.has_fetch_remotes()
-            ), "System didn't realize the source cache didn't support BuildStream"
+            assert not sourcecache.has_fetch_remotes(), (
+                "System didn't realize the source cache didn't support BuildStream"
+            )

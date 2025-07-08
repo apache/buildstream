@@ -24,7 +24,6 @@ from ..jobs import JobStatus
 # A queue which fetches element sources
 #
 class FetchQueue(Queue):
-
     action_name = "Fetch"
     complete_name = "Sources Fetched"
     resources = [ResourceType.DOWNLOAD]
@@ -59,7 +58,6 @@ class FetchQueue(Queue):
         return QueueStatus.READY
 
     def done(self, _, element, result, status):
-
         if status is JobStatus.FAIL:
             return
 

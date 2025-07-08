@@ -47,7 +47,6 @@ from .pluginorigin import PluginOrigin, PluginType
 #
 class PluginFactory:
     def __init__(self, plugin_base, plugin_type):
-
         # For pickling across processes, make sure this context has a unique
         # identifier, which we prepend to the identifier of each PluginSource.
         # This keeps plugins loaded during the first and second pass distinct
@@ -212,9 +211,7 @@ class PluginFactory:
     #    (PluginError): In case something went wrong loading the plugin
     #
     def _ensure_plugin(self, kind: str, provenance_node: Node) -> Tuple[Type[Plugin], Optional[str]]:
-
         if kind not in self._types:
-
             # Get the directory on disk where the plugin exists, and
             # the optional accompanying .yaml file for the plugin, should
             # one have been provided.
@@ -222,7 +219,6 @@ class PluginFactory:
             location, defaults, display = self.get_plugin_paths(kind)
 
             if location:
-
                 # Make the PluginSource object
                 #
                 source = self._plugin_base.make_plugin_source(
@@ -269,7 +265,6 @@ class PluginFactory:
     #    (PluginError): In case something went wrong loading the plugin
     #
     def _load_plugin(self, source: PluginSource, kind: str) -> Type[Plugin]:
-
         try:
             plugin = source.load_plugin(kind)
 
@@ -308,8 +303,9 @@ class PluginFactory:
     def _assert_plugin(self, kind: str, plugin_type: Type[Plugin]):
         if kind in self._types:
             raise PluginError(
-                "Tried to register {} plugin for existing kind '{}' "
-                "(already registered {})".format(self._plugin_type, kind, self._types[kind].__name__)
+                "Tried to register {} plugin for existing kind '{}' (already registered {})".format(
+                    self._plugin_type, kind, self._types[kind].__name__
+                )
             )
 
         base_type: Type[Plugin]
@@ -350,7 +346,6 @@ class PluginFactory:
     #    (PluginError): In case something went wrong loading the plugin
     #
     def _assert_min_version(self, kind, plugin_type):
-
         if plugin_type.BST_MIN_VERSION is None:
             raise PluginError(
                 "{} plugin '{}' did not specify BST_MIN_VERSION".format(self._plugin_type, kind),
