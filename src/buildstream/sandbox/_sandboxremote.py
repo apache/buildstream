@@ -154,7 +154,7 @@ class SandboxRemote(SandboxREAPI):
 
         stub = self.exec_remote.exec_service
         request = remote_execution_pb2.ExecuteRequest(
-            instance_name=self.exec_remote.instance_name, action_digest=action_digest, skip_cache_lookup=False
+            instance_name=self.exec_remote.instance_name, action_digest=action_digest, skip_cache_lookup=True
         )
 
         def __run_remote_command(stub, execute_request=None, running_operation=None):
@@ -346,10 +346,14 @@ class SandboxRemote(SandboxREAPI):
             if e.code() != grpc.StatusCode.NOT_FOUND:
                 raise SandboxError("Failed to query action cache: {} ({})".format(e.code(), e.details()))
             return None
-        else:
-            context = self._get_context()
-            context.messenger.info("Action result found in action cache", element_name=self._get_element_name())
-            return result
+
+        context = self._get_context()
+        if result.exit_code:
+            context.messenger.info("Ignoring failed action result found in action cache", element_name=self._get_element_name())
+            return None
+
+        context.messenger.info("Action result found in action cache", element_name=self._get_element_name())
+        return result
 
     @staticmethod
     def _extract_action_result(operation):
