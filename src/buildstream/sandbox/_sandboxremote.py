@@ -261,9 +261,17 @@ class SandboxRemote(SandboxREAPI):
                 "Uploading input root", element_name=self._get_element_name()
             ):
                 # Determine blobs missing on remote
+                root_digests = [action.input_root_digest]
+
+                # Add virtual directories for subsandboxes
+                for subsandbox in self._get_subsandboxes():
+                    vdir = subsandbox.get_virtual_directory()
+                    root_digests.append(vdir._get_digest())
+
+                missing_blobs = []
                 try:
-                    input_root_digest = action.input_root_digest
-                    missing_blobs = list(cascache.missing_blobs_for_directory(input_root_digest, remote=casremote))
+                    for root_digest in root_digests:
+                        missing_blobs.extend(cascache.missing_blobs_for_directory(root_digest, remote=casremote))
                 except grpc.RpcError as e:
                     raise SandboxError("Failed to determine missing blobs: {}".format(e)) from e
 
