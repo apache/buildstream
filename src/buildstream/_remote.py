@@ -34,7 +34,6 @@ class BaseRemote:
 
     def __init__(self, spec):
         self.spec = spec
-        self.channel = None
         self._initialized = False
         self._lock = threading.Lock()
 
@@ -45,7 +44,6 @@ class BaseRemote:
         return self
 
     def __exit__(self, _exc_type, _exc_value, traceback):
-        self.close()
         return False
 
     def __str__(self):
@@ -71,13 +69,6 @@ class BaseRemote:
             self._configure_protocols()
             self._initialized = True
 
-    def close(self):
-        if self.channel:
-            self.channel.close()
-            self.channel = None
-
-        self._initialized = False
-
     # check():
     #
     # Check if the remote is functional and has all the required
@@ -97,8 +88,6 @@ class BaseRemote:
         except grpc.RpcError as e:
             # str(e) is too verbose for errors reported to the user
             raise RemoteError("{}: {}".format(e.code().name, e.details()))
-        finally:
-            self.close()
 
     ####################################################
     #                Abstract methods                  #

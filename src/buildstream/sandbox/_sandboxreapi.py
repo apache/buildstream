@@ -160,6 +160,33 @@ class SandboxREAPI(Sandbox):
             platform=platform,
         )
 
+    def _fetch_action_result_outputs(self, casremote, action_result):
+        # This also ensures that the outputs are uploaded to the cache
+        # storage-service, if configured
+
+        context = self._get_context()
+        cascache = context.get_cascache()
+
+        # Fetch outputs
+        for output_directory in action_result.output_directories:
+            # Now do a pull to ensure we have the full directory structure.
+            # We first try the root_directory_digest we requested, then fall back to tree_digest
+
+            root_directory_digest = output_directory.root_directory_digest
+            if root_directory_digest and root_directory_digest.hash:
+                cascache.fetch_directory(casremote, root_directory_digest)
+                continue
+
+            tree_digest = output_directory.tree_digest
+            if tree_digest and tree_digest.hash:
+                cascache.pull_tree(casremote, tree_digest)
+                continue
+
+            raise SandboxError("Output directory structure had no digest attached.")
+
+        # Fetch stdout and stderr blobs
+        cascache.fetch_blobs(casremote, [action_result.stdout_digest, action_result.stderr_digest])
+
     def _process_job_output(self, working_directory, output_directories, output_files, *, failure):
         # Reads the remote execution server response to an execution request.
         #

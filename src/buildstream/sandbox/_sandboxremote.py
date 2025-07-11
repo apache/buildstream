@@ -18,79 +18,13 @@ import shutil
 
 import grpc
 
+from ._reremote import RERemote
 from ._sandboxreapi import SandboxREAPI
 from .. import _signals
-from .._remote import BaseRemote
-from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
-from .._protos.build.buildgrid import local_cas_pb2
+from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .._protos.google.rpc import code_pb2
 from .._exceptions import BstError, SandboxError
-from .._protos.google.longrunning import operations_pb2, operations_pb2_grpc
-from .._cas import CASRemote
-
-
-class ExecutionRemote(BaseRemote):
-    def __init__(self, spec, casd):
-        super().__init__(spec)
-        self.casd = casd
-        self.instance_name = None
-        self.exec_service = None
-        self.operations_service = None
-
-    def close(self):
-        self.exec_service = None
-        self.operations_service = None
-        super().close()
-
-    def _configure_protocols(self):
-        local_cas = self.casd.get_local_cas()
-        request = local_cas_pb2.GetInstanceNameForRemotesRequest()
-        self.spec.to_localcas_remote(request.execution)
-        try:
-            response = local_cas.GetInstanceNameForRemotes(request)
-            self.instance_name = response.instance_name
-            self.exec_service = self.casd.get_exec_service()
-            self.operations_service = self.casd.get_operations_service()
-        except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.UNIMPLEMENTED or e.code() == grpc.StatusCode.INVALID_ARGUMENT:
-                # buildbox-casd is too old to support execution service remotes.
-                # Fall back to direct connection.
-                self.instance_name = self.spec.instance_name
-                self.channel = self.spec.open_channel()
-                self.exec_service = remote_execution_pb2_grpc.ExecutionStub(self.channel)
-                self.operations_service = operations_pb2_grpc.OperationsStub(self.channel)
-            else:
-                raise
-
-
-class ActionCacheRemote(BaseRemote):
-    def __init__(self, spec, casd):
-        super().__init__(spec)
-        self.casd = casd
-        self.instance_name = None
-        self.ac_service = None
-
-    def close(self):
-        self.ac_service = None
-        super().close()
-
-    def _configure_protocols(self):
-        local_cas = self.casd.get_local_cas()
-        request = local_cas_pb2.GetInstanceNameForRemotesRequest()
-        self.spec.to_localcas_remote(request.action_cache)
-        try:
-            response = local_cas.GetInstanceNameForRemotes(request)
-            self.instance_name = response.instance_name
-            self.ac_service = self.casd.get_ac_service()
-        except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.UNIMPLEMENTED or e.code() == grpc.StatusCode.INVALID_ARGUMENT:
-                # buildbox-casd is too old to support action cache remotes.
-                # Fall back to direct connection.
-                self.instance_name = self.spec.instance_name
-                self.channel = self.spec.open_channel()
-                self.ac_service = remote_execution_pb2_grpc.ActionCacheStub(self.channel)
-            else:
-                raise
+from .._protos.google.longrunning import operations_pb2
 
 
 # SandboxRemote()
@@ -104,10 +38,9 @@ class SandboxRemote(SandboxREAPI):
 
         context = self._get_context()
         cascache = context.get_cascache()
-        casd = context.get_casd()
 
         specs = context.remote_execution_specs
-        if specs is None:
+        if specs is None or specs.exec_spec is None:
             return
 
         self.storage_spec = specs.storage_spec
@@ -115,46 +48,26 @@ class SandboxRemote(SandboxREAPI):
         self.action_spec = specs.action_spec
         self.operation_name = None
 
-        if self.storage_spec:
-            self.own_storage_remote = True
-            self.storage_remote = CASRemote(self.storage_spec, cascache)
-            try:
-                self.storage_remote.init()
-            except grpc.RpcError as e:
-                raise SandboxError(
-                    "Failed to contact remote execution CAS endpoint at {}: {}".format(self.storage_spec.url, e)
-                ) from e
-        else:
-            self.own_storage_remote = False
-            self.storage_remote = cascache.get_default_remote()
-
-        self.exec_remote = ExecutionRemote(self.exec_spec, casd)
+        self.re_remote = RERemote(context.remote_cache_spec, specs, cascache)
         try:
-            self.exec_remote.init()
+            self.re_remote.init()
         except grpc.RpcError as e:
-            raise SandboxError(
-                "Failed to contact remote execution service at {}: {}".format(self.exec_spec.url, e)
-            ) from e
-
-        if self.action_spec:
-            self.ac_remote = ActionCacheRemote(self.action_spec, casd)
-            try:
-                self.ac_remote.init()
-            except grpc.RpcError as e:
-                raise SandboxError(
-                    "Failed to contact action cache service at {}: {}".format(self.action_spec.url, e)
-                ) from e
-        else:
-            self.ac_remote = None
+            urls = set()
+            if self.storage_spec:
+                urls.add(self.storage_spec.url)
+            urls.add(self.exec_spec.url)
+            if self.action_spec:
+                urls.add(self.action_spec.url)
+            raise SandboxError("Failed to contact remote execution endpoint at {}: {}".format(sorted(urls), e)) from e
 
     def run_remote_command(self, action_digest):
         # Sends an execution request to the remote execution server.
         #
         # This function blocks until it gets a response from the server.
 
-        stub = self.exec_remote.exec_service
+        stub = self.re_remote.exec_service
         request = remote_execution_pb2.ExecuteRequest(
-            instance_name=self.exec_remote.instance_name, action_digest=action_digest, skip_cache_lookup=False
+            instance_name=self.re_remote.local_cas_instance_name, action_digest=action_digest, skip_cache_lookup=False
         )
 
         def __run_remote_command(stub, execute_request=None, running_operation=None):
@@ -217,7 +130,7 @@ class SandboxRemote(SandboxREAPI):
         if self.operation_name is None:
             return
 
-        stub = self.exec_remote.operations_service
+        stub = self.re_remote.operations_service
         request = operations_pb2.CancelOperationRequest(name=str(self.operation_name))
 
         try:
@@ -241,7 +154,7 @@ class SandboxRemote(SandboxREAPI):
 
             local_missing_blobs = cascache.missing_blobs(required_blobs)
             if local_missing_blobs:
-                cascache.fetch_blobs(self.storage_remote, local_missing_blobs)
+                cascache.fetch_blobs(self.re_remote, local_missing_blobs)
 
     def _execute_action(self, action, flags):
         stdout, stderr = self._get_output()
@@ -253,7 +166,7 @@ class SandboxRemote(SandboxREAPI):
 
         action_digest = cascache.add_object(buffer=action.SerializeToString())
 
-        casremote = self.storage_remote
+        casremote = self.re_remote
 
         # check action cache download and download if there
         action_result = self._check_action_cache(action_digest)
@@ -292,25 +205,7 @@ class SandboxRemote(SandboxREAPI):
             operation = self.run_remote_command(action_digest)
             action_result = self._extract_action_result(operation)
 
-        # Fetch outputs
-        for output_directory in action_result.output_directories:
-            # Now do a pull to ensure we have the full directory structure.
-            # We first try the root_directory_digest we requested, then fall back to tree_digest
-
-            root_directory_digest = output_directory.root_directory_digest
-            if root_directory_digest and root_directory_digest.hash:
-                cascache.fetch_directory(casremote, root_directory_digest)
-                continue
-
-            tree_digest = output_directory.tree_digest
-            if tree_digest and tree_digest.hash:
-                cascache.pull_tree(casremote, tree_digest)
-                continue
-
-            raise SandboxError("Output directory structure had no digest attached.")
-
-        # Fetch stdout and stderr blobs
-        cascache.fetch_blobs(casremote, [action_result.stdout_digest, action_result.stderr_digest])
+        self._fetch_action_result_outputs(casremote, action_result)
 
         # Forward remote stdout and stderr
         if stdout:
@@ -333,13 +228,13 @@ class SandboxRemote(SandboxREAPI):
         #
         # Should return either the action response or None if not found, raise
         # Sandboxerror if other grpc error was raised
-        if not self.ac_remote:
+        if not self.action_spec:
             return None
 
         request = remote_execution_pb2.GetActionResultRequest(
-            instance_name=self.ac_remote.instance_name, action_digest=action_digest
+            instance_name=self.re_remote.local_cas_instance_name, action_digest=action_digest
         )
-        stub = self.ac_remote.ac_service
+        stub = self.re_remote.ac_service
         try:
             result = stub.GetActionResult(request)
         except grpc.RpcError as e:
@@ -374,11 +269,3 @@ class SandboxRemote(SandboxREAPI):
             raise SandboxError("Remote server failed at executing the build request.")
 
         return execution_response.result
-
-    def _cleanup(self):
-        if self.ac_remote:
-            self.ac_remote.close()
-        if self.exec_remote:
-            self.exec_remote.close()
-        if self.own_storage_remote:
-            self.storage_remote.close()

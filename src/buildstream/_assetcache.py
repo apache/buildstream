@@ -24,7 +24,7 @@ from ._cas import CASRemote, CASCache, CASDProcessManager
 from ._exceptions import AssetCacheError, RemoteError
 from ._remotespec import RemoteSpec, RemoteType
 from ._remote import BaseRemote
-from ._protos.build.bazel.remote.asset.v1 import remote_asset_pb2, remote_asset_pb2_grpc
+from ._protos.build.bazel.remote.asset.v1 import remote_asset_pb2
 from ._protos.build.buildgrid import local_cas_pb2
 from ._protos.google.rpc import code_pb2
 
@@ -37,30 +37,14 @@ class AssetRemote(BaseRemote):
         self.fetch_service = None
         self.push_service = None
 
-    def close(self):
-        self.fetch_service = None
-        self.push_service = None
-        super().close()
-
     def _configure_protocols(self):
         local_cas = self.casd.get_local_cas()
         request = local_cas_pb2.GetInstanceNameForRemotesRequest()
         self.spec.to_localcas_remote(request.remote_asset)
-        try:
-            response = local_cas.GetInstanceNameForRemotes(request)
-            self.instance_name = response.instance_name
-            self.fetch_service = self.casd.get_asset_fetch()
-            self.push_service = self.casd.get_asset_push()
-        except grpc.RpcError as e:
-            if e.code() == grpc.StatusCode.UNIMPLEMENTED or e.code() == grpc.StatusCode.INVALID_ARGUMENT:
-                # buildbox-casd is too old to support asset-only remotes.
-                # Fall back to direct connection.
-                self.instance_name = self.spec.instance_name
-                self.channel = self.spec.open_channel()
-                self.fetch_service = remote_asset_pb2_grpc.FetchStub(self.channel)
-                self.push_service = remote_asset_pb2_grpc.PushStub(self.channel)
-            else:
-                raise
+        response = local_cas.GetInstanceNameForRemotes(request)
+        self.instance_name = response.instance_name
+        self.fetch_service = self.casd.get_asset_fetch()
+        self.push_service = self.casd.get_asset_push()
 
     # _check():
     #
@@ -315,19 +299,6 @@ class AssetCache:
         self._has_push_remotes: bool = False
 
         self._basedir = None
-
-    # release_resources():
-    #
-    # Release resources used by AssetCache.
-    #
-    def release_resources(self):
-
-        # Close all remotes and their gRPC channels
-        for remote in self._remotes.values():
-            if remote.index:
-                remote.index.close()
-            if remote.storage:
-                remote.storage.close()
 
     # setup_remotes():
     #

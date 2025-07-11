@@ -115,7 +115,7 @@ class Sandbox:
     # Called when exiting the with-statement context.
     #
     def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self._cleanup()
+        pass
 
     def get_virtual_directory(self) -> Directory:
         """Fetches the sandbox root directory as a virtual Directory.
@@ -267,13 +267,6 @@ class Sandbox:
     #####################################################
     #    Abstract Methods for Sandbox implementations   #
     #####################################################
-
-    # _cleanup():
-    #
-    # Abstract method to release resources when the sandbox is discarded
-    #
-    def _cleanup(self):
-        pass
 
     # _run()
     #

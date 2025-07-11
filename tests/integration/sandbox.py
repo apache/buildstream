@@ -21,6 +21,7 @@ import pytest
 from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream._testing._utils.site import HAVE_SANDBOX
 
+from tests.testutils import create_artifact_share
 
 pytestmark = pytest.mark.integration
 
@@ -59,3 +60,73 @@ def test_remote_apis_socket(cli, datafiles):
 
     result = cli.run(project=project, args=["build", element_name])
     assert result.exit_code == 0
+
+
+# Test configuration with remote action cache for nested REAPI.
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.datafiles(DATA_DIR)
+def test_remote_apis_socket_with_action_cache(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element_name = "sandbox/remote-apis-socket.bst"
+
+    with create_artifact_share(os.path.join(str(tmpdir), "remote")) as share:
+        cli.configure(
+            {
+                "remote-execution": {
+                    "storage-service": {"url": share.repo},
+                    "action-cache-service": {"url": share.repo, "push": True},
+                }
+            }
+        )
+
+        result = cli.run(project=project, args=["build", element_name])
+        assert result.exit_code == 0
+
+
+# Test configuration with cache storage-service and remote action cache for nested REAPI.
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.datafiles(DATA_DIR)
+def test_remote_apis_socket_with_cache_storage_service_and_action_cache(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element_name = "sandbox/remote-apis-socket.bst"
+
+    with create_artifact_share(os.path.join(str(tmpdir), "remote")) as share:
+        cli.configure(
+            {
+                "cache": {
+                    "storage-service": {"url": share.repo},
+                },
+                "remote-execution": {
+                    "action-cache-service": {"url": share.repo, "push": True},
+                },
+            }
+        )
+
+        result = cli.run(project=project, args=["build", element_name])
+        assert result.exit_code == 0
+
+
+# Test configuration with two different storage-services and remote action cache for nested REAPI.
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.datafiles(DATA_DIR)
+def test_remote_apis_socket_with_two_storage_services_and_action_cache(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element_name = "sandbox/remote-apis-socket.bst"
+
+    with create_artifact_share(os.path.join(str(tmpdir), "remote1")) as share1, create_artifact_share(
+        os.path.join(str(tmpdir), "remote2")
+    ) as share2:
+        cli.configure(
+            {
+                "cache": {
+                    "storage-service": {"url": share1.repo},
+                },
+                "remote-execution": {
+                    "storage-service": {"url": share2.repo},
+                    "action-cache-service": {"url": share2.repo, "push": True},
+                },
+            }
+        )
+
+        result = cli.run(project=project, args=["build", element_name])
+        assert result.exit_code == 0
