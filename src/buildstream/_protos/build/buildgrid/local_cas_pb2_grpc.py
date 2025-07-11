@@ -34,6 +34,11 @@ class LocalContentAddressableStorageStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.GetLocalServerDetails = channel.unary_unary(
+                '/build.buildgrid.LocalContentAddressableStorage/GetLocalServerDetails',
+                request_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetLocalServerDetailsRequest.SerializeToString,
+                response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.LocalServerDetails.FromString,
+                _registered_method=True)
         self.FetchMissingBlobs = channel.unary_unary(
                 '/build.buildgrid.LocalContentAddressableStorage/FetchMissingBlobs',
                 request_serializer=build_dot_buildgrid_dot_local__cas__pb2.FetchMissingBlobsRequest.SerializeToString,
@@ -93,6 +98,15 @@ class LocalContentAddressableStorageStub(object):
 
 class LocalContentAddressableStorageServicer(object):
     """Missing associated documentation comment in .proto file."""
+
+    def GetLocalServerDetails(self, request, context):
+        """Retrieves the configuration details for the local CAS server.
+        This RPC allows clients to obtain information such as the hostname,
+        user ID, and storage root of the local CAS server.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def FetchMissingBlobs(self, request, context):
         """Fetch blobs from a remote CAS to the local cache.
@@ -277,6 +291,11 @@ class LocalContentAddressableStorageServicer(object):
 
 def add_LocalContentAddressableStorageServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'GetLocalServerDetails': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetLocalServerDetails,
+                    request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetLocalServerDetailsRequest.FromString,
+                    response_serializer=build_dot_buildgrid_dot_local__cas__pb2.LocalServerDetails.SerializeToString,
+            ),
             'FetchMissingBlobs': grpc.unary_unary_rpc_method_handler(
                     servicer.FetchMissingBlobs,
                     request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.FetchMissingBlobsRequest.FromString,
@@ -342,6 +361,33 @@ def add_LocalContentAddressableStorageServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class LocalContentAddressableStorage(object):
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def GetLocalServerDetails(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/build.buildgrid.LocalContentAddressableStorage/GetLocalServerDetails',
+            build_dot_buildgrid_dot_local__cas__pb2.GetLocalServerDetailsRequest.SerializeToString,
+            build_dot_buildgrid_dot_local__cas__pb2.LocalServerDetails.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def FetchMissingBlobs(request,
