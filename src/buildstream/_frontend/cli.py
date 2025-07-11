@@ -600,7 +600,7 @@ def inspect(app, elements, state, deps):
             bst inspect -d all | jq '.elements.[].sources | select( . != null ) | .[] | select( .medium == "remote-file")
 
     """
-    with app.initialized(session_name="Inspect"):
+    with app.initialized():
         app.inspector.dump_to_stdout(elements, selection=deps, with_state=state)
 
 
