@@ -416,14 +416,6 @@ class _ElementState(FastEnum):
         return str(self.value)
 
 
-# The type of encoding used when outputing machine readable information
-class _Encoding(FastEnum):
-    YAML = "yaml"
-    JSON = "json"
-
-    def __str__(self):
-        return str(self.value)
-
 ########################################
 #           Type aliases               #
 ########################################

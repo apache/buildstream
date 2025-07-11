@@ -21,7 +21,7 @@ import click
 from .. import _yaml
 from .._exceptions import BstError, LoadError, AppError, RemoteError
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
-from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection, _HostMount, _Scope, _Encoding
+from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection, _HostMount, _Scope
 from .._remotespec import RemoteSpec, RemoteSpecPurpose
 from ..utils import UtilError
 
@@ -536,7 +536,6 @@ def build(
 ##################################################################
 @cli.command(name="inspect", short_help="Inspect Project Information")
 @click.option("-s", "--state", default=False, show_default=True, is_flag=True, help="Show information that requires inspecting remote state")
-@click.option("-e", "--encoding", default=_Encoding.JSON, show_default=True, type=FastEnumType(_Encoding, [_Encoding.JSON, _Encoding.YAML]))
 @click.option(
     "--deps",
     "-d",
@@ -555,7 +554,7 @@ def build(
 )
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def inspect(app, elements, state, encoding, deps):
+def inspect(app, elements, state, deps):
     """Access structured data about a given buildstream project and it's computed elements.
 
     Specifying no elements will result in showing the default targets
@@ -575,8 +574,6 @@ def inspect(app, elements, state, encoding, deps):
         run:   Runtime dependencies, including the element itself
         build: Build time dependencies, excluding the element itself
         all:   All dependencies
-
-    Use ``--encoding JSON|YAML`` to control the type of encoding written to stdout.
 
     If ``--state`` is toggled then pipeline elements which require remote state will be
     shown in addition to information that is available on the local system.
@@ -604,7 +601,7 @@ def inspect(app, elements, state, encoding, deps):
 
     """
     with app.initialized(session_name="Inspect"):
-        app.inspector.dump_to_stdout(elements, selection=deps, encoding=encoding, with_state=state)
+        app.inspector.dump_to_stdout(elements, selection=deps, with_state=state)
 
 
 ##################################################################
