@@ -389,32 +389,6 @@ class _SourceMirror:
 
         return cls(name, aliases)
 
-# Used to indicate the state of a given element
-class _ElementState(FastEnum):
-    # Cannot determine the element state
-    NO_REFERENCE = "no-reference"
-
-    # The element has failed
-    FAILED = "failed"
-
-    # The element is a junction
-    JUNCTION = "junction"
-
-    # The element is waiting
-    WAITING = "waiting"
-
-    # The element is cached
-    CACHED = "cached"
-
-    # The element needs to be loaded from a remote source
-    FETCH_NEEDED = "fetch-needed"
-
-    # The element my be built
-    BUILDABLE = "buildable"
-
-    def __str__(self):
-        return str(self.value)
-
 
 ########################################
 #           Type aliases               #
