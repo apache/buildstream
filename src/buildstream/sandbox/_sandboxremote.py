@@ -205,25 +205,7 @@ class SandboxRemote(SandboxREAPI):
             operation = self.run_remote_command(action_digest)
             action_result = self._extract_action_result(operation)
 
-        # Fetch outputs
-        for output_directory in action_result.output_directories:
-            # Now do a pull to ensure we have the full directory structure.
-            # We first try the root_directory_digest we requested, then fall back to tree_digest
-
-            root_directory_digest = output_directory.root_directory_digest
-            if root_directory_digest and root_directory_digest.hash:
-                cascache.fetch_directory(casremote, root_directory_digest)
-                continue
-
-            tree_digest = output_directory.tree_digest
-            if tree_digest and tree_digest.hash:
-                cascache.pull_tree(casremote, tree_digest)
-                continue
-
-            raise SandboxError("Output directory structure had no digest attached.")
-
-        # Fetch stdout and stderr blobs
-        cascache.fetch_blobs(casremote, [action_result.stdout_digest, action_result.stderr_digest])
+        self._fetch_action_result_outputs(casremote, action_result)
 
         # Forward remote stdout and stderr
         if stdout:
