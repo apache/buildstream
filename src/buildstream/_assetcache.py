@@ -37,11 +37,6 @@ class AssetRemote(BaseRemote):
         self.fetch_service = None
         self.push_service = None
 
-    def close(self):
-        self.fetch_service = None
-        self.push_service = None
-        super().close()
-
     def _configure_protocols(self):
         local_cas = self.casd.get_local_cas()
         request = local_cas_pb2.GetInstanceNameForRemotesRequest()
@@ -304,19 +299,6 @@ class AssetCache:
         self._has_push_remotes: bool = False
 
         self._basedir = None
-
-    # release_resources():
-    #
-    # Release resources used by AssetCache.
-    #
-    def release_resources(self):
-
-        # Close all remotes and their gRPC channels
-        for remote in self._remotes.values():
-            if remote.index:
-                remote.index.close()
-            if remote.storage:
-                remote.storage.close()
 
     # setup_remotes():
     #

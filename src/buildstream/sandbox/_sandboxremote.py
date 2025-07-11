@@ -287,7 +287,3 @@ class SandboxRemote(SandboxREAPI):
             raise SandboxError("Remote server failed at executing the build request.")
 
         return execution_response.result
-
-    def _cleanup(self):
-        if self.re_remote:
-            self.re_remote.close()

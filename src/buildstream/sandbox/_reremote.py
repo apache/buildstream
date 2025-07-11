@@ -26,12 +26,6 @@ class RERemote(CASRemote):
         self.operations_service = None
         self.ac_service = None
 
-    def close(self):
-        self.exec_service = None
-        self.operations_service = None
-        self.ac_service = None
-        super().close()
-
     def _configure_protocols(self):
         local_cas = self.cascache.get_local_cas()
         request = local_cas_pb2.GetInstanceNameForRemotesRequest()
