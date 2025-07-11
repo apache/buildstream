@@ -1,11 +1,12 @@
 import json
 import sys
 
+from enum import StrEnum
 from dataclasses import dataclass
 
 from ruamel.yaml import YAML
 
-from ..types import _ElementState, _PipelineSelection, _Scope
+from ..types import _PipelineSelection, _Scope
 
 # Inspectable Elements as serialized to the terminal
 @dataclass
@@ -33,6 +34,30 @@ class _ProjectOutput:
 class _InspectOutput:
     project: _ProjectOutput
     elements: list[_InspectElement]
+
+# Used to indicate the state of a given element
+class _ElementState(StrEnum):
+    # Cannot determine the element state
+    NO_REFERENCE = "no-reference"
+
+    # The element has failed
+    FAILED = "failed"
+
+    # The element is a junction
+    JUNCTION = "junction"
+
+    # The element is waiting
+    WAITING = "waiting"
+
+    # The element is cached
+    CACHED = "cached"
+
+    # The element needs to be loaded from a remote source
+    FETCH_NEEDED = "fetch-needed"
+
+    # The element my be built
+    BUILDABLE = "buildable"
+
 
 # Inspect elements from a given Buildstream project
 class Inspector:
