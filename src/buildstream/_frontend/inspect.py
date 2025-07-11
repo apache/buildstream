@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from ruamel.yaml import YAML
 
-from ..types import _Encoding, _ElementState, _PipelineSelection, _Scope
+from ..types import _ElementState, _PipelineSelection, _Scope
 
 # Inspectable Elements as serialized to the terminal
 @dataclass
@@ -166,7 +166,7 @@ class Inspector:
         return {"project": _hide_null(output.project), "elements": [_hide_null(element) for element in output.elements]}
 
 
-    def dump_to_stdout(self, elements=[], selection=_PipelineSelection.NONE, with_state=False, encoding=_Encoding.JSON):
+    def dump_to_stdout(self, elements=[], selection=_PipelineSelection.NONE, with_state=False):
         if not elements:
             elements = self.project.get_default_targets()
 
@@ -177,8 +177,5 @@ class Inspector:
         if with_state:
             self.stream.query_cache(dependencies, need_state=True)
 
-        if encoding == _Encoding.JSON:
-            json.dump(self._to_dict(dependencies, with_state), sys.stdout)
-        elif encoding == _Encoding.YAML:
-            yaml = YAML()
-            yaml.dump(self._to_dict(dependencies, with_state), sys.stdout)
+        json.dump(self._to_dict(dependencies, with_state), sys.stdout)
+
