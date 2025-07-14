@@ -60,18 +60,17 @@ def _assert_has_source(elements, expected: _Source):
                 return
     raise Exception(f"Element {expected.name} does not contain the expected source")
 
- 
 @pytest.mark.parametrize(
     "flags,elements",
     [
-        ([], ["import-dev.bst", "import-bin.bst", "compose-all.bst", "target.bst", "subdir/target.bst"]),
-        (["*.bst", "**/*.bst"], ["import-dev.bst", "import-bin.bst", "compose-all.bst", "target.bst", "subdir/target.bst"]),
-        (["--state"], ["import-dev.bst", "import-bin.bst", "compose-all.bst", "target.bst", "subdir/target.bst"]),
-        (["--state", "--deps", "all"], ["import-dev.bst", "import-bin.bst", "compose-all.bst", "target.bst", "subdir/target.bst"]),
-        (["subdir/*.bst"], ["import-dev.bst", "subdir/target.bst"])
+        ([], ["import-local-files.bst", "import-remote-files.bst", "target.bst"]),
+        (["*.bst", "**/*.bst"],["import-local-files.bst", "import-remote-files.bst", "target.bst"]),
+        (["--state"], ["import-local-files.bst", "import-remote-files.bst", "target.bst"]),
+        (["--state", "--deps", "all"], ["import-local-files.bst", "import-remote-files.bst", "target.bst"]),
+        (["import-*.bst"], ["import-local-files.bst", "import-remote-files.bst"])
     ],
 )
-@pytest.mark.datafiles(os.path.join(DATA_DIR, "simple"))
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "inspect"))
 def test_inspect_simple(cli, datafiles, flags, elements):
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=["inspect"] + flags)
@@ -83,12 +82,12 @@ def test_inspect_simple(cli, datafiles, flags, elements):
     "flags,sources",
     [
         ([], [
-            _Source(name="tar-custom-version.bst", kind="tar", version="9d0c936c78d0dfe3a67cae372c9a2330476ea87a2eec16b2daada64a664ca501"),
-            _Source(name="extradata.bst", kind="extradata", version="1234567")
+            _Source(name="import-remote-files.bst", kind="remote", version="d1bc8d3ba4afc7e109612cb73acbdddac052c93025aa1f82942edabb7deb82a1"),
+            _Source(name="import-remote-files.bst", kind="tar", version="d1bc8d3ba4afc7e109612cb73acbdddac052c93025aa1f82942edabb7deb82a1"),
         ]),
     ],
 )
-@pytest.mark.datafiles(os.path.join(DATA_DIR, "source-info"))
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "inspect"))
 def test_inspect_sources(cli, datafiles, flags, sources):
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=["inspect"] + flags)
