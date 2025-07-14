@@ -580,7 +580,7 @@ def test_invalid_alias(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "source-info"))
 @pytest.mark.parametrize(
-    "target, expected_kind, expected_url, expected_medium, expected_version_type, expected_version, expected_guess_version",
+    "target, expected_kind, expected_url, expected_medium, expected_version_type, expected_version, expected_guess_version, expected_homepage, expected_issue_tracker",
     [
         (
             "local.bst",
@@ -589,6 +589,8 @@ def test_invalid_alias(cli, tmpdir, datafiles):
             "local",
             "cas-digest",
             "9391a5943daf287b46520c4289d41cab5f6b33e643f7661bcf620de7f02c1c9b/82",
+            None,
+            None,
             None,
         ),
         (
@@ -599,6 +601,8 @@ def test_invalid_alias(cli, tmpdir, datafiles):
             "sha256",
             "9d0c936c78d0dfe3a67cae372c9a2330476ea87a2eec16b2daada64a664ca501",
             "1.2.3",
+            None,
+            None,
         ),
         (
             "tar-no-micro.bst",
@@ -608,6 +612,8 @@ def test_invalid_alias(cli, tmpdir, datafiles):
             "sha256",
             "9d0c936c78d0dfe3a67cae372c9a2330476ea87a2eec16b2daada64a664ca501",
             "1.2",
+            None,
+            None,
         ),
         (
             "tar-custom-version.bst",
@@ -617,6 +623,8 @@ def test_invalid_alias(cli, tmpdir, datafiles):
             "sha256",
             "9d0c936c78d0dfe3a67cae372c9a2330476ea87a2eec16b2daada64a664ca501",
             "2.4.93",
+            None,
+            None,
         ),
         (
             "tar-explicit.bst",
@@ -626,6 +634,8 @@ def test_invalid_alias(cli, tmpdir, datafiles):
             "sha256",
             "9d0c936c78d0dfe3a67cae372c9a2330476ea87a2eec16b2daada64a664ca501",
             "3.2.1",
+            None,
+            None,
         ),
         (
             "testsource.bst",
@@ -635,9 +645,30 @@ def test_invalid_alias(cli, tmpdir, datafiles):
             "pony-age",
             "1234567",
             "12",
+            None,
+            None,
+        ),
+        (
+            "user-provenance.bst",
+            "tar",
+            "https://flying-ponies.com/releases/1.2/pony-flight-1.2.3.tgz",
+            "remote-file",
+            "sha256",
+            "9d0c936c78d0dfe3a67cae372c9a2330476ea87a2eec16b2daada64a664ca501",
+            "1.2.3",
+            "https://flying-ponies.com/index.html",
+            "https://bugs.flying-ponies.com/issues",
         ),
     ],
-    ids=["local", "tar-full-version", "tar-no-micro", "tar-custom-version", "tar-explicit", "testsource"],
+    ids=[
+        "local",
+        "tar-full-version",
+        "tar-no-micro",
+        "tar-custom-version",
+        "tar-explicit",
+        "testsource",
+        "user-provenance",
+    ],
 )
 def test_source_info(
     cli,
@@ -649,6 +680,8 @@ def test_source_info(
     expected_version_type,
     expected_version,
     expected_guess_version,
+    expected_homepage,
+    expected_issue_tracker,
 ):
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=["show", "--format", "%{name}:\n%{source-info}", target])
@@ -664,9 +697,10 @@ def test_source_info(
     assert source_info.get_str("version-type") == expected_version_type
     assert source_info.get_str("version") == expected_version
 
-    guess_version = source_info.get_str("version-guess", None)
-    if guess_version or expected_guess_version:
-        assert guess_version == expected_guess_version
+    # Optional fields
+    assert source_info.get_str("version-guess", None) == expected_guess_version
+    assert source_info.get_str("homepage", None) == expected_homepage
+    assert source_info.get_str("issue-tracker", None) == expected_issue_tracker
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "source-info"))
