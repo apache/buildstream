@@ -305,7 +305,7 @@ class App:
             self.stream.set_project(self.project)
 
             # Initialize the inspector
-            self.inspector = Inspector(self.stream, self.project)
+            self.inspector = Inspector(self.stream, self.project, self.context)
 
             # Run the body of the session here, once everything is loaded
             try:
