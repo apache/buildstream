@@ -3,7 +3,11 @@ import sys
 from dataclasses import dataclass, fields, is_dataclass
 from enum import StrEnum
 
+from .._project import ProjectConfig as _BsProjectConfig
+from .._pluginfactory.pluginorigin import PluginType
+from .._options import OptionPool
 from ..types import _PipelineSelection, _Scope
+from ..node import MappingNode
 
 
 # Inspectable Elements as serialized to the terminal
@@ -62,7 +66,8 @@ class _UserConfig:
 @dataclass
 class _Plugin:
     name: str
-    full: str  # class str
+    description: str
+    plugin_type: PluginType
 
 
 # Configuration of a given project
@@ -70,10 +75,16 @@ class _Plugin:
 class _ProjectConfig:
     name: str
     directory: str | None
+    # Original configuration from the project.conf
+    original: dict[str, any]
     junction: str | None
-    variables: [(str, str)]
-    element_plugins: [_Plugin]
-    source_plugins: [_Plugin]
+    # Interpolated options
+    options: [(str, str)]
+    aliases: dict[str, str]
+    element_overrides: any
+    source_overrides: any
+    # plugin information
+    plugins: [_Plugin]
 
 
 # A single project loaded from the current configuration
@@ -197,6 +208,11 @@ def _dump_dataclass(_cls):
     return d
 
 
+def _dump_option_pool(options: OptionPool):
+    opts = dict()
+    return options.export_variables(opts)
+
+
 # Inspect elements from a given Buildstream project
 class Inspector:
     def __init__(self, stream, project, context):
@@ -300,20 +316,37 @@ class Inspector:
     def _get_projects(self) -> [_Project]:
         projects = []
         for wrapper in self.project.loaded_projects():
-            variables = dict()
-            wrapper.project.options.printable_variables(variables)
+            plugins = []
+            plugins.extend(
+                [
+                    _Plugin(name=plugin[0], description=plugin[3], plugin_type=PluginType.ELEMENT.value)
+                    for plugin in wrapper.project.element_factory.list_plugins()
+                ]
+            )
+            plugins.extend(
+                [
+                    _Plugin(name=plugin[0], description=plugin[3], plugin_type=PluginType.SOURCE.value)
+                    for plugin in wrapper.project.source_factory.list_plugins()
+                ]
+            )
+            plugins.extend(
+                [
+                    _Plugin(name=plugin[0], description=plugin[3], plugin_type=PluginType.SOURCE_MIRROR.value)
+                    for plugin in wrapper.project.source_factory.list_plugins()
+                ]
+            )
+
             project_config = _make_dataclass(
                 wrapper.project,
                 _ProjectConfig,
                 ["name", "directory"],
-                variables=variables,
-                junction=lambda config: None if not config.junction else config.junction._get_full_name(),
-                element_plugins=lambda config: [
-                    _Plugin(name=plugin[0], full=str(plugin[1])) for plugin in config.element_factory.list_plugins()
-                ],
-                source_plugins=lambda config: [
-                    _Plugin(name=plugin[0], full=str(plugin[1])) for plugin in config.source_factory.list_plugins()
-                ],
+                options=lambda project: _dump_option_pool(project.options),
+                original=lambda project: project._project_conf.strip_node_info(),
+                aliases=lambda project: project.config._aliases.strip_node_info(),
+                source_overrides=lambda project: project.source_overrides.strip_node_info(),
+                element_overrides=lambda project: project.element_overrides.strip_node_info(),
+                junction=lambda project: None if not project.junction else project.junction._get_full_name(),
+                plugins=plugins,
             )
             projects.append(
                 _make_dataclass(
