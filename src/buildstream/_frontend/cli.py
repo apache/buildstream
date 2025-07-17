@@ -532,6 +532,79 @@ def build(
 
 
 ##################################################################
+#                           Inspect Command                      #
+##################################################################
+@cli.command(name="inspect", short_help="Inspect Project Information")
+@click.option("-s", "--state", default=False, show_default=True, is_flag=True, help="Show information that requires inspecting remote state")
+@click.option(
+    "--deps",
+    "-d",
+    default=_PipelineSelection.ALL,
+    show_default=True,
+    type=FastEnumType(
+        _PipelineSelection,
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.RUN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.ALL,
+        ],
+    ),
+    help="The dependencies to show",
+)
+@click.argument("elements", nargs=-1, type=click.Path(readable=False))
+@click.pass_obj
+def inspect(app, elements, state, deps):
+    """Access structured data about a given buildstream project and it's computed elements.
+
+    Specifying no elements will result in showing the default targets
+    of the project. If no default targets are configured, all project
+    elements will be shown.
+
+    When this command is executed from a workspace directory, the default
+    is to show the workspace element.
+
+    By default this will show all of the dependencies of the
+    specified target element.
+
+    Specify ``--deps`` to control which elements to show:
+
+    \b
+        none:  No dependencies, just the element itself
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
+        all:   All dependencies
+
+    If ``--state`` is toggled then pipeline elements which require remote state will be
+    shown in addition to information that is available on the local system.
+
+    Examples:
+
+        # Show all default elements with remote information
+        \n
+            bst inspect --state
+
+
+        # A specific target (glob pattern)
+        \n
+            bst inspect -s public/*.bst
+
+
+        # With a dependency target
+        \n
+            bst inspect -d run --state
+
+
+        # Show each remote file source (with the help of jq)
+        \n
+            bst inspect -d all | jq '.elements.[].sources | select( . != null ) | .[] | select( .medium == "remote-file")
+
+    """
+    with app.initialized():
+        app.inspector.dump_to_stdout(elements, selection=deps, with_state=state)
+
+
+##################################################################
 #                           Show Command                         #
 ##################################################################
 @cli.command(short_help="Show elements in the pipeline")
