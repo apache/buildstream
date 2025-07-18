@@ -83,6 +83,27 @@ def test_remote_apis_socket_with_action_cache(cli, tmpdir, datafiles):
         assert result.exit_code == 0
 
 
+# Test configuration with remote action cache for nested REAPI with updates enabled.
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.datafiles(DATA_DIR)
+def test_remote_apis_socket_with_action_cache_update(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element_name = "sandbox/remote-apis-socket-ac-update.bst"
+
+    with create_artifact_share(os.path.join(str(tmpdir), "remote")) as share:
+        cli.configure(
+            {
+                "remote-execution": {
+                    "storage-service": {"url": share.repo},
+                    "action-cache-service": {"url": share.repo, "push": True},
+                }
+            }
+        )
+
+        result = cli.run(project=project, args=["build", element_name])
+        assert result.exit_code == 0
+
+
 # Test configuration with cache storage-service and remote action cache for nested REAPI.
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
 @pytest.mark.datafiles(DATA_DIR)
