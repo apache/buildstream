@@ -269,24 +269,6 @@ class Sandbox:
 
             batch.execute()
 
-    def create_subsandbox(self, **kwargs):
-        """Create an empty sandbox
-
-        This allows an element to use a secondary sandbox for manipulating artifacts
-        that does not affect the build sandbox
-        """
-
-        sub = Sandbox(
-            self.__context,
-            self.__project,
-            parent=self,
-            stdout=self.__stdout,
-            stderr=self.__stderr,
-            config=self.__config,
-        )
-        self.__subsandboxes.append(sub)
-        return sub
-
     #####################################################
     #    Abstract Methods for Sandbox implementations   #
     #####################################################
@@ -580,6 +562,25 @@ class Sandbox:
     #
     def _disable_run(self):
         self.__allow_run = False
+
+    # _create_subsandbox()
+    #
+    # Create an empty sandbox
+    #
+    # This allows an element to use a secondary sandbox for manipulating artifacts
+    # that does not affect the build sandbox.
+    #
+    def _create_subsandbox(self, **kwargs):
+        sub = Sandbox(
+            self.__context,
+            self.__project,
+            parent=self,
+            stdout=self.__stdout,
+            stderr=self.__stderr,
+            config=self.__config,
+        )
+        self.__subsandboxes.append(sub)
+        return sub
 
     def _get_subsandboxes(self):
         return self.__subsandboxes

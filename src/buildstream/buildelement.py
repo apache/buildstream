@@ -313,7 +313,7 @@ class BuildElement(Element):
         sorted_envs = sorted(self.__digest_environment)
         for digest_variable in sorted_envs:
             element_list = [element for element, _ in self.__digest_environment[digest_variable]]
-            subsandbox = sandbox.create_subsandbox()
+            subsandbox = sandbox._create_subsandbox()
             self.stage_dependency_artifacts(subsandbox, element_list)
             digest = subsandbox.get_virtual_directory()._get_digest()
             env[digest_variable] = "{}/{}".format(digest.hash, digest.size_bytes)
