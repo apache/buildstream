@@ -254,7 +254,7 @@ class Element(Plugin):
         # Internal instance properties
         #
         self._depth = None  # Depth of Element in its current dependency graph
-        self._overlap_collector = None  # type: Optional[OverlapCollector]
+        self._overlap_collectors: Dict[Sandbox, OverlapCollector] = {}  # Active overlap collector per sandbox
         self._description = load_element.description or ""  # type: str
 
         #
@@ -642,7 +642,8 @@ class Element(Plugin):
            :func:`Element.stage_dependency_artifacts() <buildstream.element.Element.stage_dependency_artifacts>`
            instead.
         """
-        assert self._overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
+        overlap_collector = self._overlap_collectors.get(sandbox)
+        assert overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
 
         #
         # The public API can only be called on the implementing plugin itself.
@@ -650,7 +651,7 @@ class Element(Plugin):
         # ElementProxy calls to stage_artifact() are routed directly to _stage_artifact(),
         # and the ElementProxy takes care of starting and ending the OverlapCollector session.
         #
-        with self._overlap_collector.session(action, path):
+        with overlap_collector.session(action, path):
             result = self._stage_artifact(
                 sandbox, path=path, action=action, include=include, exclude=exclude, orphans=orphans
             )
@@ -692,9 +693,10 @@ class Element(Plugin):
         Raises:
            (:class:`.ElementError`): if forbidden overlaps occur.
         """
-        assert self._overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
+        overlap_collector = self._overlap_collectors.get(sandbox)
+        assert overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
 
-        with self._overlap_collector.session(action, path):
+        with overlap_collector.session(action, path):
             for dep in self.dependencies(selection):
                 dep._stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans, owner=self)
 
@@ -962,7 +964,8 @@ class Element(Plugin):
     ) -> FileListResult:
 
         owner = owner or self
-        assert owner._overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
+        overlap_collector = owner._overlap_collectors.get(sandbox)
+        assert overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
 
         if not self._cached():
             detail = (
@@ -989,7 +992,7 @@ class Element(Plugin):
         result = vstagedir._import_files_internal(files_vdir, filter_callback=split_filter)
         assert result is not None
 
-        owner._overlap_collector.collect_stage_result(self, result)
+        overlap_collector.collect_stage_result(self, result)
 
         return result
 
@@ -1013,7 +1016,7 @@ class Element(Plugin):
     #                              occur.
     #
     def _stage_dependency_artifacts(self, sandbox, scope, *, path=None, include=None, exclude=None, orphans=True):
-        with self._overlap_collector.session(OverlapAction.WARNING, path):
+        with self._overlap_collectors[sandbox].session(OverlapAction.WARNING, path):
             for dep in self._dependencies(scope):
                 dep._stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans, owner=self)
 
@@ -1435,7 +1438,7 @@ class Element(Plugin):
                 self.__stage(sandbox)
             else:
                 # Stage deps in the sandbox root
-                with self.timed_activity("Staging dependencies", silent_nested=True), self.__collect_overlaps():
+                with self.timed_activity("Staging dependencies", silent_nested=True), self.__collect_overlaps(sandbox):
                     self._stage_dependency_artifacts(sandbox, scope)
 
                 # Run any integration commands provided by the dependencies
@@ -2703,7 +2706,7 @@ class Element(Plugin):
     def __stage(self, sandbox):
 
         # Enable the overlap collector during the staging process
-        with self.__collect_overlaps():
+        with self.__collect_overlaps(sandbox):
             self.stage(sandbox)
 
     # __preflight():
@@ -2806,10 +2809,12 @@ class Element(Plugin):
     # this context manager.
     #
     @contextmanager
-    def __collect_overlaps(self):
-        self._overlap_collector = OverlapCollector(self)
-        yield
-        self._overlap_collector = None
+    def __collect_overlaps(self, sandbox):
+        self._overlap_collectors[sandbox] = OverlapCollector(self)
+        try:
+            yield
+        finally:
+            del self._overlap_collectors[sandbox]
 
     # __sandbox():
     #
