@@ -828,6 +828,21 @@ class Element(Plugin):
 
         sandbox._clean_directory(build_root)
 
+    @contextmanager
+    def subsandbox(self, sandbox: "Sandbox") -> Iterator["Sandbox"]:
+        """A context manager for a subsandbox.
+
+        Args:
+           sandbox: The main build sandbox
+
+        This allows an element to use a secondary sandbox for manipulating
+        artifacts without affecting the main build sandbox. The subsandbox
+        is initially empty.
+        """
+        subsandbox = sandbox._create_subsandbox()
+        with self.__collect_overlaps(subsandbox):
+            yield subsandbox
+
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
