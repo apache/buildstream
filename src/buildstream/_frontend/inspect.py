@@ -71,8 +71,6 @@ class _Plugin:
 class _ProjectConfig:
     name: str
     directory: str | None
-    # Original configuration from the project.conf
-    original: dict[str, any]
     junction: str | None
     # Interpolated options
     options: [(str, str)]
@@ -261,7 +259,6 @@ class Inspector:
                 _ProjectConfig,
                 ["name", "directory"],
                 options=lambda project: _dump_option_pool(project.options),
-                original=lambda project: _maybe_strip_node_info(project._project_conf),
                 aliases=lambda project: _maybe_strip_node_info(project.config._aliases),
                 source_overrides=lambda project: _maybe_strip_node_info(project.source_overrides),
                 element_overrides=lambda project: _maybe_strip_node_info(project.element_overrides),
