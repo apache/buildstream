@@ -561,3 +561,48 @@ def test_malicious_out_of_basedir_hardlinks(cli, tmpdir, datafiles):
     result.assert_success()
     result = cli.run(project=project, args=["source", "fetch", "malicious_target.bst"])
     result.assert_main_error(ErrorDomain.STREAM, None)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "symlinks"))
+def test_symlinks(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    absolute_target = "/tmp/foo"
+    relative_target = "foo/../bar"
+
+    # Create a tarball with an absolute symlink
+    src_tar = os.path.join(str(tmpdir), "contents.tar.gz")
+    old_dir = os.getcwd()
+    os.chdir(str(tmpdir))
+    os.mkdir("contents")
+    os.symlink(absolute_target, "contents/absolute-symlink")
+    os.symlink(relative_target, "contents/relative-symlink")
+    with tarfile.open(src_tar, "w:gz") as tar:
+        tar.add("contents")
+    os.chdir(old_dir)
+
+    # Make sure our tarfile is actually created with the desired attributes set
+    with tarfile.open(src_tar, "r:gz") as tar:
+        assert any(
+            member.issym() and member.path == "contents/absolute-symlink" and member.linkname == absolute_target
+            for member in tar.getmembers()
+        )
+        assert any(
+            member.issym() and member.path == "contents/relative-symlink" and member.linkname == relative_target
+            for member in tar.getmembers()
+        )
+
+    # Assert that we will allow and not mangle symlinks with relative and absolute target paths
+    result = cli.run(project=project, args=["source", "track", "target.bst"])
+    result.assert_success()
+    result = cli.run(project=project, args=["source", "fetch", "target.bst"])
+    result.assert_success()
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+    result = cli.run(project=project, args=["artifact", "checkout", "target.bst", "--directory", checkoutdir])
+    result.assert_success()
+
+    assert os.readlink(checkoutdir + "/absolute-symlink") == absolute_target
+    assert os.readlink(checkoutdir + "/relative-symlink") == relative_target

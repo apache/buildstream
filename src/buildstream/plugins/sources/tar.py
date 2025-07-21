@@ -145,14 +145,14 @@ class TarSource(DownloadableFileSource):
                         base_dir = base_dir + os.sep
 
                 filter_function = functools.partial(self._extract_filter, base_dir)
+                filtered_members = []
+                for member in tar.getmembers():
+                    member = filter_function(member, directory)
+                    if member is not None:
+                        filtered_members.append(member)
                 if sys.version_info >= (3, 12):
-                    tar.extractall(path=directory, filter=filter_function)
+                    tar.extractall(path=directory, members=filtered_members, filter="tar")
                 else:
-                    filtered_members = []
-                    for member in tar.getmembers():
-                        member = filter_function(member, directory)
-                        if member is not None:
-                            filtered_members.append(member)
                     tar.extractall(path=directory, members=filtered_members)
 
         except (tarfile.TarError, OSError) as e:
