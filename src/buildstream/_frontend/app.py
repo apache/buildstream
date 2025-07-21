@@ -40,7 +40,6 @@ from ..utils import UtilError
 from .profile import Profile
 from .status import Status
 from .widget import LogLine
-from .inspect import Inspector
 
 # Intendation for all logging
 INDENT = 4
@@ -66,7 +65,6 @@ class App:
         self.logger = None  # The LogLine object
         self.interactive = None  # Whether we are running in interactive mode
         self.colors = None  # Whether to use colors in logging
-        self.inspector = None # If inspection is required
 
         #
         # Private members
@@ -303,9 +301,6 @@ class App:
             # Set the project on the Stream, this can be None if there is no project.
             #
             self.stream.set_project(self.project)
-
-            # Initialize the inspector
-            self.inspector = Inspector(self.stream, self.project, self.context)
 
             # Run the body of the session here, once everything is loaded
             try:

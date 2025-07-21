@@ -24,6 +24,7 @@ from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection, _HostMount, _Scope
 from .._remotespec import RemoteSpec, RemoteSpecPurpose
 from ..utils import UtilError
+from .inspect import Inspector
 
 
 ##################################################################
@@ -592,7 +593,8 @@ def inspect(app, elements, deps):
 
     """
     with app.initialized():
-        app.inspector.dump_to_stdout(elements, selection=deps)
+        inspector = Inspector(app.stream, app.project, app.context)
+        inspector.dump_to_stdout(elements, selection=deps)
 
 
 ##################################################################
