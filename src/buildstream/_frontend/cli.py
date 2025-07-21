@@ -537,6 +537,9 @@ def build(
 ##################################################################
 @cli.command(name="inspect", short_help="Inspect Project Information")
 @click.option(
+    "--except", "except_", multiple=True, type=click.Path(readable=False), help="Except certain dependencies"
+)
+@click.option(
     "--deps",
     "-d",
     default=_PipelineSelection.ALL,
@@ -554,7 +557,7 @@ def build(
 )
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def inspect(app, elements, deps):
+def inspect(app, except_, elements, deps):
     """Access structured data about a given buildstream project and it's computed elements.
 
     Specifying no elements will result in showing the default targets
@@ -594,7 +597,7 @@ def inspect(app, elements, deps):
     """
     with app.initialized():
         inspector = Inspector(app.stream, app.project, app.context)
-        inspector.dump_to_stdout(elements, selection=deps)
+        inspector.dump_to_stdout(elements, except_=except_, selection=deps)
 
 
 ##################################################################

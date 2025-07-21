@@ -335,13 +335,13 @@ class Inspector:
             elements=[element for element in self._elements(dependencies)],
         )
 
-    def dump_to_stdout(self, elements=[], selection=_PipelineSelection.NONE):
+    def dump_to_stdout(self, elements=[], except_=[], selection=_PipelineSelection.NONE):
         if not elements:
             elements = self.project.get_default_targets()
 
-        dependencies = self.stream.load_selection(
-            elements, selection=selection, except_targets=[]
-        )
+        elements = [element for element in filter(lambda name: name not in except_, elements)]
+
+        dependencies = self.stream.load_selection(elements, selection=selection, except_targets=[])
 
         output = self._get_output(dependencies)
         json.dump(_dump_dataclass(output), sys.stdout)
