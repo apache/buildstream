@@ -535,7 +535,6 @@ def build(
 #                           Inspect Command                      #
 ##################################################################
 @cli.command(name="inspect", short_help="Inspect Project Information")
-@click.option("-s", "--state", default=False, show_default=True, is_flag=True, help="Show information that requires inspecting remote state")
 @click.option(
     "--deps",
     "-d",
@@ -554,7 +553,7 @@ def build(
 )
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def inspect(app, elements, state, deps):
+def inspect(app, elements, deps):
     """Access structured data about a given buildstream project and it's computed elements.
 
     Specifying no elements will result in showing the default targets
@@ -575,24 +574,16 @@ def inspect(app, elements, state, deps):
         build: Build time dependencies, excluding the element itself
         all:   All dependencies
 
-    If ``--state`` is toggled then pipeline elements which require remote state will be
-    shown in addition to information that is available on the local system.
-
     Examples:
-
-        # Show all default elements with remote information
-        \n
-            bst inspect --state
-
 
         # A specific target (glob pattern)
         \n
-            bst inspect -s public/*.bst
+            bst inspect public/*.bst
 
 
         # With a dependency target
         \n
-            bst inspect -d run --state
+            bst inspect -d run
 
 
         # Show each remote file source (with the help of jq)
@@ -601,7 +592,7 @@ def inspect(app, elements, state, deps):
 
     """
     with app.initialized():
-        app.inspector.dump_to_stdout(elements, selection=deps, with_state=state)
+        app.inspector.dump_to_stdout(elements, selection=deps)
 
 
 ##################################################################

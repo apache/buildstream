@@ -65,8 +65,8 @@ def _assert_has_source(elements, expected: _Source):
     [
         ([], ["import-local-files.bst", "import-remote-files.bst", "target.bst"]),
         (["*.bst", "**/*.bst"],["import-local-files.bst", "import-remote-files.bst", "target.bst"]),
-        (["--state"], ["import-local-files.bst", "import-remote-files.bst", "target.bst"]),
-        (["--state", "--deps", "all"], ["import-local-files.bst", "import-remote-files.bst", "target.bst"]),
+        ([], ["import-local-files.bst", "import-remote-files.bst", "target.bst"]),
+        (["--deps", "all"], ["import-local-files.bst", "import-remote-files.bst", "target.bst"]),
         (["import-*.bst"], ["import-local-files.bst", "import-remote-files.bst"])
     ],
 )

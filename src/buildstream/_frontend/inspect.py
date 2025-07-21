@@ -16,12 +16,8 @@ class _Element:
     name: str
     description: str
     workspace: any
-    key: str
-    key_full: str
-    state: str
     environment: dict[str, str]
     variables: dict[str, str]
-    artifact: any
     dependencies: list[str]
     build_dependencies: list[str]
     runtime_dependencies: list[str]
@@ -90,7 +86,6 @@ class _ProjectConfig:
 # A single project loaded from the current configuration
 @dataclass
 class _Project:
-    provenance: str
     duplicates: [str]
     declarations: [str]
     config: _ProjectConfig
@@ -103,30 +98,6 @@ class _InspectOutput:
     # user configuration
     user_config: _UserConfig
     elements: list[_Element]
-
-
-# Used to indicate the state of a given element
-class _ElementState(StrEnum):
-    # Cannot determine the element state
-    NO_REFERENCE = "no-reference"
-
-    # The element has failed
-    FAILED = "failed"
-
-    # The element is a junction
-    JUNCTION = "junction"
-
-    # The element is waiting
-    WAITING = "waiting"
-
-    # The element is cached
-    CACHED = "cached"
-
-    # The element needs to be loaded from a remote source
-    FETCH_NEEDED = "fetch-needed"
-
-    # The element my be built
-    BUILDABLE = "buildable"
 
 
 # _make_dataclass()
@@ -213,6 +184,12 @@ def _dump_option_pool(options: OptionPool):
     return options.export_variables(opts)
 
 
+def _maybe_strip_node_info(obj):
+    out = dict()
+    if obj and hasattr(obj, "strip_node_info"):
+        return obj.strip_node_info()
+
+
 # Inspect elements from a given Buildstream project
 class Inspector:
     def __init__(self, stream, project, context):
@@ -220,61 +197,8 @@ class Inspector:
         self.project = project
         self.context = context
 
-    def _read_state(self, element):
-        try:
-            if not element._has_all_sources_resolved():
-                return _ElementState.NO_REFERENCE
-            else:
-                if element.get_kind() == "junction":
-                    return _ElementState.JUNCTION
-                elif not element._can_query_cache():
-                    return _ElementState.WAITING
-                elif element._cached_failure():
-                    return _ElementState.FAILED
-                elif element._cached_success():
-                    return _ElementState.CACHED
-                elif not element._can_query_source_cache():
-                    return _ElementState.WAITING
-                elif element._fetch_needed():
-                    return _ElementState.FETCH_NEEDED
-                elif element._buildable():
-                    return _ElementState.BUILDABLE
-                else:
-                    return _ElementState.WAITING
-        except BstError as e:
-            # Provide context to plugin error
-            e.args = ("Failed to determine state for {}: {}".format(element._get_full_name(), str(e)),)
-            raise e
-
-    def _elements(self, dependencies, with_state=False):
+    def _elements(self, dependencies):
         for element in dependencies:
-
-            # These operations require state and are only shown if requested
-            key = None
-            key_full = None
-            state = None
-            artifact = None
-
-            if with_state:
-                key = element._get_display_key().brief
-
-                key_full = element._get_display_key().full
-
-                state = self._read_state(element).value
-
-                # BUG: Due to the assersion within .get_artifact this will
-                # error but there is no other way to determine if an artifact
-                # exists and we only want to show this value for informational
-                # purposes.
-                try:
-                    _artifact = element._get_artifact()
-                    if _artifact.cached():
-                        artifact = {
-                            "files": artifact.get_files(),
-                            "digest": artifact_files._get_digest(),
-                        }
-                except:
-                    pass
 
             sources = []
             for source in element.sources():
@@ -307,10 +231,6 @@ class Inspector:
                 runtime_dependencies=lambda element: [
                     dependency._get_full_name() for dependency in element._dependencies(_Scope.RUN, recurse=False)
                 ],
-                key=key,
-                key_full=key_full,
-                state=state,
-                artifact=artifact,
             )
 
     def _get_projects(self) -> [_Project]:
@@ -341,10 +261,10 @@ class Inspector:
                 _ProjectConfig,
                 ["name", "directory"],
                 options=lambda project: _dump_option_pool(project.options),
-                original=lambda project: project._project_conf.strip_node_info(),
-                aliases=lambda project: project.config._aliases.strip_node_info(),
-                source_overrides=lambda project: project.source_overrides.strip_node_info(),
-                element_overrides=lambda project: project.element_overrides.strip_node_info(),
+                original=lambda project: _maybe_strip_node_info(project._project_conf),
+                aliases=lambda project: _maybe_strip_node_info(project.config._aliases),
+                source_overrides=lambda project: _maybe_strip_node_info(project.source_overrides),
+                element_overrides=lambda project: _maybe_strip_node_info(project.element_overrides),
                 junction=lambda project: None if not project.junction else project.junction._get_full_name(),
                 plugins=plugins,
             )
@@ -352,7 +272,7 @@ class Inspector:
                 _make_dataclass(
                     wrapper,
                     _Project,
-                    keys=["provenance"],
+                    keys=[],
                     duplicates=lambda config: (
                         [] if not hasattr(config, "duplicates") else [duplicate for duplicate in config.duplicates]
                     ),
@@ -408,23 +328,20 @@ class Inspector:
             remote_action_cache_service=remote_action_cache_service,
         )
 
-    def _get_output(self, dependencies, with_state=False) -> _InspectOutput:
+    def _get_output(self, dependencies) -> _InspectOutput:
         return _InspectOutput(
             project=self._get_projects(),
             user_config=self._get_user_config(),
-            elements=[element for element in self._elements(dependencies, with_state=with_state)],
+            elements=[element for element in self._elements(dependencies)],
         )
 
-    def dump_to_stdout(self, elements=[], selection=_PipelineSelection.NONE, with_state=False):
+    def dump_to_stdout(self, elements=[], selection=_PipelineSelection.NONE):
         if not elements:
             elements = self.project.get_default_targets()
 
         dependencies = self.stream.load_selection(
-            elements, selection=selection, except_targets=[], need_state=with_state
+            elements, selection=selection, except_targets=[]
         )
 
-        if with_state:
-            self.stream.query_cache(dependencies, need_state=True)
-
-        output = self._get_output(dependencies, with_state)
+        output = self._get_output(dependencies)
         json.dump(_dump_dataclass(output), sys.stdout)
