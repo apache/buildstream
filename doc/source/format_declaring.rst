@@ -395,6 +395,7 @@ having implemented these options the same as buildstream.
    sandbox:
      remote-apis-socket:
        path: /run/reapi.sock
+       action-cache-enable-update: false
 
 Setting a path will add a UNIX socket to the sandbox that allows the use of
 `REAPI <https://github.com/bazelbuild/remote-apis>`_ clients such as
@@ -406,6 +407,15 @@ to speed up rebuilds of elements with only small changes.
 This is supported with and without :ref:`remote execution <user_config_remote_execution>`.
 With remote execution configured, this additionally enables scaling out of,
 e.g., compile commands across a cluster of build machines.
+
+Action cache updates from sandboxed REAPI clients are disabled by default to
+protect action cache integrity. However, if a trusted REAPI client doesn't
+support remote execution, action cache updates can be enabled by setting
+``action-cache-enable-update`` to ``true``.
+If a remote ``action-cache-service`` is configured without ``execution-service``
+in the :ref:`remote execution <user_config_remote_execution>` section,
+``push`` needs to be set to ``true`` to allow action cache updates to be pushed
+to the server.
 
 
 .. _format_dependencies:

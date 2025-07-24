@@ -52,13 +52,15 @@ class SandboxConfig:
         build_arch: str,
         build_uid: Optional[int] = None,
         build_gid: Optional[int] = None,
-        remote_apis_socket_path: Optional[str] = None
+        remote_apis_socket_path: Optional[str] = None,
+        remote_apis_socket_action_cache_enable_update: bool = False
     ):
         self.build_os = build_os
         self.build_arch = build_arch
         self.build_uid = build_uid
         self.build_gid = build_gid
         self.remote_apis_socket_path = remote_apis_socket_path
+        self.remote_apis_socket_action_cache_enable_update = remote_apis_socket_action_cache_enable_update
 
     # to_dict():
     #
@@ -74,7 +76,7 @@ class SandboxConfig:
     # Returns:
     #    A dictionary representation of this SandboxConfig
     #
-    def to_dict(self) -> Dict[str, Union[str, int]]:
+    def to_dict(self) -> Dict[str, Union[str, int, bool]]:
 
         # Assign mandatory portions of the sandbox configuration
         #
@@ -82,7 +84,7 @@ class SandboxConfig:
         #     the sandbox configuration, as that would result in
         #     breaking cache key stability.
         #
-        sandbox_dict: Dict[str, Union[str, int]] = {"build-os": self.build_os, "build-arch": self.build_arch}
+        sandbox_dict: Dict[str, Union[str, int, bool]] = {"build-os": self.build_os, "build-arch": self.build_arch}
 
         # Assign optional portions of the sandbox configuration
         #
@@ -97,6 +99,8 @@ class SandboxConfig:
 
         if self.remote_apis_socket_path is not None:
             sandbox_dict["remote-apis-socket-path"] = self.remote_apis_socket_path
+            if self.remote_apis_socket_action_cache_enable_update:
+                sandbox_dict["remote-apis-socket-action-cache-enable-update"] = True
 
         return sandbox_dict
 
@@ -145,10 +149,14 @@ class SandboxConfig:
 
         remote_apis_socket = config.get_mapping("remote-apis-socket", default=None)
         if remote_apis_socket:
-            remote_apis_socket.validate_keys(["path"])
+            remote_apis_socket.validate_keys(["path", "action-cache-enable-update"])
             remote_apis_socket_path = remote_apis_socket.get_str("path")
+            remote_apis_socket_action_cache_enable_update = remote_apis_socket.get_bool(
+                "action-cache-enable-update", default=False
+            )
         else:
             remote_apis_socket_path = None
+            remote_apis_socket_action_cache_enable_update = False
 
         return cls(
             build_os=build_os,
@@ -156,4 +164,5 @@ class SandboxConfig:
             build_uid=build_uid,
             build_gid=build_gid,
             remote_apis_socket_path=remote_apis_socket_path,
+            remote_apis_socket_action_cache_enable_update=remote_apis_socket_action_cache_enable_update,
         )

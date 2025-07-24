@@ -132,6 +132,8 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
             if self.re_remote:
                 buildbox_command.append("--instance={}".format(self.re_remote.local_cas_instance_name))
+                if config.remote_apis_socket_action_cache_enable_update:
+                    buildbox_command.append("--nested-ac-enable-update")
 
             # Do not redirect stdout/stderr
             if "no-logs-capture" in self._capabilities:
