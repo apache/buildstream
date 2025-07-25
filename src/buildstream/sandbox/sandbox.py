@@ -85,13 +85,18 @@ class Sandbox:
         self.__env = None  # type: Optional[Dict[str, str]]
         self.__mount_sources = {}  # type: Dict[str, str]
         self.__allow_run = True
+        self.__subsandboxes = []  # type: List[Sandbox]
 
         # Plugin element full name for logging
         plugin = kwargs.get("plugin", None)
         if plugin:
             self.__element_name = plugin._get_full_name()
         else:
-            self.__element_name = None
+            parent = kwargs.get("parent", None)
+            if parent:
+                self.__element_name = parent._get_element_name()
+            else:
+                self.__element_name = None
 
         # Configuration from kwargs common to all subclasses
         self.__config = kwargs["config"]
@@ -427,7 +432,7 @@ class Sandbox:
     def _get_environment(self, *, cwd=None, env=None):
         cwd = self._get_work_directory(cwd=cwd)
         if env is None:
-            env = self.__env
+            env = self.__env or {}
 
         # Naive getcwd implementations can break when bind-mounts to different
         # paths on the same filesystem are present. Letting the command know
@@ -557,6 +562,28 @@ class Sandbox:
     #
     def _disable_run(self):
         self.__allow_run = False
+
+    # _create_subsandbox()
+    #
+    # Create an empty sandbox
+    #
+    # This allows an element to use a secondary sandbox for manipulating artifacts
+    # that does not affect the build sandbox.
+    #
+    def _create_subsandbox(self, **kwargs):
+        sub = Sandbox(
+            self.__context,
+            self.__project,
+            parent=self,
+            stdout=self.__stdout,
+            stderr=self.__stderr,
+            config=self.__config,
+        )
+        self.__subsandboxes.append(sub)
+        return sub
+
+    def _get_subsandboxes(self):
+        return self.__subsandboxes
 
 
 # SandboxFlags()
