@@ -1672,11 +1672,6 @@ class Element(Plugin):
         # Assert call ordering
         assert not self._cached_success()
 
-        # Print the environment at the beginning of the log file.
-        env_dump = _yaml.roundtrip_dump_string(self.get_environment())
-
-        self.log("Build environment for element {}".format(self.name), detail=env_dump)
-
         context = self._get_context()
         with self._output_file() as output_file:
 
@@ -1702,6 +1697,11 @@ class Element(Plugin):
 
                 # Step 1 - Configure
                 self.__configure_sandbox(sandbox)
+
+                # Print the environment at the beginning of the log file.
+                env_dump = _yaml.roundtrip_dump_string(sandbox._get_environment())
+                self.log("Build environment for element {}".format(self.name), detail=env_dump)
+
                 # Step 2 - Stage
                 self.__stage(sandbox)
                 try:
