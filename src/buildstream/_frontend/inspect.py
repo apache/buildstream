@@ -34,30 +34,6 @@ class _CacheServer:
         self.url = spec.url
         self.instance = spec.instance_name
 
-
-# User configuration
-@dataclass
-class _UserConfig:
-    configuration: str
-    cache_directory: str
-    log_directory: str
-    source_directory: str
-    build_directory: str
-    source_mirrors: str
-    build_area: str
-    strict_build_plan: bool
-    cache_directory: str
-    maximum_fetch_tasks: int
-    maximum_build_tasks: int
-    maximum_push_tasks: int
-    maximum_network_retries: int
-    cache_storage_service: _CacheServer | None
-    # remote specs
-    remote_execution_service: _CacheServer | None
-    remote_storage_service: _CacheServer | None
-    remote_action_cache_service: _CacheServer | None
-
-
 # String representation of loaded plugins
 @dataclass
 class _Plugin:
@@ -93,8 +69,6 @@ class _Project:
 @dataclass
 class _InspectOutput:
     project: [_Project]
-    # user configuration
-    user_config: _UserConfig
     elements: list[_Element]
 
 
@@ -283,52 +257,9 @@ class Inspector:
             )
         return projects
 
-    def _get_user_config(self) -> _UserConfig:
-
-        remote_execution_service = None
-        remote_storage_service = None
-        remote_action_cache_service = None
-
-        if self.context.remote_execution_specs:
-            specs = self.context.remote_execution_specs
-            remote_execution_service = _CacheServer(specs.exec_spec)
-            storage_spec = specs.storage_spec or self.context.remote_cache_spec
-            remote_storage_spec = _CacheServer(storage_spec)
-            if specs.action_spec:
-                remote_action_cache_service = _CacheServer(specs.action_spec)
-
-        return _make_dataclass(
-            self.context,
-            _UserConfig,
-            [
-                ("cachedir", "cache_directory"),
-                ("logdir", "log_directory"),
-                ("sourcedir", "source_directory"),
-                ("builddir", "build_directory"),
-                ("sourcedir", "source_mirrors"),
-                ("builddir", "build_area"),
-                ("cachedir", "cache_directory"),
-                ("sched_fetchers", "maximum_fetch_tasks"),
-                ("sched_builders", "maximum_build_tasks"),
-                ("sched_pushers", "maximum_push_tasks"),
-                ("sched_network_retries", "maximum_network_retries"),
-            ],
-            strict_build_plan=lambda context: (
-                "Default Configuration" if not context.config_origin else context.config_origin
-            ),
-            configuration=lambda context: "default" if not context.config_origin else context.config_origin,
-            cache_storage_service=lambda context: (
-                None if not context.remote_execution_specs else _CacheServer(context.remote_execution_specs)
-            ),
-            remote_execution_service=remote_execution_service,
-            remote_storage_service=remote_storage_service,
-            remote_action_cache_service=remote_action_cache_service,
-        )
-
     def _get_output(self, dependencies) -> _InspectOutput:
         return _InspectOutput(
             project=self._get_projects(),
-            user_config=self._get_user_config(),
             elements=[element for element in self._elements(dependencies)],
         )
 
