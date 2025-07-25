@@ -3,11 +3,25 @@ import sys
 from dataclasses import dataclass, fields, is_dataclass
 from enum import StrEnum
 
-from .._project import ProjectConfig as _BsProjectConfig
+from .._project import ProjectConfig as _BsProjectConfig, Project as _BsProject
 from .._pluginfactory.pluginorigin import PluginType
 from .._options import OptionPool
-from ..types import _PipelineSelection, _Scope
+from ..types import _PipelineSelection, _Scope, _ProjectInformation
 from ..node import MappingNode
+from ..element import Element
+
+
+class _DependencyKind(StrEnum):
+    ALL = "all"
+    RUNTIME = "runtime"
+    BUILD = "build"
+
+
+@dataclass
+class _Dependency:
+    name: str
+    junction: str | None
+    kind: _DependencyKind
 
 
 # Inspectable Elements as serialized to the terminal
@@ -18,9 +32,7 @@ class _Element:
     workspace: any
     environment: dict[str, str]
     variables: dict[str, str]
-    dependencies: list[str]
-    build_dependencies: list[str]
-    runtime_dependencies: list[str]
+    dependencies: list[_Dependency]
     sources: list[dict[str, str]]
 
 
@@ -33,6 +45,7 @@ class _CacheServer:
     def __init__(self, spec):
         self.url = spec.url
         self.instance = spec.instance_name
+
 
 # String representation of loaded plugins
 @dataclass
@@ -164,12 +177,12 @@ def _maybe_strip_node_info(obj):
 
 # Inspect elements from a given Buildstream project
 class Inspector:
-    def __init__(self, stream, project, context):
+    def __init__(self, stream, project: _BsProject, context):
         self.stream = stream
         self.project = project
         self.context = context
 
-    def _elements(self, dependencies):
+    def _elements(self, dependencies: list[Element]):
         for element in dependencies:
 
             sources = []
@@ -184,6 +197,43 @@ class Inspector:
 
                     sources += serialized_sources
 
+            junction_name = None
+            project = element._get_project()
+            if project:
+                if hasattr(project, "junction") and project.junction:
+                    junction_name = project.junction.name
+
+
+            named_by_kind = {
+                str(_DependencyKind.ALL): {},
+                str(_DependencyKind.BUILD): {},
+                str(_DependencyKind.RUNTIME): {},
+            }
+
+            dependencies = []
+            for dependency in element._dependencies(_Scope.ALL, recurse=True):
+                named_by_kind[str(_DependencyKind.ALL)][dependency.name] = dependency
+                # dependencies.append(_Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.ALL))
+            for dependency in element._dependencies(_Scope.BUILD, recurse=True):
+                named_by_kind[str(_DependencyKind.BUILD)][dependency.name] = dependency
+                # dependencies.append(_Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.BUILD))
+            for dependency in element._dependencies(_Scope.RUN, recurse=True):
+                named_by_kind[str(_DependencyKind.RUNTIME)][dependency.name] = dependency
+                # dependencies.append(_Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.RUNTIME))
+
+            for dependency in named_by_kind[str(_DependencyKind.ALL)].values():
+                dependencies.append(_Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.ALL))
+
+            # Filter out dependencies covered by ALL
+
+            for (name, dependency) in named_by_kind[str(_DependencyKind.BUILD)].items():
+                if not name in named_by_kind[str(_DependencyKind.ALL)]:
+                    dependencies.append(_Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.BUILD))
+
+            for (name, dependency) in named_by_kind[str(_DependencyKind.RUNTIME)].items():
+                if not name in named_by_kind[str(_DependencyKind.ALL)]:
+                    dependencies.append(_Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.RUNTIME))
+
             yield _make_dataclass(
                 element,
                 _Element,
@@ -194,15 +244,7 @@ class Inspector:
                 variables=lambda element: dict(element._Element__variables),
                 environment=lambda element: dict(element._Element__environment),
                 sources=sources,
-                dependencies=lambda element: [
-                    dependency._get_full_name() for dependency in element._dependencies(_Scope.ALL, recurse=False)
-                ],
-                build_dependencies=lambda element: [
-                    dependency._get_full_name() for dependency in element._dependencies(_Scope.BUILD, recurse=False)
-                ],
-                runtime_dependencies=lambda element: [
-                    dependency._get_full_name() for dependency in element._dependencies(_Scope.RUN, recurse=False)
-                ],
+                dependencies=dependencies,
             )
 
     def _get_projects(self) -> [_Project]:
