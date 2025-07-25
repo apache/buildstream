@@ -6,9 +6,13 @@ from enum import StrEnum
 from .._project import ProjectConfig as _BsProjectConfig, Project as _BsProject
 from .._pluginfactory.pluginorigin import PluginType
 from .._options import OptionPool
+from .._stream import Stream
 from ..types import _PipelineSelection, _Scope, _ProjectInformation
 from ..node import MappingNode
 from ..element import Element
+
+from .. import _yaml
+from .. import _site
 
 
 class _DependencyKind(StrEnum):
@@ -55,87 +59,27 @@ class _Plugin:
     plugin_type: PluginType
 
 
-# Configuration of a given project
-@dataclass
-class _ProjectConfig:
-    name: str
-    directory: str | None
-    junction: str | None
-    # Interpolated options
-    options: [(str, str)]
-    aliases: dict[str, str]
-    element_overrides: any
-    source_overrides: any
-    # plugin information
-    plugins: [_Plugin]
-
-
 # A single project loaded from the current configuration
 @dataclass
 class _Project:
-    duplicates: [str]
-    declarations: [str]
-    config: _ProjectConfig
+    name: str
+    junction: str | None
+    options: [(str, str)]
+    plugins: [_Plugin]
+    elements: [_Element]
+
+
+# Default values defined for each element within
+@dataclass
+class _Defaults:
+    environment: dict[str, str]
 
 
 # Wrapper object ecapsulating the entire output of `bst inspect`
 @dataclass
 class _InspectOutput:
-    project: [_Project]
-    elements: list[_Element]
-
-
-# _make_dataclass()
-#
-# This is a helper class for extracting values from different objects used
-# across Buildstream into JSON serializable output.
-#
-# If keys is a list of str then each attribute is copied directly to the
-# dataclass.
-# If keys is a tuple of str then the first value is extracted from the object
-# and renamed to the second value.
-#
-# The field of kwarg is mapped directly onto the dataclass. If the value is
-# callable then that function is called passing the object to it.
-#
-# Args:
-#       obj: Whichever object you are serializing
-#       _cls: The dataclass you are constructing
-#       keys: attributes to include directly from the obj
-#       kwargs: key values passed into the dataclass
-def _make_dataclass(obj, _cls, keys: list[(str, str)] | list[str], **kwargs):
-    params = dict()
-    for key in keys:
-        name = None
-        rename = None
-        if isinstance(key, tuple):
-            name = key[0]
-            rename = key[1]
-        elif isinstance(key, str):
-            name = key
-            rename = None
-        else:
-            raise Exception("BUG: Keys may only be (str, str) or str")
-        value = None
-        if isinstance(obj, dict):
-            value = obj.get(name)
-        elif isinstance(obj, object):
-            try:
-                value = getattr(obj, name)
-            except AttributeError:
-                pass
-        else:
-            raise Exception("BUG: obj must be a dict or object")
-        if rename:
-            params[rename] = value
-        else:
-            params[name] = value
-    for key, helper in kwargs.items():
-        if callable(helper):
-            params[key] = helper(obj)
-        else:
-            params[key] = helper
-    return _cls(**params)
+    projects: [_Project]
+    defaults: _Defaults
 
 
 # Recursively dump the dataclass into a serializable dictionary. Null values
@@ -177,132 +121,122 @@ def _maybe_strip_node_info(obj):
 
 # Inspect elements from a given Buildstream project
 class Inspector:
-    def __init__(self, stream, project: _BsProject, context):
+    def __init__(self, stream: Stream, project: _BsProject, context):
         self.stream = stream
         self.project = project
         self.context = context
+        # Load config defaults so we can only show them once instead of
+        # for each element unless they are distinct
+        _default_config = _yaml.load(_site.default_project_config, shortname="projectconfig.yaml")
+        self.default_environment = _default_config.get_mapping("environment").strip_node_info()
 
-    def _elements(self, dependencies: list[Element]):
-        for element in dependencies:
+    def _get_element(self, element: Element):
+        sources = []
+        for source in element.sources():
+            source_infos = source.collect_source_info()
 
-            sources = []
-            for source in element.sources():
-                source_infos = source.collect_source_info()
+            if source_infos is not None:
+                serialized_sources = []
+                for s in source_infos:
+                    serialized = s.serialize()
+                    serialized_sources.append(serialized)
 
-                if source_infos is not None:
-                    serialized_sources = []
-                    for s in source_infos:
-                        serialized = s.serialize()
-                        serialized_sources.append(serialized)
+                sources += serialized_sources
 
-                    sources += serialized_sources
+        junction_name = None
+        project = element._get_project()
+        if project:
+            if hasattr(project, "junction") and project.junction:
+                junction_name = project.junction.name
 
-            junction_name = None
-            project = element._get_project()
-            if project:
-                if hasattr(project, "junction") and project.junction:
-                    junction_name = project.junction.name
+        named_by_kind = {
+            str(_DependencyKind.ALL): {},
+            str(_DependencyKind.BUILD): {},
+            str(_DependencyKind.RUNTIME): {},
+        }
 
+        dependencies = []
+        for dependency in element._dependencies(_Scope.ALL, recurse=True):
+            named_by_kind[str(_DependencyKind.ALL)][dependency.name] = dependency
+        for dependency in element._dependencies(_Scope.BUILD, recurse=True):
+            named_by_kind[str(_DependencyKind.BUILD)][dependency.name] = dependency
+        for dependency in element._dependencies(_Scope.RUN, recurse=True):
+            named_by_kind[str(_DependencyKind.RUNTIME)][dependency.name] = dependency
 
-            named_by_kind = {
-                str(_DependencyKind.ALL): {},
-                str(_DependencyKind.BUILD): {},
-                str(_DependencyKind.RUNTIME): {},
-            }
+        for dependency in named_by_kind[str(_DependencyKind.ALL)].values():
+            dependencies.append(_Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.ALL))
 
-            dependencies = []
-            for dependency in element._dependencies(_Scope.ALL, recurse=True):
-                named_by_kind[str(_DependencyKind.ALL)][dependency.name] = dependency
-                # dependencies.append(_Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.ALL))
-            for dependency in element._dependencies(_Scope.BUILD, recurse=True):
-                named_by_kind[str(_DependencyKind.BUILD)][dependency.name] = dependency
-                # dependencies.append(_Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.BUILD))
-            for dependency in element._dependencies(_Scope.RUN, recurse=True):
-                named_by_kind[str(_DependencyKind.RUNTIME)][dependency.name] = dependency
-                # dependencies.append(_Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.RUNTIME))
+        # Filter out dependencies covered by ALL
 
-            for dependency in named_by_kind[str(_DependencyKind.ALL)].values():
-                dependencies.append(_Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.ALL))
-
-            # Filter out dependencies covered by ALL
-
-            for (name, dependency) in named_by_kind[str(_DependencyKind.BUILD)].items():
-                if not name in named_by_kind[str(_DependencyKind.ALL)]:
-                    dependencies.append(_Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.BUILD))
-
-            for (name, dependency) in named_by_kind[str(_DependencyKind.RUNTIME)].items():
-                if not name in named_by_kind[str(_DependencyKind.ALL)]:
-                    dependencies.append(_Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.RUNTIME))
-
-            yield _make_dataclass(
-                element,
-                _Element,
-                [],
-                name=lambda element: element._get_full_name(),
-                description=lambda element: " ".join(element._description.splitlines()),
-                workspace=lambda element: element._get_workspace(),
-                variables=lambda element: dict(element._Element__variables),
-                environment=lambda element: dict(element._Element__environment),
-                sources=sources,
-                dependencies=dependencies,
-            )
-
-    def _get_projects(self) -> [_Project]:
-        projects = []
-        for wrapper in self.project.loaded_projects():
-            plugins = []
-            plugins.extend(
-                [
-                    _Plugin(name=plugin[0], description=plugin[3], plugin_type=PluginType.ELEMENT.value)
-                    for plugin in wrapper.project.element_factory.list_plugins()
-                ]
-            )
-            plugins.extend(
-                [
-                    _Plugin(name=plugin[0], description=plugin[3], plugin_type=PluginType.SOURCE.value)
-                    for plugin in wrapper.project.source_factory.list_plugins()
-                ]
-            )
-            plugins.extend(
-                [
-                    _Plugin(name=plugin[0], description=plugin[3], plugin_type=PluginType.SOURCE_MIRROR.value)
-                    for plugin in wrapper.project.source_factory.list_plugins()
-                ]
-            )
-
-            project_config = _make_dataclass(
-                wrapper.project,
-                _ProjectConfig,
-                ["name", "directory"],
-                options=lambda project: _dump_option_pool(project.options),
-                aliases=lambda project: _maybe_strip_node_info(project.config._aliases),
-                source_overrides=lambda project: _maybe_strip_node_info(project.source_overrides),
-                element_overrides=lambda project: _maybe_strip_node_info(project.element_overrides),
-                junction=lambda project: None if not project.junction else project.junction._get_full_name(),
-                plugins=plugins,
-            )
-            projects.append(
-                _make_dataclass(
-                    wrapper,
-                    _Project,
-                    keys=[],
-                    duplicates=lambda config: (
-                        [] if not hasattr(config, "duplicates") else [duplicate for duplicate in config.duplicates]
-                    ),
-                    declarations=lambda config: (
-                        []
-                        if not hasattr(config, "declarations")
-                        else [declaration for declaration in config.declarations]
-                    ),
-                    config=project_config,
+        for name, dependency in named_by_kind[str(_DependencyKind.BUILD)].items():
+            if not name in named_by_kind[str(_DependencyKind.ALL)]:
+                dependencies.append(
+                    _Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.BUILD)
                 )
-            )
-        return projects
 
-    def _get_output(self, dependencies) -> _InspectOutput:
+        for name, dependency in named_by_kind[str(_DependencyKind.RUNTIME)].items():
+            if not name in named_by_kind[str(_DependencyKind.ALL)]:
+                dependencies.append(
+                    _Dependency(name=dependency.name, junction=junction_name, kind=_DependencyKind.RUNTIME)
+                )
+
+        environment = dict()
+        for key, value in element.get_environment().items():
+            if key in self.default_environment and self.default_environment[key] == value:
+                continue
+            environment[key] = value
+
+        return _Element(
+            name=element._get_full_name(),
+            description=" ".join(element._description.splitlines()),
+            workspace=element._get_workspace(),
+            variables=dict(element._Element__variables),
+            environment=environment,
+            sources=sources,
+            dependencies=dependencies,
+        )
+
+    def _get_project(self, info: _ProjectInformation, project: _BsProject, elements: [Element]) -> _Project:
+        plugins = []
+        plugins.extend(
+            [
+                _Plugin(name=plugin[0], description=plugin[3], plugin_type=PluginType.ELEMENT.value)
+                for plugin in project.element_factory.list_plugins()
+            ]
+        )
+        plugins.extend(
+            [
+                _Plugin(name=plugin[0], description=plugin[3], plugin_type=PluginType.SOURCE.value)
+                for plugin in project.source_factory.list_plugins()
+            ]
+        )
+        plugins.extend(
+            [
+                _Plugin(name=plugin[0], description=plugin[3], plugin_type=PluginType.SOURCE_MIRROR.value)
+                for plugin in project.source_mirror_factory.list_plugins()
+            ]
+        )
+
+        options = _dump_option_pool(project.options)
+
+        junction = None
+        if hasattr(project, "junction") and project.junction:
+            junction = project.junction._get_full_name()
+
+        return _Project(
+            name=project.name,
+            junction=junction,
+            options=options,
+            plugins=plugins,
+            elements=[self._get_element(element) for element in elements],
+        )
+
+    def _get_output(self, elements: [Element]) -> _InspectOutput:
         return _InspectOutput(
-            project=self._get_projects(),
-            elements=[element for element in self._elements(dependencies)],
+            projects=[
+                self._get_project(wrapper, wrapper.project, elements) for wrapper in self.project.loaded_projects()
+            ],
+            defaults=_Defaults(environment=self.default_environment),
         )
 
     def dump_to_stdout(self, elements=[], except_=[], selection=_PipelineSelection.NONE):
