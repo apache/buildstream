@@ -432,7 +432,7 @@ class Sandbox:
     def _get_environment(self, *, cwd=None, env=None):
         cwd = self._get_work_directory(cwd=cwd)
         if env is None:
-            env = self.__env
+            env = self.__env or {}
 
         # Naive getcwd implementations can break when bind-mounts to different
         # paths on the same filesystem are present. Letting the command know
