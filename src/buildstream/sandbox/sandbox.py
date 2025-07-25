@@ -438,6 +438,16 @@ class Sandbox:
 
         return env
 
+    # _get_configured_environment()
+    #
+    # Return the environment exactly as configured with `set_environment()`,
+    # or `None` if `set_environment()` has not been called.
+    #
+    # Returns
+    #   (Dict[str, str]): The configured environment
+    def _get_configured_environment(self):
+        return self.__env
+
     # _get_work_directory()
     #
     # Fetches the working directory for running commands
