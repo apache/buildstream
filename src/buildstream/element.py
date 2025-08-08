@@ -1699,7 +1699,7 @@ class Element(Plugin):
                 self.__configure_sandbox(sandbox)
 
                 # Print the environment at the beginning of the log file.
-                env_dump = _yaml.roundtrip_dump_string(sandbox._get_environment())
+                env_dump = _yaml.roundtrip_dump_string(sandbox._get_configured_environment() or self.get_environment())
                 self.log("Build environment for element {}".format(self.name), detail=env_dump)
 
                 # Step 2 - Stage
@@ -2046,7 +2046,7 @@ class Element(Plugin):
     def _shell(self, scope=None, *, mounts=None, isolate=False, prompt=None, command=None, usebuildtree=False):
 
         with self._prepare_sandbox(scope, shell=True, usebuildtree=usebuildtree) as sandbox:
-            environment = self.get_environment()
+            environment = sandbox._get_configured_environment() or self.get_environment()
             environment = copy.copy(environment)
             flags = _SandboxFlags.INTERACTIVE | _SandboxFlags.ROOT_READ_ONLY
 
