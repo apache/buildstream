@@ -1431,18 +1431,21 @@ class Element(Plugin):
         # pylint: disable-next=contextmanager-generator-missing-cleanup
         with self.__sandbox(config=self.__sandbox_config, allow_remote=False) as sandbox:
 
-            # Configure always comes first, and we need it.
-            self.__configure_sandbox(sandbox)
-
             if usebuildtree:
+                # Configure the sandbox from artifact metadata
+                self.__artifact.configure_sandbox(sandbox)
+
                 # Use the cached buildroot directly
                 buildrootvdir = self.__artifact.get_buildroot()
                 sandbox_vroot = sandbox.get_virtual_directory()
                 sandbox_vroot._import_files_internal(buildrootvdir, collect_result=False)
             elif shell and scope == _Scope.BUILD:
+                self.__configure_sandbox(sandbox)
                 # Stage what we need
                 self.__stage(sandbox)
             else:
+                self.__configure_sandbox(sandbox)
+
                 # Stage deps in the sandbox root
                 with self.timed_activity("Staging dependencies", silent_nested=True), self.__collect_overlaps(sandbox):
                     self._stage_dependency_artifacts(sandbox, scope)
@@ -1778,6 +1781,7 @@ class Element(Plugin):
                 variables=self.__variables,
                 environment=self.__environment,
                 sandboxconfig=self.__sandbox_config,
+                buildsandbox=sandbox if buildrootvdir else None,
             )
 
         if collect is not None and collectvdir is None:

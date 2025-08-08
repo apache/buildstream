@@ -361,6 +361,9 @@ class ArtifactCache(AssetCache):
             referenced_directories.append(artifact_proto.sources)
         if artifact_proto.buildroot:
             referenced_directories.append(artifact_proto.buildroot)
+        if artifact_proto.buildsandbox:
+            for subsandbox_digest in artifact_proto.buildsandbox.subsandbox_digests:
+                referenced_directories.append(subsandbox_digest)
 
         referenced_blobs = [artifact_proto.low_diversity_meta, artifact_proto.high_diversity_meta] + [
             log_file.digest for log_file in artifact_proto.logs
@@ -419,6 +422,9 @@ class ArtifactCache(AssetCache):
                     self.cas.fetch_directory(remote, artifact.buildtree)
                 if str(artifact.buildroot):
                     self.cas.fetch_directory(remote, artifact.buildroot)
+                if artifact.buildsandbox:
+                    for subsandbox_digest in artifact.buildsandbox.subsandbox_digests:
+                        self.cas.fetch_directory(remote, subsandbox_digest)
 
             digests = [artifact.low_diversity_meta, artifact.high_diversity_meta]
             if str(artifact.public_data):
