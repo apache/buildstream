@@ -200,6 +200,7 @@ class Artifact:
     #    variables (Variables): The element's Variables
     #    environment (dict): dict of the element's environment variables
     #    sandboxconfig (SandboxConfig): The element's SandboxConfig
+    #    buildsandbox (Sandbox): The element's configured build sandbox
     #
     def cache(
         self,
@@ -213,6 +214,7 @@ class Artifact:
         variables,
         environment,
         sandboxconfig,
+        buildsandbox,
     ):
 
         context = self._context
@@ -316,6 +318,19 @@ class Artifact:
             rootvdir = CasBasedDirectory(cas_cache=self._cas)
             rootvdir._import_files_internal(buildrootvdir, properties=properties, collect_result=False)
             artifact.buildroot.CopyFrom(rootvdir._get_digest())
+
+        if buildsandbox is not None:
+            sandbox_env = buildsandbox._get_configured_environment()
+            if sandbox_env:
+                for key, value in sorted(sandbox_env.items()):
+                    artifact.buildsandbox.environment.add(name=key, value=value)
+
+            artifact.buildsandbox.working_directory = buildsandbox._get_work_directory()
+
+            for subsandbox in buildsandbox._get_subsandboxes():
+                vdir = subsandbox.get_virtual_directory()
+                digest = artifact.buildsandbox.subsandbox_digests.add()
+                digest.CopyFrom(vdir._get_digest())
 
         os.makedirs(os.path.dirname(os.path.join(self._artifactdir, element.get_artifact_name())), exist_ok=True)
         keys = utils._deduplicate([self._cache_key, self._weak_cache_key])
@@ -680,6 +695,21 @@ class Artifact:
             artifacts.link_key(self._element, pull_key, key)
 
         return True
+
+    def configure_sandbox(self, sandbox):
+        artifact = self._get_proto()
+
+        if artifact.buildsandbox and artifact.buildsandbox.environment:
+            env = {}
+            for env_var in artifact.buildsandbox.environment:
+                env[env_var.name] = env_var.value
+        else:
+            env = self.load_environment()
+
+        sandbox.set_environment(env)
+
+        if artifact.buildsandbox and artifact.buildsandbox.working_directory:
+            sandbox.set_work_directory(artifact.buildsandbox.working_directory)
 
     #  load_proto()
     #
