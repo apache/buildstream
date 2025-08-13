@@ -593,10 +593,17 @@ def test_override_twice(cli, tmpdir, datafiles):
 @pytest.mark.parametrize(
     "target,expected_result",
     [
-        ("target.bst", "pony"),
-        ("self-junction.bst:target.bst", "horsy"),
+        ("subproject.bst:target.bst", "pony"),
+        ("subproject.bst:self-junction.bst:target.bst", "horsy"),
+        ("link.bst", "pony"),
+        ("nested-link.bst", "horsy"),
     ],
-    ids=["direct-target", "override-target"],
+    ids=[
+        "direct-target",
+        "override-target",
+        "link-target",
+        "link-override-target",
+    ],
 )
 def test_override_self(cli, datafiles, target, expected_result):
     project = os.path.join(str(datafiles), "override-self")
