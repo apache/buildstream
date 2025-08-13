@@ -128,6 +128,15 @@ class Loader:
 
         for target in targets:
             with PROFILER.profile(Topics.LOAD_PROJECT, target):
+
+                # As we are attempting to load a subproject element via the
+                # command line ensure fully loaded.
+                #
+                # Other callers of `_parse_name` or `_load_file` that reference
+                # files through a project element or otherwise do not need to
+                # ensure fully loaded.
+                self.project.ensure_fully_loaded()
+
                 _junction, name, loader = self._parse_name(target, None)
                 element = loader._load_file(name, None)
                 target_elements.append(element)
@@ -189,14 +198,6 @@ class Loader:
     def get_loader(self, name, provenance_node, *, load_subprojects=True):
         junction_path = name.split(":")
         loader = self
-
-        #
-        # In this case we are attempting to load a subproject element via the
-        # command line instead of referencing the subproject through a project
-        # element or otherwise.
-        #
-        if provenance_node is None and load_subprojects:
-            self.project.ensure_fully_loaded()
 
         circular_provenance_node = self._loader_search_provenances.get(name, None)
         if circular_provenance_node and load_subprojects:
