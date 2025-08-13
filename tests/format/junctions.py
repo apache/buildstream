@@ -610,6 +610,34 @@ def test_override_self(cli, datafiles, target, expected_result):
     assert result_vars.get_str("animal") == expected_result
 
 
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target,expected_result",
+    [
+        ("subproject.bst:target.bst", "pony"),
+        ("subproject.bst:self-junction.bst:target.bst", "horsy"),
+        ("link.bst", "pony"),
+        ("nested-link.bst", "horsy"),
+    ],
+    ids=[
+        "direct-target",
+        "override-target",
+        "link-target",
+        "link-override-target",
+    ],
+)
+def test_override_self_link(cli, datafiles, target, expected_result):
+    project = os.path.join(str(datafiles), "override-self-link")
+    result = cli.run(
+        project=project,
+        silent=True,
+        args=["show", "--deps", "none", "--format", "%{vars}", target],
+    )
+    result.assert_success()
+    result_vars = _yaml.load_data(result.output)
+    assert result_vars.get_str("animal") == expected_result
+
+
 #
 # Test conflicting junction scenarios
 #
