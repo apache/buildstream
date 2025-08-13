@@ -1,8 +1,4 @@
-kind: junction
-sources:
-- kind: local
-  path: subproject
+kind: link
 
 config:
-  options:
-    target_animal: '%{animal}'
+  target: intermediate-project.bst:subproject.bst

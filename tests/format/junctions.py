@@ -929,7 +929,7 @@ def test_include_vars_optional(cli, datafiles, use_species, expected_result):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
     "target",
-    ["target.bst", "subproject.bst:target.bst"],
+    ["target.bst", "subproject.bst:target.bst", "intermediate-project.bst:subproject.bst:target.bst"],
     ids=["toplevel-target", "subproject-target"],
 )
 @pytest.mark.parametrize(
