@@ -797,15 +797,12 @@ class Loader:
         # immediately and move on to the target.
         #
         if load_element.link_target:
-            _, filename, loader = self._parse_name(
-                load_element.link_target.as_str(), load_element.link_target, load_subprojects=load_subprojects
+            return self.get_loader(
+                load_element.link_target.as_str(),
+                load_element.link_target,
+                load_subprojects=load_subprojects,
             )
-            if not loader:
-                # `loader` should never be None if `load_subprojects` is True
-                assert not load_subprojects
-                return None
 
-            return loader.get_loader(filename, load_element.link_target, load_subprojects=load_subprojects)
 
         # If we're only performing a lookup, we're done here.
         #
