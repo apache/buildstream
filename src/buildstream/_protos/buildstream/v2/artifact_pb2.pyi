@@ -8,7 +8,7 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class Artifact(_message.Message):
-    __slots__ = ("version", "build_success", "build_error", "build_error_details", "strong_key", "weak_key", "was_workspaced", "files", "build_deps", "public_data", "logs", "buildtree", "sources", "low_diversity_meta", "high_diversity_meta", "strict_key", "buildroot")
+    __slots__ = ("version", "build_success", "build_error", "build_error_details", "strong_key", "weak_key", "was_workspaced", "files", "build_deps", "public_data", "logs", "buildtree", "sources", "low_diversity_meta", "high_diversity_meta", "strict_key", "buildroot", "buildsandbox")
     class Dependency(_message.Message):
         __slots__ = ("project_name", "element_name", "cache_key", "was_workspaced")
         PROJECT_NAME_FIELD_NUMBER: _ClassVar[int]
@@ -27,6 +27,15 @@ class Artifact(_message.Message):
         name: str
         digest: _remote_execution_pb2.Digest
         def __init__(self, name: _Optional[str] = ..., digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ...) -> None: ...
+    class SandboxState(_message.Message):
+        __slots__ = ("environment", "working_directory", "subsandbox_digests")
+        ENVIRONMENT_FIELD_NUMBER: _ClassVar[int]
+        WORKING_DIRECTORY_FIELD_NUMBER: _ClassVar[int]
+        SUBSANDBOX_DIGESTS_FIELD_NUMBER: _ClassVar[int]
+        environment: _containers.RepeatedCompositeFieldContainer[_remote_execution_pb2.Command.EnvironmentVariable]
+        working_directory: str
+        subsandbox_digests: _containers.RepeatedCompositeFieldContainer[_remote_execution_pb2.Digest]
+        def __init__(self, environment: _Optional[_Iterable[_Union[_remote_execution_pb2.Command.EnvironmentVariable, _Mapping]]] = ..., working_directory: _Optional[str] = ..., subsandbox_digests: _Optional[_Iterable[_Union[_remote_execution_pb2.Digest, _Mapping]]] = ...) -> None: ...
     VERSION_FIELD_NUMBER: _ClassVar[int]
     BUILD_SUCCESS_FIELD_NUMBER: _ClassVar[int]
     BUILD_ERROR_FIELD_NUMBER: _ClassVar[int]
@@ -44,6 +53,7 @@ class Artifact(_message.Message):
     HIGH_DIVERSITY_META_FIELD_NUMBER: _ClassVar[int]
     STRICT_KEY_FIELD_NUMBER: _ClassVar[int]
     BUILDROOT_FIELD_NUMBER: _ClassVar[int]
+    BUILDSANDBOX_FIELD_NUMBER: _ClassVar[int]
     version: int
     build_success: bool
     build_error: str
@@ -61,4 +71,5 @@ class Artifact(_message.Message):
     high_diversity_meta: _remote_execution_pb2.Digest
     strict_key: str
     buildroot: _remote_execution_pb2.Digest
-    def __init__(self, version: _Optional[int] = ..., build_success: bool = ..., build_error: _Optional[str] = ..., build_error_details: _Optional[str] = ..., strong_key: _Optional[str] = ..., weak_key: _Optional[str] = ..., was_workspaced: bool = ..., files: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., build_deps: _Optional[_Iterable[_Union[Artifact.Dependency, _Mapping]]] = ..., public_data: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., logs: _Optional[_Iterable[_Union[Artifact.LogFile, _Mapping]]] = ..., buildtree: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., sources: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., low_diversity_meta: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., high_diversity_meta: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., strict_key: _Optional[str] = ..., buildroot: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ...) -> None: ...
+    buildsandbox: Artifact.SandboxState
+    def __init__(self, version: _Optional[int] = ..., build_success: bool = ..., build_error: _Optional[str] = ..., build_error_details: _Optional[str] = ..., strong_key: _Optional[str] = ..., weak_key: _Optional[str] = ..., was_workspaced: bool = ..., files: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., build_deps: _Optional[_Iterable[_Union[Artifact.Dependency, _Mapping]]] = ..., public_data: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., logs: _Optional[_Iterable[_Union[Artifact.LogFile, _Mapping]]] = ..., buildtree: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., sources: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., low_diversity_meta: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., high_diversity_meta: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., strict_key: _Optional[str] = ..., buildroot: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., buildsandbox: _Optional[_Union[Artifact.SandboxState, _Mapping]] = ...) -> None: ...
