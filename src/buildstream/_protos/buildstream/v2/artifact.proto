@@ -85,4 +85,11 @@ message Artifact {
 
   // digest of a directory
   build.bazel.remote.execution.v2.Digest buildroot = 17;  // optional
+
+  message SandboxState {
+    repeated build.bazel.remote.execution.v2.Command.EnvironmentVariable environment = 1;
+    string working_directory = 2;
+    repeated build.bazel.remote.execution.v2.Digest subsandbox_digests = 3;
+  };
+  SandboxState buildsandbox = 18;  // optional
 }
