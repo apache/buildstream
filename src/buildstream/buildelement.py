@@ -76,6 +76,31 @@ an alternative location while staging some elements in the sandbox root.
     directories before subdirectories.
 
 
+`digest-environment` for dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The BuildElement supports the ``digest-environment`` :term:`dependency configuration <Dependency configuration>`,
+which sets the specified environment variable in the build sandbox to the CAS digest
+corresponding to a directory that contains all dependencies that are configured
+with the same ``digest-environment``.
+
+This is useful for REAPI clients in the sandbox such as `recc <https://buildgrid.gitlab.io/recc>`_,
+see ``remote-apis-socket`` in the :ref:`sandbox configuration <format_sandbox>`.
+
+**Example:**
+
+Here is an example of how to set the environment variable `GCC_DIGEST` to the
+CAS digest of a directory that contains ``gcc.bst`` and its runtime dependencies.
+The ``libpony.bst`` dependency will not be included in that CAS directory.
+
+.. code:: yaml
+
+   build-depends:
+   - baseproject.bst:gcc.bst
+     config:
+       digest-environment: GCC_DIGEST
+   - libpony.bst
+
+
 Location for running commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The ``command-subdir`` variable sets where commands will be executed,
