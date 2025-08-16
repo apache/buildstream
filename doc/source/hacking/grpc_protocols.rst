@@ -27,12 +27,9 @@ git repository to avoid depending on grpcio-tools for user installations.
 Regenerating code
 ~~~~~~~~~~~~~~~~~
 When ``.proto`` files are modified, the corresponding Python code needs to
-be regenerated.  As a prerequisite for code generation you need to install
-``grpcio-tools`` using pip or some other mechanism::
+be regenerated::
 
-  pip3 install --user grpcio-tools
+  tox -e build-grpc
 
-To actually regenerate the code::
-
-  ./setup.py build_grpc
-
+This installs the correct version of ``grpcio-tools`` and regenerates the
+protobuf and grpc code.
