@@ -202,12 +202,6 @@ class BuildGRPC(Command):
                     with open(path, "w", encoding="utf-8") as f:
                         f.write(code)
 
-        print(
-            "\n"
-            "NOTE: Please update requirements/requirements.in to match the protobuf\n"
-            "requirement in the grpcio-tools version you used."
-        )
-
 
 def get_cmdclass():
     cmdclass = {
