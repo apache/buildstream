@@ -55,11 +55,12 @@ class ComposeElement(Element):
     BST_FORBID_SOURCES = True
 
     def configure(self, node):
-        node.validate_keys(["integrate", "include", "exclude", "include-orphans"])
+        node.validate_keys(["integrate", "filter-whilst-staging", "include", "exclude", "include-orphans"])
 
         # We name this variable 'integration' only to avoid
         # collision with the Element.integrate() method.
         self.integration = node.get_bool("integrate")
+        self.filter_whilst_staging = node.get_bool("filter-whilst-staging")
         self.include = node.get_str_list("include")
         self.exclude = node.get_str_list("exclude")
         self.include_orphans = node.get_bool("include-orphans")
@@ -72,7 +73,14 @@ class ComposeElement(Element):
         pass
 
     def get_unique_key(self):
-        key = {"integrate": self.integration, "include": sorted(self.include), "orphans": self.include_orphans}
+        key = {
+            "integrate": self.integration,
+            "include": sorted(self.include),
+            "orphans": self.include_orphans,
+        }
+
+        if self.filter_whilst_staging:
+            key["filter-whilst-staging"] = self.filter_whilst_staging
 
         if self.exclude:
             key["exclude"] = sorted(self.exclude)
@@ -86,12 +94,24 @@ class ComposeElement(Element):
 
         # Stage deps in the sandbox root
         with self.timed_activity("Staging dependencies", silent_nested=True):
-            self.stage_dependency_artifacts(sandbox)
+            if self.filter_whilst_staging:
+                self.stage_dependency_artifacts(
+                    sandbox,
+                    include=self.include,
+                    exclude=self.exclude,
+                    orphans=self.include_orphans,
+                )
+            else:
+                self.stage_dependency_artifacts(sandbox)
 
     def assemble(self, sandbox):
         manifest = set()
 
-        require_split = self.include or self.exclude or not self.include_orphans
+        require_split = (
+            not self.filter_whilst_staging
+            and (self.include or self.exclude or not self.include_orphans)
+        )
+
         if require_split:
             with self.timed_activity("Computing split", silent_nested=True):
                 for dep in self.dependencies():
