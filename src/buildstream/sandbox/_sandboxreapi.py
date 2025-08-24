@@ -184,8 +184,12 @@ class SandboxREAPI(Sandbox):
 
             raise SandboxError("Output directory structure had no digest attached.")
 
-        # Fetch stdout and stderr blobs
-        cascache.fetch_blobs(casremote, [action_result.stdout_digest, action_result.stderr_digest])
+        # Fetch stdout and stderr blobs, if they exist
+        blobs = []
+        for digest in [action_result.stdout_digest, action_result.stderr_digest]:
+            if digest.hash:
+                blobs.append(digest)
+        cascache.fetch_blobs(casremote, blobs)
 
     def _process_job_output(self, working_directory, output_directories, output_files, *, failure):
         # Reads the remote execution server response to an execution request.
