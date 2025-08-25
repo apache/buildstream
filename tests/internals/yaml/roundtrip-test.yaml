@@ -51,5 +51,7 @@ nullcheck: null
 
 timestamp: 2019-03-14
 
+long-string: Sometimes very long strings get truncated by ruamel-yaml because the default width is set to 80.
+
 # That is all
 

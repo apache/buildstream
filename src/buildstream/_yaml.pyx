@@ -389,6 +389,8 @@ yaml.RoundTripConstructor.add_constructor(u'tag:yaml.org,2002:timestamp',
 def prepare_roundtrip_yaml():
     yml = yaml.YAML()
     yml.preserve_quotes=True
+    # defaults to 80 if we don't set it
+    yml.width=9999
 
     # For each of YAML 1.1 and 1.2, force everything to be a plain string
 
