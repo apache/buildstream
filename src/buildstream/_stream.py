@@ -797,8 +797,10 @@ class Stream:
 
         self.query_cache(target_objects)
 
+        not_cached_locally = [element for element in target_objects if not element._cached()]
+
         if self._artifacts.has_fetch_remotes():
-            self._resolve_cached_remotely(target_objects)
+            self._resolve_cached_remotely(not_cached_locally)
 
         return target_objects
 
