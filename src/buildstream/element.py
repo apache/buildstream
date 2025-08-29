@@ -1453,7 +1453,11 @@ class Element(Plugin):
                 # Stage what we need
                 self.__stage(sandbox)
             else:
-                self.__configure_sandbox(sandbox)
+                # Runtime shell or `bst artifact checkout`
+
+                # Don't call `configure_sandbox()` as that may attempt to construct subsandboxes
+                # with build dependencies and we're not setting up a build sandbox.
+                sandbox.set_environment(self.get_environment())
 
                 # Stage deps in the sandbox root
                 with self.timed_activity("Staging dependencies", silent_nested=True), self.__collect_overlaps(sandbox):
