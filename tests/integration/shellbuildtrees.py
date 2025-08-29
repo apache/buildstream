@@ -347,7 +347,7 @@ def test_shell_pull_cached_buildtree(share_with_buildtrees, datafiles, cli, pull
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
 def test_shell_pull_artifact_cached_buildtree(share_with_buildtrees, datafiles, cli):
     project = str(datafiles)
-    artifact_name = "test/build-shell-buildtree/4a47c98a10df39e65e99d471f96edc5b58d4ea5b9b1f221d0be832a8124b8099"
+    artifact_name = "test/build-shell-buildtree/f2f21aa730dcc49f682bb8406ef4705a51213ccf9739dc43b8b4fdc2d310e3f6"
 
     cli.configure({"artifacts": {"servers": [{"url": share_with_buildtrees.repo}]}})
 
