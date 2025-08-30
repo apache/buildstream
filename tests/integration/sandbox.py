@@ -61,6 +61,11 @@ def test_remote_apis_socket(cli, datafiles):
     result = cli.run(project=project, args=["build", element_name])
     assert result.exit_code == 0
 
+    # Verify that loading the artifact succeeds
+    artifact_name = cli.get_artifact_name(project, "test", element_name)
+    result = cli.run(project=project, args=["artifact", "show", artifact_name])
+    assert result.exit_code == 0
+
 
 # Test configuration with remote action cache for nested REAPI.
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
@@ -101,6 +106,11 @@ def test_remote_apis_socket_with_action_cache_update(cli, tmpdir, datafiles):
         )
 
         result = cli.run(project=project, args=["build", element_name])
+        assert result.exit_code == 0
+
+        # Verify that loading the artifact succeeds
+        artifact_name = cli.get_artifact_name(project, "test", element_name)
+        result = cli.run(project=project, args=["artifact", "show", artifact_name])
         assert result.exit_code == 0
 
 
