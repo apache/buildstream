@@ -76,7 +76,7 @@ class SandboxConfig:
     # Returns:
     #    A dictionary representation of this SandboxConfig
     #
-    def to_dict(self) -> Dict[str, Union[str, int, bool]]:
+    def to_dict(self) -> Dict[str, Union[str, int, Dict]]:
 
         # Assign mandatory portions of the sandbox configuration
         #
@@ -84,7 +84,7 @@ class SandboxConfig:
         #     the sandbox configuration, as that would result in
         #     breaking cache key stability.
         #
-        sandbox_dict: Dict[str, Union[str, int, bool]] = {"build-os": self.build_os, "build-arch": self.build_arch}
+        sandbox_dict: Dict[str, Union[str, int, Dict]] = {"build-os": self.build_os, "build-arch": self.build_arch}
 
         # Assign optional portions of the sandbox configuration
         #
@@ -98,9 +98,10 @@ class SandboxConfig:
             sandbox_dict["build-gid"] = self.build_gid
 
         if self.remote_apis_socket_path is not None:
-            sandbox_dict["remote-apis-socket-path"] = self.remote_apis_socket_path
+            reapi_socket_dict: Dict[str, Union[str, bool]] = {"path": self.remote_apis_socket_path}
             if self.remote_apis_socket_action_cache_enable_update:
-                sandbox_dict["remote-apis-socket-action-cache-enable-update"] = True
+                reapi_socket_dict["action-cache-enable-update"] = True
+            sandbox_dict["remote-apis-socket"] = reapi_socket_dict
 
         return sandbox_dict
 
