@@ -26,6 +26,14 @@ services:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:11-${CI_IMAGE_VERSION:-latest}
 
+  debian-12:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:12-${CI_IMAGE_VERSION:-latest}
+
+  debian-13:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:13-${CI_IMAGE_VERSION:-latest}
+
   fedora-41:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:41-${CI_IMAGE_VERSION:-latest}
