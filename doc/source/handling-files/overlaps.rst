@@ -144,6 +144,29 @@ command contain an ``rm`` statement, as such:
 This would cause later builds of ``runtime-only.bst`` to no longer
 conflict on the given file.
 
+Changing the location
+---------------------
+
+Some element kinds allow you to stage their dependencies in certain locations.
+This would allow for both versions to exist, separated in different
+directories. An important thing to note here is that this does also change the
+location of the runtime dependencies of an element. This means that it is
+important to check that the element in question can cope with this movement of
+its dependencies. Expanding off of this, if two dependencies have the same
+runtime dependency and then one is moved, there will now be two copies of that
+runtime dependency, one in the original location and one in the moved location.
+
+An example of changing the location of a dependency:
+
+.. code:: yaml
+
+   filename: components/example.bst
+   config:
+     location: "/test"
+
+The BuildStream documentation for changing the staging location can be found
+`here
+<https://docs.buildstream.build/master/buildstream.buildelement.html#location-for-staging-dependencies>`__
 
 Summary
 -------
