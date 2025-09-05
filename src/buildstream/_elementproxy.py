@@ -104,9 +104,10 @@ class ElementProxy(PluginProxy):
         owner = cast("Element", self._owner)
         element = cast("Element", self._plugin)
 
-        assert owner._overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
+        overlap_collector = owner._overlap_collectors.get(sandbox)
+        assert overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
 
-        with owner._overlap_collector.session(action, path):
+        with overlap_collector.session(action, path):
             result = element._stage_artifact(
                 sandbox, path=path, action=action, include=include, exclude=exclude, orphans=orphans, owner=owner
             )
