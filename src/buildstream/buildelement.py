@@ -76,6 +76,31 @@ an alternative location while staging some elements in the sandbox root.
     directories before subdirectories.
 
 
+`digest-environment` for dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The BuildElement supports the ``digest-environment`` :term:`dependency configuration <Dependency configuration>`,
+which sets the specified environment variable in the build sandbox to the CAS digest
+corresponding to a directory that contains all dependencies that are configured
+with the same ``digest-environment``.
+
+This is useful for REAPI clients in the sandbox such as `recc <https://buildgrid.gitlab.io/recc>`_,
+see ``remote-apis-socket`` in the :ref:`sandbox configuration <format_sandbox>`.
+
+**Example:**
+
+Here is an example of how to set the environment variable `GCC_DIGEST` to the
+CAS digest of a directory that contains ``gcc.bst`` and its runtime dependencies.
+The ``libpony.bst`` dependency will not be included in that CAS directory.
+
+.. code:: yaml
+
+   build-depends:
+   - baseproject.bst:gcc.bst
+     config:
+       digest-environment: GCC_DIGEST
+   - libpony.bst
+
+
 Location for running commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The ``command-subdir`` variable sets where commands will be executed,
@@ -219,6 +244,7 @@ class BuildElement(Element):
     def configure_dependencies(self, dependencies):
 
         self.__layout = {}  # pylint: disable=attribute-defined-outside-init
+        self.__digest_environment = {}  # pylint: disable=attribute-defined-outside-init
 
         # FIXME: Currently this forcefully validates configurations
         #        for all BuildElement subclasses so they are unable to
@@ -227,9 +253,18 @@ class BuildElement(Element):
         for dep in dependencies:
             # Determine the location to stage each element, default is "/"
             location = "/"
+
             if dep.config:
-                dep.config.validate_keys(["location"])
-                location = dep.config.get_str("location")
+                dep.config.validate_keys(["digest-environment", "location"])
+
+                location = dep.config.get_str("location", "/")
+
+                digest_var_name = dep.config.get_str("digest-environment", None)
+
+                if digest_var_name is not None:
+                    element_list = self.__digest_environment.setdefault(digest_var_name, [])
+                    element_list.append((dep.element, dep.path))
+
             try:
                 element_list = self.__layout[location]
             except KeyError:
@@ -268,6 +303,16 @@ class BuildElement(Element):
             }
             dictionary["layout"] = layout_key
 
+        # Specify the layout in the key, if buildstream is to generate an environment
+        # variable with the digest
+        #
+        if self.__digest_environment:
+            sorted_envs = sorted(self.__digest_environment)
+            digest_key = {
+                env: [dependency_path for _, dependency_path in self.__digest_environment[env]] for env in sorted_envs
+            }
+            dictionary["digest-enviornment"] = digest_key
+
         return dictionary
 
     def configure_sandbox(self, sandbox):
@@ -286,7 +331,20 @@ class BuildElement(Element):
         sandbox.set_work_directory(command_dir)
 
         # Setup environment
-        sandbox.set_environment(self.get_environment())
+        env = self.get_environment()
+
+        # Add "CAS digest" environment variables
+        sorted_envs = sorted(self.__digest_environment)
+        for digest_variable in sorted_envs:
+            element_list = [element for element, _ in self.__digest_environment[digest_variable]]
+            with self.timed_activity(
+                f"Staging dependencies for '{digest_variable}' in subsandbox", silent_nested=True
+            ), self.subsandbox(sandbox) as subsandbox:
+                self.stage_dependency_artifacts(subsandbox, element_list)
+                digest = subsandbox.get_virtual_directory()._get_digest()
+            env[digest_variable] = "{}/{}".format(digest.hash, digest.size_bytes)
+
+        sandbox.set_environment(env)
 
     def stage(self, sandbox):
 

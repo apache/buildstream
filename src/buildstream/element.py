@@ -254,7 +254,7 @@ class Element(Plugin):
         # Internal instance properties
         #
         self._depth = None  # Depth of Element in its current dependency graph
-        self._overlap_collector = None  # type: Optional[OverlapCollector]
+        self._overlap_collectors: Dict[Sandbox, OverlapCollector] = {}  # Active overlap collector per sandbox
         self._description = load_element.description or ""  # type: str
 
         #
@@ -642,7 +642,8 @@ class Element(Plugin):
            :func:`Element.stage_dependency_artifacts() <buildstream.element.Element.stage_dependency_artifacts>`
            instead.
         """
-        assert self._overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
+        overlap_collector = self._overlap_collectors.get(sandbox)
+        assert overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
 
         #
         # The public API can only be called on the implementing plugin itself.
@@ -650,7 +651,7 @@ class Element(Plugin):
         # ElementProxy calls to stage_artifact() are routed directly to _stage_artifact(),
         # and the ElementProxy takes care of starting and ending the OverlapCollector session.
         #
-        with self._overlap_collector.session(action, path):
+        with overlap_collector.session(action, path):
             result = self._stage_artifact(
                 sandbox, path=path, action=action, include=include, exclude=exclude, orphans=orphans
             )
@@ -692,9 +693,10 @@ class Element(Plugin):
         Raises:
            (:class:`.ElementError`): if forbidden overlaps occur.
         """
-        assert self._overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
+        overlap_collector = self._overlap_collectors.get(sandbox)
+        assert overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
 
-        with self._overlap_collector.session(action, path):
+        with overlap_collector.session(action, path):
             for dep in self.dependencies(selection):
                 dep._stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans, owner=self)
 
@@ -825,6 +827,21 @@ class Element(Plugin):
             return
 
         sandbox._clean_directory(build_root)
+
+    @contextmanager
+    def subsandbox(self, sandbox: "Sandbox") -> Iterator["Sandbox"]:
+        """A context manager for a subsandbox.
+
+        Args:
+           sandbox: The main build sandbox
+
+        This allows an element to use a secondary sandbox for manipulating
+        artifacts without affecting the main build sandbox. The subsandbox
+        is initially empty.
+        """
+        subsandbox = sandbox._create_subsandbox()
+        with self.__collect_overlaps(subsandbox):
+            yield subsandbox
 
     #############################################################
     #            Private Methods used in BuildStream            #
@@ -962,7 +979,8 @@ class Element(Plugin):
     ) -> FileListResult:
 
         owner = owner or self
-        assert owner._overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
+        overlap_collector = owner._overlap_collectors.get(sandbox)
+        assert overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
 
         if not self._cached():
             detail = (
@@ -989,7 +1007,7 @@ class Element(Plugin):
         result = vstagedir._import_files_internal(files_vdir, filter_callback=split_filter)
         assert result is not None
 
-        owner._overlap_collector.collect_stage_result(self, result)
+        overlap_collector.collect_stage_result(self, result)
 
         return result
 
@@ -1013,7 +1031,7 @@ class Element(Plugin):
     #                              occur.
     #
     def _stage_dependency_artifacts(self, sandbox, scope, *, path=None, include=None, exclude=None, orphans=True):
-        with self._overlap_collector.session(OverlapAction.WARNING, path):
+        with self._overlap_collectors[sandbox].session(OverlapAction.WARNING, path):
             for dep in self._dependencies(scope):
                 dep._stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans, owner=self)
 
@@ -1422,20 +1440,27 @@ class Element(Plugin):
         # pylint: disable-next=contextmanager-generator-missing-cleanup
         with self.__sandbox(config=self.__sandbox_config, allow_remote=False) as sandbox:
 
-            # Configure always comes first, and we need it.
-            self.__configure_sandbox(sandbox)
-
             if usebuildtree:
+                # Configure the sandbox from artifact metadata
+                self.__artifact.configure_sandbox(sandbox)
+
                 # Use the cached buildroot directly
                 buildrootvdir = self.__artifact.get_buildroot()
                 sandbox_vroot = sandbox.get_virtual_directory()
                 sandbox_vroot._import_files_internal(buildrootvdir, collect_result=False)
             elif shell and scope == _Scope.BUILD:
+                self.__configure_sandbox(sandbox)
                 # Stage what we need
                 self.__stage(sandbox)
             else:
+                # Runtime shell or `bst artifact checkout`
+
+                # Don't call `configure_sandbox()` as that may attempt to construct subsandboxes
+                # with build dependencies and we're not setting up a build sandbox.
+                sandbox.set_environment(self.get_environment())
+
                 # Stage deps in the sandbox root
-                with self.timed_activity("Staging dependencies", silent_nested=True), self.__collect_overlaps():
+                with self.timed_activity("Staging dependencies", silent_nested=True), self.__collect_overlaps(sandbox):
                     self._stage_dependency_artifacts(sandbox, scope)
 
                 # Run any integration commands provided by the dependencies
@@ -1663,11 +1688,6 @@ class Element(Plugin):
         # Assert call ordering
         assert not self._cached_success()
 
-        # Print the environment at the beginning of the log file.
-        env_dump = _yaml.roundtrip_dump_string(self.get_environment())
-
-        self.log("Build environment for element {}".format(self.name), detail=env_dump)
-
         context = self._get_context()
         with self._output_file() as output_file:
 
@@ -1693,6 +1713,11 @@ class Element(Plugin):
 
                 # Step 1 - Configure
                 self.__configure_sandbox(sandbox)
+
+                # Print the environment at the beginning of the log file.
+                env_dump = _yaml.roundtrip_dump_string(sandbox._get_configured_environment() or self.get_environment())
+                self.log("Build environment for element {}".format(self.name), detail=env_dump)
+
                 # Step 2 - Stage
                 self.__stage(sandbox)
                 try:
@@ -1769,6 +1794,7 @@ class Element(Plugin):
                 variables=self.__variables,
                 environment=self.__environment,
                 sandboxconfig=self.__sandbox_config,
+                buildsandbox=sandbox if buildrootvdir else None,
             )
 
         if collect is not None and collectvdir is None:
@@ -2037,7 +2063,7 @@ class Element(Plugin):
     def _shell(self, scope=None, *, mounts=None, isolate=False, prompt=None, command=None, usebuildtree=False):
 
         with self._prepare_sandbox(scope, shell=True, usebuildtree=usebuildtree) as sandbox:
-            environment = self.get_environment()
+            environment = sandbox._get_configured_environment() or self.get_environment()
             environment = copy.copy(environment)
             flags = _SandboxFlags.INTERACTIVE | _SandboxFlags.ROOT_READ_ONLY
 
@@ -2703,7 +2729,7 @@ class Element(Plugin):
     def __stage(self, sandbox):
 
         # Enable the overlap collector during the staging process
-        with self.__collect_overlaps():
+        with self.__collect_overlaps(sandbox):
             self.stage(sandbox)
 
     # __preflight():
@@ -2806,10 +2832,12 @@ class Element(Plugin):
     # this context manager.
     #
     @contextmanager
-    def __collect_overlaps(self):
-        self._overlap_collector = OverlapCollector(self)
-        yield
-        self._overlap_collector = None
+    def __collect_overlaps(self, sandbox):
+        self._overlap_collectors[sandbox] = OverlapCollector(self)
+        try:
+            yield
+        finally:
+            del self._overlap_collectors[sandbox]
 
     # __sandbox():
     #
