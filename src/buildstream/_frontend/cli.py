@@ -600,6 +600,7 @@ def show(app, elements, deps, except_, order, format_):
 
     \b
         %{name}           The element name
+        %{kind}           The element kind (Since: 2.6)
         %{description}    The element description, on a single line (Since: 2.3)
         %{key}            The abbreviated cache key (if all sources are consistent)
         %{full-key}       The full cache key (if all sources are consistent)
