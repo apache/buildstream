@@ -42,6 +42,8 @@ DATA_DIR = os.path.join(
         ("import-bin.bst", "%{name}", "import-bin.bst"),
         ("import-bin.bst", "%{state}", "buildable"),
         ("compose-all.bst", "%{state}", "waiting"),
+        ("import-bin.bst", "%{kind}", "import"),
+        ("compose-all.bst", "%{kind}", "compose"),
     ],
 )
 def test_show(cli, datafiles, target, fmt, expected):
