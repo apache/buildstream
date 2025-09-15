@@ -38,6 +38,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 # cleared as just forcefully removing the refpath leaves dangling objects.
 def default_state(cli, tmpdir, share):
     shutil.rmtree(os.path.join(str(tmpdir), "cas"))
+    shutil.rmtree(os.path.join(str(tmpdir), "assets"))
     cli.configure(
         {
             "artifacts": {"servers": [{"url": share.repo, "push": False}]},
