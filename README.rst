@@ -110,6 +110,10 @@ To get started, first `install BuildStream by following the installation guide
 and then follow our tutorial in the
 `user guide <https://docs.buildstream.build/master/main_using.html>`_.
 
+  Running BuildStream on macOS or Windows may work under Docker Desktop, WSL,
+  or Podman Desktop, but it is not officially supported, and CI runs tests only on
+  Linux.
+
 We also recommend exploring some existing BuildStream projects:
 
 * https://gitlab.gnome.org/GNOME/gnome-build-meta/
