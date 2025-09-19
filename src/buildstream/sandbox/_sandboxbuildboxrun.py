@@ -38,11 +38,11 @@ class SandboxBuildBoxRun(SandboxREAPI):
         super().__init__(*args, **kwargs)
 
         context = self._get_context()
-        cascache = context.get_cascache()
+        casd = context.get_casd()
 
         re_specs = context.remote_execution_specs
         if re_specs and re_specs.action_spec:
-            self.re_remote = RERemote(context.remote_cache_spec, re_specs, cascache)
+            self.re_remote = RERemote(context.remote_cache_spec, re_specs, casd)
             try:
                 self.re_remote.init()
                 self.re_remote.check()
@@ -110,8 +110,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
         stdout, stderr = self._get_output()
 
         context = self._get_context()
-        cascache = context.get_cascache()
-        casd = cascache.get_casd()
+        casd = context.get_casd()
         config = self._get_config()
 
         if config.remote_apis_socket_path and context.remote_cache_spec and not self.re_remote:

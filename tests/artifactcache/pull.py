@@ -195,7 +195,12 @@ def test_pull_tree(cli, tmpdir, datafiles):
             # Push the Tree as a regular message
             _, remotes = artifactcache.get_remotes(project.name, True)
             assert len(remotes) == 1
-            tree_digest = remotes[0].push_message(tree)
+
+            remotes[0].init()
+            tree_digest = cas.add_object(
+                buffer=tree.SerializeToString(), instance_name=remotes[0].local_cas_instance_name
+            )
+
             tree_hash, tree_size = tree_digest.hash, tree_digest.size_bytes
             assert tree_hash and tree_size
 
