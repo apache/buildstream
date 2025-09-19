@@ -8,8 +8,11 @@ on:
 jobs:
   build_docs:
     name: "Build documentation tarball"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
+      - name: Disable AppArmor restriction for bubblewrap
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Checkout code
         uses: actions/checkout@v2
         # BuildStream requires tags to be able to find its version.
@@ -39,7 +42,7 @@ jobs:
 
   build_sdist:
     name: "Build Python source distribution tarball"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v3
       with:
@@ -58,7 +61,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04]
+        os: [ubuntu-24.04]
 
     steps:
       - uses: actions/checkout@v3
@@ -79,7 +82,7 @@ jobs:
   test_wheels:
     name: "Test Python packages: ${{ matrix.test-name }}"
     needs: [build_wheels]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -109,7 +112,7 @@ jobs:
   upload_github_release:
     name: Upload GitHub release assets
     needs: [build_docs, build_sdist, build_wheels, test_wheels]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -129,7 +132,7 @@ jobs:
   upload_pypi_release:
     name: Upload PyPI release assets
     needs: [build_docs, build_sdist, build_wheels, test_wheels]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
         with:

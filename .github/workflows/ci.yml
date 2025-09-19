@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   tests:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     continue-on-error: ${{ matrix.allow-failure || false }}
 
     strategy:
@@ -50,6 +50,9 @@ jobs:
             allow-failure: true
 
     steps:
+      - name: Disable AppArmor restriction for bubblewrap
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Check out repository
         uses: actions/checkout@v2
         # BuildStream requires tags to be able to find its version.
@@ -62,7 +65,7 @@ jobs:
 
   # Matrix of tests which run against remote services which we bring up adjacently
   service-tests:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -75,6 +78,9 @@ jobs:
           - buildgrid
 
     steps:
+      - name: Disable AppArmor restriction for bubblewrap
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Check out repository
         uses: actions/checkout@v2
         # BuildStream requires tags to be able to find its version.
@@ -86,8 +92,11 @@ jobs:
           ${GITHUB_WORKSPACE}/.github/run-ci.sh --service ${{ matrix.test-name }}
 
   build_docs:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
+      - name: Disable AppArmor restriction for bubblewrap
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Check out repository
         uses: actions/checkout@v2
         # BuildStream requires tags to be able to find its version.
@@ -116,7 +125,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04]
+        os: [ubuntu-24.04]
 
     steps:
       - uses: actions/checkout@v3
@@ -137,7 +146,7 @@ jobs:
   test_wheels:
     name: "Test Python packages: ${{ matrix.test-name }}"
     needs: [build_wheels]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
