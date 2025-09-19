@@ -11,28 +11,26 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-import multiprocessing
+import threading
 
 from pyftpdlib.authorizers import DummyAuthorizer
 from pyftpdlib.handlers import FTPHandler
-from pyftpdlib.servers import FTPServer
+from pyftpdlib.servers import ThreadedFTPServer
 
 
-class SimpleFtpServer(multiprocessing.Process):
+class SimpleFtpServer(threading.Thread):
     def __init__(self):
         super().__init__()
         self.authorizer = DummyAuthorizer()
         handler = FTPHandler
         handler.authorizer = self.authorizer
-        self.server = FTPServer(("127.0.0.1", 0), handler)
+        self.server = ThreadedFTPServer(("127.0.0.1", 0), handler)
 
     def run(self):
         self.server.serve_forever()
 
     def stop(self):
         self.server.close_all()
-        self.server.close()
-        self.terminate()
         self.join()
 
     def allow_anonymous(self, cwd):

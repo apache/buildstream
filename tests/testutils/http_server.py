@@ -11,7 +11,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-import multiprocessing
+import threading
 import os
 import posixpath
 import html
@@ -93,7 +93,7 @@ class AuthHTTPServer(HTTPServer):
         super().__init__(*args, **kwargs)
 
 
-class SimpleHttpServer(multiprocessing.Process):
+class SimpleHttpServer(threading.Thread):
     def __init__(self):
         super().__init__()
         self.server = AuthHTTPServer(("127.0.0.1", 0), RequestHandler)
@@ -109,7 +109,7 @@ class SimpleHttpServer(multiprocessing.Process):
     def stop(self):
         if not self.started:
             return
-        self.terminate()
+        self.server.shutdown()
         self.join()
 
     def allow_anonymous(self, cwd):
