@@ -15,6 +15,7 @@ import os
 import re
 import sys
 from functools import partial
+from typing import TYPE_CHECKING
 
 import shutil
 import click
@@ -24,6 +25,15 @@ from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection, _HostMount, _Scope
 from .._remotespec import RemoteSpec, RemoteSpecPurpose
 from ..utils import UtilError
+
+if TYPE_CHECKING or click.Command.__bases__ == (object,):
+    # Click >= 8.2
+    ClickCommandBaseClass = click.Command
+    ClickGroupBaseClass = click.Group
+else:
+    # Click < 8.2
+    ClickCommandBaseClass = click.BaseCommand
+    ClickGroupBaseClass = click.MultiCommand
 
 
 ##################################################################
@@ -105,7 +115,7 @@ def search_command(args, *, context=None):
 # Completion for completing command names as help arguments
 def complete_commands(cmd, args, incomplete):
     command_ctx = search_command(args[1:])
-    if command_ctx and command_ctx.command and isinstance(command_ctx.command, click.MultiCommand):
+    if command_ctx and command_ctx.command and isinstance(command_ctx.command, ClickGroupBaseClass):
         return [
             subcommand + " "
             for subcommand in command_ctx.command.list_commands(command_ctx)
@@ -272,10 +282,10 @@ def override_main(self, args=None, prog_name=None, complete_var=None, standalone
     original_main(self, args=args, prog_name=prog_name, complete_var=None, standalone_mode=standalone_mode, **extra)
 
 
-original_main = click.BaseCommand.main
+original_main = ClickCommandBaseClass.main
 # Disable type checking since mypy doesn't support assigning to a method.
 # See https://github.com/python/mypy/issues/2427.
-click.BaseCommand.main = override_main  # type: ignore
+ClickCommandBaseClass.main = override_main  # type: ignore
 
 
 ##################################################################
@@ -392,7 +402,7 @@ def help_command(ctx, command):
     click.echo(command_ctx.command.get_help(command_ctx), err=True)
 
     # Hint about available sub commands
-    if isinstance(command_ctx.command, click.MultiCommand):
+    if isinstance(command_ctx.command, ClickGroupBaseClass):
         detail = " "
         if command:
             detail = " {} ".format(" ".join(command))

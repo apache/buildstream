@@ -32,10 +32,18 @@
 import collections.abc
 import copy
 import os
+from typing import TYPE_CHECKING
 
 import click
-from click.core import MultiCommand, Option, Argument
+from click.core import Option, Argument
 from click.parser import split_arg_string
+
+if TYPE_CHECKING or click.Command.__bases__ == (object,):
+    # Click >= 8.2
+    ClickGroupBaseClass = click.Group
+else:
+    # Click < 8.2
+    ClickGroupBaseClass = click.MultiCommand
 
 WORDBREAK = "="
 
@@ -176,7 +184,7 @@ def resolve_ctx(cli, prog_name, args):
     ctx = cli.make_context(prog_name, args, resilient_parsing=True)
     args_remaining = ctx.protected_args + ctx.args
     while ctx is not None and args_remaining:
-        if isinstance(ctx.command, MultiCommand):
+        if isinstance(ctx.command, ClickGroupBaseClass):
             cmd = ctx.command.get_command(ctx, args_remaining[0])
             if cmd is None:
                 return None
@@ -310,7 +318,7 @@ def get_choices(cli, prog_name, args, incomplete, override):
                 found_param = True
                 break
 
-    if not found_param and isinstance(ctx.command, MultiCommand):
+    if not found_param and isinstance(ctx.command, ClickGroupBaseClass):
         # completion for any subcommands
         choices.extend(
             [cmd + " " for cmd in ctx.command.list_commands(ctx) if not ctx.command.get_command(ctx, cmd).hidden]
@@ -319,7 +327,7 @@ def get_choices(cli, prog_name, args, incomplete, override):
     if (
         not start_of_option(incomplete)
         and ctx.parent is not None
-        and isinstance(ctx.parent.command, MultiCommand)
+        and isinstance(ctx.parent.command, ClickGroupBaseClass)
         and ctx.parent.command.chain
     ):
         # completion for chained commands
