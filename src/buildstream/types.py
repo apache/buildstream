@@ -67,14 +67,14 @@ class FastEnum(metaclass=MetaFastEnum):
 
     def __eq__(self, other):
         if self.__class__ is not other.__class__:
-            raise ValueError("Unexpected comparison between {} and {}".format(self, repr(other)))
+            return NotImplemented
         # Enums instances are unique, so creating an instance with the same value as another will just
         # send back the other one, hence we can use an identity comparison, which is much faster than '=='
         return self is other
 
     def __ne__(self, other):
         if self.__class__ is not other.__class__:
-            raise ValueError("Unexpected comparison between {} and {}".format(self, repr(other)))
+            return NotImplemented
         return self is not other
 
     def __hash__(self):
