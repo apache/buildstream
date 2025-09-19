@@ -11,7 +11,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-import multiprocessing
+import threading
 import os
 import posixpath
 import html
@@ -87,7 +87,7 @@ class BearerHTTPServer(HTTPServer):
         super().__init__(*args, **kwargs)
 
 
-class BearerHttpServer(multiprocessing.Process):
+class BearerHttpServer(threading.Thread):
     def __init__(self):
         super().__init__()
         self.server = BearerHTTPServer(("127.0.0.1", 0), BearerRequestHandler)
@@ -103,7 +103,7 @@ class BearerHttpServer(multiprocessing.Process):
     def stop(self):
         if not self.started:
             return
-        self.terminate()
+        self.server.shutdown()
         self.join()
 
     def set_directory(self, directory):
