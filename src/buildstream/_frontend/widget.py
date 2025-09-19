@@ -355,6 +355,7 @@ class LogLine(Widget):
             description = " ".join(element._description.splitlines())
 
             line = p.fmt_subst(line, "name", element._get_full_name(), fg="blue", bold=True)
+            line = p.fmt_subst(line, "kind", element.get_kind(), fg="cyan")
             line = p.fmt_subst(line, "key", key.brief, fg="yellow", dim=dim_keys)
             line = p.fmt_subst(line, "full-key", key.full, fg="yellow", dim=dim_keys)
             line = p.fmt_subst(line, "description", description, fg="yellow", dim=dim_keys)
