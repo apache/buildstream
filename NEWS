@@ -1,4 +1,27 @@
 =================
+buildstream 2.6.0
+=================
+
+  o Add the `remote-apis-socket` sandbox configuration to offer build tools
+    in the sandbox (e.g., recc or bazel) access to the Remote Execution API
+    for caching or (nested) remote execution (#2014, #2031, #2038)
+
+  o Add the `digest-environment` dependency configuration for use by
+    Remote Execution API clients running in the sandbox (#2036)
+
+  o Additional source provenance in SourceInfo (#2009)
+
+  o Allow showing the element kind in `bst show` (#2058)
+
+  o Accept pre-releases for plugins loaded from the `pip` origin (#2019)
+
+  o BuildStream now requires BuildBox 1.2.6 or later
+
+  o Support Python 3.13.4+ and 3.14 (#2039, #2064, #2067)
+
+  o Support protobuf 6+ (#2043) and Click 8.2+ (#2065)
+
+=================
 buildstream 2.5.0
 =================
 
