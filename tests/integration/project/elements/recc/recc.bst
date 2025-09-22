@@ -3,6 +3,6 @@ kind: import
 sources:
   - kind: tar
     base-dir: ''
-    ref: 00795f1781fd5f80757dd0c60f6335c221dacfa852edad8209b390dd9cfb1f83
-    url: buildbox:buildbox-integration/-/releases/1.3.31/downloads/recc-x86_64-linux-gnu.tgz
+    ref: d621d1641a5e9617d6dbe9bcebdf4c62a28e1354fcdb09c4dc94bd1a773e85d4
+    url: buildbox:buildbox-integration/-/releases/1.3.39/downloads/recc-x86_64-linux-gnu.tgz
     directory: usr/bin
