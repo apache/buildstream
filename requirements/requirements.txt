@@ -6,7 +6,7 @@ pluginbase==1.0.1
 protobuf==5.29.5
 psutil==6.1.0
 ruamel.yaml==0.18.6
-ruamel.yaml.clib==0.2.12
+ruamel.yaml.clib==0.2.14
 pyroaring==1.0.0
 ujson==5.10.0
 ## The following requirements were added by pip freeze:
