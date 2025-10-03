@@ -101,7 +101,7 @@ class PluginOriginPip(PluginOrigin):
         return (
             os.path.dirname(location),
             str(defaults),
-            "python package '{}' at: {}".format(dist, dist.locate_file("")),
+            "python package '{}' version {} at: {}".format(dist.name, dist.version, dist.locate_file("")),
         )
 
     def load_config(self, origin_node):
