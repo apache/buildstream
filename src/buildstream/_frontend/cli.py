@@ -525,7 +525,7 @@ def build(
             deps = app.context.build_dependencies
 
         if not elements:
-            elements = app.project.get_default_targets()
+            elements = app.stream.get_default_targets()
             # Junction elements cannot be built, exclude them from default targets
             ignore_junction_targets = True
 
@@ -655,7 +655,7 @@ def show(app, elements, deps, except_, order, format_):
         need_state = bool(state_match or key_match or full_key_match or artifact_cas_digest_match)
 
         if not elements:
-            elements = app.project.get_default_targets()
+            elements = app.stream.get_default_targets()
 
         dependencies = app.stream.load_selection(
             elements, selection=deps, except_targets=except_, need_state=need_state
@@ -763,7 +763,7 @@ def shell(
 
     with app.initialized():
         if not target:
-            target = app.project.get_default_target()
+            target = app.stream.get_default_target()
             if not target:
                 raise AppError('Missing argument "TARGET".')
 
@@ -860,7 +860,7 @@ def source_fetch(app, elements, deps, except_, source_remotes, ignore_project_so
     """
     with app.initialized(session_name="Fetch"):
         if not elements:
-            elements = app.project.get_default_targets()
+            elements = app.stream.get_default_targets()
 
         app.stream.fetch(
             elements,
@@ -933,7 +933,7 @@ def source_push(app, elements, deps, except_, source_remotes, ignore_project_sou
     """
     with app.initialized(session_name="Push"):
         if not elements:
-            elements = app.project.get_default_targets()
+            elements = app.stream.get_default_targets()
 
         app.stream.source_push(
             elements,
@@ -993,7 +993,7 @@ def source_track(app, elements, deps, except_, cross_junctions):
     """
     with app.initialized(session_name="Track"):
         if not elements:
-            elements = app.project.get_default_targets()
+            elements = app.stream.get_default_targets()
 
         # Substitute 'none' for 'redirect' so that element redirections
         # will be done
@@ -1086,7 +1086,7 @@ def source_checkout(
 
     with app.initialized():
         if not element:
-            element = app.project.get_default_target()
+            element = app.stream.get_default_target()
             if not element:
                 raise AppError('Missing argument "ELEMENT".')
 
@@ -1171,7 +1171,7 @@ def workspace_close(app, remove_dir, all_, elements):
         if not (all_ or elements):
             # NOTE: I may need to revisit this when implementing multiple projects
             # opening one workspace.
-            element = app.project.get_default_target()
+            element = app.stream.get_default_target()
             if element:
                 elements = (element,)
             else:
@@ -1219,7 +1219,7 @@ def workspace_reset(app, soft, all_, elements):
     with app.initialized():
 
         if not (all_ or elements):
-            element = app.project.get_default_target()
+            element = app.stream.get_default_target()
             if element:
                 elements = (element,)
             else:
@@ -1412,7 +1412,7 @@ def artifact_checkout(
 
     with app.initialized():
         if not target:
-            target = app.project.get_default_target()
+            target = app.stream.get_default_target()
             if not target:
                 raise AppError('Missing argument "ELEMENT".')
 
@@ -1494,7 +1494,7 @@ def artifact_pull(app, deps, artifact_remotes, ignore_project_artifact_remotes, 
         ignore_junction_targets = False
 
         if not artifacts:
-            artifacts = app.project.get_default_targets()
+            artifacts = app.stream.get_default_targets()
             # Junction elements cannot be pulled, exclude them from default targets
             ignore_junction_targets = True
 
@@ -1562,7 +1562,7 @@ def artifact_push(app, deps, artifact_remotes, ignore_project_artifact_remotes, 
         ignore_junction_targets = False
 
         if not artifacts:
-            artifacts = app.project.get_default_targets()
+            artifacts = app.stream.get_default_targets()
             # Junction elements cannot be pushed, exclude them from default targets
             ignore_junction_targets = True
 
