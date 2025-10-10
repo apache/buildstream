@@ -37,7 +37,7 @@ class SandboxRemote(SandboxREAPI):
         super().__init__(*args, **kwargs)
 
         context = self._get_context()
-        cascache = context.get_cascache()
+        casd = context.get_casd()
 
         specs = context.remote_execution_specs
         if specs is None or specs.exec_spec is None:
@@ -48,7 +48,7 @@ class SandboxRemote(SandboxREAPI):
         self.action_spec = specs.action_spec
         self.operation_name = None
 
-        self.re_remote = RERemote(context.remote_cache_spec, specs, cascache)
+        self.re_remote = RERemote(context.remote_cache_spec, specs, casd)
         try:
             self.re_remote.init()
         except grpc.RpcError as e:

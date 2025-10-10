@@ -37,10 +37,10 @@ class BlobNotFound(CASRemoteError):
 # Represents a single remote CAS cache.
 #
 class CASRemote(BaseRemote):
-    def __init__(self, spec, cascache, **kwargs):
+    def __init__(self, spec, casd, **kwargs):
         super().__init__(spec, **kwargs)
 
-        self.cascache = cascache
+        self.casd = casd
         self.local_cas_instance_name = None
 
     # check_remote
@@ -55,29 +55,11 @@ class CASRemote(BaseRemote):
             self.local_cas_instance_name = ""
             return
 
-        local_cas = self.cascache.get_local_cas()
+        local_cas = self.casd.get_local_cas()
         request = local_cas_pb2.GetInstanceNameForRemotesRequest()
         self.spec.to_localcas_remote(request.content_addressable_storage)
         response = local_cas.GetInstanceNameForRemotes(request)
         self.local_cas_instance_name = response.instance_name
-
-    # push_message():
-    #
-    # Push the given protobuf message to a remote.
-    #
-    # Args:
-    #     message (Message): A protobuf message to push.
-    #
-    # Raises:
-    #     (CASRemoteError): if there was an error
-    #
-    def push_message(self, message):
-
-        message_buffer = message.SerializeToString()
-
-        self.init()
-
-        return self.cascache.add_object(buffer=message_buffer, instance_name=self.local_cas_instance_name)
 
 
 # Represents a batch of blobs queued for fetching.
@@ -107,7 +89,7 @@ class _CASBatchRead:
         if not self._requests:
             return
 
-        local_cas = self._remote.cascache.get_local_cas()
+        local_cas = self._remote.casd.get_local_cas()
 
         for request in self._requests:
             batch_response = local_cas.FetchMissingBlobs(request)
@@ -161,7 +143,7 @@ class _CASBatchUpdate:
         if not self._requests:
             return
 
-        local_cas = self._remote.cascache.get_local_cas()
+        local_cas = self._remote.casd.get_local_cas()
 
         for request in self._requests:
             batch_response = local_cas.UploadMissingBlobs(request)
