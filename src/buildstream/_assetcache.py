@@ -264,7 +264,7 @@ class AssetRemote(BaseRemote):
 # to establish a connection to this remote at initialization time.
 #
 class RemotePair:
-    def __init__(self, casd: CASDProcessManager, cas: CASCache, spec: RemoteSpec):
+    def __init__(self, casd: CASDProcessManager, spec: RemoteSpec):
         self.index: Optional[AssetRemote] = None
         self.storage: Optional[CASRemote] = None
         self.error: Optional[str] = None
@@ -275,7 +275,7 @@ class RemotePair:
                 index.check()
                 self.index = index
             if spec.remote_type in [RemoteType.STORAGE, RemoteType.ALL]:
-                storage = CASRemote(spec, cas)
+                storage = CASRemote(spec, casd)
                 storage.check()
                 self.storage = storage
         except RemoteError as e:
@@ -322,7 +322,7 @@ class AssetCache:
             if spec in self._remotes:
                 continue
 
-            remote = RemotePair(casd, self.cas, spec)
+            remote = RemotePair(casd, spec)
             if remote.error:
                 self.context.messenger.warn("Failed to initialize remote {}: {}".format(spec.url, remote.error))
 

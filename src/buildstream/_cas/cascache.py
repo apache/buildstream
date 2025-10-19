@@ -71,24 +71,8 @@ class CASCache:
         else:
             assert not self._remote_cache
 
-        self._default_remote = CASRemote(None, self)
+        self._default_remote = CASRemote(None, casd)
         self._default_remote.init()
-
-    # get_cas():
-    #
-    # Return ContentAddressableStorage stub for buildbox-casd channel.
-    #
-    def get_cas(self):
-        assert self._casd, "CASCache was created without buildbox-casd"
-        return self._casd.get_cas()
-
-    # get_local_cas():
-    #
-    # Return LocalCAS stub for buildbox-casd channel.
-    #
-    def get_local_cas(self):
-        assert self._casd, "CASCache was created without buildbox-casd"
-        return self._casd.get_local_cas()
 
     # preflight():
     #
@@ -133,7 +117,7 @@ class CASCache:
     # Returns: True if the directory is available in the local cache
     #
     def contains_directory(self, digest):
-        local_cas = self.get_local_cas()
+        local_cas = self._casd.get_local_cas()
 
         # Without a remote cache, `FetchTree` simply checks the local cache.
         request = local_cas_pb2.FetchTreeRequest()
@@ -241,7 +225,7 @@ class CASCache:
     #
     def ensure_tree(self, tree):
         if self._remote_cache:
-            local_cas = self.get_local_cas()
+            local_cas = self._casd.get_local_cas()
 
             request = local_cas_pb2.FetchTreeRequest()
             request.root_digest.CopyFrom(tree)
@@ -260,7 +244,7 @@ class CASCache:
     #     dir_digest (Digest): Digest object for the directory to fetch.
     #
     def fetch_directory(self, remote, dir_digest):
-        local_cas = self.get_local_cas()
+        local_cas = self._casd.get_local_cas()
 
         request = local_cas_pb2.FetchTreeRequest()
         request.instance_name = remote.local_cas_instance_name
@@ -399,7 +383,7 @@ class CASCache:
             for path in paths:
                 request.path.append(path)
 
-            local_cas = self.get_local_cas()
+            local_cas = self._casd.get_local_cas()
 
             response = local_cas.CaptureFiles(request)
 
@@ -432,7 +416,7 @@ class CASCache:
     #     (Digest): The digest of the imported directory
     #
     def import_directory(self, path: str, properties: Optional[List[str]] = None) -> SourceRef:
-        local_cas = self.get_local_cas()
+        local_cas = self._casd.get_local_cas()
 
         request = local_cas_pb2.CaptureTreeRequest()
         request.path.append(path)
@@ -478,7 +462,7 @@ class CASCache:
     #
     @contextlib.contextmanager
     def stage_directory(self, directory_digest):
-        local_cas = self.get_local_cas()
+        local_cas = self._casd.get_local_cas()
 
         request = local_cas_pb2.StageTreeRequest()
         request.root_digest.CopyFrom(directory_digest)
@@ -535,7 +519,7 @@ class CASCache:
     # Returns: List of missing Digest objects
     #
     def missing_blobs(self, blobs, *, remote=None):
-        cas = self.get_cas()
+        cas = self._casd.get_cas()
 
         if remote:
             instance_name = remote.local_cas_instance_name
@@ -576,7 +560,7 @@ class CASCache:
 
         if self._remote_cache and _fetch_tree:
             # Ensure we have the directory protos in the local cache
-            local_cas = self.get_local_cas()
+            local_cas = self._casd.get_local_cas()
 
             request = local_cas_pb2.FetchTreeRequest()
             request.root_digest.CopyFrom(directory_digest)
@@ -718,17 +702,6 @@ class CASCache:
     #
     def get_cache_usage(self):
         return self._cache_usage_monitor.get_cache_usage()
-
-    # get_casd()
-    #
-    # Get the underlying buildbox-casd process
-    #
-    # Returns:
-    #   (subprocess.Process): The casd process that is used for the current cascache
-    #
-    def get_casd(self):
-        assert self._casd is not None, "Only call this with a running buildbox-casd process"
-        return self._casd
 
 
 # _CASCacheUsage
