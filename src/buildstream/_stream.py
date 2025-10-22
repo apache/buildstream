@@ -1242,6 +1242,25 @@ class Stream:
     def get_state(self):
         return self._state
 
+    # get_default_target()
+    #
+    # Attempts to interpret which element the user intended to run a command on.
+    # This is for commands that only accept a single target element and thus,
+    # this only uses the workspace element (if invoked from workspace directory)
+    # and does not use the project default targets.
+    #
+    def get_default_target(self):
+        return self._project.get_default_target() if self._project else None
+
+    # get_default_targets()
+    #
+    # Attempts to interpret which elements the user intended to run a command on.
+    # This is for commands that accept multiple target elements.
+    #
+    def get_default_targets(self):
+        self._assert_project("Unable to determine default targets")
+        return self._project.get_default_targets()
+
     #############################################################
     #                 Scheduler API forwarding                  #
     #############################################################
