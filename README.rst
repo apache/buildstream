@@ -110,6 +110,9 @@ To get started, first `install BuildStream by following the installation guide
 and then follow our tutorial in the
 `user guide <https://docs.buildstream.build/master/main_using.html>`_.
 
+  Running Buildstream on Windows is not supported, although WSL2 may result in
+  some success; this workflow however, is not officially supporetd.
+
 We also recommend exploring some existing BuildStream projects:
 
 * https://gitlab.gnome.org/GNOME/gnome-build-meta/
