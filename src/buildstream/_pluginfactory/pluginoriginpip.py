@@ -13,6 +13,8 @@
 #
 import os
 import sys
+from importlib.util import find_spec
+from pathlib import Path
 
 from .._exceptions import PluginError
 
@@ -91,8 +93,8 @@ class PluginOriginPip(PluginOrigin):
                 reason="plugin-not-found",
             )
 
-        location = dist.locate_file(entrypoint.module.replace(".", os.sep) + ".py")
-        defaults = dist.locate_file(entrypoint.module.replace(".", os.sep) + ".yaml")
+        location = Path(find_spec(entrypoint.module).origin)
+        defaults = location.with_suffix(".yaml")
 
         if not defaults.exists():
             # The plugin didn't have an accompanying YAML file
