@@ -1,7 +1,6 @@
 Click >= 7.0, != 8.2.2
 grpcio
 Jinja2 >= 2.10
-importlib_metadata >= 3.6; python_version < "3.10"
 packaging
 pluginbase
 protobuf <9,>=5.29

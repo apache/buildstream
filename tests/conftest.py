@@ -15,8 +15,8 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 #
+from importlib.metadata import entry_points
 import os
-import sys
 
 import pytest
 
@@ -28,11 +28,6 @@ from buildstream._testing._fixtures import (  # pylint: disable=unused-import
 from buildstream._testing.integration import integration_cache  # pylint: disable=unused-import
 
 from tests.testutils.repo.tar import Tar
-
-if sys.version_info >= (3, 10):
-    from importlib.metadata import entry_points
-else:
-    from importlib_metadata import entry_points
 
 
 #
