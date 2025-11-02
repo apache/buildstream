@@ -36,7 +36,6 @@ jobs:
         # The names here should map to a valid service defined in
         # "../compose/ci.docker-compose.yml"
         test-name:
-          - debian-11
           - debian-12
           - debian-13
           - fedora-42
