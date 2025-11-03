@@ -12,7 +12,6 @@
 #  limitations under the License.
 #
 import os
-import sys
 
 from .._exceptions import PluginError
 
@@ -34,11 +33,7 @@ class PluginOriginPip(PluginOrigin):
     def get_plugin_paths(self, kind, plugin_type):
 
         from packaging.requirements import Requirement, InvalidRequirement
-
-        if sys.version_info >= (3, 10):
-            from importlib.metadata import distribution, PackageNotFoundError
-        else:
-            from importlib_metadata import distribution, PackageNotFoundError
+        from importlib.metadata import distribution, PackageNotFoundError
 
         # Sources and elements are looked up in separate
         # entrypoint groups from the same package.
