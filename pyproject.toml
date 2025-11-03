@@ -45,7 +45,7 @@ build-frontend = "build"
 environment = { BST_BUNDLE_BUILDBOX = "1" }
 
 # The BuildBox binaries produced in buildbox-integration are linked against GLIBC 2.28
-# from Debian 10. See: https://gitlab.com/BuildGrid/buildbox/buildbox-integration.
+# from Rocky Linux 8.10. See: https://gitlab.com/BuildGrid/buildbox/buildbox-integration.
 #
 # The PyPA manylinux_2_28 platform tag identifies that our wheel will run on any x86_64
 # OS with GLIBC >= 2.28. Following this setting, `cibuildwheel` builds the packages in
@@ -53,10 +53,6 @@ environment = { BST_BUNDLE_BUILDBOX = "1" }
 manylinux-x86_64-image = "manylinux_2_28"
 
 skip = [
-  # BuildStream supports Python >= 3.9
-  "cp36-*",
-  "cp37-*",
-  "cp38-*",
   # PyPy may work, but nobody is testing it so avoid distributing prebuilt binaries.
   "pp*",
   # Skipping this niche archicture ~halves overall build time.
