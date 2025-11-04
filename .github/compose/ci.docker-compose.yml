@@ -22,10 +22,6 @@ x-tests-template: &tests-template
 
 services:
 
-  debian-11:
-    <<: *tests-template
-    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:11-${CI_IMAGE_VERSION:-latest}
-
   debian-12:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:12-${CI_IMAGE_VERSION:-latest}
@@ -101,11 +97,6 @@ services:
   # Test that each BuildStream+BuildBox wheel package can install and run.
   # on the PyPA official 'manylinux' images that define the base ABI for
   # Python binary packages.
-
-  wheels-manylinux_2_28-cp39:
-    <<: *tests-template
-    image: quay.io/pypa/manylinux_2_28_x86_64
-    command: .github/wheel-helpers/test-wheel-manylinux.sh cp39 /opt/python/cp39-cp39/bin/python3
 
   wheels-manylinux_2_28-cp310:
     <<: *tests-template

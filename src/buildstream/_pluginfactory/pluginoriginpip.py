@@ -12,7 +12,6 @@
 #  limitations under the License.
 #
 import os
-import sys
 from importlib.util import find_spec
 from pathlib import Path
 
@@ -36,11 +35,7 @@ class PluginOriginPip(PluginOrigin):
     def get_plugin_paths(self, kind, plugin_type):
 
         from packaging.requirements import Requirement, InvalidRequirement
-
-        if sys.version_info >= (3, 10):
-            from importlib.metadata import distribution, PackageNotFoundError
-        else:
-            from importlib_metadata import distribution, PackageNotFoundError
+        from importlib.metadata import distribution, PackageNotFoundError
 
         # Sources and elements are looked up in separate
         # entrypoint groups from the same package.
@@ -99,11 +94,13 @@ class PluginOriginPip(PluginOrigin):
         if not defaults.exists():
             # The plugin didn't have an accompanying YAML file
             defaults = None
+            
+        directory = str(location.parent)
 
         return (
-            os.path.dirname(location),
+            directory,
             str(defaults),
-            "python package '{}' version {} at: {}".format(dist.name, dist.version, dist.locate_file("")),
+            "python package '{}' version {} at: {}".format(dist.name, dist.version, directory),
         )
 
     def load_config(self, origin_node):

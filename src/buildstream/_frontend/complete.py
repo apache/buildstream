@@ -36,7 +36,13 @@ from typing import TYPE_CHECKING
 
 import click
 from click.core import Option, Argument
-from click.parser import split_arg_string
+
+try:
+    # Click >= 8.2
+    from click.shell_completion import split_arg_string
+except ImportError:
+    # Click < 8.2
+    from click.parser import split_arg_string  # type: ignore
 
 if TYPE_CHECKING or click.Command.__bases__ == (object,):
     # Click >= 8.2

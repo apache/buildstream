@@ -36,7 +36,6 @@ jobs:
         # The names here should map to a valid service defined in
         # "../compose/ci.docker-compose.yml"
         test-name:
-          - debian-11
           - debian-12
           - debian-13
           - fedora-42
@@ -154,7 +153,6 @@ jobs:
         # The names here should map to a valid service defined in
         # "../compose/ci.docker-compose.yml"
         test-name:
-          - wheels-manylinux_2_28-cp39
           - wheels-manylinux_2_28-cp310
           - wheels-manylinux_2_28-cp311
           - wheels-manylinux_2_28-cp312
