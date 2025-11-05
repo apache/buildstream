@@ -3,13 +3,9 @@
 #
 # Spins-up a unnamed and unauthenticated grid:
 #  - Controller + CAS + AC at http://localhost:50051
-#  - Ref. + CAS at: http://localhost:50052
 #
 # BuildStream configuration snippet:
 #
-#    artifacts:
-#      url: http://localhost:50052
-#      push: true
 #    remote-execution:
 #      execution-service:
 #        url: http://localhost:50051
@@ -46,16 +42,6 @@ services:
         target: /var/lib/buildgrid/cache
     depends_on:
       - controller
-    networks:
-      - grid
-
-  storage:
-    image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid:nightly
-    command: [
-      "bgd", "server", "start", "-v",
-      "/etc/buildgrid/artifacts.yml"]
-    ports:
-      - 50052:50052
     networks:
       - grid
 
