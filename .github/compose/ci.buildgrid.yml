@@ -21,6 +21,26 @@
 version: "3.2"
 
 services:
+  database:
+    image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid-postgres:nightly
+    environment:
+      POSTGRES_USER: bgd
+      POSTGRES_PASSWORD: insecure
+      POSTGRES_DB: bgd
+    volumes:
+      - type: volume
+        source: db
+        target: /var/lib/postgresql
+    networks:
+      - grid
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "bgd"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+
   controller:
     image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid:nightly
     command: [
@@ -30,6 +50,9 @@ services:
       - 50051:50051
     networks:
       - grid
+    depends_on:
+      database:
+        condition: service_healthy
 
   bot:
     image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:nightly
@@ -51,3 +74,4 @@ networks:
 
 volumes:
   cache:
+  db:
