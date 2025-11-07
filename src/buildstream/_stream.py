@@ -1443,7 +1443,7 @@ class Stream:
     # Given the usual set of target element names/artifact refs, load
     # the `Element` objects required to describe the selection.
     #
-    # The result is returned as a truple - firstly the loaded normal
+    # The result is returned as a tuple - firstly the loaded normal
     # elements, secondly the loaded "excepting" elements and lastly
     # the loaded artifact elements.
     #
