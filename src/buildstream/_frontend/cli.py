@@ -1302,12 +1302,29 @@ def artifact():
     ),
     help="The dependencies we also want to show",
 )
+@click.option(
+    "--artifact-remote",
+    "artifact_remotes",
+    type=RemoteSpecType(RemoteSpecPurpose.PULL),
+    multiple=True,
+    help="A remote for downloading artifacts (Since: 2.7)",
+)
+@click.option(
+    "--ignore-project-artifact-remotes",
+    is_flag=True,
+    help="Ignore remote artifact cache servers recommended by projects (Since: 2.7)",
+)
 @click.argument("artifacts", type=click.Path(), nargs=-1)
 @click.pass_obj
-def artifact_show(app, deps, artifacts):
-    """show the cached state of artifacts"""
+def artifact_show(app, deps, artifact_remotes, ignore_project_artifact_remotes, artifacts):
+    """Show the cached state of artifacts"""
     with app.initialized():
-        targets = app.stream.artifact_show(artifacts, selection=deps)
+        targets = app.stream.artifact_show(
+            artifacts,
+            selection=deps,
+            artifact_remotes=artifact_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+        )
         click.echo(app.logger.show_state_of_artifacts(targets))
         sys.exit(0)
 
