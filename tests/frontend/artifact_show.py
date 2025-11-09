@@ -21,6 +21,7 @@ import pytest
 from buildstream.exceptions import ErrorDomain
 from buildstream._testing import cli  # pylint: disable=unused-import
 from tests.testutils import create_artifact_share
+from . import configure_project
 
 
 # Project directory
@@ -155,18 +156,96 @@ def test_artifact_show_glob(cli, tmpdir, datafiles, pattern, expected_prefixes):
 
 # Test artifact show artifact in remote
 @pytest.mark.datafiles(DATA_DIR)
-def test_artifact_show_element_available_remotely(cli, tmpdir, datafiles):
+@pytest.mark.parametrize("config", ["config-project", "config-user", "config-cli"])
+@pytest.mark.parametrize("by_element_name", [True, False], ids=["by-element-name", "by-artifact-name"])
+def test_artifact_show_available_remotely(cli, tmpdir, datafiles, config, by_element_name):
+    project = str(datafiles)
+    element = "target.bst"
+
+    #
+    # Skip this configuration, BuildStream intentionally ignores the local project.conf
+    # if an artifact name is specified.
+    #
+    if config == "config-project" and not by_element_name:
+        pytest.skip("No project.conf in context")
+
+    # Set up remote and local shares
+    local_cache = os.path.join(str(tmpdir), "artifacts")
+    cli.configure(
+        {
+            "cachedir": local_cache,
+        }
+    )
+
+    with create_artifact_share(os.path.join(str(tmpdir), "remote")) as remote:
+        extra_cli_args = []
+        if config == "config-project":
+            configure_project(
+                project,
+                {
+                    "artifacts": [
+                        {
+                            "url": remote.repo,
+                            "push": True,
+                        }
+                    ]
+                },
+            )
+        elif config == "config-user":
+            cli.configure(
+                {
+                    "artifacts": {"servers": [{"url": remote.repo, "push": True}]},
+                }
+            )
+        else:
+            extra_cli_args = ["--artifact-remote", remote.repo]
+
+        # Build the element
+        result = cli.run(project=project, args=["build"] + extra_cli_args + [element])
+        result.assert_success()
+
+        artifact_name = cli.get_artifact_name(project, "test", element)
+
+        # Make sure it's in the share
+        assert remote.get_artifact(artifact_name)
+
+        # Delete the artifact from the local cache
+        result = cli.run(project=project, args=["artifact", "delete", element])
+        result.assert_success()
+        assert cli.get_element_state(project, element) != "cached"
+
+        # Do the artifact show and assert
+        element_or_artifact = element if by_element_name else artifact_name
+        result = cli.run(project=project, args=["artifact", "show"] + extra_cli_args + [element_or_artifact])
+        result.assert_success()
+        assert "available {}".format(element_or_artifact) in result.output
+
+
+# Test out --ignore-project-artifact-remotes
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_show_ignore_project_remotes(cli, tmpdir, datafiles):
     project = str(datafiles)
     element = "target.bst"
 
     # Set up remote and local shares
     local_cache = os.path.join(str(tmpdir), "artifacts")
+    cli.configure(
+        {
+            "cachedir": local_cache,
+        }
+    )
+
     with create_artifact_share(os.path.join(str(tmpdir), "remote")) as remote:
-        cli.configure(
+        configure_project(
+            project,
             {
-                "artifacts": {"servers": [{"url": remote.repo, "push": True}]},
-                "cachedir": local_cache,
-            }
+                "artifacts": [
+                    {
+                        "url": remote.repo,
+                        "push": True,
+                    }
+                ]
+            },
         )
 
         # Build the element
@@ -181,6 +260,12 @@ def test_artifact_show_element_available_remotely(cli, tmpdir, datafiles):
         result.assert_success()
         assert cli.get_element_state(project, element) != "cached"
 
+        # It is available remotely with the project configured remote
         result = cli.run(project=project, args=["artifact", "show", element])
         result.assert_success()
         assert "available {}".format(element) in result.output
+
+        # Ignoring project remotes, it is not found in any remote
+        result = cli.run(project=project, args=["artifact", "show", "--ignore-project-artifact-remotes", element])
+        result.assert_success()
+        assert "not cached {}".format(element) in result.output
