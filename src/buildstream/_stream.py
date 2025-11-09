@@ -792,12 +792,12 @@ class Stream:
     #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
     #
     def artifact_show(
-            self,
-            targets,
-            *,
-            selection=_PipelineSelection.NONE,
-            artifact_remotes: Iterable[RemoteSpec] = (),
-            ignore_project_artifact_remotes: bool = False,
+        self,
+        targets,
+        *,
+        selection=_PipelineSelection.NONE,
+        artifact_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_artifact_remotes: bool = False,
     ):
         # Obtain list of Element and/or ArtifactElement objects
         target_objects = self.load_selection(
