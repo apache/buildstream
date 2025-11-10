@@ -3,13 +3,9 @@
 #
 # Spins-up a unnamed and unauthenticated grid:
 #  - Controller + CAS + AC at http://localhost:50051
-#  - Ref. + CAS at: http://localhost:50052
 #
 # BuildStream configuration snippet:
 #
-#    artifacts:
-#      url: http://localhost:50052
-#      push: true
 #    remote-execution:
 #      execution-service:
 #        url: http://localhost:50051
@@ -25,6 +21,26 @@
 version: "3.2"
 
 services:
+  database:
+    image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid-postgres:nightly
+    environment:
+      POSTGRES_USER: bgd
+      POSTGRES_PASSWORD: insecure
+      POSTGRES_DB: bgd
+    volumes:
+      - type: volume
+        source: db
+        target: /var/lib/postgresql
+    networks:
+      - grid
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "bgd"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+
   controller:
     image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid:nightly
     command: [
@@ -34,6 +50,9 @@ services:
       - 50051:50051
     networks:
       - grid
+    depends_on:
+      database:
+        condition: service_healthy
 
   bot:
     image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:nightly
@@ -49,19 +68,10 @@ services:
     networks:
       - grid
 
-  storage:
-    image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid:nightly
-    command: [
-      "bgd", "server", "start", "-v",
-      "/etc/buildgrid/artifacts.yml"]
-    ports:
-      - 50052:50052
-    networks:
-      - grid
-
 networks:
   grid:
     driver: bridge
 
 volumes:
   cache:
+  db:

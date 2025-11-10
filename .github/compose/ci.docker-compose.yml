@@ -58,9 +58,7 @@ services:
     command: tox -vvvvv -- --color=yes --remote-execution
     environment:
       TOXENV: ${CI_TOXENV_MAIN}
-      ARTIFACT_CACHE_SERVICE: http://localhost:50052
       REMOTE_EXECUTION_SERVICE: http://localhost:50051
-      SOURCE_CACHE_SERVICE: http://localhost:50052
 
     # We need to use host networking mode in order to be able to
     # properly resolve services exposed by adjacent containers.
