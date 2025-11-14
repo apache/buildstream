@@ -297,6 +297,12 @@ class ArtifactCache(AssetCache):
                 except FileNotFoundError:
                     pass
 
+            if artifact_proto.HasField("sources"):
+                try:
+                    self.cas._send_directory(remote, artifact_proto.sources)
+                except FileNotFoundError:
+                    pass
+
             if artifact_proto.HasField("buildroot"):
                 try:
                     self.cas._send_directory(remote, artifact_proto.buildroot)
@@ -427,6 +433,8 @@ class ArtifactCache(AssetCache):
             if pull_buildtrees:
                 if artifact.HasField("buildtree"):
                     self.cas.fetch_directory(remote, artifact.buildtree)
+                if artifact.HasField("sources"):
+                    self.cas.fetch_directory(remote, artifact.sources)
                 if artifact.HasField("buildroot"):
                     self.cas.fetch_directory(remote, artifact.buildroot)
                 if artifact.HasField("buildsandbox"):
