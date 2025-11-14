@@ -362,8 +362,7 @@ def test_shell_pull_artifact_cached_buildtree(share_with_buildtrees, datafiles, 
             artifact_name,
             "--",
             "cat",
-            # We don't preserve the working directory in artifacts, so we will be executing at /
-            "/buildstream/test/build-shell/buildtree.bst/test",
+            "test",
         ],
     )
 
