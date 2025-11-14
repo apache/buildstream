@@ -373,6 +373,9 @@ class ArtifactCache(AssetCache):
             log_file.digest for log_file in artifact_proto.logs
         ]
 
+        if artifact_proto.HasField("public_data"):
+            referenced_blobs.append(artifact_proto.public_data)
+
         try:
             remote.push_blob(
                 uris,
