@@ -28,14 +28,16 @@ class Artifact(_message.Message):
         digest: _remote_execution_pb2.Digest
         def __init__(self, name: _Optional[str] = ..., digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ...) -> None: ...
     class SandboxState(_message.Message):
-        __slots__ = ("environment", "working_directory", "subsandbox_digests")
+        __slots__ = ("environment", "working_directory", "subsandbox_digests", "marked_directories")
         ENVIRONMENT_FIELD_NUMBER: _ClassVar[int]
         WORKING_DIRECTORY_FIELD_NUMBER: _ClassVar[int]
         SUBSANDBOX_DIGESTS_FIELD_NUMBER: _ClassVar[int]
+        MARKED_DIRECTORIES_FIELD_NUMBER: _ClassVar[int]
         environment: _containers.RepeatedCompositeFieldContainer[_remote_execution_pb2.Command.EnvironmentVariable]
         working_directory: str
         subsandbox_digests: _containers.RepeatedCompositeFieldContainer[_remote_execution_pb2.Digest]
-        def __init__(self, environment: _Optional[_Iterable[_Union[_remote_execution_pb2.Command.EnvironmentVariable, _Mapping]]] = ..., working_directory: _Optional[str] = ..., subsandbox_digests: _Optional[_Iterable[_Union[_remote_execution_pb2.Digest, _Mapping]]] = ...) -> None: ...
+        marked_directories: _containers.RepeatedScalarFieldContainer[str]
+        def __init__(self, environment: _Optional[_Iterable[_Union[_remote_execution_pb2.Command.EnvironmentVariable, _Mapping]]] = ..., working_directory: _Optional[str] = ..., subsandbox_digests: _Optional[_Iterable[_Union[_remote_execution_pb2.Digest, _Mapping]]] = ..., marked_directories: _Optional[_Iterable[str]] = ...) -> None: ...
     VERSION_FIELD_NUMBER: _ClassVar[int]
     BUILD_SUCCESS_FIELD_NUMBER: _ClassVar[int]
     BUILD_ERROR_FIELD_NUMBER: _ClassVar[int]
