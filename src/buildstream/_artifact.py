@@ -325,6 +325,9 @@ class Artifact:
                 for key, value in sorted(sandbox_env.items()):
                     artifact.buildsandbox.environment.add(name=key, value=value)
 
+            for directory in buildsandbox._get_marked_directories():
+                artifact.buildsandbox.marked_directories.append(directory)
+
             artifact.buildsandbox.working_directory = buildsandbox._get_work_directory()
 
             for subsandbox in buildsandbox._get_subsandboxes():
@@ -699,7 +702,7 @@ class Artifact:
     def configure_sandbox(self, sandbox):
         artifact = self._get_proto()
 
-        if artifact.buildsandbox and artifact.buildsandbox.environment:
+        if artifact.HasField("buildsandbox") and artifact.buildsandbox.environment:
             env = {}
             for env_var in artifact.buildsandbox.environment:
                 env[env_var.name] = env_var.value
@@ -708,8 +711,12 @@ class Artifact:
 
         sandbox.set_environment(env)
 
-        if artifact.buildsandbox and artifact.buildsandbox.working_directory:
-            sandbox.set_work_directory(artifact.buildsandbox.working_directory)
+        if artifact.HasField("buildsandbox"):
+            for directory in artifact.buildsandbox.marked_directories:
+                sandbox.mark_directory(directory)
+
+            if artifact.buildsandbox.working_directory:
+                sandbox.set_work_directory(artifact.buildsandbox.working_directory)
 
     #  load_proto()
     #
