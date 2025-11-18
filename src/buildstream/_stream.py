@@ -788,11 +788,25 @@ class Stream:
     #
     # Args:
     #    targets (str): Targets to show the cached state of
+    #    artifact_remotes: Artifact cache remotes specified on the commmand line
+    #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
     #
-    def artifact_show(self, targets, *, selection=_PipelineSelection.NONE):
+    def artifact_show(
+        self,
+        targets,
+        *,
+        selection=_PipelineSelection.NONE,
+        artifact_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_artifact_remotes: bool = False,
+    ):
         # Obtain list of Element and/or ArtifactElement objects
         target_objects = self.load_selection(
-            targets, selection=selection, connect_artifact_cache=True, load_artifacts=True
+            targets,
+            selection=selection,
+            connect_artifact_cache=True,
+            load_artifacts=True,
+            artifact_remotes=artifact_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
         )
 
         self.query_cache(target_objects)
