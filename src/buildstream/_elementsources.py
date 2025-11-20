@@ -47,6 +47,8 @@ class ElementSources:
         self._cache_key = None  # Our cached cache key
         self._proto = None  # The cached Source proto
 
+        self._cache = {}
+
     # get_project():
     #
     # Return the project associated with this object
@@ -462,6 +464,10 @@ class ElementSources:
             if source == stop:
                 break
 
+            if source in self._cache:
+                vdir = CasBasedDirectory(cas, digest=self._cache[source])
+                continue
+
             if source._directory:
                 vsubdir = vdir.open_directory(source._directory.lstrip(os.path.sep), create=True)
             else:
@@ -482,6 +488,8 @@ class ElementSources:
             else:
                 source_dir = self._sourcecache.export(source)
                 vsubdir.import_files(source_dir, collect_result=False)
+
+            self._cache[source] = vsubdir._get_digest()
 
         return vdir
 
