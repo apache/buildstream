@@ -495,7 +495,8 @@ class Loader:
         # The loader queue is a stack of tuples
         # [0] is the LoadElement instance
         # [1] is a stack of Dependency objects to load
-        loader_queue = [(top_element, list(reversed(dependencies)))]
+        # [2] is a Dict[LoadElement, Dependency] of loaded dependencies
+        loader_queue = [(top_element, list(reversed(dependencies)), {})]
 
         # Load all dependency files for the new LoadElement
         while loader_queue:
@@ -526,7 +527,7 @@ class Loader:
                         dep_element.mark_fully_loaded()
 
                         dep_deps = extract_depends_from_node(dep_element.node)
-                        loader_queue.append((dep_element, list(reversed(dep_deps))))
+                        loader_queue.append((dep_element, list(reversed(dep_deps)), {}))
 
                         # Pylint is not very happy about Cython and can't understand 'node' is a 'MappingNode'
                         if dep_element.node.get_str(Symbol.KIND) == "junction":  # pylint: disable=no-member
@@ -539,7 +540,15 @@ class Loader:
                 # LoadElement on the dependency and append the dependency to the owning
                 # LoadElement dependency list.
                 dep.set_element(dep_element)
-                current_element[0].dependencies.append(dep)  # pylint: disable=no-member
+
+                dep_dict = current_element[2]
+                if dep.element in dep_dict:
+                    # Duplicate LoadElement in dependency list, this can happen if a dependency is
+                    # a link element that points to an element that is already a dependency.
+                    dep_dict[dep.element].merge(dep)
+                else:
+                    current_element[0].dependencies.append(dep)  # pylint: disable=no-member
+                    dep_dict[dep.element] = dep
             else:
                 # And pop the element off the queue
                 loader_queue.pop()
