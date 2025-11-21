@@ -339,6 +339,21 @@ def test_shell_pull_cached_buildtree(share_with_buildtrees, datafiles, cli, pull
     result.assert_success()
     assert "Hi" in result.output
 
+    # Check that the working directory is writable
+    result = cli.run(
+        project=project,
+        args=[
+            "shell",
+            "--build",
+            element_name,
+            "--use-buildtree",
+            "--",
+            "touch",
+            "foo",
+        ],
+    )
+    result.assert_success()
+
 
 #
 # Test behavior of shelling into a buildtree by its artifact name
@@ -362,8 +377,7 @@ def test_shell_pull_artifact_cached_buildtree(share_with_buildtrees, datafiles, 
             artifact_name,
             "--",
             "cat",
-            # We don't preserve the working directory in artifacts, so we will be executing at /
-            "/buildstream/test/build-shell/buildtree.bst/test",
+            "test",
         ],
     )
 
@@ -372,6 +386,21 @@ def test_shell_pull_artifact_cached_buildtree(share_with_buildtrees, datafiles, 
     #
     result.assert_success()
     assert "Hi" in result.output
+
+    # Check that the working directory is writable
+    result = cli.run(
+        project=project,
+        args=[
+            "shell",
+            "--build",
+            "--use-buildtree",
+            artifact_name,
+            "--",
+            "touch",
+            "foo",
+        ],
+    )
+    result.assert_success()
 
 
 #

@@ -90,6 +90,7 @@ message Artifact {
     repeated build.bazel.remote.execution.v2.Command.EnvironmentVariable environment = 1;
     string working_directory = 2;
     repeated build.bazel.remote.execution.v2.Digest subsandbox_digests = 3;
+    repeated string marked_directories = 4;
   };
   SandboxState buildsandbox = 18;  // optional
 }
