@@ -288,28 +288,34 @@ class ArtifactCache(AssetCache):
         artifact_proto = artifact._get_proto()
 
         try:
-            if str(artifact_proto.files):
+            if artifact_proto.HasField("files"):
                 self.cas._send_directory(remote, artifact_proto.files)
 
-            if str(artifact_proto.buildtree):
+            if artifact_proto.HasField("buildtree"):
                 try:
                     self.cas._send_directory(remote, artifact_proto.buildtree)
                 except FileNotFoundError:
                     pass
 
-            if str(artifact_proto.buildroot):
+            if artifact_proto.HasField("sources"):
+                try:
+                    self.cas._send_directory(remote, artifact_proto.sources)
+                except FileNotFoundError:
+                    pass
+
+            if artifact_proto.HasField("buildroot"):
                 try:
                     self.cas._send_directory(remote, artifact_proto.buildroot)
                 except FileNotFoundError:
                     pass
 
-            if artifact_proto.buildsandbox:
+            if artifact_proto.HasField("buildsandbox"):
                 for subsandbox_digest in artifact_proto.buildsandbox.subsandbox_digests:
                     self.cas._send_directory(remote, subsandbox_digest)
 
             digests = [artifact_digest, artifact_proto.low_diversity_meta, artifact_proto.high_diversity_meta]
 
-            if str(artifact_proto.public_data):
+            if artifact_proto.HasField("public_data"):
                 digests.append(artifact_proto.public_data)
 
             for log_file in artifact_proto.logs:
@@ -357,21 +363,24 @@ class ArtifactCache(AssetCache):
             raise ArtifactError("{}".format(e), temporary=True) from e
 
         referenced_directories = []
-        if artifact_proto.files:
+        if artifact_proto.HasField("files"):
             referenced_directories.append(artifact_proto.files)
-        if artifact_proto.buildtree:
+        if artifact_proto.HasField("buildtree"):
             referenced_directories.append(artifact_proto.buildtree)
-        if artifact_proto.sources:
+        if artifact_proto.HasField("sources"):
             referenced_directories.append(artifact_proto.sources)
-        if artifact_proto.buildroot:
+        if artifact_proto.HasField("buildroot"):
             referenced_directories.append(artifact_proto.buildroot)
-        if artifact_proto.buildsandbox:
+        if artifact_proto.HasField("buildsandbox"):
             for subsandbox_digest in artifact_proto.buildsandbox.subsandbox_digests:
                 referenced_directories.append(subsandbox_digest)
 
         referenced_blobs = [artifact_proto.low_diversity_meta, artifact_proto.high_diversity_meta] + [
             log_file.digest for log_file in artifact_proto.logs
         ]
+
+        if artifact_proto.HasField("public_data"):
+            referenced_blobs.append(artifact_proto.public_data)
 
         try:
             remote.push_blob(
@@ -418,20 +427,22 @@ class ArtifactCache(AssetCache):
             with utils.save_file_atomic(artifact_path, mode="wb") as f:
                 f.write(artifact.SerializeToString())
 
-            if str(artifact.files):
+            if artifact.HasField("files"):
                 self.cas.fetch_directory(remote, artifact.files)
 
             if pull_buildtrees:
-                if str(artifact.buildtree):
+                if artifact.HasField("buildtree"):
                     self.cas.fetch_directory(remote, artifact.buildtree)
-                if str(artifact.buildroot):
+                if artifact.HasField("sources"):
+                    self.cas.fetch_directory(remote, artifact.sources)
+                if artifact.HasField("buildroot"):
                     self.cas.fetch_directory(remote, artifact.buildroot)
-                if artifact.buildsandbox:
+                if artifact.HasField("buildsandbox"):
                     for subsandbox_digest in artifact.buildsandbox.subsandbox_digests:
                         self.cas.fetch_directory(remote, subsandbox_digest)
 
             digests = [artifact.low_diversity_meta, artifact.high_diversity_meta]
-            if str(artifact.public_data):
+            if artifact.HasField("public_data"):
                 digests.append(artifact.public_data)
 
             for log_digest in artifact.logs:
