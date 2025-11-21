@@ -495,8 +495,7 @@ class Loader:
         # The loader queue is a stack of tuples
         # [0] is the LoadElement instance
         # [1] is a stack of Dependency objects to load
-        # [2] is a list of dependency names used to warn when all deps are loaded
-        loader_queue = [(top_element, list(reversed(dependencies)), [])]
+        loader_queue = [(top_element, list(reversed(dependencies)))]
 
         # Load all dependency files for the new LoadElement
         while loader_queue:
@@ -505,8 +504,6 @@ class Loader:
 
                 # Process the first dependency of the last loaded element
                 dep = current_element[1].pop()
-                # And record its name for checking later
-                current_element[2].append(dep.name)
 
                 if dep.junction:
                     loader = self.get_loader(dep.junction, dep.node)
@@ -529,7 +526,7 @@ class Loader:
                         dep_element.mark_fully_loaded()
 
                         dep_deps = extract_depends_from_node(dep_element.node)
-                        loader_queue.append((dep_element, list(reversed(dep_deps)), []))
+                        loader_queue.append((dep_element, list(reversed(dep_deps))))
 
                         # Pylint is not very happy about Cython and can't understand 'node' is a 'MappingNode'
                         if dep_element.node.get_str(Symbol.KIND) == "junction":  # pylint: disable=no-member
