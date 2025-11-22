@@ -395,13 +395,38 @@ class _SourceMirror:
 # A simple object describing user provided source provenance information
 #
 # Args:
+#    attribution_text: Required acknowledgements for the package
+#    concluded_license: The license of the project as declared by the authors
+#    copyright_text: Copyright notice of the project
+#    declared_license: Licences that have been officially declared for the project
+#    description: Description of the package
 #    homepage: The project homepage URL
 #    issue_tracker: The project issue reporting URL
+#    name: Name of the project
+#    supplier: The name of the project suppliers/owners
 #
 class _SourceProvenance:
-    def __init__(self, homepage: Optional[str], issue_tracker: Optional[str]):
+    def __init__(
+        self,
+        attribution_text: Optional[str],
+        concluded_license: Optional[str],
+        copyright_text: Optional[str],
+        declared_license: Optional[str],
+        description: Optional[str],
+        homepage: Optional[str],
+        issue_tracker: Optional[str],
+        name: Optional[str],
+        supplier: Optional[str],
+    ):
+        self.attribution_text: Optional[str] = attribution_text
+        self.concluded_license: Optional[str] = concluded_license
+        self.copyright_text: Optional[str] = copyright_text
+        self.declared_license: Optional[str] = declared_license
+        self.description: Optional[str] = description
         self.homepage: Optional[str] = homepage
         self.issue_tracker: Optional[str] = issue_tracker
+        self.name: Optional[str] = name
+        self.supplier: Optional[str] = supplier
 
     # new_from_node():
     #
@@ -418,12 +443,41 @@ class _SourceProvenance:
     #
     @classmethod
     def new_from_node(cls, node: MappingNode) -> "_SourceProvenance":
-        node.validate_keys(["homepage", "issue-tracker"])
+        node.validate_keys(
+            [
+                "attribution-text",
+                "concluded-license",
+                "copyright-text",
+                "declared-license",
+                "description",
+                "homepage",
+                "issue-tracker",
+                "name",
+                "supplier",
+            ]
+        )
 
+        attribution_text: Optional[str] = node.get_str("attribution-text", None)
+        concluded_license: Optional[str] = node.get_str("concluded-license", None)
+        copyright_text: Optional[str] = node.get_str("copyright-text", None)
+        declared_license: Optional[str] = node.get_str("declared-license", None)
+        description: Optional[str] = node.get_str("description", None)
         homepage: Optional[str] = node.get_str("homepage", None)
         issue_tracker: Optional[str] = node.get_str("issue-tracker", None)
+        name: Optional[str] = node.get_str("name", None)
+        supplier: Optional[str] = node.get_str("supplier", None)
 
-        return cls(homepage, issue_tracker)
+        return cls(
+            attribution_text,
+            concluded_license,
+            copyright_text,
+            declared_license,
+            description,
+            homepage,
+            issue_tracker,
+            name,
+            supplier,
+        )
 
 
 ########################################
