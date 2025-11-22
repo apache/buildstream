@@ -12,6 +12,8 @@
 #  limitations under the License.
 #
 import os
+from importlib.util import find_spec
+from pathlib import Path
 
 from .._exceptions import PluginError
 
@@ -86,17 +88,19 @@ class PluginOriginPip(PluginOrigin):
                 reason="plugin-not-found",
             )
 
-        location = dist.locate_file(entrypoint.module.replace(".", os.sep) + ".py")
-        defaults = dist.locate_file(entrypoint.module.replace(".", os.sep) + ".yaml")
+        location = Path(find_spec(entrypoint.module).origin)
+        defaults = location.with_suffix(".yaml")
 
         if not defaults.exists():
             # The plugin didn't have an accompanying YAML file
             defaults = None
+            
+        directory = str(location.parent)
 
         return (
-            os.path.dirname(location),
+            directory,
             str(defaults),
-            "python package '{}' version {} at: {}".format(dist.name, dist.version, dist.locate_file("")),
+            "python package '{}' version {} at: {}".format(dist.name, dist.version, directory),
         )
 
     def load_config(self, origin_node):
