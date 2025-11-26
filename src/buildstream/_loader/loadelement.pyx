@@ -202,7 +202,7 @@ cdef class Dependency:
     # Args:
     #    other (Dependency): The dependency to merge into this one
     #
-    cdef merge(self, Dependency other):
+    cpdef merge(self, Dependency other):
         self.dep_type = self.dep_type | other.dep_type
         self.strict = self.strict or other.strict
 

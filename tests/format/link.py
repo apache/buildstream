@@ -198,3 +198,23 @@ def test_cross_link_junction_include(cli, tmpdir, datafiles):
     # Read back some of our project defaults from the env
     variables = _yaml.load_data(result.output)
     assert variables.get_str("test") == "the test"
+
+
+#
+# Test two links to the same element, both links are dependencies of the build target.
+#
+@pytest.mark.datafiles(DATA_DIR)
+def test_multiple_links_same_target(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "multiple-links-same-target")
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    target = "target.bst"
+
+    # Build, checkout
+    result = cli.run(project=project, args=["build", target])
+    result.assert_success()
+    result = cli.run(project=project, args=["artifact", "checkout", target, "--directory", checkoutdir])
+    result.assert_success()
+
+    # Check that the checkout contains the expected files from sub-sub-project
+    assert os.path.exists(os.path.join(checkoutdir, "hello.txt"))
