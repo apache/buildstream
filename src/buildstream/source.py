@@ -378,7 +378,7 @@ from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
 from .sourcemirror import SourceMirror
-from .types import SourceRef, CoreWarnings, FastEnum, _SourceProvenance
+from .types import SourceRef, CoreWarnings, FastEnum, SourceProvenance
 from ._exceptions import BstError, ImplError, PluginError
 from .exceptions import ErrorDomain
 from ._loader.metasource import MetaSource
@@ -825,8 +825,8 @@ class Source(Plugin):
         self._directory = meta.directory  # Staging relative directory
         self.__variables = variables  # The variables used to resolve the source's config
         self.__provenance: Optional[
-            _SourceProvenance
-        ] = meta.provenance  # The _SourceProvenance for general user provided SourceInfo
+            SourceProvenance
+        ] = meta.provenance # The SourceProvenance for general user provided SourceInfo
 
         self.__key = None  # Cache key for source
 
