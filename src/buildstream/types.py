@@ -211,6 +211,17 @@ class SourceProvenance:
             issue_tracker,
         )
 
+    def serialize(self) -> Dict[str, str]:
+        provenance = {}
+
+        if self.homepage is not None:
+            provenance["homepage"] = self.homepage
+
+        if self.issue_tracker is not None:
+            provenance["issue-tracker"] = self.homepage
+
+        return provenance
+
 
 # _Scope():
 #
