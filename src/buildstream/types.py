@@ -164,6 +164,54 @@ class OverlapAction(FastEnum):
     """
 
 
+# SourceProvenance()
+#
+# A simple object describing user provided source provenance information
+#
+# Args:
+#    homepage: The source's homepage URL
+#    issue_tracker: The source's issue reporting URL
+#
+class SourceProvenance:
+    def __init__(
+        self,
+        homepage: Optional[str],
+        issue_tracker: Optional[str],
+    ):
+        self.homepage: Optional[str] = homepage
+        self.issue_tracker: Optional[str] = issue_tracker
+
+    # new_from_node():
+    #
+    # Creates a SourceProvenance() from a YAML loaded node.
+    #
+    # Args:
+    #    node: The configuration node describing the spec.
+    #
+    # Returns:
+    #    The described SourceProvenance instance.
+    #
+    # Raises:
+    #    LoadError: If the node is malformed.
+    #
+    @classmethod
+    def new_from_node(cls, node: MappingNode) -> "SourceProvenance":
+        node.validate_keys(
+            [
+                "homepage",
+                "issue-tracker",
+            ]
+        )
+
+        homepage: Optional[str] = node.get_str("homepage", None)
+        issue_tracker: Optional[str] = node.get_str("issue-tracker", None)
+
+        return cls(
+            homepage,
+            issue_tracker,
+        )
+
+
 # _Scope():
 #
 # Defines the scope of dependencies to include for a given element
@@ -324,7 +372,9 @@ class _PipelineSelection(FastEnum):
 class _ProjectInformation:
     def __init__(self, project, provenance_node, duplicates, internal):
         self.project = project
-        self.provenance = provenance_node.get_provenance() if provenance_node else None
+        self.provenance = (
+            provenance_node.get_provenance() if provenance_node else None
+        )
         self.duplicates = duplicates
         self.internal = internal
 
@@ -388,42 +438,6 @@ class _SourceMirror:
             aliases[alias] = uris.as_str_list()
 
         return cls(name, aliases)
-
-
-# _SourceProvenance()
-#
-# A simple object describing user provided source provenance information
-#
-# Args:
-#    homepage: The project homepage URL
-#    issue_tracker: The project issue reporting URL
-#
-class _SourceProvenance:
-    def __init__(self, homepage: Optional[str], issue_tracker: Optional[str]):
-        self.homepage: Optional[str] = homepage
-        self.issue_tracker: Optional[str] = issue_tracker
-
-    # new_from_node():
-    #
-    # Creates a _SourceProvenance() from a YAML loaded node.
-    #
-    # Args:
-    #    node: The configuration node describing the spec.
-    #
-    # Returns:
-    #    The described _SourceProvenance instance.
-    #
-    # Raises:
-    #    LoadError: If the node is malformed.
-    #
-    @classmethod
-    def new_from_node(cls, node: MappingNode) -> "_SourceProvenance":
-        node.validate_keys(["homepage", "issue-tracker"])
-
-        homepage: Optional[str] = node.get_str("homepage", None)
-        issue_tracker: Optional[str] = node.get_str("issue-tracker", None)
-
-        return cls(homepage, issue_tracker)
 
 
 ########################################
