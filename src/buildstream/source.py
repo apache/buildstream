@@ -378,7 +378,7 @@ from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
 from .sourcemirror import SourceMirror
-from .types import SourceRef, CoreWarnings, FastEnum, _SourceProvenance
+from .types import SourceRef, CoreWarnings, FastEnum, SourceProvenance
 from ._exceptions import BstError, ImplError, PluginError
 from .exceptions import ErrorDomain
 from ._loader.metasource import MetaSource
@@ -825,8 +825,8 @@ class Source(Plugin):
         self._directory = meta.directory  # Staging relative directory
         self.__variables = variables  # The variables used to resolve the source's config
         self.__provenance: Optional[
-            _SourceProvenance
-        ] = meta.provenance  # The _SourceProvenance for general user provided SourceInfo
+            SourceProvenance
+        ] = meta.provenance # The SourceProvenance for general user provided SourceInfo
 
         self.__key = None  # Cache key for source
 
@@ -1367,6 +1367,7 @@ class Source(Plugin):
         version: str,
         *,
         version_guess: Optional[str] = None,
+        source_provenance_attrs: Optional[_SourceProvenance] = None,
         extra_data: Optional[Dict[str, str]] = None,
     ) -> SourceInfo:
         """Create a :class:`.SourceInfo` object
@@ -1392,9 +1393,18 @@ class Source(Plugin):
         """
         homepage = None
         issue_tracker = None
-        if self.__provenance is not None:
-            homepage = self.__provenance.homepage
-            issue_tracker = self.__provenance.issue_tracker
+
+        if (
+            self.__provenance is not None
+            or source_provenance_attrs is not None
+        ):
+            if source_provenance_attrs is None:
+                provenance_source = self.__provenance
+            else:
+                provenance_source = source_provenance_attrs
+
+            homepage = provenance_source.homepage
+            issue_tracker = provenance_source.issue_tracker
 
         return SourceInfo(
             self.get_kind(),

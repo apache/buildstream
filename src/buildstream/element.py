@@ -90,7 +90,7 @@ from .plugin import Plugin
 from .sandbox import _SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey, _SourceProvenance
+from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey, SourceProvenance
 from ._artifact import Artifact
 from ._elementproxy import ElementProxy
 from ._elementsources import ElementSources
@@ -2639,7 +2639,7 @@ class Element(Plugin):
                 provenance = None
                 if provenance_node:
                     del source[Symbol.PROVENANCE]
-                    provenance = _SourceProvenance.new_from_node(provenance_node)
+                    provenance = SourceProvenance.new_from_node(provenance_node)
 
                 meta_source = MetaSource(
                     self.name,
