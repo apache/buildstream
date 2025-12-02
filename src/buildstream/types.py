@@ -395,13 +395,41 @@ class _SourceMirror:
 # A simple object describing user provided source provenance information
 #
 # Args:
-#    homepage: The project homepage URL
-#    issue_tracker: The project issue reporting URL
-#
+#    concluded_license: The license of the source as declared by the authors
+#    copyright_text: Copyright notice of the source
+#    declared_license: Licences that have been officially declared for the source
+#    description: Description of the source
+#    external_reference: Reference to external inforamtion or assets relevant to the source
+#    homepage: The source's homepage URL
+#    issue_tracker: The source's issue reporting URL
+#    name: Name of the source
+#    originator: The name of the source's originators/authors
+#    supplier: The name of the source's distributor
+# 
 class _SourceProvenance:
-    def __init__(self, homepage: Optional[str], issue_tracker: Optional[str]):
+    def __init__(
+        self,
+        concluded_license: Optional[str],
+        copyright_text: Optional[str],
+        declared_license: Optional[str],
+        description: Optional[str],
+        external_reference: Optional[str],
+        homepage: Optional[str],
+        issue_tracker: Optional[str],
+        name: Optional[str],
+        originator: Optional[str],
+        supplier: Optional[str],
+    ):
+        self.concluded_license: Optional[str] = concluded_license
+        self.copyright_text: Optional[str] = copyright_text
+        self.declared_license: Optional[str] = declared_license
+        self.description: Optional[str] = description
+        self.external_reference: Optional[str] = external_reference
         self.homepage: Optional[str] = homepage
         self.issue_tracker: Optional[str] = issue_tracker
+        self.name: Optional[str] = name
+        self.originator: Optional[str] = originator
+        self.supplier: Optional[str] = supplier
 
     # new_from_node():
     #
@@ -418,12 +446,44 @@ class _SourceProvenance:
     #
     @classmethod
     def new_from_node(cls, node: MappingNode) -> "_SourceProvenance":
-        node.validate_keys(["homepage", "issue-tracker"])
+        node.validate_keys(
+            [
+                "concluded-license",
+                "copyright-text",
+                "declared-license",
+                "external-reference",
+                "description",
+                "homepage",
+                "issue-tracker",
+                "name",
+                "originator",
+                "supplier",
+            ]
+        )
 
+        concluded_license: Optional[str] = node.get_str("concluded-license", None)
+        copyright_text: Optional[str] = node.get_str("copyright-text", None)
+        declared_license: Optional[str] = node.get_str("declared-license", None)
+        description: Optional[str] = node.get_str("description", None)
+        external_reference: Optional[str] = node.get_str("external-reference", None)
         homepage: Optional[str] = node.get_str("homepage", None)
         issue_tracker: Optional[str] = node.get_str("issue-tracker", None)
+        name: Optional[str] = node.get_str("name", None)
+        originator: Optional[str] = node.get_str("originator", None)
+        supplier: Optional[str] = node.get_str("supplier", None)
 
-        return cls(homepage, issue_tracker)
+        return cls(
+            concluded_license,
+            copyright_text,
+            declared_license,
+            description,
+            external_reference,
+            homepage,
+            issue_tracker,
+            name,
+            originator,
+            supplier,
+        )
 
 
 ########################################

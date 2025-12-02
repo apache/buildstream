@@ -553,8 +553,16 @@ class SourceInfo:
         self,
         kind: str,
         url: str,
+        concluded_license: Optional[str],
+        copyright_text: Optional[str],
+        declared_license: Optional[str],
+        description: Optional[str],
+        external_reference: Optional[str],
         homepage: Optional[str],
         issue_tracker: Optional[str],
+        name: Optional[str],
+        originator: Optional[str],
+        supplier: Optional[str],
         medium: Union[SourceInfoMedium, str],
         version_type: Union[SourceVersionType, str],
         version: str,
@@ -572,14 +580,54 @@ class SourceInfo:
         The url of the source input
         """
 
+        self.concluded_license: Optional[str] = concluded_license
+        """
+        The license of the source project as declared by the authors
+        """
+
+        self.copyright_text: Optional[str] = copyright_text
+        """
+        Copyright notice of the source
+        """
+
+        self.declared_license: Optional[str] = declared_license
+        """
+        Licences that have been officially declared for the source
+        """
+
+        self.description: Optional[str] = description
+        """
+        Description of the source
+        """
+
+        self.external_reference: Optional[str] = external_reference
+        """
+        Reference to an external source of information or assets relevant to the source
+        """
+
         self.homepage: Optional[str] = homepage
         """
-        The project homepage URL
+        The source's homepage URL
         """
 
         self.issue_tracker: Optional[str] = issue_tracker
         """
-        The project issue tracking URL
+        The source's issue tracking URL
+        """
+
+        self.name: Optional[str] = name
+        """
+        Name of the source
+        """
+
+        self.originator: Optional[str] = originator
+        """
+        The name of the source's originators/owners
+        """
+
+        self.supplier: Optional[str] = supplier
+        """
+        The name of the source's distributor
         """
 
         self.medium: Union[SourceInfoMedium, str] = medium
@@ -642,10 +690,22 @@ class SourceInfo:
             "url": self.url,
         }
 
-        if self.homepage is not None:
-            version_info["homepage"] = self.homepage
-        if self.issue_tracker is not None:
-            version_info["issue-tracker"] = self.issue_tracker
+        source_info_extra_fields = [
+            "concluded-license",
+            "copyright-text",
+            "declared-license",
+            "description",
+            "external-reference",
+            "homepage",
+            "issue-tracker",
+            "name",
+            "originator",
+            "supplier",
+        ]
+
+        for field in source_info_extra_fields:
+            if (value := getattr(self, field.replace("-", "_"))) is not None:
+                version_info[field] = value
 
         version_info["medium"] = medium_str
         version_info["version-type"] = version_type_str
@@ -1390,17 +1450,41 @@ class Source(Plugin):
 
         *Since: 2.5*
         """
+        concluded_license = None
+        copyright_text = None
+        declared_license = None
+        description = None
+        external_reference = None
         homepage = None
         issue_tracker = None
+        name = None
+        originator = None
+        supplier = None
         if self.__provenance is not None:
+            concluded_license = self.__provenance.concluded_license
+            copyright_text = self.__provenance.copyright_text
+            declared_license = self.__provenance.declared_license
+            description = self.__provenance.description
+            external_reference = self.__provenance.external_reference
             homepage = self.__provenance.homepage
             issue_tracker = self.__provenance.issue_tracker
+            name = self.__provenance.name
+            originator = self.__provenance.originator
+            supplier = self.__provenance.supplier
 
         return SourceInfo(
             self.get_kind(),
             url,
+            concluded_license,
+            copyright_text,
+            declared_license,
+            description,
+            external_reference,
             homepage,
             issue_tracker,
+            name,
+            originator,
+            supplier,
             medium,
             version_type,
             version,
