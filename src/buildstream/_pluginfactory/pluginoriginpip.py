@@ -11,7 +11,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-import os
 from importlib.util import find_spec
 from pathlib import Path
 
