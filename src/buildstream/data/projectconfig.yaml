@@ -175,6 +175,12 @@ shell:
   #
   command: [ 'sh', '-i' ]
 
+# Define the set of fields accepted in `provenance` dictionaries of sources.
+#
+source-provenance-fields:
+  homepage: "The project homepage URL"
+  issue-tracker: "The project's issue tracking URL"
+
 # Defaults for bst commands
 #
 defaults:

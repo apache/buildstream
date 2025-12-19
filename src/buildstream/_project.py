@@ -125,6 +125,8 @@ class Project:
         self.sandbox: Optional[MappingNode] = None
         self.splits: Optional[MappingNode] = None
 
+        self.source_provenance_fields: Optional[MappingNode] = None  # Source provenance fields and their description
+
         #
         # Private members
         #
@@ -726,6 +728,7 @@ class Project:
                 "sources",
                 "source-caches",
                 "junctions",
+                "source-provenance-fields",
                 "(@)",
                 "(?)",
             ]
@@ -1005,6 +1008,8 @@ class Project:
                 mount = _HostMount(path, host_path, optional)
 
             self._shell_host_files.append(mount)
+
+        self.source_provenance_fields: config.get_mapping("source-provenance-fields")
 
     # _load_pass():
     #

@@ -48,6 +48,8 @@ any Source.
 
     The ``issue-tracker`` attribute can be used to specify the project's issue tracking URL
 
+TODO: document that fields can be configured in project
+
   *Since: 2.5*
 
 
@@ -553,8 +555,7 @@ class SourceInfo:
         self,
         kind: str,
         url: str,
-        homepage: Optional[str],
-        issue_tracker: Optional[str],
+        provenance: Optional[MappingNode],
         medium: Union[SourceInfoMedium, str],
         version_type: Union[SourceVersionType, str],
         version: str,
@@ -572,12 +573,18 @@ class SourceInfo:
         The url of the source input
         """
 
-        self.homepage: Optional[str] = homepage
+        self.provenance = provenance
+        """
+        The optional YAML node with source provenance attributes
+        """
+
+        # TODO
+        self.homepage: Optional[str] = provenance.get("homepage") if provenance else None
         """
         The project homepage URL
         """
 
-        self.issue_tracker: Optional[str] = issue_tracker
+        self.issue_tracker: Optional[str] = provenance.get("issue-tracker") if provenance else None
         """
         The project issue tracking URL
         """
@@ -642,6 +649,7 @@ class SourceInfo:
             "url": self.url,
         }
 
+        # TODO serialize project-defined provenance fields (need to keep homepage/issue-tracker [also] at the top-level for backward compat)
         if self.homepage is not None:
             version_info["homepage"] = self.homepage
         if self.issue_tracker is not None:
@@ -1393,23 +1401,18 @@ class Source(Plugin):
 
         *Since: 2.5*
         """
-        homepage = None
-        issue_tracker = None
+        project = self._get_project()
 
+        # TODO: Ensure provenance node keys are valid and values are all strings; same in element if we drop _SourceProvenance
         if provenance_node is not None:
-            provenance: Optional[_SourceProvenance] = _SourceProvenance.new_from_node(provenance_node)
+            provenance: Optional[_SourceProvenance] = _SourceProvenance.new_from_node(project, provenance_node)
         else:
             provenance = self.__provenance
-
-        if provenance is not None:
-            homepage = provenance.homepage
-            issue_tracker = provenance.issue_tracker
 
         return SourceInfo(
             self.get_kind(),
             url,
-            homepage,
-            issue_tracker,
+            provenance,
             medium,
             version_type,
             version,

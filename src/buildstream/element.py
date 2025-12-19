@@ -2639,7 +2639,7 @@ class Element(Plugin):
                 provenance = None
                 if provenance_node:
                     del source[Symbol.PROVENANCE]
-                    provenance = _SourceProvenance.new_from_node(provenance_node)
+                    provenance = _SourceProvenance.new_from_node(project, provenance_node)
 
                 meta_source = MetaSource(
                     self.name,

@@ -417,9 +417,10 @@ class _SourceProvenance:
     #    LoadError: If the node is malformed.
     #
     @classmethod
-    def new_from_node(cls, node: MappingNode) -> "_SourceProvenance":
-        node.validate_keys(["homepage", "issue-tracker"])
+    def new_from_node(cls, project: Project, node: MappingNode) -> "_SourceProvenance":
+        node.validate_keys(project.source_provenance_fields.keys())
 
+        # TODO: project-configured fields
         homepage: Optional[str] = node.get_str("homepage", None)
         issue_tracker: Optional[str] = node.get_str("issue-tracker", None)
 
