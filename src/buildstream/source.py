@@ -1367,6 +1367,7 @@ class Source(Plugin):
         version: str,
         *,
         version_guess: Optional[str] = None,
+        provenance_node: Optional[MappingNode] = None,
         extra_data: Optional[Dict[str, str]] = None,
     ) -> SourceInfo:
         """Create a :class:`.SourceInfo` object
@@ -1386,15 +1387,23 @@ class Source(Plugin):
                          choice depicting the type of version.
            version: A string which represents a unique version of this source input
            version_guess: An optional string representing the guessed human readable version
+           provenance_node: The optional YAML node with source provenance attributes,
+                            defaults to the provenance specified at the top level of the source.
            extra_data: Additional plugin defined key/values
 
         *Since: 2.5*
         """
         homepage = None
         issue_tracker = None
-        if self.__provenance is not None:
-            homepage = self.__provenance.homepage
-            issue_tracker = self.__provenance.issue_tracker
+
+        if provenance_node is not None:
+            provenance: Optional[_SourceProvenance] = _SourceProvenance.new_from_node(provenance_node)
+        else:
+            provenance = self.__provenance
+
+        if provenance is not None:
+            homepage = provenance.homepage
+            issue_tracker = provenance.issue_tracker
 
         return SourceInfo(
             self.get_kind(),
