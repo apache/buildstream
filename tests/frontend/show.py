@@ -814,3 +814,33 @@ def test_source_info_workspace(cli, datafiles, tmpdir):
 
     # There is no version guessing for a workspace
     assert source_info.get_str("version-guess", None) is None
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "source-info"))
+def test_multi_source_info(cli, datafiles):
+    project = str(datafiles)
+    result = cli.run(
+        project=project, silent=True, args=["show", "--format", "%{name}:\n%{source-info}", "multisource.bst"]
+    )
+    result.assert_success()
+
+    loaded = _yaml.load_data(result.output)
+    sources = loaded.get_sequence("multisource.bst")
+
+    source_info = sources.mapping_at(0)
+    assert source_info.get_str("kind") == "multisource"
+    assert source_info.get_str("url") == "http://ponyfarm.com/ponies"
+    assert source_info.get_str("medium") == "pony-ride"
+    assert source_info.get_str("version-type") == "pony-age"
+    assert source_info.get_str("version") == "1234567"
+    assert source_info.get_str("version-guess", None) == "12"
+    assert "homepage" not in source_info
+
+    source_info = sources.mapping_at(1)
+    assert source_info.get_str("kind") == "multisource"
+    assert source_info.get_str("url") == "http://ponyfarm.com/happy"
+    assert source_info.get_str("medium") == "pony-ride"
+    assert source_info.get_str("version-type") == "pony-age"
+    assert source_info.get_str("version") == "1234567"
+    assert source_info.get_str("version-guess", None) == "12"
+    assert source_info.get_str("homepage") == "http://happy.ponyfarm.com"
