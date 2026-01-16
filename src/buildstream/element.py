@@ -85,12 +85,12 @@ from .utils import FileListResult, BST_ARBITRARY_TIMESTAMP
 from . import utils
 from . import _cachekey
 from . import _site
-from .node import Node
+from .node import Node, MappingNode, ScalarNode
 from .plugin import Plugin
 from .sandbox import _SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey, _SourceProvenance
+from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey
 from ._artifact import Artifact
 from ._elementproxy import ElementProxy
 from ._elementsources import ElementSources
@@ -102,7 +102,7 @@ from .storage._filebaseddirectory import FileBasedDirectory
 
 if TYPE_CHECKING:
     from typing import Tuple
-    from .node import MappingNode, ScalarNode, SequenceNode
+    from .node import SequenceNode
     from .types import SourceRef
 
     # pylint: disable=cyclic-import
@@ -2635,11 +2635,24 @@ class Element(Plugin):
                     del source[Symbol.DIRECTORY]
 
                 # Provenance is optional
-                provenance_node = source.get_mapping(Symbol.PROVENANCE, default=None)
-                provenance = None
+                provenance_node: MappingNode = source.get_mapping(Symbol.PROVENANCE, default=None)
                 if provenance_node:
                     del source[Symbol.PROVENANCE]
-                    provenance = _SourceProvenance.new_from_node(provenance_node)
+                    try:
+                        provenance_node.validate_keys(project.source_provenance_attributes.keys())
+                    except LoadError as E:
+                        raise LoadError(
+                            f"Specified source provenance attribute not defined in project config\n {E}",
+                            LoadErrorReason.UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE,
+                        )
+
+                    # make sure everything is a string
+                    for key, value in provenance_node.items():
+                        if not isinstance(value, ScalarNode):
+                            raise LoadError(
+                                f"{value}: Expected string for the value of provenance attribute '{key}'",
+                                LoadErrorReason.INVALID_DATA,
+                            )
 
                 meta_source = MetaSource(
                     self.name,
@@ -2647,7 +2660,7 @@ class Element(Plugin):
                     self.get_kind(),
                     kind.as_str(),
                     directory,
-                    provenance,
+                    provenance_node,
                     source,
                     load_element.first_pass,
                 )
