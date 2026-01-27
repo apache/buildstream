@@ -759,6 +759,14 @@ class Source(Plugin):
     # The defaults from the project
     __defaults: Optional[Dict[str, Any]] = None
 
+    BST_CUSTOM_SOURCE_PROVENANCE = False
+    """Whether multiple sources' provenance information are provided
+
+    Used primarily to override the usage of top-level source
+    provenance of a source where individual sub-source's
+    provenance should instead be provided
+    """
+
     BST_REQUIRES_PREVIOUS_SOURCES_TRACK = False
     """Whether access to previous sources is required during track
 
@@ -827,6 +835,12 @@ class Source(Plugin):
         self.__provenance: Optional[
             _SourceProvenance
         ] = meta.provenance  # The _SourceProvenance for general user provided SourceInfo
+
+        if self.__provenance is not None and self.BST_CUSTOM_SOURCE_PROVENANCE:
+            raise SourceError(
+                f"{self._get_provenance()} Custom source provenance plugin: Refusing to use top level source provenance",
+                reason="top-level-provenance-on-custom-implementation",
+            )
 
         self.__key = None  # Cache key for source
 
@@ -1368,6 +1382,7 @@ class Source(Plugin):
         *,
         version_guess: Optional[str] = None,
         extra_data: Optional[Dict[str, str]] = None,
+        provenance_node: Optional[MappingNode] = None,
     ) -> SourceInfo:
         """Create a :class:`.SourceInfo` object
 
@@ -1387,14 +1402,22 @@ class Source(Plugin):
            version: A string which represents a unique version of this source input
            version_guess: An optional string representing the guessed human readable version
            extra_data: Additional plugin defined key/values
+           provenance_node: An optional :class:`Node <buildstream.node.Node>` with source provenance attributes,
+                            defaults to the provenance specified at the top level of the source.
 
         *Since: 2.5*
         """
         homepage = None
         issue_tracker = None
-        if self.__provenance is not None:
-            homepage = self.__provenance.homepage
-            issue_tracker = self.__provenance.issue_tracker
+
+        if provenance_node is not None:
+            source_provenance: Optional[_SourceProvenance] = _SourceProvenance.new_from_node(provenance_node)
+        else:
+            source_provenance = self.__provenance
+
+        if source_provenance is not None:
+            homepage = source_provenance.homepage
+            issue_tracker = source_provenance.issue_tracker
 
         return SourceInfo(
             self.get_kind(),
