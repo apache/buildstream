@@ -1766,7 +1766,7 @@ class Stream:
             # rely on state changes during processing to determine which elements
             # must be processed.
             #
-            if selection == _PipelineSelection.NONE:
+            if selection in (_PipelineSelection.NONE, _PipelineSelection.RUN):
                 required_elements = elements
             elif selection == _PipelineSelection.BUILD:
                 required_elements = list(_pipeline.dependencies(elements, _Scope.BUILD, recurse=False))
