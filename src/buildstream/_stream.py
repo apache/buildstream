@@ -1775,8 +1775,13 @@ class Stream:
         if not required_elements:
             required_elements = selected
 
+        if selection == _PipelineSelection.NONE:
+            scope = _Scope.NONE
+        else:
+            scope = _Scope.RUN
+
         for element in required_elements:
-            element._set_required()
+            element._set_required(scope)
 
         return selected
 
