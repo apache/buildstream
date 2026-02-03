@@ -155,3 +155,8 @@ class LoadErrorReason(Enum):
     This warning will be produced when a filename for a target contains invalid
     characters in its name.
     """
+
+    UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE = 29
+    """
+    Thee source provenance attribute specified was not defined in the project config
+    """

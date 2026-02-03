@@ -125,6 +125,10 @@ class Project:
         self.sandbox: Optional[MappingNode] = None
         self.splits: Optional[MappingNode] = None
 
+        self.source_provenance_attributes: Optional[
+            MappingNode
+        ] = None  # Source provenance attributes and their description
+
         #
         # Private members
         #
@@ -726,6 +730,7 @@ class Project:
                 "sources",
                 "source-caches",
                 "junctions",
+                "source-provenance-attributes",
                 "(@)",
                 "(?)",
             ]
@@ -1005,6 +1010,13 @@ class Project:
                 mount = _HostMount(path, host_path, optional)
 
             self._shell_host_files.append(mount)
+
+        # We don't want to combine the source provenance attributes that a project defines with the defaults
+        # If the project config defines source-provenance-attributes use that, otherwise fall back to the defaults
+        # This is purely to maintain backwards compatibility with homepage and issue-tracker being available
+        self.source_provenance_attributes = project_conf_second_pass.get_mapping(
+            "source-provenance-attributes", None
+        ) or config.get_mapping("source-provenance-attributes")
 
     # _load_pass():
     #
