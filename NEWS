@@ -1,4 +1,27 @@
 =================
+buildstream 2.7.0
+=================
+
+  o Support defining source provenance attributes in project.conf (#2099)
+
+  o Allow multi-source plugins to provide source provenance info per source (#2098)
+
+  o Don't require runtime deps when building projects with `--deps none` (#2102)
+
+  o Add `--artifact-remote` and `--ignore-project-artifact-remotes` options to
+    `bst artifact show` (#2088)
+
+  o Fix build of projects with multiple link elements with the same target (#2097)
+
+  o Fix filesystem write access in `bst shell` with a cached build tree (#2093)
+
+  o Artifact cache fixes to support buildgrid-asset as cache server (#2091)
+
+  o Fix pip plugins installed in editable mode (#2084)
+
+  o Drop support for Python 3.9 (#2085)
+
+=================
 buildstream 2.6.0
 =================
 
