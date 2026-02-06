@@ -62,6 +62,7 @@ class Queue:
     # Resources this queues' jobs want
     resources = []  # type: List[int]
     log_to_file = True
+    session_elements = None
 
     def __init__(self, scheduler, *, imperative=False):
 
@@ -256,6 +257,17 @@ class Queue:
     def set_required_element_check(self):
         self._required_element_check = True
 
+    # set_session_elements()
+    #
+    # This passes a reference to a set used to keep track of the
+    # elements enqued. This is used in the first queue to determine
+    # which elements are actually considered in the current session.
+    #
+    # Args:
+    #    session_elements (set): a set to put session elements
+    def set_session_elements(self, session_elements):
+        self.session_elements = session_elements
+
     # any_failed_elements()
     #
     # Returns whether any elements in this queue have failed their jobs
@@ -381,6 +393,9 @@ class Queue:
     #    element (Element): The Element to enqueue
     #
     def _enqueue_element(self, element):
+        if self.session_elements is not None:
+            self.session_elements.add(element)
+
         status = self.status(element)
 
         if status == QueueStatus.SKIP:

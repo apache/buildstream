@@ -72,7 +72,7 @@ class Stream:
         # Public members
         #
         self.targets = []  # Resolved target elements
-        self.session_elements = []  # List of elements being processed this session
+        self.session_elements = set()  # Set of elements being processed this session
         self.total_elements = []  # Total list of elements based on targets
         self.queues = []  # Queue objects
 
@@ -1802,7 +1802,7 @@ class Stream:
     #
     def _reset(self):
         self._scheduler.clear_queues()
-        self.session_elements = []
+        self.session_elements = set()
         self.total_elements = []
 
     # _add_queue()
@@ -1817,6 +1817,9 @@ class Stream:
             # First non-track queue
             queue.set_required_element_check()
 
+        if not self.queues:
+            queue.set_session_elements(self.session_elements)
+
         self.queues.append(queue)
 
     # _enqueue_plan()
@@ -1830,7 +1833,6 @@ class Stream:
     def _enqueue_plan(self, plan, *, queue=None):
         queue = queue or self.queues[0]
         queue.enqueue(plan)
-        self.session_elements += plan
 
     # _run()
     #
