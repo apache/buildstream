@@ -381,6 +381,7 @@ Attributes
   values for this attribute are:
 
   * ``none``: Only build elements required to generate the expected target artifacts
+  * ``run``: Build required elements and their their runtime dependencies
   * ``all``: Build elements even if they are build dependencies of artifacts which are already cached
 
 

@@ -455,7 +455,7 @@ def init(app, project_name, min_version, element_path, force, target_directory):
     default=None,
     type=FastEnumType(
         _PipelineSelection,
-        [_PipelineSelection.NONE, _PipelineSelection.BUILD, _PipelineSelection.ALL],
+        [_PipelineSelection.NONE, _PipelineSelection.BUILD, _PipelineSelection.RUN, _PipelineSelection.ALL],
     ),
     help="The dependencies to build",
 )
@@ -513,6 +513,7 @@ def build(
     \b
         none:  No dependencies, just the element itself
         build: Build time dependencies, excluding the element itself
+        run:   The element and its runtime dependencies
         all:   All dependencies
 
     Dependencies that are consequently required to build the requested

@@ -581,7 +581,15 @@ def test_pull_artifact(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_dynamic_build_plan(cli, tmpdir, datafiles):
+@pytest.mark.parametrize(
+    "deps, expected_pulled_elements, expected_states",
+    [
+        ("none", ["checkout-deps.bst"], ("cached", "buildable", "buildable")),
+        ("run", ["checkout-deps.bst", "import-bin.bst"], ("cached", "buildable", "cached")),
+        ("all", ["checkout-deps.bst", "import-bin.bst", "import-dev.bst"], ("cached", "cached", "cached")),
+    ],
+)
+def test_dynamic_build_plan(cli, tmpdir, datafiles, deps, expected_pulled_elements, expected_states):
     project = str(datafiles)
     target = "checkout-deps.bst"
     build_dep = "import-dev.bst"
@@ -610,18 +618,14 @@ def test_dynamic_build_plan(cli, tmpdir, datafiles):
         assert not any(states[e] == "cached" for e in all_elements)
 
         # Now try to rebuild target
-        result = cli.run(project=project, args=["build", target])
+        result = cli.run(project=project, args=["build", "--deps", deps, target])
         result.assert_success()
 
-        # Assert that target and runtime dependency were pulled
-        # but build dependency was not pulled as it wasn't needed
+        # Assert that we only pulled the needed dependencies
         # (dynamic build plan).
-        assert target in result.get_pulled_elements()
-        assert runtime_dep in result.get_pulled_elements()
-        assert build_dep not in result.get_pulled_elements()
+        assert sorted(result.get_pulled_elements()) == expected_pulled_elements
 
         # And assert that the pulled elements are again in the local cache
         states = cli.get_element_states(project, all_elements)
-        assert states[target] == "cached"
-        assert states[runtime_dep] == "cached"
-        assert states[build_dep] != "cached"
+        states_flattended = (states[target], states[build_dep], states[runtime_dep])
+        assert states_flattended == expected_states
