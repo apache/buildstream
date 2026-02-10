@@ -29,10 +29,10 @@ installed.
 import argparse
 import subprocess
 import re
+import json
 import urllib.parse
 
 from graphviz import Digraph
-from ruamel.yaml import YAML
 
 def parse_args():
     '''Handle parsing of command line arguments.
@@ -72,34 +72,25 @@ def unique_node_name(s):
     return urllib.parse.quote_plus(s)
 
 
-def parse_graph(lines):
+def parse_graph(output):
     '''Return nodes and edges of the parsed grpah.
 
     Args:
-       lines: List of lines in format 'NAME|BUILD-DEPS|RUNTIME-DEPS'
+       output: json output
 
     Returns:
        Tuple of format (nodes,build_deps,runtime_deps)
        Each member of build_deps and runtime_deps is also a tuple.
     '''
-    parser = YAML(typ="safe")
+    project = json.loads(output)
     nodes = set()
     build_deps = set()
     runtime_deps = set()
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        # It is safe to split on '|' as it is not a valid character for
-        # element names.
-        name, build_dep, runtime_dep = line.split('|')
-
-        build_dep = parser.load(build_dep)
-        runtime_dep = parser.load(runtime_dep)
-
+    for element in project["elements"]:
+        name = element["name"]
         nodes.add(name)
-        [build_deps.add((name, dep)) for dep in build_dep if dep]
-        [runtime_deps.add((name, dep)) for dep in runtime_dep if dep]
+        [build_deps.add((name, dep)) for dep in element.get("build_dependencies", [])]
+        [runtime_deps.add((name, dep)) for dep in element.get("runtime_dependencies", [])]
 
     return nodes, build_deps, runtime_deps
 
@@ -127,13 +118,13 @@ def generate_graph(nodes, build_deps, runtime_deps):
 
 def main():
     args = parse_args()
-    cmd = ['bst', 'show', '--format', '%{name}|%{build-deps}|%{runtime-deps}||']
+    cmd = ['bst', 'inspect']
     if 'element' in args:
         cmd += args.element
-    graph_lines = subprocess.check_output(cmd, universal_newlines=True)
+    json_output = subprocess.check_output(cmd, universal_newlines=True)
     # NOTE: We generate nodes and edges before giving them to graphviz as
     # the library does not de-deuplicate them.
-    nodes, build_deps, runtime_deps = parse_graph(re.split(r"\|\|", graph_lines))
+    nodes, build_deps, runtime_deps = parse_graph(json_output)
     graph = generate_graph(nodes, build_deps, runtime_deps)
 
     print(graph.source)

@@ -22,7 +22,7 @@ from buildstream._testing import cli  # pylint: disable=unused-import
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "completions")
 
-MAIN_COMMANDS = ["artifact ", "build ", "help ", "init ", "shell ", "show ", "source ", "workspace "]
+MAIN_COMMANDS = ["artifact ", "build ", "help ", "init ", "inspect ", "shell ", "show ", "source ", "workspace "]
 
 MAIN_OPTIONS = [
     "--builders ",
@@ -236,6 +236,7 @@ def test_option_directory(datafiles, cli, cmd, word_idx, expected, subdir):
     [
         # When running in the project directory
         ("project", "bst show ", 2, [e + " " for e in PROJECT_ELEMENTS], None),
+        ("project", "bst inspect ", 2, [e + " " for e in PROJECT_ELEMENTS], None),
         (
             "project",
             "bst build com",
@@ -335,7 +336,7 @@ def test_argument_element_invalid(datafiles, cli, project, cmd, word_idx, expect
         ("bst he", 1, ["help "]),
         ("bst help ", 2, MAIN_COMMANDS),
         ("bst help artifact ", 3, ARTIFACT_COMMANDS),
-        ("bst help in", 2, ["init "]),
+        ("bst help in", 2, ["init ", "inspect "]),
         ("bst help source ", 3, SOURCE_COMMANDS),
         ("bst help artifact ", 3, ARTIFACT_COMMANDS),
         ("bst help w", 2, ["workspace "]),

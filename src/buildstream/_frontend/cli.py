@@ -25,6 +25,7 @@ from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection, _HostMount, _Scope
 from .._remotespec import RemoteSpec, RemoteSpecPurpose
 from ..utils import UtilError
+from .inspect import Inspector
 
 if TYPE_CHECKING or click.Command.__bases__ == (object,):
     # Click >= 8.2
@@ -540,6 +541,74 @@ def build(
             ignore_project_source_remotes=ignore_project_source_remotes,
             retry_failed=retry_failed,
         )
+
+
+##################################################################
+#                           Inspect Command                      #
+##################################################################
+@cli.command(name="inspect", short_help="Inspect Project Information")
+@click.option(
+    "--except", "except_", multiple=True, type=click.Path(readable=False), help="Except certain dependencies"
+)
+@click.option(
+    "--deps",
+    "-d",
+    default=_PipelineSelection.ALL,
+    show_default=True,
+    type=FastEnumType(
+        _PipelineSelection,
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.RUN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.ALL,
+        ],
+    ),
+    help="The dependencies to show",
+)
+@click.argument("elements", nargs=-1, type=click.Path(readable=False))
+@click.pass_obj
+def inspect(app, except_, elements, deps):
+    """Access structured data about a given buildstream project and it's computed elements.
+
+    Specifying no elements will result in showing the default targets
+    of the project. If no default targets are configured, all project
+    elements will be shown.
+
+    When this command is executed from a workspace directory, the default
+    is to show the workspace element.
+
+    By default this will show all of the dependencies of the
+    specified target element.
+
+    Specify ``--deps`` to control which elements to show:
+
+    \b
+        none:  No dependencies, just the element itself
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
+        all:   All dependencies
+
+    Examples:
+
+        # A specific target (glob pattern)
+        \n
+            bst inspect public/*.bst
+
+
+        # With a dependency target
+        \n
+            bst inspect -d run
+
+
+        # Show each remote file source (with the help of jq)
+        \n
+            bst inspect -d all | jq '.elements.[].sources | select( . != null ) | .[] | select( .medium == "remote-file")
+
+    """
+    with app.initialized():
+        inspector = Inspector(app.stream, app.project, app.context)
+        inspector.dump_to_stdout(elements, except_=except_, selection=deps)
 
 
 ##################################################################
