@@ -1,0 +1,212 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2. Workspaces and subprojects &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="3. Subproject includes" href="junction-includes.html" />
+    <link rel="prev" title="1. Junction elements" href="junction-elements.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing from Source</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../main_using.html">Using</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../using_tutorial.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_developing.html">Developing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_handling_files.html">Handling files</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../using_junctions.html">Combining projects</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="junction-elements.html">1. Junction elements</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">2. Workspaces and subprojects</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#workspacing-a-junction">2.1. Workspacing a junction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cross-junction-workspaces">2.2. Cross-junction workspaces</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="junction-includes.html">3. Subproject includes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../using_config.html">User configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_commands.html">Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_configuring_cache_server.html">Configuring Cache Servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_configuring_remote_execution.html">Remote Execution Servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_examples.html">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../main_using.html">Using</a></li>
+          <li class="breadcrumb-item"><a href="../using_junctions.html">Combining projects</a></li>
+      <li class="breadcrumb-item active"><span class="section-number">2. </span>Workspaces and subprojects</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/junctions/junction-workspaces.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="workspaces-and-subprojects">
+<span id="junction-workspaces"></span><h1><span class="section-number">2. </span>Workspaces and subprojects<a class="headerlink" href="#workspaces-and-subprojects" title="Link to this heading"></a></h1>
+<p>When developping a project with <a class="reference internal" href="../elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junctions</span></code></a> and
+subprojects, you will probably end up needing to work on the subprojects
+as well.</p>
+<p>Opening <a class="reference internal" href="../developing/workspaces.html#developing-workspaces"><span class="std std-ref">workspaces</span></a> works mostly in the
+same way as it does with subprojects as it does for elements directly
+in your own project.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This section runs commands on the same example project presented in the
+<a class="reference internal" href="junction-elements.html#junction-elements"><span class="std std-ref">previous section</span></a>, which is distributed with BuildStream in the
+<a class="reference external" href="https://github.com/apache/buildstream/tree/master/doc/examples/junctions">doc/examples/junctions</a>
+subdirectory.</p>
+</div>
+<section id="workspacing-a-junction">
+<h2><span class="section-number">2.1. </span>Workspacing a junction<a class="headerlink" href="#workspacing-a-junction" title="Link to this heading"></a></h2>
+<p>Sometimes you need to work on the elements declared in a subproject
+directly. As the downstream consumer of a junctioned project, it makes
+sense that you might need to work on that project as well in order
+to satisfy the needs of your downstream project.</p>
+<p>You can easily work on your subproject by <a class="reference internal" href="../using_commands.html#invoking-workspace-open"><span class="std std-ref">opening a workspace</span></a>
+on the junction element directly.</p>
+<!--
+    WARNING: This file was generated with bst2html.py
+-->
+<div class="highlight" style="font-size:x-small"><pre>
+<span style="color:#C4A000;font-weight:bold">user@host</span>:<span style="color:#3456A4;font-weight:bold">~/junctions</span>$ bst workspace open --directory workspace_subproject hello-junction.bst
+
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Loading elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Loading elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Resolving elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Resolving elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Initializing remote caches
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Initializing remote caches
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Query cache
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Query cache
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#06989A"><span style=""><span style="opacity:0.5">STATUS </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Creating workspace for element hello-junction.bst
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">6d2e5da0</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello-junction.bst            </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Staging sources to /home/user/buildstream/doc/examples/junctions/workspace_subproject
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">        </span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello-junction.bst            </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Staging local files into CAS
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">        </span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello-junction.bst            </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Staging local files into CAS
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">6d2e5da0</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello-junction.bst            </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Staging sources to /home/user/buildstream/doc/examples/junctions/workspace_subproject
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#75507B"><span style=""><span style="opacity:0.5">INFO   </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Created a workspace for element hello-junction.bst
+</pre></div>
+<p>After opening a workspace on the junction element, the open workspace
+is used to define the subproject, allowing you to make changes to
+how the subproject is built, add new dependencies and configure the
+subproject in any way.</p>
+</section>
+<section id="cross-junction-workspaces">
+<h2><span class="section-number">2.2. </span>Cross-junction workspaces<a class="headerlink" href="#cross-junction-workspaces" title="Link to this heading"></a></h2>
+<p>You can open workspaces for elements in the project refered to by the junction
+using the syntax <code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">open</span> <span class="pre">${junction-name}:{element-name}</span></code>. In this example,</p>
+<!--
+    WARNING: This file was generated with bst2html.py
+-->
+<div class="highlight" style="font-size:x-small"><pre>
+<span style="color:#C4A000;font-weight:bold">user@host</span>:<span style="color:#3456A4;font-weight:bold">~/junctions</span>$ bst workspace open --directory workspace_hello hello-junction.bst:hello.bst
+
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Loading elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">ce7c4581</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">   fetch</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello-junction.bst            </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span><span style="color:#C4A000"><span style="opacity:0.5">junctions/hello-junction/ce7c4581-fetch.20260220-150643.log</span></span>
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">ce7c4581</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">   fetch</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello-junction.bst            </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span><span style="color:#C4A000"><span style="opacity:0.5">junctions/hello-junction/ce7c4581-fetch.20260220-150643.log</span></span>
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Loading elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Resolving elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Resolving elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Initializing remote caches
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Initializing remote caches
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Query cache
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Query cache
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#06989A"><span style=""><span style="opacity:0.5">STATUS </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Creating workspace for element hello.bst
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">ffeab612</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello-junction.bst:hello.bst  </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Staging sources to /home/user/buildstream/doc/examples/junctions/workspace_hello
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">ffeab612</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello-junction.bst:hello.bst  </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Staging sources to /home/user/buildstream/doc/examples/junctions/workspace_hello
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#75507B"><span style=""><span style="opacity:0.5">INFO   </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Created a workspace for element hello-junction.bst:hello.bst
+</pre></div>
+<p>This has opened a workspace for the hello.bst element from the autotools project.
+This workspace can now be used as normal.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="junction-elements.html" class="btn btn-neutral float-left" title="1. Junction elements" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="junction-includes.html" class="btn btn-neutral float-right" title="3. Subproject includes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

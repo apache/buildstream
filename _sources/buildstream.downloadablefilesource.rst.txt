@@ -1,0 +1,4 @@
+.. automodule:: buildstream.downloadablefilesource
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,1587 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Commands &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Configuring Cache Servers" href="using_configuring_cache_server.html" />
+    <link rel="prev" title="User configuration" href="using_config.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_using.html">Using</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="using_tutorial.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_developing.html">Developing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_handling_files.html">Handling files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_junctions.html">Combining projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_config.html">User configuration</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Commands</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#commonly-used-parameters">Commonly used parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#remotes">Remotes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#top-level-commands">Top-level commands</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#bst">bst</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bst-artifact">bst artifact</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bst-init">bst init</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bst-build">bst build</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bst-show">bst show</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bst-shell">bst shell</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bst-source">bst source</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bst-workspace">bst workspace</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#artifact-subcommands">Artifact subcommands</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#artifact-names">Artifact names</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#source-subcommands">Source subcommands</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#bst-source-fetch">bst source fetch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bst-source-track">bst source track</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bst-source-push">bst source push</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bst-source-checkout">bst source checkout</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#workspace-subcommands">Workspace subcommands</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#bst-workspace-open">bst workspace open</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bst-workspace-close">bst workspace close</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bst-workspace-reset">bst workspace reset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bst-workspace-list">bst workspace list</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using_configuring_cache_server.html">Configuring Cache Servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_configuring_remote_execution.html">Remote Execution Servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_examples.html">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_using.html">Using</a></li>
+      <li class="breadcrumb-item active">Commands</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/using_commands.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="commands">
+<span id="id1"></span><h1>Commands<a class="headerlink" href="#commands" title="Link to this heading"></a></h1>
+<p>This page contains documentation for each BuildStream command,
+along with their possible options and arguments. Each command can be
+invoked on the command line, where, in most cases, this will be from the
+project’s main directory.</p>
+<section id="commonly-used-parameters">
+<h2>Commonly used parameters<a class="headerlink" href="#commonly-used-parameters" title="Link to this heading"></a></h2>
+<section id="remotes">
+<span id="invoking-specify-remotes"></span><h3>Remotes<a class="headerlink" href="#remotes" title="Link to this heading"></a></h3>
+<p>Remote <a class="reference internal" href="using_config.html#config-cache-servers"><span class="std std-ref">cache servers</span></a> can be specified on the
+command line for commands which may result in communicating with such servers.</p>
+<p>Any command which has arguments to specify a <code class="docutils literal notranslate"><span class="pre">REMOTE</span></code>, such as <code class="docutils literal notranslate"><span class="pre">--artifact-remote</span></code>
+or <code class="docutils literal notranslate"><span class="pre">--source-remote</span></code>, will override whatever was set in the user configuration,
+and will have an accompanying switch which allows the command to decide whether
+to ignore any remote <a class="reference internal" href="format_project.html#project-artifact-cache"><span class="std std-ref">artifact</span></a> or <a class="reference internal" href="format_project.html#project-source-cache"><span class="std std-ref">source</span></a>
+caches suggested by project configuration.</p>
+<p>Remotes can be specified on the command line either as a simple URI, or as
+a comma separated list of key value pairs.</p>
+<p><strong>Specifying a remote using a URI</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>artifact<span class="w"> </span>push<span class="w"> </span>--remote<span class="w"> </span>https://artifacts.com/artifacts:8088<span class="w"> </span>element.bst
+</pre></div>
+</div>
+<p><strong>Specifying a remote using key value pairs</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>build<span class="w"> </span>--artifact-remote<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">url</span><span class="o">=</span>https://artifacts.com/artifacts:8088,type<span class="o">=</span>index,server-cert<span class="o">=</span>~/artifacts.cert<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>element.bst
+</pre></div>
+</div>
+<section id="attributes">
+<h4>Attributes<a class="headerlink" href="#attributes" title="Link to this heading"></a></h4>
+<p>Here is the list attributes which can be spefied when providing a <code class="docutils literal notranslate"><span class="pre">REMOTE</span></code> on the command line:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">url</span></code></p>
+<p>The URL of the remote, possibly including a port number.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">instance-name</span></code></p>
+<p>The instance name of this remote, used for sharding by some implementations.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code></p>
+<p>Whether this remote is to be used for indexing, storage or both, as explained
+in the corresponding <a class="reference internal" href="using_config.html#config-cache-servers"><span class="std std-ref">user configuration documentation</span></a></p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">push</span></code></p>
+<p>Normally one need not specify this, as it is often inferred by the command
+being used. In some cases, like <a class="reference internal" href="#invoking-build"><span class="std std-ref">bst build</span></a>, it can
+be useful to specify multiple remotes, and only allow pushing to some of
+the remotes.</p>
+<p>If unspecified, this is assumed to be <code class="docutils literal notranslate"><span class="pre">True</span></code> and BuildStream will attempt
+to push to the remote, but fallback to only pulling if insufficient credentials
+were provided.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">server-cert</span></code>, <code class="docutils literal notranslate"><span class="pre">client-cert</span></code>, <code class="docutils literal notranslate"><span class="pre">client-key</span></code>:</p>
+<p>These keys specify the attributes of the <a class="reference internal" href="using_config.html#config-remote-auth"><span class="std std-ref">authentication configuration</span></a>.</p>
+<p>When specifying these on the command line, they are interpreted as paths relative
+to the current working directory.</p>
+</li>
+</ul>
+</section>
+</section>
+</section>
+<section id="top-level-commands">
+<h2>Top-level commands<a class="headerlink" href="#top-level-commands" title="Link to this heading"></a></h2>
+<section id="bst">
+<span id="invoking-bst"></span><h3>bst<a class="headerlink" href="#bst" title="Link to this heading"></a></h3>
+<p>Build and manipulate BuildStream projects</p>
+<p>Most of the main options override options in the
+user preferences configuration file.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-version">
+<span class="sig-name descname"><span class="pre">--version</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-version" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-c">
+<span id="cmdoption-bst-config"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--config</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;config&gt;</span></span><a class="headerlink" href="#cmdoption-bst-c" title="Link to this definition"></a></dt>
+<dd><p>Configuration file to use</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-C">
+<span id="cmdoption-bst-directory"></span><span class="sig-name descname"><span class="pre">-C</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--directory</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;directory&gt;</span></span><a class="headerlink" href="#cmdoption-bst-C" title="Link to this definition"></a></dt>
+<dd><p>Project directory (default: current directory)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-on-error">
+<span class="sig-name descname"><span class="pre">--on-error</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;on_error&gt;</span></span><a class="headerlink" href="#cmdoption-bst-on-error" title="Link to this definition"></a></dt>
+<dd><p>What to do when an error is encountered</p>
+<dl class="field-list simple">
+<dt class="field-odd">Options<span class="colon">:</span></dt>
+<dd class="field-odd"><p>continue | quit | terminate</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-fetchers">
+<span class="sig-name descname"><span class="pre">--fetchers</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;fetchers&gt;</span></span><a class="headerlink" href="#cmdoption-bst-fetchers" title="Link to this definition"></a></dt>
+<dd><p>Maximum simultaneous download tasks</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-builders">
+<span class="sig-name descname"><span class="pre">--builders</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;builders&gt;</span></span><a class="headerlink" href="#cmdoption-bst-builders" title="Link to this definition"></a></dt>
+<dd><p>Maximum simultaneous build tasks</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-pushers">
+<span class="sig-name descname"><span class="pre">--pushers</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;pushers&gt;</span></span><a class="headerlink" href="#cmdoption-bst-pushers" title="Link to this definition"></a></dt>
+<dd><p>Maximum simultaneous upload tasks</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-max-jobs">
+<span class="sig-name descname"><span class="pre">--max-jobs</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max_jobs&gt;</span></span><a class="headerlink" href="#cmdoption-bst-max-jobs" title="Link to this definition"></a></dt>
+<dd><p>Number of parallel jobs allowed for a given build task</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-network-retries">
+<span class="sig-name descname"><span class="pre">--network-retries</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;network_retries&gt;</span></span><a class="headerlink" href="#cmdoption-bst-network-retries" title="Link to this definition"></a></dt>
+<dd><p>Maximum retries for network tasks</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-no-interactive">
+<span class="sig-name descname"><span class="pre">--no-interactive</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-no-interactive" title="Link to this definition"></a></dt>
+<dd><p>Force non interactive mode, otherwise this is automatically decided</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-verbose">
+<span id="cmdoption-bst-no-verbose"></span><span class="sig-name descname"><span class="pre">--verbose</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-verbose</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-verbose" title="Link to this definition"></a></dt>
+<dd><p>Be extra verbose</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-debug">
+<span id="cmdoption-bst-no-debug"></span><span class="sig-name descname"><span class="pre">--debug</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-debug</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-debug" title="Link to this definition"></a></dt>
+<dd><p>Print debugging output</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-error-lines">
+<span class="sig-name descname"><span class="pre">--error-lines</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;error_lines&gt;</span></span><a class="headerlink" href="#cmdoption-bst-error-lines" title="Link to this definition"></a></dt>
+<dd><p>Maximum number of lines to show from a task log</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-message-lines">
+<span class="sig-name descname"><span class="pre">--message-lines</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;message_lines&gt;</span></span><a class="headerlink" href="#cmdoption-bst-message-lines" title="Link to this definition"></a></dt>
+<dd><p>Maximum number of lines to show in a detailed message</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-log-file">
+<span class="sig-name descname"><span class="pre">--log-file</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;log_file&gt;</span></span><a class="headerlink" href="#cmdoption-bst-log-file" title="Link to this definition"></a></dt>
+<dd><p>A file to store the main log (allows storing the main log while in interactive mode)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-colors">
+<span id="cmdoption-bst-no-colors"></span><span class="sig-name descname"><span class="pre">--colors</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-colors</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-colors" title="Link to this definition"></a></dt>
+<dd><p>Force enable/disable ANSI color codes in output</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-strict">
+<span id="cmdoption-bst-no-strict"></span><span class="sig-name descname"><span class="pre">--strict</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-strict</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-strict" title="Link to this definition"></a></dt>
+<dd><p>Elements must be rebuilt when their dependencies have changed</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-o">
+<span id="cmdoption-bst-option"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--option</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;OPTION</span> <span class="pre">VALUE&gt;</span></span><a class="headerlink" href="#cmdoption-bst-o" title="Link to this definition"></a></dt>
+<dd><p>Specify a project option</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-default-mirror">
+<span class="sig-name descname"><span class="pre">--default-mirror</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;default_mirror&gt;</span></span><a class="headerlink" href="#cmdoption-bst-default-mirror" title="Link to this definition"></a></dt>
+<dd><p>The mirror to fetch from first, before attempting other mirrors</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-pull-buildtrees">
+<span class="sig-name descname"><span class="pre">--pull-buildtrees</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-pull-buildtrees" title="Link to this definition"></a></dt>
+<dd><p>Include an element’s build tree when pulling remote element artifacts</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-cache-buildtrees">
+<span class="sig-name descname"><span class="pre">--cache-buildtrees</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cache_buildtrees&gt;</span></span><a class="headerlink" href="#cmdoption-bst-cache-buildtrees" title="Link to this definition"></a></dt>
+<dd><p>Cache artifact build tree content on creation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Options<span class="colon">:</span></dt>
+<dd class="field-odd"><p>always | auto | never</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Commands</p>
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">artifact</span></span></dt>
+<dd><p>Manipulate cached artifacts.</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">build</span></span></dt>
+<dd><p>Build elements in a pipeline</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">help</span></span></dt>
+<dd><p>Print usage information</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">init</span></span></dt>
+<dd><p>Initialize a new BuildStream project</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">shell</span></span></dt>
+<dd><p>Shell into an element’s sandbox environment</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">show</span></span></dt>
+<dd><p>Show elements in the pipeline</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">source</span></span></dt>
+<dd><p>Manipulate sources for an element</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">workspace</span></span></dt>
+<dd><p>Manipulate developer workspaces</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-artifact">
+<span id="invoking-artifact"></span><h3>bst artifact<a class="headerlink" href="#bst-artifact" title="Link to this heading"></a></h3>
+<p>Manipulate cached artifacts</p>
+<p>Some subcommands take artifact references as arguments. Artifacts
+can be specified in two ways:</p>
+<div class="line-block">
+<div class="line">- artifact refs: triples of the form &lt;project name&gt;/&lt;element name&gt;/&lt;cache key&gt;</div>
+<div class="line">- element names</div>
+</div>
+<p>When elements are given, the artifact is looked up by observing the element
+and it’s current cache key.</p>
+<p>The commands also support shell-style wildcard expansion: <cite>?</cite> matches a
+single character, <cite>*</cite> matches zero or more characters but does not match the <cite>/</cite>
+path separator, and <cite>**</cite> matches zero or more characters including <cite>/</cite> path separators.</p>
+<p>If the wildcard expression ends with <cite>.bst</cite>, then it will be used to search
+element names found in the project, otherwise, it will be used to search artifacts
+that are present in the local artifact cache.</p>
+<p>Some example arguments are:</p>
+<div class="line-block">
+<div class="line">- <cite>myproject/hello/8276376b077eda104c812e6ec2f488c7c9eea211ce572c83d734c10bf241209f</cite></div>
+<div class="line">- <cite>myproject/he*/827637*</cite></div>
+<div class="line">- <cite>core/*.bst</cite> (all elements in the core directory)</div>
+<div class="line">- <cite>**.bst</cite> (all elements)</div>
+<div class="line">- <cite>myproject/**</cite> (all artifacts from myproject)</div>
+<div class="line">- <cite>myproject/myelement/*</cite> (all cached artifacts for a specific element)</div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>artifact<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Commands</p>
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">checkout</span></span></dt>
+<dd><p>Checkout contents of an artifact</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">delete</span></span></dt>
+<dd><p>Remove artifacts from the local cache</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">list-contents</span></span></dt>
+<dd><p>List the contents of an artifact</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">log</span></span></dt>
+<dd><p>Show logs of artifacts</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">pull</span></span></dt>
+<dd><p>Pull a built artifact</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">push</span></span></dt>
+<dd><p>Push a built artifact</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">show</span></span></dt>
+<dd><p>Show the cached state of artifacts</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-init">
+<span id="invoking-init"></span><h3>bst init<a class="headerlink" href="#bst-init" title="Link to this heading"></a></h3>
+<p>Initialize a new BuildStream project</p>
+<p>Creates a new BuildStream project.conf in the project
+directory.</p>
+<p>Unless <cite>–project-name</cite> is specified, this will be an
+interactive session.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>init<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>TARGET_DIRECTORY<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-init-project-name">
+<span class="sig-name descname"><span class="pre">--project-name</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;project_name&gt;</span></span><a class="headerlink" href="#cmdoption-bst-init-project-name" title="Link to this definition"></a></dt>
+<dd><p>The project name to use</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-init-min-version">
+<span class="sig-name descname"><span class="pre">--min-version</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;min_version&gt;</span></span><a class="headerlink" href="#cmdoption-bst-init-min-version" title="Link to this definition"></a></dt>
+<dd><p>The required format version</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">'2.7'</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-init-element-path">
+<span class="sig-name descname"><span class="pre">--element-path</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;element_path&gt;</span></span><a class="headerlink" href="#cmdoption-bst-init-element-path" title="Link to this definition"></a></dt>
+<dd><p>The subdirectory to store elements in</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">'elements'</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-init-f">
+<span id="cmdoption-bst-init-force"></span><span class="sig-name descname"><span class="pre">-f</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-init-f" title="Link to this definition"></a></dt>
+<dd><p>Allow overwriting an existing project.conf</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-init-arg-TARGET_DIRECTORY">
+<span class="sig-name descname"><span class="pre">TARGET_DIRECTORY</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-init-arg-TARGET_DIRECTORY" title="Link to this definition"></a></dt>
+<dd><p>Optional argument</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-build">
+<span id="invoking-build"></span><h3>bst build<a class="headerlink" href="#bst-build" title="Link to this heading"></a></h3>
+<p>Build elements in a pipeline</p>
+<p>Specifying no elements will result in building the default targets
+of the project. If no default targets are configured, all project
+elements will be built.</p>
+<p>When this command is executed from a workspace directory, the default
+is to build the workspace element.</p>
+<p>Specify <cite>–deps</cite> to control which dependencies must be built:</p>
+<div class="line-block">
+<div class="line">none:  No dependencies, just the element itself</div>
+<div class="line">build: Build time dependencies, excluding the element itself</div>
+<div class="line">run:   The element and its runtime dependencies</div>
+<div class="line">all:   All dependencies</div>
+</div>
+<p>Dependencies that are consequently required to build the requested
+elements will be built on demand.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>build<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ELEMENTS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-build-d">
+<span id="cmdoption-bst-build-deps"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--deps</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deps&gt;</span></span><a class="headerlink" href="#cmdoption-bst-build-d" title="Link to this definition"></a></dt>
+<dd><p>The dependencies to build</p>
+<dl class="field-list simple">
+<dt class="field-odd">Options<span class="colon">:</span></dt>
+<dd class="field-odd"><p>none | build | run | all</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-build-artifact-remote">
+<span class="sig-name descname"><span class="pre">--artifact-remote</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;artifact_remotes&gt;</span></span><a class="headerlink" href="#cmdoption-bst-build-artifact-remote" title="Link to this definition"></a></dt>
+<dd><p>A remote for uploading and downloading artifacts</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-build-source-remote">
+<span class="sig-name descname"><span class="pre">--source-remote</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;source_remotes&gt;</span></span><a class="headerlink" href="#cmdoption-bst-build-source-remote" title="Link to this definition"></a></dt>
+<dd><p>A remote for uploading and downloading cached sources</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-build-ignore-project-artifact-remotes">
+<span class="sig-name descname"><span class="pre">--ignore-project-artifact-remotes</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-build-ignore-project-artifact-remotes" title="Link to this definition"></a></dt>
+<dd><p>Ignore remote artifact cache servers recommended by projects</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-build-ignore-project-source-remotes">
+<span class="sig-name descname"><span class="pre">--ignore-project-source-remotes</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-build-ignore-project-source-remotes" title="Link to this definition"></a></dt>
+<dd><p>Ignore remote source cache servers recommended by projects</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-build-r">
+<span id="cmdoption-bst-build-retry-failed"></span><span class="sig-name descname"><span class="pre">-r</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--retry-failed</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-build-r" title="Link to this definition"></a></dt>
+<dd><p>Try to build elements for which a failed build artifact is found</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-build-arg-ELEMENTS">
+<span class="sig-name descname"><span class="pre">ELEMENTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-build-arg-ELEMENTS" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-show">
+<span id="invoking-show"></span><h3>bst show<a class="headerlink" href="#bst-show" title="Link to this heading"></a></h3>
+<p>Show elements in the pipeline</p>
+<p>Specifying no elements will result in showing the default targets
+of the project. If no default targets are configured, all project
+elements will be shown.</p>
+<p>When this command is executed from a workspace directory, the default
+is to show the workspace element.</p>
+<p>By default this will show all of the dependencies of the
+specified target element.</p>
+<p>Specify <code class="docutils literal notranslate"><span class="pre">--deps</span></code> to control which elements to show:</p>
+<div class="line-block">
+<div class="line">none:  No dependencies, just the element itself</div>
+<div class="line">run:   Runtime dependencies, including the element itself</div>
+<div class="line">build: Build time dependencies, excluding the element itself</div>
+<div class="line">all:   All dependencies</div>
+</div>
+<p><strong>FORMAT</strong></p>
+<p>The <code class="docutils literal notranslate"><span class="pre">--format</span></code> option controls what should be printed for each element,
+the following symbols can be used in the format string:</p>
+<div class="line-block">
+<div class="line">%{name}           The element name</div>
+<div class="line">%{kind}           The element kind (Since: 2.6)</div>
+<div class="line">%{description}    The element description, on a single line (Since: 2.3)</div>
+<div class="line">%{key}            The abbreviated cache key (if all sources are consistent)</div>
+<div class="line">%{full-key}       The full cache key (if all sources are consistent)</div>
+<div class="line">%{state}          cached, buildable, waiting, inconsistent or junction</div>
+<div class="line">%{config}         The element configuration</div>
+<div class="line">%{vars}           Variable configuration</div>
+<div class="line">%{env}            Environment settings</div>
+<div class="line">%{public}         Public domain data</div>
+<div class="line">%{workspaced}     If the element is workspaced</div>
+<div class="line">%{workspace-dirs} A list of workspace directories</div>
+<div class="line">%{deps}           A list of all dependencies</div>
+<div class="line">%{build-deps}     A list of build dependencies</div>
+<div class="line">%{runtime-deps}   A list of runtime dependencies</div>
+<div class="line">%{source-info}    Source provenance information</div>
+<div class="line">%{artifact-cas-digest} The CAS digest of the built artifact</div>
+</div>
+<p>The value of the %{symbol} without the leading ‘%’ character is understood
+as a pythonic formatting string, so python formatting features apply,
+example:</p>
+<div class="line-block">
+<div class="line">bst show target.bst –format </div>
+<div class="line-block">
+<div class="line">‘Name: %{name: ^20} Key: %{key: ^8} State: %{state}’</div>
+</div>
+</div>
+<p>If you want to use a newline in a format string in bash, use the ‘$’ modifier:</p>
+<div class="line-block">
+<div class="line">bst show target.bst –format </div>
+<div class="line-block">
+<div class="line">$’———- %{name} ———-n%{vars}’</div>
+</div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>show<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ELEMENTS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-show-except">
+<span class="sig-name descname"><span class="pre">--except</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;except_&gt;</span></span><a class="headerlink" href="#cmdoption-bst-show-except" title="Link to this definition"></a></dt>
+<dd><p>Except certain dependencies</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-show-d">
+<span id="cmdoption-bst-show-deps"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--deps</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deps&gt;</span></span><a class="headerlink" href="#cmdoption-bst-show-d" title="Link to this definition"></a></dt>
+<dd><p>The dependencies to show</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&lt;buildstream.types._PipelineSelection</span> <span class="pre">object</span> <span class="pre">at</span> <span class="pre">0x7f9a82be0cd0&gt;</span></code></p>
+</dd>
+<dt class="field-even">Options<span class="colon">:</span></dt>
+<dd class="field-even"><p>none | run | build | all</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-show-order">
+<span class="sig-name descname"><span class="pre">--order</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;order&gt;</span></span><a class="headerlink" href="#cmdoption-bst-show-order" title="Link to this definition"></a></dt>
+<dd><p>Staging or alphabetic ordering of dependencies</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">'stage'</span></code></p>
+</dd>
+<dt class="field-even">Options<span class="colon">:</span></dt>
+<dd class="field-even"><p>stage | alpha</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-show-f">
+<span id="cmdoption-bst-show-format"></span><span class="sig-name descname"><span class="pre">-f</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--format</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;FORMAT&gt;</span></span><a class="headerlink" href="#cmdoption-bst-show-f" title="Link to this definition"></a></dt>
+<dd><p>Format string for each element</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-show-arg-ELEMENTS">
+<span class="sig-name descname"><span class="pre">ELEMENTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-show-arg-ELEMENTS" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-shell">
+<span id="invoking-shell"></span><h3>bst shell<a class="headerlink" href="#bst-shell" title="Link to this heading"></a></h3>
+<p>Run a command in the target element’s sandbox environment</p>
+<p>When this command is executed from a workspace directory, the default
+is to shell into the workspace element.</p>
+<p>This will stage a temporary sysroot for running the target
+element, assuming it has already been built and all required
+artifacts are in the local cache.</p>
+<p>Use ‘–’ to separate a command from the options to bst,
+otherwise bst may respond to them instead. e.g.</p>
+<div class="line-block">
+<div class="line">bst shell example.bst – df -h</div>
+</div>
+<p>Use the –build option to create a temporary sysroot for
+building the element instead.</p>
+<p>If no COMMAND is specified, the default is to attempt
+to run an interactive shell.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>shell<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>TARGET<span class="o">]</span><span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-shell-b">
+<span id="cmdoption-bst-shell-build"></span><span class="sig-name descname"><span class="pre">-b</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--build</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-shell-b" title="Link to this definition"></a></dt>
+<dd><p>Stage dependencies and sources to build</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-shell-mount">
+<span class="sig-name descname"><span class="pre">--mount</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;HOSTPATH</span> <span class="pre">PATH&gt;</span></span><a class="headerlink" href="#cmdoption-bst-shell-mount" title="Link to this definition"></a></dt>
+<dd><p>Mount a file or directory into the sandbox</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-shell-isolate">
+<span class="sig-name descname"><span class="pre">--isolate</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-shell-isolate" title="Link to this definition"></a></dt>
+<dd><p>Create an isolated build sandbox</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-shell-t">
+<span id="cmdoption-bst-shell-use-buildtree"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--use-buildtree</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-shell-t" title="Link to this definition"></a></dt>
+<dd><p>Stage a buildtree. Will fail if a buildtree is not available. pull-buildtrees configuration is needed if the buildtree is not available locally.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-shell-artifact-remote">
+<span class="sig-name descname"><span class="pre">--artifact-remote</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;artifact_remotes&gt;</span></span><a class="headerlink" href="#cmdoption-bst-shell-artifact-remote" title="Link to this definition"></a></dt>
+<dd><p>A remote for uploading and downloading artifacts</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-shell-source-remote">
+<span class="sig-name descname"><span class="pre">--source-remote</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;source_remotes&gt;</span></span><a class="headerlink" href="#cmdoption-bst-shell-source-remote" title="Link to this definition"></a></dt>
+<dd><p>A remote for uploading and downloading cached sources</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-shell-ignore-project-artifact-remotes">
+<span class="sig-name descname"><span class="pre">--ignore-project-artifact-remotes</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-shell-ignore-project-artifact-remotes" title="Link to this definition"></a></dt>
+<dd><p>Ignore remote artifact cache servers recommended by projects</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-shell-ignore-project-source-remotes">
+<span class="sig-name descname"><span class="pre">--ignore-project-source-remotes</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-shell-ignore-project-source-remotes" title="Link to this definition"></a></dt>
+<dd><p>Ignore remote source cache servers recommended by projects</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-shell-arg-TARGET">
+<span class="sig-name descname"><span class="pre">TARGET</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-shell-arg-TARGET" title="Link to this definition"></a></dt>
+<dd><p>Optional argument</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-shell-arg-COMMAND">
+<span class="sig-name descname"><span class="pre">COMMAND</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-shell-arg-COMMAND" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-source">
+<span id="invoking-source"></span><h3>bst source<a class="headerlink" href="#bst-source" title="Link to this heading"></a></h3>
+<p>Manipulate sources for an element</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span><span class="nb">source</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Commands</p>
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">checkout</span></span></dt>
+<dd><p>Checkout sources of an element</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">fetch</span></span></dt>
+<dd><p>Fetch sources in a pipeline</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">push</span></span></dt>
+<dd><p>Push sources in a pipeline</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">track</span></span></dt>
+<dd><p>Track new source references</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-workspace">
+<span id="invoking-workspace"></span><h3>bst workspace<a class="headerlink" href="#bst-workspace" title="Link to this heading"></a></h3>
+<p>Manipulate developer workspaces</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>workspace<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Commands</p>
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">close</span></span></dt>
+<dd><p>Close workspaces</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">list</span></span></dt>
+<dd><p>List open workspaces</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">open</span></span></dt>
+<dd><p>Open a new workspace</p>
+</dd></dl>
+
+<dl class="object">
+<dt class="sig sig-object">
+<span class="sig-name descname"><span class="pre">reset</span></span></dt>
+<dd><p>Reset a workspace to its original state</p>
+</dd></dl>
+
+</section>
+</section>
+<section id="artifact-subcommands">
+<span id="id2"></span><h2>Artifact subcommands<a class="headerlink" href="#artifact-subcommands" title="Link to this heading"></a></h2>
+<section id="artifact-names">
+<span id="id3"></span><h3>Artifact names<a class="headerlink" href="#artifact-names" title="Link to this heading"></a></h3>
+<p>Various artifact subcommands accept either <a class="reference internal" href="format_declaring.html#format-element-names"><span class="std std-ref">element names</span></a>,
+which will operate on artifacts by deriving the artifact from local project state,
+or <a class="reference internal" href="main_glossary.html#term-Artifact-name"><span class="xref std std-term">artifact names</span></a> interchangeably as targets. Artifact names allow
+the user to operate directly on cached artifacts, without requiring local project data.</p>
+<p>An artifact name is composed of the following identifiers:</p>
+<ul class="simple">
+<li><p>The <a class="reference internal" href="format_project.html#project-format-name"><span class="std std-ref">project name</span></a></p></li>
+<li><p>The <a class="reference internal" href="format_declaring.html#format-element-names"><span class="std std-ref">element name</span></a>, without any trailing <code class="docutils literal notranslate"><span class="pre">.bst</span></code> extension</p></li>
+<li><p>The cache key of the element at the time it was built.</p></li>
+</ul>
+<p>To compose an artifact name, simply join these using a forward slash (<code class="docutils literal notranslate"><span class="pre">/</span></code>) character, like so: <code class="docutils literal notranslate"><span class="pre">&lt;project-name&gt;/&lt;element-name&gt;/&lt;cache-key&gt;</span></code>.</p>
+<p>An artifact name might look like: <code class="docutils literal notranslate"><span class="pre">project/target/788da21e7c1b5818b7e7b60f7eb75841057ff7e45d362cc223336c606fe47f27</span></code></p>
+<section id="bst-artifact-checkout">
+<span id="invoking-artifact-checkout"></span><h4>bst artifact checkout<a class="headerlink" href="#bst-artifact-checkout" title="Link to this heading"></a></h4>
+<p>Checkout contents of an artifact</p>
+<p>When this command is executed from a workspace directory, the default
+is to checkout the artifact of the workspace element.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>artifact<span class="w"> </span>checkout<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>TARGET<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-checkout-f">
+<span id="cmdoption-bst-artifact-checkout-force"></span><span class="sig-name descname"><span class="pre">-f</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-checkout-f" title="Link to this definition"></a></dt>
+<dd><p>Allow files to be overwritten</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-checkout-d">
+<span id="cmdoption-bst-artifact-checkout-deps"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--deps</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deps&gt;</span></span><a class="headerlink" href="#cmdoption-bst-artifact-checkout-d" title="Link to this definition"></a></dt>
+<dd><p>The dependencies to checkout</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&lt;buildstream.types._PipelineSelection</span> <span class="pre">object</span> <span class="pre">at</span> <span class="pre">0x7f9a82d0f6f0&gt;</span></code></p>
+</dd>
+<dt class="field-even">Options<span class="colon">:</span></dt>
+<dd class="field-even"><p>run | build | none | all</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-checkout-integrate">
+<span id="cmdoption-bst-artifact-checkout-no-integrate"></span><span class="sig-name descname"><span class="pre">--integrate</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-integrate</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-checkout-integrate" title="Link to this definition"></a></dt>
+<dd><p>Whether to run integration commands</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-checkout-hardlinks">
+<span class="sig-name descname"><span class="pre">--hardlinks</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-checkout-hardlinks" title="Link to this definition"></a></dt>
+<dd><p>Checkout hardlinks instead of copying if possible</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-checkout-tar">
+<span class="sig-name descname"><span class="pre">--tar</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;LOCATION&gt;</span></span><a class="headerlink" href="#cmdoption-bst-artifact-checkout-tar" title="Link to this definition"></a></dt>
+<dd><p>Create a tarball from the artifact contents instead of a file tree. If LOCATION is ‘-’, the tarball will be dumped to the standard output.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-checkout-compression">
+<span class="sig-name descname"><span class="pre">--compression</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;compression&gt;</span></span><a class="headerlink" href="#cmdoption-bst-artifact-checkout-compression" title="Link to this definition"></a></dt>
+<dd><p>The compression option of the tarball created.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Options<span class="colon">:</span></dt>
+<dd class="field-odd"><p>gz | xz | bz2</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-checkout-directory">
+<span class="sig-name descname"><span class="pre">--directory</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;directory&gt;</span></span><a class="headerlink" href="#cmdoption-bst-artifact-checkout-directory" title="Link to this definition"></a></dt>
+<dd><p>The directory to checkout the artifact to</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-checkout-artifact-remote">
+<span class="sig-name descname"><span class="pre">--artifact-remote</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;artifact_remotes&gt;</span></span><a class="headerlink" href="#cmdoption-bst-artifact-checkout-artifact-remote" title="Link to this definition"></a></dt>
+<dd><p>A remote for downloading artifacts</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-checkout-ignore-project-artifact-remotes">
+<span class="sig-name descname"><span class="pre">--ignore-project-artifact-remotes</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-checkout-ignore-project-artifact-remotes" title="Link to this definition"></a></dt>
+<dd><p>Ignore remote artifact cache servers recommended by projects</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-checkout-arg-TARGET">
+<span class="sig-name descname"><span class="pre">TARGET</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-checkout-arg-TARGET" title="Link to this definition"></a></dt>
+<dd><p>Optional argument</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-artifact-log">
+<span id="invoking-artifact-log"></span><h4>bst artifact log<a class="headerlink" href="#bst-artifact-log" title="Link to this heading"></a></h4>
+<p>Show build logs of artifacts</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>artifact<span class="w"> </span>log<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ARTIFACTS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-log-out">
+<span class="sig-name descname"><span class="pre">--out</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;out&gt;</span></span><a class="headerlink" href="#cmdoption-bst-artifact-log-out" title="Link to this definition"></a></dt>
+<dd><p>Output logs to individual files in the specified path. If absent, logs are written to stdout.</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-log-arg-ARTIFACTS">
+<span class="sig-name descname"><span class="pre">ARTIFACTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-log-arg-ARTIFACTS" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-artifact-pull">
+<span id="invoking-artifact-pull"></span><h4>bst artifact pull<a class="headerlink" href="#bst-artifact-pull" title="Link to this heading"></a></h4>
+<p>Pull a built artifact from the configured remote artifact cache.</p>
+<p>Specifying no elements will result in pulling the default targets
+of the project. If no default targets are configured, all project
+elements will be pulled.</p>
+<p>When this command is executed from a workspace directory, the default
+is to pull the workspace element.</p>
+<p>By default the artifact will be pulled one of the configured caches
+if possible, following the usual priority order. If the <cite>–artifact-remote</cite>
+flag is given, only the specified cache will be queried.</p>
+<p>Specify <cite>–deps</cite> to control which artifacts to pull:</p>
+<div class="line-block">
+<div class="line">none:  No dependencies, just the element itself</div>
+<div class="line">run:   Runtime dependencies, including the element itself</div>
+<div class="line">build: Build time dependencies, excluding the element itself</div>
+<div class="line">all:   All dependencies</div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>artifact<span class="w"> </span>pull<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ARTIFACTS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-pull-d">
+<span id="cmdoption-bst-artifact-pull-deps"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--deps</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deps&gt;</span></span><a class="headerlink" href="#cmdoption-bst-artifact-pull-d" title="Link to this definition"></a></dt>
+<dd><p>The dependency artifacts to pull</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&lt;buildstream.types._PipelineSelection</span> <span class="pre">object</span> <span class="pre">at</span> <span class="pre">0x7f9a82bbcec0&gt;</span></code></p>
+</dd>
+<dt class="field-even">Options<span class="colon">:</span></dt>
+<dd class="field-even"><p>build | none | run | all</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-pull-artifact-remote">
+<span class="sig-name descname"><span class="pre">--artifact-remote</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;artifact_remotes&gt;</span></span><a class="headerlink" href="#cmdoption-bst-artifact-pull-artifact-remote" title="Link to this definition"></a></dt>
+<dd><p>A remote for downloading artifacts</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-pull-ignore-project-artifact-remotes">
+<span class="sig-name descname"><span class="pre">--ignore-project-artifact-remotes</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-pull-ignore-project-artifact-remotes" title="Link to this definition"></a></dt>
+<dd><p>Ignore remote artifact cache servers recommended by projects</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-pull-arg-ARTIFACTS">
+<span class="sig-name descname"><span class="pre">ARTIFACTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-pull-arg-ARTIFACTS" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-artifact-push">
+<span id="invoking-artifact-push"></span><h4>bst artifact push<a class="headerlink" href="#bst-artifact-push" title="Link to this heading"></a></h4>
+<p>Push built artifacts to a remote artifact cache, possibly pulling them first.</p>
+<p>Specifying no elements will result in pushing the default targets
+of the project. If no default targets are configured, all project
+elements will be pushed.</p>
+<p>When this command is executed from a workspace directory, the default
+is to push the workspace element.</p>
+<p>If bst has been configured to include build trees on artifact pulls,
+an attempt will be made to pull any required build trees to avoid the
+skipping of partial artifacts being pushed.</p>
+<p>Specify <cite>–deps</cite> to control which artifacts to push:</p>
+<div class="line-block">
+<div class="line">none:  No dependencies, just the element itself</div>
+<div class="line">run:   Runtime dependencies, including the element itself</div>
+<div class="line">build: Build time dependencies, excluding the element itself</div>
+<div class="line">all:   All dependencies</div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>artifact<span class="w"> </span>push<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ARTIFACTS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-push-d">
+<span id="cmdoption-bst-artifact-push-deps"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--deps</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deps&gt;</span></span><a class="headerlink" href="#cmdoption-bst-artifact-push-d" title="Link to this definition"></a></dt>
+<dd><p>The dependencies to push</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&lt;buildstream.types._PipelineSelection</span> <span class="pre">object</span> <span class="pre">at</span> <span class="pre">0x7f9a82bbcec0&gt;</span></code></p>
+</dd>
+<dt class="field-even">Options<span class="colon">:</span></dt>
+<dd class="field-even"><p>build | none | run | all</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-push-artifact-remote">
+<span class="sig-name descname"><span class="pre">--artifact-remote</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;artifact_remotes&gt;</span></span><a class="headerlink" href="#cmdoption-bst-artifact-push-artifact-remote" title="Link to this definition"></a></dt>
+<dd><p>A remote for uploading artifacts</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-push-ignore-project-artifact-remotes">
+<span class="sig-name descname"><span class="pre">--ignore-project-artifact-remotes</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-push-ignore-project-artifact-remotes" title="Link to this definition"></a></dt>
+<dd><p>Ignore remote artifact cache servers recommended by projects</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-push-arg-ARTIFACTS">
+<span class="sig-name descname"><span class="pre">ARTIFACTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-push-arg-ARTIFACTS" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-artifact-delete">
+<span id="invoking-artifact-delete"></span><h4>bst artifact delete<a class="headerlink" href="#bst-artifact-delete" title="Link to this heading"></a></h4>
+<p>Remove artifacts from the local cache</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>artifact<span class="w"> </span>delete<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ARTIFACTS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-delete-d">
+<span id="cmdoption-bst-artifact-delete-deps"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--deps</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deps&gt;</span></span><a class="headerlink" href="#cmdoption-bst-artifact-delete-d" title="Link to this definition"></a></dt>
+<dd><p>The dependencies to delete</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&lt;buildstream.types._PipelineSelection</span> <span class="pre">object</span> <span class="pre">at</span> <span class="pre">0x7f9a82bbcec0&gt;</span></code></p>
+</dd>
+<dt class="field-even">Options<span class="colon">:</span></dt>
+<dd class="field-even"><p>none | run | build | all</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-delete-arg-ARTIFACTS">
+<span class="sig-name descname"><span class="pre">ARTIFACTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-delete-arg-ARTIFACTS" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-artifact-show">
+<span id="invoking-artifact-show"></span><h4>bst artifact show<a class="headerlink" href="#bst-artifact-show" title="Link to this heading"></a></h4>
+<p>Show the cached state of artifacts</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>artifact<span class="w"> </span>show<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ARTIFACTS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-show-d">
+<span id="cmdoption-bst-artifact-show-deps"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--deps</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deps&gt;</span></span><a class="headerlink" href="#cmdoption-bst-artifact-show-d" title="Link to this definition"></a></dt>
+<dd><p>The dependencies we also want to show</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&lt;buildstream.types._PipelineSelection</span> <span class="pre">object</span> <span class="pre">at</span> <span class="pre">0x7f9a82bbcec0&gt;</span></code></p>
+</dd>
+<dt class="field-even">Options<span class="colon">:</span></dt>
+<dd class="field-even"><p>build | run | all | none</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-show-artifact-remote">
+<span class="sig-name descname"><span class="pre">--artifact-remote</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;artifact_remotes&gt;</span></span><a class="headerlink" href="#cmdoption-bst-artifact-show-artifact-remote" title="Link to this definition"></a></dt>
+<dd><p>A remote for downloading artifacts (Since: 2.7)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-show-ignore-project-artifact-remotes">
+<span class="sig-name descname"><span class="pre">--ignore-project-artifact-remotes</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-show-ignore-project-artifact-remotes" title="Link to this definition"></a></dt>
+<dd><p>Ignore remote artifact cache servers recommended by projects (Since: 2.7)</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-show-arg-ARTIFACTS">
+<span class="sig-name descname"><span class="pre">ARTIFACTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-show-arg-ARTIFACTS" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-artifact-list-contents">
+<span id="invoking-artifact-list-contents"></span><h4>bst artifact list-contents<a class="headerlink" href="#bst-artifact-list-contents" title="Link to this heading"></a></h4>
+<p>List the contents of an artifact.</p>
+<p>Note that ‘artifacts’ can be element names, which must end in ‘.bst’,
+or artifact references, which must be in the format <cite>&lt;project_name&gt;/&lt;element&gt;/&lt;key&gt;</cite>.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>artifact<span class="w"> </span>list-contents<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ARTIFACTS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-list-contents-l">
+<span id="cmdoption-bst-artifact-list-contents-long"></span><span class="sig-name descname"><span class="pre">-l</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--long</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-list-contents-l" title="Link to this definition"></a></dt>
+<dd><p>Provide more information about the contents of the artifact.</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-artifact-list-contents-arg-ARTIFACTS">
+<span class="sig-name descname"><span class="pre">ARTIFACTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-artifact-list-contents-arg-ARTIFACTS" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+<section id="source-subcommands">
+<span id="id4"></span><h2>Source subcommands<a class="headerlink" href="#source-subcommands" title="Link to this heading"></a></h2>
+<section id="bst-source-fetch">
+<span id="invoking-source-fetch"></span><h3>bst source fetch<a class="headerlink" href="#bst-source-fetch" title="Link to this heading"></a></h3>
+<p>Fetch sources required to build the pipeline</p>
+<p>Specifying no elements will result in fetching the default targets
+of the project. If no default targets are configured, all project
+elements will be fetched.</p>
+<p>When this command is executed from a workspace directory, the default
+is to fetch the workspace element.</p>
+<p>By default this will only try to fetch sources for the specified
+elements.</p>
+<p>Specify <cite>–deps</cite> to control which sources to fetch:</p>
+<div class="line-block">
+<div class="line">none:  No dependencies, just the element itself</div>
+<div class="line">run:   Runtime dependencies, including the element itself</div>
+<div class="line">build: Build time dependencies, excluding the element itself</div>
+<div class="line">all:   All dependencies</div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span><span class="nb">source</span><span class="w"> </span>fetch<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ELEMENTS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-fetch-except">
+<span class="sig-name descname"><span class="pre">--except</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;except_&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-fetch-except" title="Link to this definition"></a></dt>
+<dd><p>Except certain dependencies from fetching</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-fetch-d">
+<span id="cmdoption-bst-source-fetch-deps"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--deps</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deps&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-fetch-d" title="Link to this definition"></a></dt>
+<dd><p>The dependencies to fetch</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&lt;buildstream.types._PipelineSelection</span> <span class="pre">object</span> <span class="pre">at</span> <span class="pre">0x7f9a82bbcec0&gt;</span></code></p>
+</dd>
+<dt class="field-even">Options<span class="colon">:</span></dt>
+<dd class="field-even"><p>none | build | run | all</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-fetch-source-remote">
+<span class="sig-name descname"><span class="pre">--source-remote</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;source_remotes&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-fetch-source-remote" title="Link to this definition"></a></dt>
+<dd><p>A remote for downloading sources</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-fetch-ignore-project-source-remotes">
+<span class="sig-name descname"><span class="pre">--ignore-project-source-remotes</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-source-fetch-ignore-project-source-remotes" title="Link to this definition"></a></dt>
+<dd><p>Ignore remote source cache servers recommended by projects</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-fetch-arg-ELEMENTS">
+<span class="sig-name descname"><span class="pre">ELEMENTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-source-fetch-arg-ELEMENTS" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-source-track">
+<span id="invoking-source-track"></span><h3>bst source track<a class="headerlink" href="#bst-source-track" title="Link to this heading"></a></h3>
+<p>Consults the specified tracking branches for new versions available
+to build and updates the project with any newly available references.</p>
+<p>Specifying no elements will result in tracking the default targets
+of the project. If no default targets are configured, all project
+elements will be tracked.</p>
+<p>When this command is executed from a workspace directory, the default
+is to track the workspace element.</p>
+<p>If no default is declared, all elements in the project will be tracked</p>
+<p>By default this will track just the specified element, but you can also
+update a whole tree of dependencies in one go.</p>
+<p>Specify <cite>–deps</cite> to control which sources to track:</p>
+<div class="line-block">
+<div class="line">none:  No dependencies, just the specified elements</div>
+<div class="line">all:   All dependencies of all specified elements</div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span><span class="nb">source</span><span class="w"> </span>track<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ELEMENTS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-track-except">
+<span class="sig-name descname"><span class="pre">--except</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;except_&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-track-except" title="Link to this definition"></a></dt>
+<dd><p>Except certain dependencies from tracking</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-track-d">
+<span id="cmdoption-bst-source-track-deps"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--deps</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deps&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-track-d" title="Link to this definition"></a></dt>
+<dd><p>The dependencies to track</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&lt;buildstream.types._PipelineSelection</span> <span class="pre">object</span> <span class="pre">at</span> <span class="pre">0x7f9a82bbcec0&gt;</span></code></p>
+</dd>
+<dt class="field-even">Options<span class="colon">:</span></dt>
+<dd class="field-even"><p>build | run | all | none</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-track-J">
+<span id="cmdoption-bst-source-track-cross-junctions"></span><span class="sig-name descname"><span class="pre">-J</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--cross-junctions</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-source-track-J" title="Link to this definition"></a></dt>
+<dd><p>Allow crossing junction boundaries</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-track-arg-ELEMENTS">
+<span class="sig-name descname"><span class="pre">ELEMENTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-source-track-arg-ELEMENTS" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-source-push">
+<span id="invoking-source-push"></span><h3>bst source push<a class="headerlink" href="#bst-source-push" title="Link to this heading"></a></h3>
+<p>Push sources required to build the pipeline</p>
+<p>Specifying no elements will result in pushing the sources of the default
+targets of the project. If no default targets are configured, sources of
+all project elements will be pushed.</p>
+<p>When this command is executed from a workspace directory, the default
+is to push the sources of the workspace element.</p>
+<p>By default this will only try to push sources for the specified
+elements.</p>
+<p>Specify <cite>–deps</cite> to control which sources to fetch:</p>
+<div class="line-block">
+<div class="line">none:  No dependencies, just the element itself</div>
+<div class="line">run:   Runtime dependencies, including the element itself</div>
+<div class="line">build: Build time dependencies, excluding the element itself</div>
+<div class="line">all:   All dependencies</div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span><span class="nb">source</span><span class="w"> </span>push<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ELEMENTS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-push-except">
+<span class="sig-name descname"><span class="pre">--except</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;except_&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-push-except" title="Link to this definition"></a></dt>
+<dd><p>Except certain dependencies from pushing</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-push-d">
+<span id="cmdoption-bst-source-push-deps"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--deps</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deps&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-push-d" title="Link to this definition"></a></dt>
+<dd><p>The dependencies to push</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&lt;buildstream.types._PipelineSelection</span> <span class="pre">object</span> <span class="pre">at</span> <span class="pre">0x7f9a82bbcec0&gt;</span></code></p>
+</dd>
+<dt class="field-even">Options<span class="colon">:</span></dt>
+<dd class="field-even"><p>none | build | run | all</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-push-source-remote">
+<span class="sig-name descname"><span class="pre">--source-remote</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;source_remotes&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-push-source-remote" title="Link to this definition"></a></dt>
+<dd><p>A remote for uploading sources</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-push-ignore-project-source-remotes">
+<span class="sig-name descname"><span class="pre">--ignore-project-source-remotes</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-source-push-ignore-project-source-remotes" title="Link to this definition"></a></dt>
+<dd><p>Ignore remote source cache servers recommended by projects</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-push-arg-ELEMENTS">
+<span class="sig-name descname"><span class="pre">ELEMENTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-source-push-arg-ELEMENTS" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-source-checkout">
+<span id="invoking-source-checkout"></span><h3>bst source checkout<a class="headerlink" href="#bst-source-checkout" title="Link to this heading"></a></h3>
+<p>Checkout sources of an element to the specified location</p>
+<p>When this command is executed from a workspace directory, the default
+is to checkout the sources of the workspace element.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span><span class="nb">source</span><span class="w"> </span>checkout<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ELEMENT<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-checkout-f">
+<span id="cmdoption-bst-source-checkout-force"></span><span class="sig-name descname"><span class="pre">-f</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-source-checkout-f" title="Link to this definition"></a></dt>
+<dd><p>Allow files to be overwritten</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-checkout-except">
+<span class="sig-name descname"><span class="pre">--except</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;except_&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-checkout-except" title="Link to this definition"></a></dt>
+<dd><p>Except certain dependencies</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-checkout-d">
+<span id="cmdoption-bst-source-checkout-deps"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--deps</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;deps&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-checkout-d" title="Link to this definition"></a></dt>
+<dd><p>The dependencies whose sources to checkout</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&lt;buildstream.types._PipelineSelection</span> <span class="pre">object</span> <span class="pre">at</span> <span class="pre">0x7f9a82bbcec0&gt;</span></code></p>
+</dd>
+<dt class="field-even">Options<span class="colon">:</span></dt>
+<dd class="field-even"><p>build | none | run | all</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-checkout-tar">
+<span class="sig-name descname"><span class="pre">--tar</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;LOCATION&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-checkout-tar" title="Link to this definition"></a></dt>
+<dd><p>Create a tarball containing the sources instead of a file tree.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-checkout-compression">
+<span class="sig-name descname"><span class="pre">--compression</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;compression&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-checkout-compression" title="Link to this definition"></a></dt>
+<dd><p>The compression option of the tarball created.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Options<span class="colon">:</span></dt>
+<dd class="field-odd"><p>gz | xz | bz2</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-checkout-include-build-scripts">
+<span class="sig-name descname"><span class="pre">--include-build-scripts</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-source-checkout-include-build-scripts" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-checkout-directory">
+<span class="sig-name descname"><span class="pre">--directory</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;directory&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-checkout-directory" title="Link to this definition"></a></dt>
+<dd><p>The directory to checkout the sources to</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-checkout-source-remote">
+<span class="sig-name descname"><span class="pre">--source-remote</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;source_remotes&gt;</span></span><a class="headerlink" href="#cmdoption-bst-source-checkout-source-remote" title="Link to this definition"></a></dt>
+<dd><p>A remote for downloading cached sources</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-checkout-ignore-project-source-remotes">
+<span class="sig-name descname"><span class="pre">--ignore-project-source-remotes</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-source-checkout-ignore-project-source-remotes" title="Link to this definition"></a></dt>
+<dd><p>Ignore remote source cache servers recommended by projects</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-source-checkout-arg-ELEMENT">
+<span class="sig-name descname"><span class="pre">ELEMENT</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-source-checkout-arg-ELEMENT" title="Link to this definition"></a></dt>
+<dd><p>Optional argument</p>
+</dd></dl>
+
+</section>
+</section>
+<section id="workspace-subcommands">
+<span id="id5"></span><h2>Workspace subcommands<a class="headerlink" href="#workspace-subcommands" title="Link to this heading"></a></h2>
+<section id="bst-workspace-open">
+<span id="invoking-workspace-open"></span><h3>bst workspace open<a class="headerlink" href="#bst-workspace-open" title="Link to this heading"></a></h3>
+<p>Open a workspace for manual source modification</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>workspace<span class="w"> </span>open<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>ELEMENTS...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-workspace-open-no-checkout">
+<span class="sig-name descname"><span class="pre">--no-checkout</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-workspace-open-no-checkout" title="Link to this definition"></a></dt>
+<dd><p>Do not checkout the source, only link to the given directory</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-workspace-open-f">
+<span id="cmdoption-bst-workspace-open-force"></span><span class="sig-name descname"><span class="pre">-f</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--force</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-workspace-open-f" title="Link to this definition"></a></dt>
+<dd><p>The workspace will be created even if the directory in which it will be created is not empty or if a workspace for that element already exists</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-workspace-open-directory">
+<span class="sig-name descname"><span class="pre">--directory</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;directory&gt;</span></span><a class="headerlink" href="#cmdoption-bst-workspace-open-directory" title="Link to this definition"></a></dt>
+<dd><p>Only for use when a single Element is given: Set the directory to use to create the workspace</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-workspace-open-source-remote">
+<span class="sig-name descname"><span class="pre">--source-remote</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;source_remotes&gt;</span></span><a class="headerlink" href="#cmdoption-bst-workspace-open-source-remote" title="Link to this definition"></a></dt>
+<dd><p>A remote for downloading cached sources</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-workspace-open-ignore-project-source-remotes">
+<span class="sig-name descname"><span class="pre">--ignore-project-source-remotes</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-workspace-open-ignore-project-source-remotes" title="Link to this definition"></a></dt>
+<dd><p>Ignore remote source cache servers recommended by projects</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-workspace-open-arg-ELEMENTS">
+<span class="sig-name descname"><span class="pre">ELEMENTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-workspace-open-arg-ELEMENTS" title="Link to this definition"></a></dt>
+<dd><p>Required argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-workspace-close">
+<span id="invoking-workspace-close"></span><h3>bst workspace close<a class="headerlink" href="#bst-workspace-close" title="Link to this heading"></a></h3>
+<p>Close a workspace</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>workspace<span class="w"> </span>close<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ELEMENTS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-workspace-close-remove-dir">
+<span class="sig-name descname"><span class="pre">--remove-dir</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-workspace-close-remove-dir" title="Link to this definition"></a></dt>
+<dd><p>Remove the path that contains the closed workspace</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-workspace-close-a">
+<span id="cmdoption-bst-workspace-close-all"></span><span class="sig-name descname"><span class="pre">-a</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--all</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-workspace-close-a" title="Link to this definition"></a></dt>
+<dd><p>Close all open workspaces</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-workspace-close-arg-ELEMENTS">
+<span class="sig-name descname"><span class="pre">ELEMENTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-workspace-close-arg-ELEMENTS" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-workspace-reset">
+<span id="invoking-workspace-reset"></span><h3>bst workspace reset<a class="headerlink" href="#bst-workspace-reset" title="Link to this heading"></a></h3>
+<p>Reset a workspace to its original state</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>workspace<span class="w"> </span>reset<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ELEMENTS<span class="o">]</span>...
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-workspace-reset-soft">
+<span class="sig-name descname"><span class="pre">--soft</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-workspace-reset-soft" title="Link to this definition"></a></dt>
+<dd><p>Mark workspace to re-execute configuration steps (if any) on next build. Does not alter workspace contents.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-workspace-reset-a">
+<span id="cmdoption-bst-workspace-reset-all"></span><span class="sig-name descname"><span class="pre">-a</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--all</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-workspace-reset-a" title="Link to this definition"></a></dt>
+<dd><p>Reset all open workspaces</p>
+</dd></dl>
+
+<p class="rubric">Arguments</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bst-workspace-reset-arg-ELEMENTS">
+<span class="sig-name descname"><span class="pre">ELEMENTS</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bst-workspace-reset-arg-ELEMENTS" title="Link to this definition"></a></dt>
+<dd><p>Optional argument(s)</p>
+</dd></dl>
+
+</section>
+<hr class="docutils" />
+<section id="bst-workspace-list">
+<span id="invoking-workspace-list"></span><h3>bst workspace list<a class="headerlink" href="#bst-workspace-list" title="Link to this heading"></a></h3>
+<p>List open workspaces</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>workspace<span class="w"> </span>list<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="using_config.html" class="btn btn-neutral float-left" title="User configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="using_configuring_cache_server.html" class="btn btn-neutral float-right" title="Configuring Cache Servers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

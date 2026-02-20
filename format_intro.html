@@ -1,0 +1,395 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Introduction &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Project configuration" href="format_project.html" />
+    <link rel="prev" title="Project format" href="core_format.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="core_format.html">Project format</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Introduction</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#directory-structure">Directory structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#composition">Composition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#directives">Directives</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="format_project.html">Project configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="format_declaring.html">Declaring elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="format_public.html">Builtin public data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="format_project_refs.html">The project.refs file</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_framework.html">Plugin API reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="core_format.html">Project format</a></li>
+      <li class="breadcrumb-item active">Introduction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/format_intro.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
+<p>At the core of BuildStream is a data model of <a class="reference internal" href="buildstream.element.html#module-buildstream.element" title="buildstream.element"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Elements</span></code></a> which
+are parsed from <code class="docutils literal notranslate"><span class="pre">.bst</span></code> files in a project directory and configured from a few different
+sources.</p>
+<p>When BuildStream loads your project, various levels of composition occur, allowing
+configuration on various levels with different priority.</p>
+<p>This page provides an introduction to the project directory structure, explains the
+basic <em>directives</em> supported inherently throughout the format, and outlines how composition
+occurs and what configurations are considered in which order.</p>
+<p>The meaning of the various constructs expressed in the BuildStream format are covered
+in other sections of the documentation.</p>
+<section id="directory-structure">
+<span id="format-structure"></span><h2>Directory structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h2>
+<p>A BuildStream project is a directory consisting of:</p>
+<ul class="simple">
+<li><p>A project configuration file</p></li>
+<li><p>BuildStream element files</p></li>
+<li><p>Optional user defined plugins</p></li>
+<li><p>An optional project.refs file</p></li>
+</ul>
+<p>A typical project structure may look like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">myproject</span><span class="o">/</span><span class="n">project</span><span class="o">.</span><span class="n">conf</span>
+<span class="n">myproject</span><span class="o">/</span><span class="n">project</span><span class="o">.</span><span class="n">refs</span>
+<span class="n">myproject</span><span class="o">/</span><span class="n">elements</span><span class="o">/</span><span class="n">element1</span><span class="o">.</span><span class="n">bst</span>
+<span class="n">myproject</span><span class="o">/</span><span class="n">elements</span><span class="o">/</span><span class="n">element2</span><span class="o">.</span><span class="n">bst</span>
+<span class="n">myproject</span><span class="o">/</span><span class="n">elements</span><span class="o">/...</span>
+<span class="n">myproject</span><span class="o">/</span><span class="n">plugins</span><span class="o">/</span><span class="n">customelement</span><span class="o">.</span><span class="n">py</span>
+<span class="n">myproject</span><span class="o">/</span><span class="n">plugins</span><span class="o">/</span><span class="n">customelement</span><span class="o">.</span><span class="n">yaml</span>
+<span class="n">myproject</span><span class="o">/</span><span class="n">plugins</span><span class="o">/...</span>
+</pre></div>
+</div>
+<p>Except for the project configuration file, the user is allowed to structure
+their project directory in any way. For documentation on the format of the project
+configuration file, refer to the <a class="reference internal" href="format_project.html#projectconf"><span class="std std-ref">Project configuration</span></a> documentation.</p>
+<p>Simpler projects may choose to place all element definition files at the
+root of the project directory while more complex projects may decide to
+put stacks in one directory and other floating elements into other directories,
+perhaps placing deployment elements in another directory, this is all fine.</p>
+<p>The important part to remember is that when you declare dependency relationships,
+a project relative path to the element one depends on must be provided.</p>
+</section>
+<section id="composition">
+<span id="format-composition"></span><h2>Composition<a class="headerlink" href="#composition" title="Link to this heading"></a></h2>
+<p>Below are the various sources of configuration which go into an element or source in the
+order in which they are applied. Configurations which are applied later have a higher
+priority and override configurations which precede them.</p>
+<section id="builtin-defaults">
+<h3>1. Builtin defaults<a class="headerlink" href="#builtin-defaults" title="Link to this heading"></a></h3>
+<p>The <a class="reference internal" href="format_project.html#project-builtin-defaults"><span class="std std-ref">builtin defaults</span></a> provide a set of builtin
+default default values for <code class="docutils literal notranslate"><span class="pre">project.conf</span></code>.</p>
+<p>The project wide defaults defined in the builtin project configuration, such as the
+<em>variables</em> or <em>environment</em> sections, form the base configuration of all elements.</p>
+</section>
+<section id="project-configuration">
+<h3>2. Project configuration<a class="headerlink" href="#project-configuration" title="Link to this heading"></a></h3>
+<p>The <a class="reference internal" href="format_project.html#project-defaults"><span class="std std-ref">project wide defaults</span></a> specified in your
+<code class="docutils literal notranslate"><span class="pre">project.conf</span></code> are now applied on top of builtin defaults.</p>
+<p>Defaults such as the <a class="reference internal" href="format_project.html#project-defaults-variables"><span class="std std-ref">variables</span></a> or
+<a class="reference internal" href="format_project.html#project-defaults-environment"><span class="std std-ref">environment</span></a> which are specified in
+your <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> override the builtin defaults for elements.</p>
+<p>Note that <a class="reference internal" href="format_project.html#project-overrides"><span class="std std-ref">plugin type specific configuration</span></a>
+in <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> is not applied until later.</p>
+</section>
+<section id="plugin-defaults">
+<h3>3. Plugin defaults<a class="headerlink" href="#plugin-defaults" title="Link to this heading"></a></h3>
+<p>Elements and Sources are all implemented as plugins.</p>
+<p>Each Element plugin installs a <code class="docutils literal notranslate"><span class="pre">.yaml</span></code> file along side their plugin to
+define the default <em>variables</em>, <em>environment</em> and <em>config</em>.  The <em>config</em>
+is element specific and as such this is the first place where defaults
+can be set on the <em>config</em> section.</p>
+<p>The <em>variables</em> and <em>environment</em> specified in the declaring plugin’s
+defaults here override the project configuration defaults for the given
+element <code class="docutils literal notranslate"><span class="pre">kind</span></code>.</p>
+<p>Source plugins do not have a <code class="docutils literal notranslate"><span class="pre">.yaml</span></code> file, and do not have <em>variables</em> or
+<em>environment</em>.</p>
+</section>
+<section id="project-configuration-overrides">
+<h3>4. Project configuration overrides<a class="headerlink" href="#project-configuration-overrides" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> now gives you <a class="reference internal" href="format_project.html#project-overrides"><span class="std std-ref">another opportunity</span></a> to
+override configuration on a per plugin basis.</p>
+<p>Configurations specified in the <a class="reference internal" href="format_project.html#project-element-overrides"><span class="std std-ref">elements</span></a> or
+<a class="reference internal" href="format_project.html#project-source-overrides"><span class="std std-ref">sources</span></a> sections of the <code class="docutils literal notranslate"><span class="pre">project.conf</span></code>
+will override the given plugin’s defaults.</p>
+<p>In this phase, it is possible to override any configurations of a given plugin,
+including configuration in element specific <em>config</em> sections.</p>
+<p>See also <a class="reference internal" href="format_project.html#project-overrides"><span class="std std-ref">Overriding plugin defaults</span></a></p>
+</section>
+<section id="plugin-declarations">
+<h3>5. Plugin declarations<a class="headerlink" href="#plugin-declarations" title="Link to this heading"></a></h3>
+<p>Finally, after having resolved any <a class="reference internal" href="#format-directives-conditional"><span class="std std-ref">conditionals</span></a>
+in the parsing phase of loading element declarations; the configurations specified in a
+<code class="docutils literal notranslate"><span class="pre">.bst</span></code> file have the last word on any configuration in the data model.</p>
+</section>
+</section>
+<section id="directives">
+<span id="format-directives"></span><h2>Directives<a class="headerlink" href="#directives" title="Link to this heading"></a></h2>
+<section id="conditionals">
+<span id="format-directives-conditional"></span><h3>(?) Conditionals<a class="headerlink" href="#conditionals" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">(?)</span></code> directive allows expression of conditional statements which
+test <a class="reference internal" href="format_project.html#project-options"><span class="std std-ref">project option</span></a> values.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">(?)</span></code> directive may appear as a key in any dictionary expressed
+in YAML, and its value is a list of conditional expressions. Each conditional
+expression must be a single key dictionary, where the key is the conditional
+expression itself, and the value is a dictionary to be composited into the
+parent dictionary containing the <code class="docutils literal notranslate"><span class="pre">(?)</span></code> directive if the expression evaluates
+to a truthy value.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">prefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/usr&quot;</span>
+<span class="w">  </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">(?)</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">relocate == True</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">prefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/opt&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">debug == True</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+<p>Expressions are evaluated in the specified order, and each time an expression
+evaluates to a truthy value, its value will be composited to the parent dictionary
+in advance of processing other elements, allowing for logically overriding previous
+decisions in the condition list.</p>
+<p>Nesting of conditional statements is also supported.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enable-logging</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="w">  </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">(?)</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">logging == True</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enable-logging</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">(?)</span><span class="p p-Indicator">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">debugging == True</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+<p>Conditionals are expressed in a pythonic syntax, the specifics for
+testing the individually supported option types are described in
+their <a class="reference internal" href="format_project.html#project-options"><span class="std std-ref">respective documentation</span></a>.</p>
+<p>Compound conditionals are also allowed.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">(?)</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">(logging == True and debugging == True)</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Conditional statements are guaranteed to always be resolved in the
+context of the project where the conditional statement is <em>declared</em>.</p>
+<p>When <a class="reference internal" href="#format-directives-include"><span class="std std-ref">including a file</span></a> from a
+subproject, any conditionals expressed in that file will already be
+resolved in the context of the subproject which the file was included
+from.</p>
+</div>
+</section>
+<section id="assertions">
+<span id="format-directives-assertion"></span><h3>(!) Assertions<a class="headerlink" href="#assertions" title="Link to this heading"></a></h3>
+<p>Assertions allow the project author to abort processing and present
+a custom error message to the user building their project.</p>
+<p>This is only useful when used with conditionals, allowing the project
+author to assert some invalid configurations.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">(?)</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">(logging == False and debugging == True)</span><span class="p">:</span>
+
+<span class="w">      </span><span class="nt">(!)</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+
+<span class="w">        </span><span class="no">Impossible to print any debugging information when</span>
+<span class="w">        </span><span class="no">logging is disabled.</span>
+</pre></div>
+</div>
+</section>
+<section id="list-prepend">
+<span id="format-directives-list-prepend"></span><h3>(&lt;) List Prepend<a class="headerlink" href="#list-prepend" title="Link to this heading"></a></h3>
+<p>Indicates that the list should be prepended to the target list,
+instead of the default behavior which is to replace the target list.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">configure-commands</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># Before configuring, lets make sure we&#39;re using</span>
+<span class="w">    </span><span class="c1"># the latest config.sub &amp; config.guess</span>
+<span class="w">    </span><span class="nt">(&lt;)</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp %{datadir}/automake-*/config.{sub,guess} .</span>
+</pre></div>
+</div>
+</section>
+<section id="list-append">
+<span id="format-directives-list-append"></span><h3>(&gt;) List Append<a class="headerlink" href="#list-append" title="Link to this heading"></a></h3>
+<p>Indicates that the list should be appended to the target list, instead
+of the default behavior which is to replace the target list.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">public</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bst</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">split-rules</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">devel</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># This element also adds some extra stubs which</span>
+<span class="w">        </span><span class="c1"># need to be included in the devel domain</span>
+<span class="w">        </span><span class="nt">(&gt;)</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;%{libdir}/*.stub&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="list-overwrite">
+<span id="format-directives-list-overwrite"></span><h3>(=) List Overwrite<a class="headerlink" href="#list-overwrite" title="Link to this heading"></a></h3>
+<p>Indicates that the list should be overwritten completely.</p>
+<p>This exists mostly for completeness, and we recommend using literal
+lists most of the time instead of list overwrite directives when the
+intent is to overwrite a list.</p>
+<p>This has the same behavior as a literal list, except that an
+error will be triggered in the case that there is no underlying
+list to overwrite; whereas a literal list will simply create a new
+list.</p>
+<p>The added error protection can be useful when intentionally
+overwriting a list in an element’s <em>public data</em>, which is mostly
+free form and not validated.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">install-commands</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># This element&#39;s `make install` is broken, replace it.</span>
+<span class="w">    </span><span class="nt">(=)</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cp src/program %{bindir}</span>
+</pre></div>
+</div>
+</section>
+<section id="include">
+<span id="format-directives-include"></span><h3>(&#64;) Include<a class="headerlink" href="#include" title="Link to this heading"></a></h3>
+<p>Indicates that content should be loaded from files.</p>
+<p>The include directive expects a string, or a list of strings when
+including multiple files. Each of these strings represent a project
+relative filename to include. Files can be included from subprojects
+by prefixing the string with the locally defined <a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span>
+<span class="pre">element</span></code></a> and colon (‘:’).</p>
+<p>The include directive can be used in any dictionary declared in the
+<a class="reference internal" href="format_project.html#projectconf"><span class="std std-ref">project.conf</span></a>, in any <a class="reference internal" href="format_declaring.html#format-basics"><span class="std std-ref">.bst file</span></a>, or recursively included in another include file.</p>
+<p>The including YAML fragment has priority over the files it includes,
+and overrides any values introduced by the includes. When including
+multiple files, files are included in the order they are declared in
+the include list, and each subsequent include file takes priority over
+the previous one.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">(@)</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">junction.bst:includes/environment.bst</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Files included across a junction cannot be used to inform the
+declaration of a <a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span> <span class="pre">element</span></code></a>, as
+this can present a circular dependency.</p>
+<p>Any <a class="reference internal" href="format_declaring.html#format-variables"><span class="std std-ref">variables</span></a>, <a class="reference internal" href="format_project.html#project-element-overrides"><span class="std std-ref">element
+overrides</span></a>, <a class="reference internal" href="format_project.html#project-source-overrides"><span class="std std-ref">source
+overrides</span></a> or <a class="reference internal" href="format_project.html#project-essentials-mirrors"><span class="std std-ref">mirrors</span></a> used in the declaration of a junction
+must be declared in the <a class="reference internal" href="format_project.html#projectconf"><span class="std std-ref">project.conf</span></a> or in
+included files which are local to the project declaring the
+junction itself.</p>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="core_format.html" class="btn btn-neutral float-left" title="Project format" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="format_project.html" class="btn btn-neutral float-right" title="Project configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

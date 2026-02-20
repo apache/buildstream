@@ -1,0 +1,131 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>workspace - stage an opened workspace directory &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">workspace - stage an opened workspace directory</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sources/workspace.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="workspace-stage-an-opened-workspace-directory">
+<h1>workspace - stage an opened workspace directory<a class="headerlink" href="#workspace-stage-an-opened-workspace-directory" title="Link to this heading"></a></h1>
+<p><strong>Usage:</strong></p>
+<p>The workspace plugin must not be directly used. This plugin is used as the
+kind for a synthetic node representing the sources of an element with an open
+workspace.</p>
+<section id="reporting-sourceinfo">
+<h2>Reporting <a class="reference internal" href="../buildstream.source.html#buildstream.source.SourceInfo" title="buildstream.source.SourceInfo"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceInfo</span></code></a><a class="headerlink" href="#reporting-sourceinfo" title="Link to this heading"></a></h2>
+<p>The workspace source reports the project relative or absolute path to the open
+workspace as the <em>url</em>.</p>
+<p>Further, the workspace source reports the
+<a class="reference internal" href="../buildstream.source.html#buildstream.source.SourceInfoMedium.WORKSPACE" title="buildstream.source.SourceInfoMedium.WORKSPACE"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceInfoMedium.WORKSPACE</span></code></a> <em>medium</em> and the
+<a class="reference internal" href="../buildstream.source.html#buildstream.source.SourceVersionType.CAS_DIGEST" title="buildstream.source.SourceVersionType.CAS_DIGEST"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceVersionType.CAS_DIGEST</span></code></a> <em>version_type</em>,
+for which it reports the CAS digest of the workspace source as the <em>version</em>.</p>
+<p>The <em>guess_version</em> of a workspace source is meaningless and omitted.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>Observing a SourceInfo with the <code class="docutils literal notranslate"><span class="pre">SourceInfoMedium.WORKSPACE</span></code> in the output of
+<a class="reference internal" href="../using_commands.html#invoking-show"><span class="std std-ref">bst show –format %{source-info}</span></a> is most likely undesirable, given
+that you are likely interested in observing the source provenance information of the
+project in a clean state rather than in a state with open workspaces.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

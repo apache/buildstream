@@ -1,0 +1,680 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>buildstream package &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="buildstream.sandbox package" href="buildstream.sandbox.html" />
+    <link rel="prev" title="BuildStream and Docker" href="additional_docker.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_format.html">Project format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_framework.html">Plugin API reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">buildstream package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.sandbox.html">buildstream.sandbox package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.html">buildstream.storage package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.buildelement.html">BuildElement - Abstract class for build elements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement"><code class="docutils literal notranslate"><span class="pre">BuildElement</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.downloadablefilesource.html">DownloadableFileSource - Abstract class for sources downloaded from a URI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.element.html">Element - Base element class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError"><code class="docutils literal notranslate"><span class="pre">ElementError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.element.html#buildstream.element.DependencyConfiguration"><code class="docutils literal notranslate"><span class="pre">DependencyConfiguration</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element"><code class="docutils literal notranslate"><span class="pre">Element</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.exceptions.html">Exceptions - API for Error Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain"><code class="docutils literal notranslate"><span class="pre">ErrorDomain</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.node.html">Node - Parsed YAML configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode"><code class="docutils literal notranslate"><span class="pre">MappingNode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.node.html#buildstream.node.Node"><code class="docutils literal notranslate"><span class="pre">Node</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.node.html#buildstream.node.ProvenanceInformation"><code class="docutils literal notranslate"><span class="pre">ProvenanceInformation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode"><code class="docutils literal notranslate"><span class="pre">ScalarNode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode"><code class="docutils literal notranslate"><span class="pre">SequenceNode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.plugin.html">Plugin - Base plugin class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin"><code class="docutils literal notranslate"><span class="pre">Plugin</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.scriptelement.html">ScriptElement - Abstract class for scripting elements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement"><code class="docutils literal notranslate"><span class="pre">ScriptElement</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.setup"><code class="docutils literal notranslate"><span class="pre">setup()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.source.html">Source - Base source class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.source.html#sourcefetcher-object-for-fetching-individual-urls">SourceFetcher - Object for fetching individual URLs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceError"><code class="docutils literal notranslate"><span class="pre">SourceError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.source.html#buildstream.source.AliasSubstitution"><code class="docutils literal notranslate"><span class="pre">AliasSubstitution</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType"><code class="docutils literal notranslate"><span class="pre">SourceVersionType</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo"><code class="docutils literal notranslate"><span class="pre">SourceInfo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceFetcher"><code class="docutils literal notranslate"><span class="pre">SourceFetcher</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source"><code class="docutils literal notranslate"><span class="pre">Source</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.sourcemirror.html">SourceMirror - Base source mirror class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirrorError"><code class="docutils literal notranslate"><span class="pre">SourceMirrorError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror"><code class="docutils literal notranslate"><span class="pre">SourceMirror</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.types.html">Foundation types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum"><code class="docutils literal notranslate"><span class="pre">FastEnum</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings"><code class="docutils literal notranslate"><span class="pre">CoreWarnings</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.types.html#buildstream.types.OverlapAction"><code class="docutils literal notranslate"><span class="pre">OverlapAction</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef"><code class="docutils literal notranslate"><span class="pre">SourceRef</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html">Utilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.UtilError"><code class="docutils literal notranslate"><span class="pre">UtilError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.ProgramNotFoundError"><code class="docutils literal notranslate"><span class="pre">ProgramNotFoundError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.DirectoryExistsError"><code class="docutils literal notranslate"><span class="pre">DirectoryExistsError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult"><code class="docutils literal notranslate"><span class="pre">FileListResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.list_relative_paths"><code class="docutils literal notranslate"><span class="pre">list_relative_paths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.glob"><code class="docutils literal notranslate"><span class="pre">glob()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.sha256sum"><code class="docutils literal notranslate"><span class="pre">sha256sum()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_copy"><code class="docutils literal notranslate"><span class="pre">safe_copy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_link"><code class="docutils literal notranslate"><span class="pre">safe_link()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_remove"><code class="docutils literal notranslate"><span class="pre">safe_remove()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.copy_files"><code class="docutils literal notranslate"><span class="pre">copy_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.link_files"><code class="docutils literal notranslate"><span class="pre">link_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_host_tool"><code class="docutils literal notranslate"><span class="pre">get_host_tool()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_bst_version"><code class="docutils literal notranslate"><span class="pre">get_bst_version()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.move_atomic"><code class="docutils literal notranslate"><span class="pre">move_atomic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.save_file_atomic"><code class="docutils literal notranslate"><span class="pre">save_file_atomic()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_umask"><code class="docutils literal notranslate"><span class="pre">get_umask()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.guess_version"><code class="docutils literal notranslate"><span class="pre">guess_version()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_core.html">Reference</a></li>
+      <li class="breadcrumb-item active">buildstream package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/buildstream.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-buildstream">
+<span id="buildstream-package"></span><h1>buildstream package<a class="headerlink" href="#module-buildstream" title="Link to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.sandbox.html">buildstream.sandbox package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.sandbox.html#submodules">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html">Sandbox - The build sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.SandboxCommandError"><code class="docutils literal notranslate"><span class="pre">SandboxCommandError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox"><code class="docutils literal notranslate"><span class="pre">Sandbox</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox.get_virtual_directory"><code class="docutils literal notranslate"><span class="pre">Sandbox.get_virtual_directory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox.set_environment"><code class="docutils literal notranslate"><span class="pre">Sandbox.set_environment()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox.set_work_directory"><code class="docutils literal notranslate"><span class="pre">Sandbox.set_work_directory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox.mark_directory"><code class="docutils literal notranslate"><span class="pre">Sandbox.mark_directory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox.run"><code class="docutils literal notranslate"><span class="pre">Sandbox.run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox.batch"><code class="docutils literal notranslate"><span class="pre">Sandbox.batch()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.storage.html">buildstream.storage package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.storage.html#submodules">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html">Directory - Interfacing with files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#paths">Paths</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.DirectoryError"><code class="docutils literal notranslate"><span class="pre">DirectoryError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileType"><code class="docutils literal notranslate"><span class="pre">FileType</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileType.DIRECTORY"><code class="docutils literal notranslate"><span class="pre">FileType.DIRECTORY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileType.REGULAR_FILE"><code class="docutils literal notranslate"><span class="pre">FileType.REGULAR_FILE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileType.SYMLINK"><code class="docutils literal notranslate"><span class="pre">FileType.SYMLINK</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileStat"><code class="docutils literal notranslate"><span class="pre">FileStat</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileStat.file_type"><code class="docutils literal notranslate"><span class="pre">FileStat.file_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileStat.executable"><code class="docutils literal notranslate"><span class="pre">FileStat.executable</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileStat.size"><code class="docutils literal notranslate"><span class="pre">FileStat.size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileStat.mtime"><code class="docutils literal notranslate"><span class="pre">FileStat.mtime</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory"><code class="docutils literal notranslate"><span class="pre">Directory</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.open_directory"><code class="docutils literal notranslate"><span class="pre">Directory.open_directory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.import_files"><code class="docutils literal notranslate"><span class="pre">Directory.import_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.import_single_file"><code class="docutils literal notranslate"><span class="pre">Directory.import_single_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.export_to_tar"><code class="docutils literal notranslate"><span class="pre">Directory.export_to_tar()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.list_relative_paths"><code class="docutils literal notranslate"><span class="pre">Directory.list_relative_paths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.exists"><code class="docutils literal notranslate"><span class="pre">Directory.exists()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.stat"><code class="docutils literal notranslate"><span class="pre">Directory.stat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.open_file"><code class="docutils literal notranslate"><span class="pre">Directory.open_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.file_digest"><code class="docutils literal notranslate"><span class="pre">Directory.file_digest()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.readlink"><code class="docutils literal notranslate"><span class="pre">Directory.readlink()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.remove"><code class="docutils literal notranslate"><span class="pre">Directory.remove()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.rename"><code class="docutils literal notranslate"><span class="pre">Directory.rename()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.isfile"><code class="docutils literal notranslate"><span class="pre">Directory.isfile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.isdir"><code class="docutils literal notranslate"><span class="pre">Directory.isdir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory.islink"><code class="docutils literal notranslate"><span class="pre">Directory.islink()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.buildelement.html">BuildElement - Abstract class for build elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.buildelement.html#built-in-functionality">Built-in functionality</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#the-strip-binaries-variable">The <cite>strip-binaries</cite> variable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#location-for-staging-dependencies">Location for staging dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#digest-environment-for-dependencies"><cite>digest-environment</cite> for dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#location-for-running-commands">Location for running commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#location-for-configuring-the-project">Location for configuring the project</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.buildelement.html#separating-source-and-build-directories">Separating source and build directories</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#install-location">Install Location</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.buildelement.html#abstract-method-implementations">Abstract method implementations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#element-configure-sandbox">Element.configure_sandbox()</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#element-stage">Element.stage()</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#element-assemble">Element.assemble()</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement"><code class="docutils literal notranslate"><span class="pre">BuildElement</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement.configure"><code class="docutils literal notranslate"><span class="pre">BuildElement.configure()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement.configure_dependencies"><code class="docutils literal notranslate"><span class="pre">BuildElement.configure_dependencies()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement.preflight"><code class="docutils literal notranslate"><span class="pre">BuildElement.preflight()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement.get_unique_key"><code class="docutils literal notranslate"><span class="pre">BuildElement.get_unique_key()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement.configure_sandbox"><code class="docutils literal notranslate"><span class="pre">BuildElement.configure_sandbox()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement.stage"><code class="docutils literal notranslate"><span class="pre">BuildElement.stage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement.assemble"><code class="docutils literal notranslate"><span class="pre">BuildElement.assemble()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement.generate_script"><code class="docutils literal notranslate"><span class="pre">BuildElement.generate_script()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.downloadablefilesource.html">DownloadableFileSource - Abstract class for sources downloaded from a URI</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.downloadablefilesource.html#built-in-functionality">Built-in functionality</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.downloadablefilesource.html#sourcemirror-extra-data-http-auth">SourceMirror extra data “http-auth”</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html#default-reporting-of-sourceinfo">Default reporting of <code class="xref py py-class docutils literal notranslate"><span class="pre">SourceInfo</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource.COMMON_CONFIG_KEYS"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.COMMON_CONFIG_KEYS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource.configure"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.configure()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource.preflight"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.preflight()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource.get_unique_key"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.get_unique_key()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource.is_cached"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.is_cached()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource.load_ref"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.load_ref()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource.get_ref"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.get_ref()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource.set_ref"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.set_ref()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource.track"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.track()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource.fetch"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.fetch()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource.collect_source_info"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.collect_source_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.element.html">Element - Base element class</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#abstract-methods">Abstract Methods</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#build-phase">Build Phase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#miscellaneous">Miscellaneous</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#class-reference">Class Reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError"><code class="docutils literal notranslate"><span class="pre">ElementError</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.element.html#buildstream.element.DependencyConfiguration"><code class="docutils literal notranslate"><span class="pre">DependencyConfiguration</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.DependencyConfiguration.element"><code class="docutils literal notranslate"><span class="pre">DependencyConfiguration.element</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.DependencyConfiguration.path"><code class="docutils literal notranslate"><span class="pre">DependencyConfiguration.path</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.DependencyConfiguration.config"><code class="docutils literal notranslate"><span class="pre">DependencyConfiguration.config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element"><code class="docutils literal notranslate"><span class="pre">Element</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.BST_ARTIFACT_VERSION"><code class="docutils literal notranslate"><span class="pre">Element.BST_ARTIFACT_VERSION</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.BST_STRICT_REBUILD"><code class="docutils literal notranslate"><span class="pre">Element.BST_STRICT_REBUILD</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.BST_FORBID_RDEPENDS"><code class="docutils literal notranslate"><span class="pre">Element.BST_FORBID_RDEPENDS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.BST_FORBID_BDEPENDS"><code class="docutils literal notranslate"><span class="pre">Element.BST_FORBID_BDEPENDS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.BST_FORBID_SOURCES"><code class="docutils literal notranslate"><span class="pre">Element.BST_FORBID_SOURCES</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.BST_RUN_COMMANDS"><code class="docutils literal notranslate"><span class="pre">Element.BST_RUN_COMMANDS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.BST_ELEMENT_HAS_ARTIFACT"><code class="docutils literal notranslate"><span class="pre">Element.BST_ELEMENT_HAS_ARTIFACT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.project_name"><code class="docutils literal notranslate"><span class="pre">Element.project_name</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.normal_name"><code class="docutils literal notranslate"><span class="pre">Element.normal_name</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.configure_dependencies"><code class="docutils literal notranslate"><span class="pre">Element.configure_dependencies()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.configure_sandbox"><code class="docutils literal notranslate"><span class="pre">Element.configure_sandbox()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.stage"><code class="docutils literal notranslate"><span class="pre">Element.stage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.assemble"><code class="docutils literal notranslate"><span class="pre">Element.assemble()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.generate_script"><code class="docutils literal notranslate"><span class="pre">Element.generate_script()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.sources"><code class="docutils literal notranslate"><span class="pre">Element.sources()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.dependencies"><code class="docutils literal notranslate"><span class="pre">Element.dependencies()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.search"><code class="docutils literal notranslate"><span class="pre">Element.search()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.node_subst_vars"><code class="docutils literal notranslate"><span class="pre">Element.node_subst_vars()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.node_subst_sequence_vars"><code class="docutils literal notranslate"><span class="pre">Element.node_subst_sequence_vars()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.compute_manifest"><code class="docutils literal notranslate"><span class="pre">Element.compute_manifest()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.get_artifact_name"><code class="docutils literal notranslate"><span class="pre">Element.get_artifact_name()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.stage_artifact"><code class="docutils literal notranslate"><span class="pre">Element.stage_artifact()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.stage_dependency_artifacts"><code class="docutils literal notranslate"><span class="pre">Element.stage_dependency_artifacts()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.integrate"><code class="docutils literal notranslate"><span class="pre">Element.integrate()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.stage_sources"><code class="docutils literal notranslate"><span class="pre">Element.stage_sources()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.get_public_data"><code class="docutils literal notranslate"><span class="pre">Element.get_public_data()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.set_public_data"><code class="docutils literal notranslate"><span class="pre">Element.set_public_data()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.get_environment"><code class="docutils literal notranslate"><span class="pre">Element.get_environment()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.get_variable"><code class="docutils literal notranslate"><span class="pre">Element.get_variable()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.run_cleanup_commands"><code class="docutils literal notranslate"><span class="pre">Element.run_cleanup_commands()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element.subsandbox"><code class="docutils literal notranslate"><span class="pre">Element.subsandbox()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.exceptions.html">Exceptions - API for Error Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain"><code class="docutils literal notranslate"><span class="pre">ErrorDomain</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.PLUGIN"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.PLUGIN</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.LOAD"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.LOAD</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.IMPL"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.IMPL</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.PLATFORM"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.PLATFORM</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.SANDBOX"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.SANDBOX</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.ARTIFACT"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.ARTIFACT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.PIPELINE"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.PIPELINE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.UTIL"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.UTIL</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.SOURCE"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.SOURCE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.ELEMENT"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.ELEMENT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.APP"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.APP</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.STREAM"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.STREAM</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.VIRTUAL_FS"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.VIRTUAL_FS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.CAS"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.CAS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.PROG_NOT_FOUND"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.PROG_NOT_FOUND</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.REMOTE"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.REMOTE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain.PROFILE"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.PROFILE</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.MISSING_FILE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.MISSING_FILE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.INVALID_YAML"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.INVALID_YAML</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.INVALID_DATA"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.INVALID_DATA</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.ILLEGAL_COMPOSITE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.ILLEGAL_COMPOSITE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.CIRCULAR_DEPENDENCY"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.CIRCULAR_DEPENDENCY</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.UNRESOLVED_VARIABLE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.UNRESOLVED_VARIABLE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.UNSUPPORTED_PROJECT"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.UNSUPPORTED_PROJECT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.UNSUPPORTED_PLUGIN"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.UNSUPPORTED_PLUGIN</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.EXPRESSION_FAILED"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.EXPRESSION_FAILED</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.USER_ASSERTION"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.USER_ASSERTION</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.TRAILING_LIST_DIRECTIVE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.TRAILING_LIST_DIRECTIVE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.CONFLICTING_JUNCTION"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.CONFLICTING_JUNCTION</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.INVALID_JUNCTION"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.INVALID_JUNCTION</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.SUBPROJECT_INCONSISTENT"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.SUBPROJECT_INCONSISTENT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.INVALID_SYMBOL_NAME"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.INVALID_SYMBOL_NAME</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.MISSING_PROJECT_CONF"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.MISSING_PROJECT_CONF</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.LOADING_DIRECTORY"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.LOADING_DIRECTORY</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.PROJ_PATH_INVALID"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.PROJ_PATH_INVALID</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.PROJ_PATH_INVALID_KIND"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.PROJ_PATH_INVALID_KIND</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.RECURSIVE_INCLUDE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.RECURSIVE_INCLUDE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.PROTECTED_VARIABLE_REDEFINED"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.PROTECTED_VARIABLE_REDEFINED</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.INVALID_DEPENDENCY_CONFIG"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.INVALID_DEPENDENCY_CONFIG</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.LINK_FORBIDDEN_DEPENDENCIES"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.LINK_FORBIDDEN_DEPENDENCIES</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.CIRCULAR_REFERENCE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.CIRCULAR_REFERENCE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.BAD_ELEMENT_SUFFIX"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.BAD_ELEMENT_SUFFIX</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.BAD_CHARACTERS_IN_NAME"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.BAD_CHARACTERS_IN_NAME</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason.UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.node.html">Node - Parsed YAML configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#node-types">Node types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#class-reference">Class Reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode"><code class="docutils literal notranslate"><span class="pre">MappingNode</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.clone"><code class="docutils literal notranslate"><span class="pre">MappingNode.clone()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.get_bool"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_bool()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.get_enum"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_enum()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.get_int"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_int()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.get_mapping"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_mapping()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.get_node"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_node()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.get_scalar"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_scalar()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.get_sequence"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_sequence()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.get_str"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_str()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.get_str_list"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_str_list()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.items"><code class="docutils literal notranslate"><span class="pre">MappingNode.items()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.keys"><code class="docutils literal notranslate"><span class="pre">MappingNode.keys()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.safe_del"><code class="docutils literal notranslate"><span class="pre">MappingNode.safe_del()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.strip_node_info"><code class="docutils literal notranslate"><span class="pre">MappingNode.strip_node_info()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.validate_keys"><code class="docutils literal notranslate"><span class="pre">MappingNode.validate_keys()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.values"><code class="docutils literal notranslate"><span class="pre">MappingNode.values()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.node.html#buildstream.node.Node"><code class="docutils literal notranslate"><span class="pre">Node</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.Node.clone"><code class="docutils literal notranslate"><span class="pre">Node.clone()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.Node.from_dict"><code class="docutils literal notranslate"><span class="pre">Node.from_dict()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.Node.get_provenance"><code class="docutils literal notranslate"><span class="pre">Node.get_provenance()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.Node.strip_node_info"><code class="docutils literal notranslate"><span class="pre">Node.strip_node_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.node.html#buildstream.node.ProvenanceInformation"><code class="docutils literal notranslate"><span class="pre">ProvenanceInformation</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode"><code class="docutils literal notranslate"><span class="pre">ScalarNode</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode.as_bool"><code class="docutils literal notranslate"><span class="pre">ScalarNode.as_bool()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode.as_enum"><code class="docutils literal notranslate"><span class="pre">ScalarNode.as_enum()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode.as_int"><code class="docutils literal notranslate"><span class="pre">ScalarNode.as_int()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode.as_str"><code class="docutils literal notranslate"><span class="pre">ScalarNode.as_str()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode.clone"><code class="docutils literal notranslate"><span class="pre">ScalarNode.clone()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode.is_none"><code class="docutils literal notranslate"><span class="pre">ScalarNode.is_none()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode.strip_node_info"><code class="docutils literal notranslate"><span class="pre">ScalarNode.strip_node_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode"><code class="docutils literal notranslate"><span class="pre">SequenceNode</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode.append"><code class="docutils literal notranslate"><span class="pre">SequenceNode.append()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode.as_str_list"><code class="docutils literal notranslate"><span class="pre">SequenceNode.as_str_list()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode.clone"><code class="docutils literal notranslate"><span class="pre">SequenceNode.clone()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode.mapping_at"><code class="docutils literal notranslate"><span class="pre">SequenceNode.mapping_at()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode.node_at"><code class="docutils literal notranslate"><span class="pre">SequenceNode.node_at()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode.scalar_at"><code class="docutils literal notranslate"><span class="pre">SequenceNode.scalar_at()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode.sequence_at"><code class="docutils literal notranslate"><span class="pre">SequenceNode.sequence_at()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode.strip_node_info"><code class="docutils literal notranslate"><span class="pre">SequenceNode.strip_node_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.plugin.html">Plugin - Base plugin class</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#abstract-methods">Abstract Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#configurable-warnings">Configurable Warnings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#plugin-structure">Plugin Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#class-reference">Class Reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin"><code class="docutils literal notranslate"><span class="pre">Plugin</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.BST_MIN_VERSION"><code class="docutils literal notranslate"><span class="pre">Plugin.BST_MIN_VERSION</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.BST_PLUGIN_DEPRECATED"><code class="docutils literal notranslate"><span class="pre">Plugin.BST_PLUGIN_DEPRECATED</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.BST_PLUGIN_DEPRECATION_MESSAGE"><code class="docutils literal notranslate"><span class="pre">Plugin.BST_PLUGIN_DEPRECATION_MESSAGE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.name"><code class="docutils literal notranslate"><span class="pre">Plugin.name</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure"><code class="docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.preflight"><code class="docutils literal notranslate"><span class="pre">Plugin.preflight()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.get_unique_key"><code class="docutils literal notranslate"><span class="pre">Plugin.get_unique_key()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.get_kind"><code class="docutils literal notranslate"><span class="pre">Plugin.get_kind()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.node_get_project_path"><code class="docutils literal notranslate"><span class="pre">Plugin.node_get_project_path()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.debug"><code class="docutils literal notranslate"><span class="pre">Plugin.debug()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.status"><code class="docutils literal notranslate"><span class="pre">Plugin.status()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.info"><code class="docutils literal notranslate"><span class="pre">Plugin.info()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.warn"><code class="docutils literal notranslate"><span class="pre">Plugin.warn()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.log"><code class="docutils literal notranslate"><span class="pre">Plugin.log()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.timed_activity"><code class="docutils literal notranslate"><span class="pre">Plugin.timed_activity()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.blocking_activity"><code class="docutils literal notranslate"><span class="pre">Plugin.blocking_activity()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.call"><code class="docutils literal notranslate"><span class="pre">Plugin.call()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.check_output"><code class="docutils literal notranslate"><span class="pre">Plugin.check_output()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.scriptelement.html">ScriptElement - Abstract class for scripting elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement"><code class="docutils literal notranslate"><span class="pre">ScriptElement</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement.BST_STRICT_REBUILD"><code class="docutils literal notranslate"><span class="pre">ScriptElement.BST_STRICT_REBUILD</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement.BST_FORBID_RDEPENDS"><code class="docutils literal notranslate"><span class="pre">ScriptElement.BST_FORBID_RDEPENDS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement.BST_FORBID_SOURCES"><code class="docutils literal notranslate"><span class="pre">ScriptElement.BST_FORBID_SOURCES</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement.set_work_dir"><code class="docutils literal notranslate"><span class="pre">ScriptElement.set_work_dir()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement.set_install_root"><code class="docutils literal notranslate"><span class="pre">ScriptElement.set_install_root()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement.set_root_read_only"><code class="docutils literal notranslate"><span class="pre">ScriptElement.set_root_read_only()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement.layout_add"><code class="docutils literal notranslate"><span class="pre">ScriptElement.layout_add()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement.add_commands"><code class="docutils literal notranslate"><span class="pre">ScriptElement.add_commands()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement.preflight"><code class="docutils literal notranslate"><span class="pre">ScriptElement.preflight()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement.get_unique_key"><code class="docutils literal notranslate"><span class="pre">ScriptElement.get_unique_key()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement.configure_sandbox"><code class="docutils literal notranslate"><span class="pre">ScriptElement.configure_sandbox()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement.stage"><code class="docutils literal notranslate"><span class="pre">ScriptElement.stage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement.assemble"><code class="docutils literal notranslate"><span class="pre">ScriptElement.assemble()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.setup"><code class="docutils literal notranslate"><span class="pre">setup()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.source.html">Source - Base source class</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#built-in-functionality">Built-in functionality</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#abstract-methods">Abstract Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#working-with-the-source-ref">Working with the source ref</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#loading-and-saving">Loading and saving</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#tracking-new-references">Tracking new references</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#managing-internal-state">Managing internal state</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#generating-the-unique-key">Generating the unique key</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#accessing-previous-sources">Accessing previous sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#generating-sourceinfo-for-provenance-information">Generating SourceInfo for provenance information</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#the-url">The URL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#the-medium-and-version-type-arguments">The medium and version_type arguments</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.source.html#documentation">Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#version">Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#version-guess">Version guess</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.source.html#configurability">Configurability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buildstream.source.html#explicit-versioning">Explicit versioning</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#extra-data">Extra data</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.source.html#sourcefetcher-object-for-fetching-individual-urls">SourceFetcher - Object for fetching individual URLs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#id1">Abstract Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#class-reference">Class Reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceError"><code class="docutils literal notranslate"><span class="pre">SourceError</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.source.html#buildstream.source.AliasSubstitution"><code class="docutils literal notranslate"><span class="pre">AliasSubstitution</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium.WORKSPACE"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium.WORKSPACE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium.LOCAL"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium.LOCAL</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium.REMOTE_FILE"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium.REMOTE_FILE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium.GIT"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium.GIT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium.BAZAAR"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium.BAZAAR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium.OCI_IMAGE"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium.OCI_IMAGE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium.PYTHON_PACKAGE_INDEX"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium.PYTHON_PACKAGE_INDEX</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType"><code class="docutils literal notranslate"><span class="pre">SourceVersionType</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType.COMMIT"><code class="docutils literal notranslate"><span class="pre">SourceVersionType.COMMIT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType.SHA256"><code class="docutils literal notranslate"><span class="pre">SourceVersionType.SHA256</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType.CAS_DIGEST"><code class="docutils literal notranslate"><span class="pre">SourceVersionType.CAS_DIGEST</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType.OCI_DIGEST"><code class="docutils literal notranslate"><span class="pre">SourceVersionType.OCI_DIGEST</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType.INDEXED_VERSION"><code class="docutils literal notranslate"><span class="pre">SourceVersionType.INDEXED_VERSION</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo"><code class="docutils literal notranslate"><span class="pre">SourceInfo</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo.kind"><code class="docutils literal notranslate"><span class="pre">SourceInfo.kind</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo.url"><code class="docutils literal notranslate"><span class="pre">SourceInfo.url</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo.homepage"><code class="docutils literal notranslate"><span class="pre">SourceInfo.homepage</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo.issue_tracker"><code class="docutils literal notranslate"><span class="pre">SourceInfo.issue_tracker</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo.provenance"><code class="docutils literal notranslate"><span class="pre">SourceInfo.provenance</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo.medium"><code class="docutils literal notranslate"><span class="pre">SourceInfo.medium</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo.version_type"><code class="docutils literal notranslate"><span class="pre">SourceInfo.version_type</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo.version"><code class="docutils literal notranslate"><span class="pre">SourceInfo.version</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo.version_guess"><code class="docutils literal notranslate"><span class="pre">SourceInfo.version_guess</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo.extra_data"><code class="docutils literal notranslate"><span class="pre">SourceInfo.extra_data</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo.serialize"><code class="docutils literal notranslate"><span class="pre">SourceInfo.serialize()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceFetcher"><code class="docutils literal notranslate"><span class="pre">SourceFetcher</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceFetcher.fetch"><code class="docutils literal notranslate"><span class="pre">SourceFetcher.fetch()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceFetcher.get_source_info"><code class="docutils literal notranslate"><span class="pre">SourceFetcher.get_source_info()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceFetcher.mark_download_url"><code class="docutils literal notranslate"><span class="pre">SourceFetcher.mark_download_url()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source"><code class="docutils literal notranslate"><span class="pre">Source</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.BST_CUSTOM_SOURCE_PROVENANCE"><code class="docutils literal notranslate"><span class="pre">Source.BST_CUSTOM_SOURCE_PROVENANCE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK"><code class="docutils literal notranslate"><span class="pre">Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH"><code class="docutils literal notranslate"><span class="pre">Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE"><code class="docutils literal notranslate"><span class="pre">Source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.BST_STAGE_VIRTUAL_DIRECTORY"><code class="docutils literal notranslate"><span class="pre">Source.BST_STAGE_VIRTUAL_DIRECTORY</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.COMMON_CONFIG_KEYS"><code class="docutils literal notranslate"><span class="pre">Source.COMMON_CONFIG_KEYS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.load_ref"><code class="docutils literal notranslate"><span class="pre">Source.load_ref()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.get_ref"><code class="docutils literal notranslate"><span class="pre">Source.get_ref()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.set_ref"><code class="docutils literal notranslate"><span class="pre">Source.set_ref()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.track"><code class="docutils literal notranslate"><span class="pre">Source.track()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.fetch"><code class="docutils literal notranslate"><span class="pre">Source.fetch()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.stage"><code class="docutils literal notranslate"><span class="pre">Source.stage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.stage_directory"><code class="docutils literal notranslate"><span class="pre">Source.stage_directory()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.init_workspace"><code class="docutils literal notranslate"><span class="pre">Source.init_workspace()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.init_workspace_directory"><code class="docutils literal notranslate"><span class="pre">Source.init_workspace_directory()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.get_source_fetchers"><code class="docutils literal notranslate"><span class="pre">Source.get_source_fetchers()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.validate_cache"><code class="docutils literal notranslate"><span class="pre">Source.validate_cache()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.is_cached"><code class="docutils literal notranslate"><span class="pre">Source.is_cached()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.collect_source_info"><code class="docutils literal notranslate"><span class="pre">Source.collect_source_info()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.get_mirror_directory"><code class="docutils literal notranslate"><span class="pre">Source.get_mirror_directory()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.translate_url"><code class="docutils literal notranslate"><span class="pre">Source.translate_url()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.mark_download_url"><code class="docutils literal notranslate"><span class="pre">Source.mark_download_url()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.get_project_directory"><code class="docutils literal notranslate"><span class="pre">Source.get_project_directory()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.tempdir"><code class="docutils literal notranslate"><span class="pre">Source.tempdir()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.is_resolved"><code class="docutils literal notranslate"><span class="pre">Source.is_resolved()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source.create_source_info"><code class="docutils literal notranslate"><span class="pre">Source.create_source_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.sourcemirror.html">SourceMirror - Base source mirror class</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.sourcemirror.html#abstract-methods">Abstract Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.sourcemirror.html#class-reference">Class Reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirrorError"><code class="docutils literal notranslate"><span class="pre">SourceMirrorError</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror"><code class="docutils literal notranslate"><span class="pre">SourceMirror</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror.BST_MIN_VERSION"><code class="docutils literal notranslate"><span class="pre">SourceMirror.BST_MIN_VERSION</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror.set_supported_aliases"><code class="docutils literal notranslate"><span class="pre">SourceMirror.set_supported_aliases()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror.translate_url"><code class="docutils literal notranslate"><span class="pre">SourceMirror.translate_url()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.types.html">Foundation types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum"><code class="docutils literal notranslate"><span class="pre">FastEnum</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum.name"><code class="docutils literal notranslate"><span class="pre">FastEnum.name</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum.value"><code class="docutils literal notranslate"><span class="pre">FastEnum.value</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum.values"><code class="docutils literal notranslate"><span class="pre">FastEnum.values()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings"><code class="docutils literal notranslate"><span class="pre">CoreWarnings</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings.OVERLAPS"><code class="docutils literal notranslate"><span class="pre">CoreWarnings.OVERLAPS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings.UNSTAGED_FILES"><code class="docutils literal notranslate"><span class="pre">CoreWarnings.UNSTAGED_FILES</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings.REF_NOT_IN_TRACK"><code class="docutils literal notranslate"><span class="pre">CoreWarnings.REF_NOT_IN_TRACK</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings.UNALIASED_URL"><code class="docutils literal notranslate"><span class="pre">CoreWarnings.UNALIASED_URL</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings.UNAVAILABLE_SOURCE_INFO"><code class="docutils literal notranslate"><span class="pre">CoreWarnings.UNAVAILABLE_SOURCE_INFO</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.types.html#buildstream.types.OverlapAction"><code class="docutils literal notranslate"><span class="pre">OverlapAction</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.types.html#buildstream.types.OverlapAction.ERROR"><code class="docutils literal notranslate"><span class="pre">OverlapAction.ERROR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.types.html#buildstream.types.OverlapAction.WARNING"><code class="docutils literal notranslate"><span class="pre">OverlapAction.WARNING</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.types.html#buildstream.types.OverlapAction.IGNORE"><code class="docutils literal notranslate"><span class="pre">OverlapAction.IGNORE</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef"><code class="docutils literal notranslate"><span class="pre">SourceRef</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.UtilError"><code class="docutils literal notranslate"><span class="pre">UtilError</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.ProgramNotFoundError"><code class="docutils literal notranslate"><span class="pre">ProgramNotFoundError</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.DirectoryExistsError"><code class="docutils literal notranslate"><span class="pre">DirectoryExistsError</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult"><code class="docutils literal notranslate"><span class="pre">FileListResult</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult.overwritten"><code class="docutils literal notranslate"><span class="pre">FileListResult.overwritten</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult.ignored"><code class="docutils literal notranslate"><span class="pre">FileListResult.ignored</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult.failed_attributes"><code class="docutils literal notranslate"><span class="pre">FileListResult.failed_attributes</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult.files_written"><code class="docutils literal notranslate"><span class="pre">FileListResult.files_written</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.list_relative_paths"><code class="docutils literal notranslate"><span class="pre">list_relative_paths()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.glob"><code class="docutils literal notranslate"><span class="pre">glob()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.sha256sum"><code class="docutils literal notranslate"><span class="pre">sha256sum()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_copy"><code class="docutils literal notranslate"><span class="pre">safe_copy()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_link"><code class="docutils literal notranslate"><span class="pre">safe_link()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_remove"><code class="docutils literal notranslate"><span class="pre">safe_remove()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.copy_files"><code class="docutils literal notranslate"><span class="pre">copy_files()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.link_files"><code class="docutils literal notranslate"><span class="pre">link_files()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_host_tool"><code class="docutils literal notranslate"><span class="pre">get_host_tool()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_bst_version"><code class="docutils literal notranslate"><span class="pre">get_bst_version()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.move_atomic"><code class="docutils literal notranslate"><span class="pre">move_atomic()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.save_file_atomic"><code class="docutils literal notranslate"><span class="pre">save_file_atomic()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_umask"><code class="docutils literal notranslate"><span class="pre">get_umask()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.guess_version"><code class="docutils literal notranslate"><span class="pre">guess_version()</span></code></a></li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="additional_docker.html" class="btn btn-neutral float-left" title="BuildStream and Docker" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="buildstream.sandbox.html" class="btn btn-neutral float-right" title="buildstream.sandbox package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

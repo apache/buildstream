@@ -1,0 +1,439 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScriptElement - Abstract class for scripting elements &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Sandbox - The build sandbox" href="buildstream.sandbox.sandbox.html" />
+    <link rel="prev" title="BuildElement - Abstract class for build elements" href="buildstream.buildelement.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_format.html">Project format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="core_framework.html">Plugin API reference</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html">Foundation types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum"><code class="docutils literal notranslate"><span class="pre">FastEnum</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings"><code class="docutils literal notranslate"><span class="pre">CoreWarnings</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.OverlapAction"><code class="docutils literal notranslate"><span class="pre">OverlapAction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef"><code class="docutils literal notranslate"><span class="pre">SourceRef</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html">Node - Parsed YAML configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode"><code class="docutils literal notranslate"><span class="pre">MappingNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.Node"><code class="docutils literal notranslate"><span class="pre">Node</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.ProvenanceInformation"><code class="docutils literal notranslate"><span class="pre">ProvenanceInformation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode"><code class="docutils literal notranslate"><span class="pre">ScalarNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode"><code class="docutils literal notranslate"><span class="pre">SequenceNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html">Plugin - Base plugin class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin"><code class="docutils literal notranslate"><span class="pre">Plugin</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html">Source - Base source class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#sourcefetcher-object-for-fetching-individual-urls">SourceFetcher - Object for fetching individual URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceError"><code class="docutils literal notranslate"><span class="pre">SourceError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.AliasSubstitution"><code class="docutils literal notranslate"><span class="pre">AliasSubstitution</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType"><code class="docutils literal notranslate"><span class="pre">SourceVersionType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo"><code class="docutils literal notranslate"><span class="pre">SourceInfo</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceFetcher"><code class="docutils literal notranslate"><span class="pre">SourceFetcher</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source"><code class="docutils literal notranslate"><span class="pre">Source</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html">SourceMirror - Base source mirror class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirrorError"><code class="docutils literal notranslate"><span class="pre">SourceMirrorError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror"><code class="docutils literal notranslate"><span class="pre">SourceMirror</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html">DownloadableFileSource - Abstract class for sources downloaded from a URI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html">Element - Base element class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError"><code class="docutils literal notranslate"><span class="pre">ElementError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.DependencyConfiguration"><code class="docutils literal notranslate"><span class="pre">DependencyConfiguration</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element"><code class="docutils literal notranslate"><span class="pre">Element</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html">BuildElement - Abstract class for build elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement"><code class="docutils literal notranslate"><span class="pre">BuildElement</span></code></a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">ScriptElement - Abstract class for scripting elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement"><code class="docutils literal notranslate"><span class="pre">ScriptElement</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement.BST_STRICT_REBUILD"><code class="docutils literal notranslate"><span class="pre">ScriptElement.BST_STRICT_REBUILD</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement.BST_FORBID_RDEPENDS"><code class="docutils literal notranslate"><span class="pre">ScriptElement.BST_FORBID_RDEPENDS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement.BST_FORBID_SOURCES"><code class="docutils literal notranslate"><span class="pre">ScriptElement.BST_FORBID_SOURCES</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement.set_work_dir"><code class="docutils literal notranslate"><span class="pre">ScriptElement.set_work_dir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement.set_install_root"><code class="docutils literal notranslate"><span class="pre">ScriptElement.set_install_root()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement.set_root_read_only"><code class="docutils literal notranslate"><span class="pre">ScriptElement.set_root_read_only()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement.layout_add"><code class="docutils literal notranslate"><span class="pre">ScriptElement.layout_add()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement.add_commands"><code class="docutils literal notranslate"><span class="pre">ScriptElement.add_commands()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement.preflight"><code class="docutils literal notranslate"><span class="pre">ScriptElement.preflight()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement.get_unique_key"><code class="docutils literal notranslate"><span class="pre">ScriptElement.get_unique_key()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement.configure_sandbox"><code class="docutils literal notranslate"><span class="pre">ScriptElement.configure_sandbox()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement.stage"><code class="docutils literal notranslate"><span class="pre">ScriptElement.stage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.scriptelement.ScriptElement.assemble"><code class="docutils literal notranslate"><span class="pre">ScriptElement.assemble()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.scriptelement.setup"><code class="docutils literal notranslate"><span class="pre">setup()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html">Sandbox - The build sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.SandboxCommandError"><code class="docutils literal notranslate"><span class="pre">SandboxCommandError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox"><code class="docutils literal notranslate"><span class="pre">Sandbox</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html">Directory - Interfacing with files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.DirectoryError"><code class="docutils literal notranslate"><span class="pre">DirectoryError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileType"><code class="docutils literal notranslate"><span class="pre">FileType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileStat"><code class="docutils literal notranslate"><span class="pre">FileStat</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory"><code class="docutils literal notranslate"><span class="pre">Directory</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html">Exceptions - API for Error Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain"><code class="docutils literal notranslate"><span class="pre">ErrorDomain</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html">Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.UtilError"><code class="docutils literal notranslate"><span class="pre">UtilError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.ProgramNotFoundError"><code class="docutils literal notranslate"><span class="pre">ProgramNotFoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.DirectoryExistsError"><code class="docutils literal notranslate"><span class="pre">DirectoryExistsError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult"><code class="docutils literal notranslate"><span class="pre">FileListResult</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.list_relative_paths"><code class="docutils literal notranslate"><span class="pre">list_relative_paths()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.glob"><code class="docutils literal notranslate"><span class="pre">glob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.sha256sum"><code class="docutils literal notranslate"><span class="pre">sha256sum()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_copy"><code class="docutils literal notranslate"><span class="pre">safe_copy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_link"><code class="docutils literal notranslate"><span class="pre">safe_link()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_remove"><code class="docutils literal notranslate"><span class="pre">safe_remove()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.copy_files"><code class="docutils literal notranslate"><span class="pre">copy_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.link_files"><code class="docutils literal notranslate"><span class="pre">link_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_host_tool"><code class="docutils literal notranslate"><span class="pre">get_host_tool()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_bst_version"><code class="docutils literal notranslate"><span class="pre">get_bst_version()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.move_atomic"><code class="docutils literal notranslate"><span class="pre">move_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.save_file_atomic"><code class="docutils literal notranslate"><span class="pre">save_file_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_umask"><code class="docutils literal notranslate"><span class="pre">get_umask()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.guess_version"><code class="docutils literal notranslate"><span class="pre">guess_version()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="core_framework.html">Plugin API reference</a></li>
+      <li class="breadcrumb-item active">ScriptElement - Abstract class for scripting elements</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/buildstream.scriptelement.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="scriptelement-abstract-class-for-scripting-elements">
+<span id="module-buildstream.scriptelement"></span><h1>ScriptElement - Abstract class for scripting elements<a class="headerlink" href="#scriptelement-abstract-class-for-scripting-elements" title="Link to this heading"></a></h1>
+<p>The ScriptElement class is a convenience class one can derive for
+implementing elements that stage elements and run command-lines on them.</p>
+<p>Any derived classes must write their own configure() implementation, using
+the public APIs exposed in this class.</p>
+<p>Derived classes must also chain up to the parent method in their preflight()
+implementations.</p>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ScriptElement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Context</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Project</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_element</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LoadElement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plugin_conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artifact_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.scriptelement.ScriptElement" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="buildstream.element.html#buildstream.element.Element" title="buildstream.element.Element"><code class="xref py py-class docutils literal notranslate"><span class="pre">Element</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement.BST_STRICT_REBUILD">
+<span class="sig-name descname"><span class="pre">BST_STRICT_REBUILD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#buildstream.scriptelement.ScriptElement.BST_STRICT_REBUILD" title="Link to this definition"></a></dt>
+<dd><p>Whether to rebuild this element in non strict mode if
+any of the dependencies have changed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement.BST_FORBID_RDEPENDS">
+<span class="sig-name descname"><span class="pre">BST_FORBID_RDEPENDS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#buildstream.scriptelement.ScriptElement.BST_FORBID_RDEPENDS" title="Link to this definition"></a></dt>
+<dd><p>Whether to raise exceptions if an element has runtime dependencies.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement.BST_FORBID_SOURCES">
+<span class="sig-name descname"><span class="pre">BST_FORBID_SOURCES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#buildstream.scriptelement.ScriptElement.BST_FORBID_SOURCES" title="Link to this definition"></a></dt>
+<dd><p>Whether to raise exceptions if an element has sources.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement.set_work_dir">
+<span class="sig-name descname"><span class="pre">set_work_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">work_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.scriptelement.ScriptElement.set_work_dir" title="Link to this definition"></a></dt>
+<dd><p>Sets the working dir</p>
+<p>The working dir (a.k.a. cwd) is the directory which commands will be
+called from.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>work_dir</strong> – The working directory. If called without this argument
+set, it’ll default to the value of the variable <code class="docutils literal notranslate"><span class="pre">cwd</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement.set_install_root">
+<span class="sig-name descname"><span class="pre">set_install_root</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">install_root</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.scriptelement.ScriptElement.set_install_root" title="Link to this definition"></a></dt>
+<dd><p>Sets the install root</p>
+<p>The install root is the directory which output will be collected from
+once the commands have been run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>install_root</strong> – The install root. If called without this argument
+set, it’ll default to the value of the variable <code class="docutils literal notranslate"><span class="pre">install-root</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement.set_root_read_only">
+<span class="sig-name descname"><span class="pre">set_root_read_only</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root_read_only</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.scriptelement.ScriptElement.set_root_read_only" title="Link to this definition"></a></dt>
+<dd><p>Sets root read-only</p>
+<p>When commands are run, if root_read_only is true, then the root of the
+filesystem will be protected. This is strongly recommended whenever
+possible.</p>
+<p>If this variable is not set, the default permission is read-write.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>root_read_only</strong> – Whether to mark the root filesystem as read-only.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement.layout_add">
+<span class="sig-name descname"><span class="pre">layout_add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element" title="buildstream.element.Element"><span class="pre">Element</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">dependency_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.scriptelement.ScriptElement.layout_add" title="Link to this definition"></a></dt>
+<dd><p>Adds an element to the layout.</p>
+<p>Layout is a way of defining how dependencies should be added to the
+staging area for running commands.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>element</strong> (<a class="reference internal" href="buildstream.element.html#buildstream.element.Element" title="buildstream.element.Element"><em>Element</em></a>) – The element to stage.</p></li>
+<li><p><strong>dependency_path</strong> (<em>str</em>) – The element relative path to the dependency, usually obtained via
+<a class="reference internal" href="buildstream.element.html#buildstream.element.DependencyConfiguration.path" title="buildstream.element.DependencyConfiguration.path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">the</span> <span class="pre">dependency</span> <span class="pre">configuration</span></code></a></p></li>
+<li><p><strong>location</strong> (<em>str</em>) – The path inside the staging area for where to
+stage this element. If it is not “/”, then integration
+commands will not be run.</p></li>
+</ul>
+</dd>
+</dl>
+<p>If this function is never called, then the default behavior is to just
+stage the build dependencies of the element in question at the
+sandbox root. Otherwise, the specified elements including their
+runtime dependencies will be staged in their respective locations.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The order of directories in the layout is not significant.</p>
+<p>The paths in the layout will be sorted so that elements are staged in parent
+directories before subdirectories.</p>
+<p>The elements for each respective staging directory in the layout will be staged
+in the predetermined deterministic staging order.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement.add_commands">
+<span class="sig-name descname"><span class="pre">add_commands</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">command_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.scriptelement.ScriptElement.add_commands" title="Link to this definition"></a></dt>
+<dd><p>Adds a list of commands under the group-name.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Command groups will be run in the order they were added.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This does not perform substitutions automatically. They must
+be performed beforehand (see
+<code class="xref py py-func docutils literal notranslate"><span class="pre">node_subst_list()</span></code>)</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>group_name</strong> (<em>str</em>) – The name of the group of commands.</p></li>
+<li><p><strong>command_list</strong> (<em>list</em>) – The list of commands to be run.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement.preflight">
+<span class="sig-name descname"><span class="pre">preflight</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.scriptelement.ScriptElement.preflight" title="Link to this definition"></a></dt>
+<dd><p>Preflight Check</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>.SourceError</strong> – If it’s a <a class="reference internal" href="buildstream.source.html#buildstream.source.Source" title="buildstream.source.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a> implementation</p></li>
+<li><p><strong>.ElementError</strong> – If it’s an <a class="reference internal" href="buildstream.element.html#buildstream.element.Element" title="buildstream.element.Element"><code class="xref py py-class docutils literal notranslate"><span class="pre">Element</span></code></a> implementation</p></li>
+</ul>
+</dd>
+</dl>
+<p>This method is run after <a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a>
+and after the pipeline is fully constructed.</p>
+<p>Implementors should simply raise <a class="reference internal" href="buildstream.source.html#buildstream.source.SourceError" title="buildstream.source.SourceError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceError</span></code></a> or <a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError" title="buildstream.element.ElementError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementError</span></code></a>
+with an informative message in the case that the host environment is
+unsuitable for operation.</p>
+<p>Plugins which require host tools (only sources usually) should obtain
+them with <a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_host_tool" title="buildstream.utils.get_host_tool"><code class="xref py py-func docutils literal notranslate"><span class="pre">utils.get_host_tool()</span></code></a> which
+will raise an error automatically informing the user that a host tool is needed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement.get_unique_key">
+<span class="sig-name descname"><span class="pre">get_unique_key</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.scriptelement.ScriptElement.get_unique_key" title="Link to this definition"></a></dt>
+<dd><p>Return something which uniquely identifies the plugin input</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A string, list or dictionary which uniquely identifies the input</p>
+</dd>
+</dl>
+<p>This is used to construct unique <a class="reference internal" href="arch_cachekeys.html#cachekeys"><span class="std std-ref">cache keys</span></a> for elements
+and sources, sources should return something which uniquely identifies the payload,
+such as an sha256 sum of a tarball content.</p>
+<p>Elements and Sources should implement this by collecting any configurations
+which could possibly affect the output and return a dictionary of these settings.</p>
+<p>For Sources, this is guaranteed to only be called if
+<a class="reference internal" href="buildstream.source.html#buildstream.source.Source.is_resolved" title="buildstream.source.Source.is_resolved"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.is_resolved()</span></code></a> has returned
+<code class="docutils literal notranslate"><span class="pre">True</span></code> which is to say that the <a class="reference internal" href="buildstream.source.html#buildstream.source.Source" title="buildstream.source.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a> is expected to have an exact
+<a class="reference internal" href="buildstream.source.html#core-source-ref"><span class="std std-ref">source ref</span></a> indicating exactly what source is going to be staged.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If your plugin is concerned with API stability, then future extensions of your
+plugin YAML configuration which affect the unique key returned here should be added
+to this key with care.</p>
+<p>A good rule of thumb is to only compute the new value in the returned key if
+the value of the newly added YAML key is not equal to it’s default value.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement.configure_sandbox">
+<span class="sig-name descname"><span class="pre">configure_sandbox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sandbox</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.scriptelement.ScriptElement.configure_sandbox" title="Link to this definition"></a></dt>
+<dd><p>Configures the the sandbox for execution</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sandbox</strong> – The build sandbox</p>
+</dd>
+</dl>
+<p>:raises (<a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError" title="buildstream.element.ElementError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementError</span></code></a>): When the element raises an error</p>
+<p>Elements must implement this method to configure the sandbox object
+for execution.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement.stage">
+<span class="sig-name descname"><span class="pre">stage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sandbox</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.scriptelement.ScriptElement.stage" title="Link to this definition"></a></dt>
+<dd><p>Stage inputs into the sandbox directories</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sandbox</strong> – The build sandbox</p>
+</dd>
+</dl>
+<p>:raises (<a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError" title="buildstream.element.ElementError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementError</span></code></a>): When the element raises an error</p>
+<p>Elements must implement this method to populate the sandbox
+directory with data. This is done either by staging <a class="reference internal" href="buildstream.source.html#buildstream.source.Source" title="buildstream.source.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a>
+objects, by staging the artifacts of the elements this element depends
+on, or both.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.scriptelement.ScriptElement.assemble">
+<span class="sig-name descname"><span class="pre">assemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sandbox</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.scriptelement.ScriptElement.assemble" title="Link to this definition"></a></dt>
+<dd><p>Assemble the output artifact</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sandbox</strong> – The build sandbox</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An absolute path within the sandbox to collect the artifact from</p>
+</dd>
+</dl>
+<p>:raises (<a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError" title="buildstream.element.ElementError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementError</span></code></a>): When the element raises an error</p>
+<p>Elements must implement this method to create an output
+artifact from its sources and dependencies.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="buildstream.scriptelement.setup">
+<span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.scriptelement.setup" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="buildstream.buildelement.html" class="btn btn-neutral float-left" title="BuildElement - Abstract class for build elements" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="buildstream.sandbox.sandbox.html" class="btn btn-neutral float-right" title="Sandbox - The build sandbox" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,738 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Declaring elements &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Builtin public data" href="format_public.html" />
+    <link rel="prev" title="Project configuration" href="format_project.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="core_format.html">Project format</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="format_intro.html">Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="format_project.html">Project configuration</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Declaring elements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#element-basics">Element basics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dependencies">Dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-variables">Using variables</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="format_public.html">Builtin public data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="format_project_refs.html">The project.refs file</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_framework.html">Plugin API reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="core_format.html">Project format</a></li>
+      <li class="breadcrumb-item active">Declaring elements</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/format_declaring.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="declaring-elements">
+<h1>Declaring elements<a class="headerlink" href="#declaring-elements" title="Link to this heading"></a></h1>
+<section id="element-basics">
+<span id="format-basics"></span><h2>Element basics<a class="headerlink" href="#element-basics" title="Link to this heading"></a></h2>
+<p>Here is a rather complete example using the autotools element kind and git source kind:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the kind of element this is</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">autotools</span>
+
+<span class="c1"># Specify some dependencies</span>
+<span class="nt">depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element1.bst</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element2.bst</span>
+
+<span class="c1"># Specify the source which should be built</span>
+<span class="nt">sources</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git</span>
+<span class="w">  </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">upstream:modulename.git</span>
+<span class="w">  </span><span class="nt">track</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">master</span>
+<span class="w">  </span><span class="nt">ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">d0b38561afb8122a3fc6bafc5a733ec502fcaed6</span>
+
+<span class="c1"># Override some variables</span>
+<span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">sysconfdir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{prefix}/etc&quot;</span>
+
+<span class="c1"># Tweak the sandbox shell environment</span>
+<span class="nt">environment</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">LD_LIBRARY_PATH</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/some/custom/path</span>
+
+<span class="c1"># Specify the configuration of the element</span>
+<span class="nt">config</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Override autotools element default configure-commands</span>
+<span class="w">  </span><span class="nt">configure-commands</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;%{configure}</span><span class="nv"> </span><span class="s">--enable-fancy-feature&quot;</span>
+
+<span class="c1"># Specify public domain data, visible to other elements.</span>
+<span class="nt">public</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bst</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">integration-commands</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/bin/update-fancy-feature-cache</span>
+
+<span class="c1"># Specify a user id and group id to use in the build sandbox.</span>
+<span class="nt">sandbox</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">build-uid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">  </span><span class="nt">build-gid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</pre></div>
+</div>
+<p>For most use cases you would not need to specify this much detail, we’ve provided
+details here in order to have a more complete initial example.</p>
+<p>Let’s break down the above and give a brief explanation of what these attributes mean.</p>
+<section id="element-names-and-paths">
+<span id="format-element-names"></span><h3>Element names and paths<a class="headerlink" href="#element-names-and-paths" title="Link to this heading"></a></h3>
+<p>An <em>element name</em> is the filename of an element relative to the project’s
+<a class="reference internal" href="format_project.html#project-element-path"><span class="std std-ref">element path</span></a>.</p>
+<p>Element names are the identifiers used to refer to elements, they are used
+to specify an element’s <a class="reference internal" href="#format-dependencies"><span class="std std-ref">dependencies</span></a>, to select
+elements to build on the <a class="reference internal" href="using_commands.html#commands"><span class="std std-ref">command line</span></a>, and they are arbitrarily
+used in various element specific configuration surfaces, for example the
+<em>target</em> configuration of the <a class="reference internal" href="elements/link.html#module-elements.link" title="elements.link"><code class="xref py py-mod docutils literal notranslate"><span class="pre">link</span></code></a> element is also
+an <em>element name</em>.</p>
+<section id="addressing-elements">
+<h4>Addressing elements<a class="headerlink" href="#addressing-elements" title="Link to this heading"></a></h4>
+<p>When addressing elements in a single project, it is sufficient to use
+the <em>element name</em> as a dependency or configuration parameter.</p>
+<p>When muliple projects are connected through <a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a>
+elements, there is a need to address elements which are not in the same
+project but in a junctioned <em>subproject</em>. In the case that you need to
+address elements across junction boundaries, one must use <em>element paths</em>.</p>
+<p>An <em>element path</em> is a path to the element indicating the junction
+elements leading up to the project, separated by <code class="docutils literal notranslate"><span class="pre">:</span></code> symbols, e.g.:
+<code class="docutils literal notranslate"><span class="pre">junction.bst:element.bst</span></code>.</p>
+<p>Elements can be address across multiple junction boundaries with multiple
+<code class="docutils literal notranslate"><span class="pre">:</span></code> separators, e.g.: <code class="docutils literal notranslate"><span class="pre">junction.bst:junction.bst:element.bst</span></code>.</p>
+</section>
+<section id="element-naming-rules">
+<h4>Element naming rules<a class="headerlink" href="#element-naming-rules" title="Link to this heading"></a></h4>
+<p>When naming the elements, use the following rules:</p>
+<ul class="simple">
+<li><p>The name of the file must have the <code class="docutils literal notranslate"><span class="pre">.bst</span></code> extension.</p></li>
+<li><p>All characters in the name must be printable 7-bit ASCII characters.</p></li>
+<li><p>Following characters are reserved and must not be part of the name:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;</span></code> (less than)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&gt;</span></code> (greater than)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">:</span></code> (colon)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;</span></code> (double quote)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/</span></code> (forward slash)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">\</span></code> (backslash)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">|</span></code> (vertical bar)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">?</span></code> (question mark)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">*</span></code> (asterisk)</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="kind">
+<h3>Kind<a class="headerlink" href="#kind" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the kind of element this is</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">autotools</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">kind</span></code> attribute specifies which plugin will be operating on the element’s input to
+produce its output. Plugins define element types and each of them can be referred to by
+name with the <code class="docutils literal notranslate"><span class="pre">kind</span></code> attribute.</p>
+<p>To refer to a third party plugin, prefix the plugin with its package, for example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">buildstream-plugins:dpkg_build</span>
+</pre></div>
+</div>
+</section>
+<section id="depends">
+<span id="format-depends"></span><h3>Depends<a class="headerlink" href="#depends" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify some dependencies</span>
+<span class="nt">depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element1.bst</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element2.bst</span>
+</pre></div>
+</div>
+<p>Relationships between elements are specified with the <code class="docutils literal notranslate"><span class="pre">depends</span></code> attribute. Elements
+may depend on other elements by specifying the <a class="reference internal" href="#format-element-names"><span class="std std-ref">element names</span></a>
+they depend on here.</p>
+<p>See <a class="reference internal" href="#format-dependencies"><span class="std std-ref">Dependencies</span></a> for more information on the dependency model.</p>
+</section>
+<section id="build-depends">
+<span id="format-build-depends"></span><h3>Build-Depends<a class="headerlink" href="#build-depends" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify some build-dependencies</span>
+<span class="nt">build-depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element1.bst</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element2.bst</span>
+</pre></div>
+</div>
+<p>Build dependencies between elements can be specified with the <code class="docutils literal notranslate"><span class="pre">build-depends</span></code> attribute.
+The above code snippet is equivalent to:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify some build-dependencies</span>
+<span class="nt">depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">filename</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element1.bst</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">build</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">filename</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element2.bst</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">build</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="#format-dependencies"><span class="std std-ref">Dependencies</span></a> for more information on the dependency model.</p>
+</section>
+<section id="runtime-depends">
+<span id="format-runtime-depends"></span><h3>Runtime-Depends<a class="headerlink" href="#runtime-depends" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify some runtime-dependencies</span>
+<span class="nt">runtime-depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element1.bst</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element2.bst</span>
+</pre></div>
+</div>
+<p>Runtime dependencies between elements can be specified with the <code class="docutils literal notranslate"><span class="pre">runtime-depends</span></code> attribute.
+The above code snippet is equivalent to:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify some runtime-dependencies</span>
+<span class="nt">depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">filename</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element1.bst</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">runtime</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">filename</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element2.bst</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">runtime</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="#format-dependencies"><span class="std std-ref">Dependencies</span></a> for more information on the dependency model.</p>
+</section>
+<section id="sources">
+<span id="format-sources"></span><h3>Sources<a class="headerlink" href="#sources" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the source which should be built</span>
+<span class="nt">sources</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git</span>
+<span class="w">  </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">upstream:modulename.git</span>
+<span class="w">  </span><span class="nt">track</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">master</span>
+<span class="w">  </span><span class="nt">ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">d0b38561afb8122a3fc6bafc5a733ec502fcaed6</span>
+</pre></div>
+</div>
+<p>Here we specify some input for the element, any number of sources may be specified.
+By default the sources will be staged in the root of the element’s build directory
+in the build sandbox, but sources may specify a <code class="docutils literal notranslate"><span class="pre">directory</span></code> attribute to control
+where the sources will be staged. The <code class="docutils literal notranslate"><span class="pre">directory</span></code> attribute may specify a build
+sandbox relative subdirectory.</p>
+<p>For example, one might encounter a component which requires a separate data package
+in order to build itself, in this case the sources might be listed as:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">sources</span><span class="p">:</span>
+
+<span class="c1"># Specify the source which should be built</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git</span>
+<span class="w">  </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">upstream:modulename.git</span>
+<span class="w">  </span><span class="nt">track</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">master</span>
+<span class="w">  </span><span class="nt">ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">d0b38561afb8122a3fc6bafc5a733ec502fcaed6</span>
+
+<span class="c1"># Specify the data package we need for build frobnication,</span>
+<span class="c1"># we need it to be unpacked in a src/frobdir</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tarball</span>
+<span class="w">  </span><span class="nt">directory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">src/frobdir</span>
+<span class="w">  </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data:frobs.tgz</span>
+<span class="w">  </span><span class="nt">ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9d4b1147f8cf244b0002ba74bfb0b8dfb3...</span>
+</pre></div>
+</div>
+<p>Like Elements, Source types are plugins which are indicated by the <code class="docutils literal notranslate"><span class="pre">kind</span></code> attribute.
+Asides from the common <code class="docutils literal notranslate"><span class="pre">kind</span></code> and <code class="docutils literal notranslate"><span class="pre">directory</span></code> attributes which may be applied to all
+Sources, refer to the Source specific documentation for meaningful attributes for the
+particular Source.</p>
+</section>
+<section id="variables">
+<h3>Variables<a class="headerlink" href="#variables" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Override some variables</span>
+<span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">sysconfdir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{prefix}/etc&quot;</span>
+</pre></div>
+</div>
+<p>Variables can be declared or overridden from an element. Variables can also be
+declared and overridden in the <a class="reference internal" href="format_project.html#projectconf"><span class="std std-ref">Project configuration</span></a></p>
+<p>See <a class="reference internal" href="#format-variables"><span class="std std-ref">Using variables</span></a> below for a more in depth discussion on variables in BuildStream.</p>
+</section>
+<section id="environment">
+<span id="format-environment"></span><h3>Environment<a class="headerlink" href="#environment" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Tweak the sandbox shell environment</span>
+<span class="nt">environment</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">LD_LIBRARY_PATH</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/some/custom/path</span>
+</pre></div>
+</div>
+<p>Environment variables can be set to literal values here, these environment
+variables will be effective in the <a class="reference internal" href="buildstream.sandbox.html#module-buildstream.sandbox" title="buildstream.sandbox"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Sandbox</span></code></a> where
+build instructions are run for this element.</p>
+<p>Environment variables can also be declared and overridden in the <a class="reference internal" href="format_project.html#projectconf"><span class="std std-ref">Project configuration</span></a></p>
+</section>
+<section id="config">
+<span id="format-config"></span><h3>Config<a class="headerlink" href="#config" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the configuration of the element</span>
+<span class="nt">config</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Override autotools element default configure-commands</span>
+<span class="w">  </span><span class="nt">configure-commands</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;%{configure}</span><span class="nv"> </span><span class="s">--enable-fancy-feature&quot;</span>
+</pre></div>
+</div>
+<p>Here we configure the element itself. The autotools element provides sane defaults for
+building sources which use autotools. Element default configurations can be overridden
+in the <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> file and additionally overridden in the declaration of an element.</p>
+<p>For meaningful documentation on what can be specified in the <code class="docutils literal notranslate"><span class="pre">config</span></code> section for a given
+element <code class="docutils literal notranslate"><span class="pre">kind</span></code>, refer to the <a class="reference internal" href="core_plugins.html#plugins"><span class="std std-ref">element specific documentation</span></a>.</p>
+</section>
+<section id="public">
+<span id="format-public"></span><h3>Public<a class="headerlink" href="#public" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify public domain data, visible to other elements.</span>
+<span class="nt">public</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bst</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">integration-commands</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/bin/update-fancy-feature-cache</span>
+</pre></div>
+</div>
+<p>Metadata declared in the <code class="docutils literal notranslate"><span class="pre">public</span></code> section of an element is visible to
+any other element which depends on the declaring element in a given pipeline.
+BuildStream itself consumes public data from the <code class="docutils literal notranslate"><span class="pre">bst</span></code> domain. The <code class="docutils literal notranslate"><span class="pre">integration-commands</span></code>
+demonstrated above for example, describe commands which should be run in an
+environment where the given element is installed but before anything should be run.</p>
+<p>An element is allowed to read domain data from any element it depends on, and users
+may specify additional domains to be understood and processed by their own element
+plugins.</p>
+<p>The public data keys which are recognized under the <code class="docutils literal notranslate"><span class="pre">bst</span></code> domain
+can be viewed in detail in the <a class="reference internal" href="format_public.html#public-builtin"><span class="std std-ref">builtin public data</span></a> section.</p>
+</section>
+<section id="sandbox">
+<span id="format-sandbox"></span><h3>Sandbox<a class="headerlink" href="#sandbox" title="Link to this heading"></a></h3>
+<p>Configuration for the build sandbox (other than <a class="reference internal" href="#format-environment"><span class="std std-ref">environment variables</span></a>)
+can be placed in the <code class="docutils literal notranslate"><span class="pre">sandbox</span></code> configuration. The UID and GID used by the user
+in the group can be specified, as well as the desired OS and machine
+architecture. Possible machine architecture follow the same list as specified in
+the <a class="reference internal" href="format_project.html#project-options-arch"><span class="std std-ref">architecture option</span></a>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify a user id and group id to use in the build sandbox.</span>
+<span class="nt">sandbox</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">build-uid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1003</span>
+<span class="w">  </span><span class="nt">build-gid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1001</span>
+</pre></div>
+</div>
+<p>BuildStream normally uses uid 0 and gid 0 (root) to perform all
+builds. However, the behaviour of certain tools depends on user id,
+behaving differently when run as non-root. To support those builds,
+you can supply a different uid or gid for the sandbox. Only
+bwrap-style sandboxes support custom user IDs at the moment, and hence
+this will only work on Linux host platforms.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify build OS and architecture</span>
+<span class="nt">sandbox</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">build-os</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AIX</span>
+<span class="w">  </span><span class="nt">build-arch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">power-isa-be</span>
+</pre></div>
+</div>
+<p>When building locally, if these don’t match the host machine then generally the
+build will fail. The exception is when the OS is Linux and the architecture
+specifies an <code class="docutils literal notranslate"><span class="pre">x86-32</span></code> build on an <code class="docutils literal notranslate"><span class="pre">x86-64</span></code> machine, or <code class="docutils literal notranslate"><span class="pre">aarch32</span></code> build on
+a <code class="docutils literal notranslate"><span class="pre">aarch64</span></code> machine, in which case the <code class="docutils literal notranslate"><span class="pre">linux32</span></code> command is prepended to the
+bubblewrap command.</p>
+<p>When building remotely, the OS and architecture are added to the <code class="docutils literal notranslate"><span class="pre">Platform</span></code>
+field in the <code class="docutils literal notranslate"><span class="pre">Command</span></code> uploaded. Whether this actually results in a building
+the element for the desired OS and architecture is dependent on the server
+having implemented these options the same as buildstream.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify UNIX socket path for access to REAPI for (nested) remote execution</span>
+<span class="nt">sandbox</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">remote-apis-socket</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/run/reapi.sock</span>
+<span class="w">    </span><span class="nt">action-cache-enable-update</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+<p>Setting a path will add a UNIX socket to the sandbox that allows the use of
+<a class="reference external" href="https://github.com/bazelbuild/remote-apis">REAPI</a> clients such as
+<a class="reference external" href="https://buildgrid.gitlab.io/recc">recc</a>.</p>
+<p>This enables more fine-grained caching of, e.g., individual compile commands
+to speed up rebuilds of elements with only small changes.</p>
+<p>This is supported with and without <a class="reference internal" href="using_config.html#user-config-remote-execution"><span class="std std-ref">remote execution</span></a>.
+With remote execution configured, this additionally enables scaling out of,
+e.g., compile commands across a cluster of build machines.</p>
+<p>Action cache updates from sandboxed REAPI clients are disabled by default to
+protect action cache integrity. However, if a trusted REAPI client doesn’t
+support remote execution, action cache updates can be enabled by setting
+<code class="docutils literal notranslate"><span class="pre">action-cache-enable-update</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code>.
+If a remote <code class="docutils literal notranslate"><span class="pre">action-cache-service</span></code> is configured without <code class="docutils literal notranslate"><span class="pre">execution-service</span></code>
+in the <a class="reference internal" href="using_config.html#user-config-remote-execution"><span class="std std-ref">remote execution</span></a> section,
+<code class="docutils literal notranslate"><span class="pre">push</span></code> needs to be set to <code class="docutils literal notranslate"><span class="pre">true</span></code> to allow action cache updates to be pushed
+to the server.</p>
+</section>
+</section>
+<section id="dependencies">
+<span id="format-dependencies"></span><h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
+<p>The dependency model in BuildStream is simplified by treating software distribution
+and software building as separate problem spaces. This is to say that one element
+can only ever depend on another element but never on a subset of the product which
+another element produces.</p>
+<p>In this section we’ll quickly go over the few features BuildStream offers in its
+dependency model.</p>
+<section id="expressing-dependencies">
+<h3>Expressing dependencies<a class="headerlink" href="#expressing-dependencies" title="Link to this heading"></a></h3>
+<p>Dependencies in BuildStream are parameterizable objects, however as demonstrated
+in the <a class="reference internal" href="#format-depends"><span class="std std-ref">above example</span></a>, they can also be expressed as simple
+strings as a convenience shorthand in most cases, whenever the default dependency
+attributes are suitable.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note the order in which element dependencies are declared in the <code class="docutils literal notranslate"><span class="pre">depends</span></code>,
+<code class="docutils literal notranslate"><span class="pre">build-depends</span></code> and <code class="docutils literal notranslate"><span class="pre">runtime-depends</span></code> lists are not meaningful.</p>
+</div>
+<p>Dependency dictionary:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Fully specified dependency</span>
+<span class="nt">depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">filename</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foo.bst</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">build</span>
+<span class="w">  </span><span class="nt">junction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">baseproject.bst</span>
+<span class="w">  </span><span class="nt">strict</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+<p>Attributes:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">filename</span></code></p>
+<p>The <a class="reference internal" href="#format-element-names"><span class="std std-ref">element name</span></a> to depend on, or a list of mutiple element names.</p>
+<p>Specifying multiple element names in a single dependency will result in multiple dependencies
+being declared with common properties.</p>
+<p>For example, one can declare multiple build dependencies with the same junction:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Declare three build dependencies from subproject.bst</span>
+<span class="nt">depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">build</span>
+<span class="w">  </span><span class="nt">junction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">subproject.bst</span>
+<span class="w">  </span><span class="nt">filename</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element-a.bst</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element-b.bst</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element-c.bst</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">junction</span></code></p>
+<p>This attribute can be used to specify the junction portion of the <a class="reference internal" href="#format-element-names"><span class="std std-ref">element name</span></a>
+separately from the project local element name.</p>
+<p>This should be the <em>element name</em> of the <a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a> element
+in the local project, possibly followed by other junctions in subprojects leading
+to the project in which the element you want to depend on resides.</p>
+<p>In the case that a <em>junction</em> is specified, the <code class="docutils literal notranslate"><span class="pre">filename</span></code> attribute indicates an
+element in the <em>junctioned project</em>.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code></p>
+<p>This attribute is used to express the <a class="reference internal" href="#format-dependencies-types"><span class="std std-ref">dependency type</span></a>.
+This field is not permitted in the <a class="reference internal" href="#format-build-depends"><span class="std std-ref">build-depends</span></a> or
+<a class="reference internal" href="#format-runtime-depends"><span class="std std-ref">runtime-depends</span></a> lists.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">strict</span></code></p>
+<p>This attribute can be used to specify that this element should
+be rebuilt when the dependency changes, even when
+<a class="reference internal" href="using_config.html#user-config-strict-mode"><span class="std std-ref">strict mode</span></a> has been turned off.</p>
+<p>This is appropriate whenever a dependency’s output is consumed
+verbatim in the output of the depending element, for instance
+when static linking is in use.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">config</span></code></p>
+<p>This attribute defines the custom <a class="reference internal" href="main_glossary.html#term-Dependency-configuration"><span class="xref std std-term">dependency configuration</span></a>,
+which is supported by select <a class="reference internal" href="buildstream.element.html#module-buildstream.element" title="buildstream.element"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Element</span></code></a> implementations.</p>
+<p>Elements which support <a class="reference internal" href="main_glossary.html#term-Dependency-configuration"><span class="xref std std-term">dependency configuration</span></a> do so
+by implementing the
+<a class="reference internal" href="buildstream.element.html#buildstream.element.Element.configure_dependencies" title="buildstream.element.Element.configure_dependencies"><code class="xref py py-func docutils literal notranslate"><span class="pre">Element.configure_dependencies()</span></code></a>
+abstract method. It is up to each element or abstract element class to
+document what is supported in their <a class="reference internal" href="main_glossary.html#term-Dependency-configuration"><span class="xref std std-term">dependency configuration</span></a>.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>It is illegal to declare <a class="reference internal" href="main_glossary.html#term-Dependency-configuration"><span class="xref std std-term">dependency configuration</span></a>
+on runtime dependencies, since runtime dependencies are not visible to the depending
+element.</p>
+</div>
+</li>
+</ul>
+</section>
+<section id="redundant-dependency-declarations">
+<h3>Redundant dependency declarations<a class="headerlink" href="#redundant-dependency-declarations" title="Link to this heading"></a></h3>
+<p>It is permitted to declare dependencies multiple times on the same element in the same
+element declaration, the result will be an inclusive OR of all configurations you have
+expressed in the redundant dependencies on the same element.</p>
+<ul class="simple">
+<li><p>If a dependency is defined once as a <code class="docutils literal notranslate"><span class="pre">build</span></code> dependency and once as a <code class="docutils literal notranslate"><span class="pre">runtime</span></code>
+<a class="reference internal" href="#format-dependencies-types"><span class="std std-ref">dependency type</span></a>, then the resulting dependency
+type will be <code class="docutils literal notranslate"><span class="pre">all</span></code></p></li>
+<li><p>If any of the redundantly declared dependencies are specified as <code class="docutils literal notranslate"><span class="pre">strict</span></code>, then
+the resulting dependency will be <code class="docutils literal notranslate"><span class="pre">strict</span></code>.</p></li>
+</ul>
+<p>Declaring redundant dependencies on the same element can be interesting when you
+need to specify multiple <a class="reference internal" href="main_glossary.html#term-Dependency-configuration"><span class="xref std std-term">dependency configurations</span></a>
+for the same element. For example, one might want to stage the same dependency
+in multiple locations in the build sandbox.</p>
+</section>
+<section id="cross-junction-dependencies">
+<h3>Cross-junction dependencies<a class="headerlink" href="#cross-junction-dependencies" title="Link to this heading"></a></h3>
+<p>As explained in the <a class="reference internal" href="#format-element-names"><span class="std std-ref">element name</span></a> section
+on element addressing, elements can be addressed across junction boundaries
+using <em>element paths</em> such as <code class="docutils literal notranslate"><span class="pre">junction.bst:element.bst</span></code>. An element
+at any depth can be specified by specifying multiple junction elements.</p>
+<p>For example, one can specify a subproject element dependency with
+the following syntax:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">build-depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">baseproject.bst:element.bst</span>
+</pre></div>
+</div>
+<p>And one can specify an element residing in a sub-subproject as a
+dependency like so:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">baseproject.bst:middleproject.bst:element.bst</span>
+</pre></div>
+</div>
+</section>
+<section id="dependency-types">
+<span id="format-dependencies-types"></span><h3>Dependency types<a class="headerlink" href="#dependency-types" title="Link to this heading"></a></h3>
+<p>The dependency <code class="docutils literal notranslate"><span class="pre">type</span></code> attribute defines what the dependency is required for
+and is essential to how BuildStream plots a build plan.</p>
+<p>There are three types which one can specify for a dependency:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">build</span></code></p>
+<p>A <code class="docutils literal notranslate"><span class="pre">build</span></code> dependency type states that the given element’s product must
+be staged in order to build the depending element. Depending on an element
+which has <code class="docutils literal notranslate"><span class="pre">build</span></code> dependencies will not implicitly depend on that element’s
+<code class="docutils literal notranslate"><span class="pre">build</span></code> dependencies.</p>
+<p>For convenience, these can be specified under the <a class="reference internal" href="#format-build-depends"><span class="std std-ref">build-depends</span></a>
+list.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runtime</span></code></p>
+<p>A <code class="docutils literal notranslate"><span class="pre">runtime</span></code> dependency type states that the given element’s product
+must be present for the depending element to function. An element’s
+<code class="docutils literal notranslate"><span class="pre">runtime</span></code> dependencies are not available to the element at build time.</p>
+<p>For convenience, these can be specified under the <a class="reference internal" href="#format-runtime-depends"><span class="std std-ref">runtime-depends</span></a>
+list.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">all</span></code></p>
+<p>An <code class="docutils literal notranslate"><span class="pre">all</span></code> dependency is the default dependency type. If <code class="docutils literal notranslate"><span class="pre">all</span></code> is specified,
+or if <code class="docutils literal notranslate"><span class="pre">type</span></code> is not specified at all, then it is assumed that the dependency
+is required both at build time and runtime.</p>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is assumed that a dependency which is required for building an
+element must run while building the depending element. This means that
+<code class="docutils literal notranslate"><span class="pre">build</span></code> depending on a given element implies that that element’s
+<code class="docutils literal notranslate"><span class="pre">runtime</span></code> dependencies will also be staged for the purpose of building.</p>
+</div>
+</section>
+</section>
+<section id="using-variables">
+<span id="format-variables"></span><h2>Using variables<a class="headerlink" href="#using-variables" title="Link to this heading"></a></h2>
+<p>Variables in BuildStream are a way to make your build instructions and
+element configurations more dynamic.</p>
+<section id="referring-to-variables">
+<h3>Referring to variables<a class="headerlink" href="#referring-to-variables" title="Link to this heading"></a></h3>
+<p>Variables are expressed as <code class="docutils literal notranslate"><span class="pre">%{...}</span></code>, where <code class="docutils literal notranslate"><span class="pre">...</span></code> must contain only
+alphanumeric characters and the separators <code class="docutils literal notranslate"><span class="pre">_</span></code> and <code class="docutils literal notranslate"><span class="pre">-</span></code>. Further, the
+first letter of <code class="docutils literal notranslate"><span class="pre">...</span></code> must be an alphabetic character.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">This is release version %{version}</span>
+</pre></div>
+</div>
+</section>
+<section id="declaring-and-overriding-variables">
+<h3>Declaring and overriding variables<a class="headerlink" href="#declaring-and-overriding-variables" title="Link to this heading"></a></h3>
+<p>To declare or override a variable, one need only specify a value
+in the relevant <em>variables</em> section:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">hello</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Hello World</span>
+</pre></div>
+</div>
+<p>You can refer to another variable while declaring a variable:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">release-text</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">This is release version %{version}</span>
+</pre></div>
+</div>
+<p>The order in which you declare variables is arbitrary, so long as there is no cyclic
+dependency and that all referenced variables are declared, the following is fine:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">release-text</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">This is release version %{version}</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.5</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It should be noted that variable resolution only happens after all
+<a class="reference internal" href="format_intro.html#format-composition"><span class="std std-ref">Element Composition</span></a> has already taken place.</p>
+<p>This is to say that overriding <code class="docutils literal notranslate"><span class="pre">%{version}</span></code> at a higher priority will affect
+the final result of <code class="docutils literal notranslate"><span class="pre">%{release-text}</span></code>.</p>
+</div>
+<p><strong>Example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">autotools</span>
+
+<span class="c1"># Declare variable, expect %{version} was already declared</span>
+<span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">release-text</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">This is release version %{version}</span>
+
+<span class="nt">config</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Customize the installation</span>
+<span class="w">  </span><span class="nt">install-commands</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{make-install} RELEASE_TEXT=&quot;%{release-text}&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="variables-declared-by-buildstream">
+<h3>Variables declared by BuildStream<a class="headerlink" href="#variables-declared-by-buildstream" title="Link to this heading"></a></h3>
+<p>BuildStream declares a set of <a class="reference internal" href="format_project.html#project-builtin-defaults"><span class="std std-ref">builtin</span></a>
+variables that may be overridden. In addition, the following
+read-only variables are also dynamically declared by BuildStream:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">element-name</span></code></p>
+<p>The name of the element being processed (e.g base/alpine.bst).</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">project-name</span></code></p>
+<p>The name of project where BuildStream is being used.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">project-root</span></code> &amp; <code class="docutils literal notranslate"><span class="pre">project-root-uri</span></code></p>
+<p>The directory where the project is located on the host.</p>
+<p>This variable is only available when declaring
+<a class="reference internal" href="format_project.html#project-source-aliases"><span class="std std-ref">source alias values</span></a> or
+<a class="reference internal" href="format_project.html#project-essentials-mirrors"><span class="std std-ref">source mirror values</span></a> and allows
+access to files in a project on the build host.</p>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">project-root</span></code> variable is a regular absolute path</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">project-root-uri</span></code> variable is a properly quoted <code class="docutils literal notranslate"><span class="pre">file://</span></code> URI</p></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Use this variable to declare <a class="reference internal" href="format_project.html#project-source-aliases"><span class="std std-ref">source alias values</span></a>
+to refer to files which you store as a part of your project, e.g. tarballs
+which you have committed to you BuildStream project.</p>
+</div>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>This feature has been provided for convenience when putting together a
+project without the use of proper infrastructure.</p>
+<p>A better long term solution for accessing internal binaries and source
+code is to setup internal infrastructure in your organization and use
+the regular ways to access these sources from a well known internal URI.</p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">toplevel-root</span></code> &amp; <code class="docutils literal notranslate"><span class="pre">toplevel-root-uri</span></code></p>
+<p>The directory where the toplevel project is located on the host.</p>
+<p>This variable is only available when declaring
+<a class="reference internal" href="format_project.html#project-source-aliases"><span class="std std-ref">source alias values</span></a> or
+<a class="reference internal" href="format_project.html#project-essentials-mirrors"><span class="std std-ref">source mirror values</span></a> and allows
+access to files in a project on the build host.</p>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">toplevel-root</span></code> variable is a regular absolute path</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">toplevel-root-uri</span></code> variable is a properly quoted <code class="docutils literal notranslate"><span class="pre">file://</span></code> URI</p></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Use this variable to declare <a class="reference internal" href="format_project.html#project-source-aliases"><span class="std std-ref">source alias values</span></a>
+to refer to files which you do not store as a part of your project, e.g.
+tarballs or git repositories which must be placed in a directory within
+the toplevel project before running the build.</p>
+</div>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>This feature has been provided for convenience when putting together a
+project without the use of proper infrastructure.</p>
+<p>A better long term solution for accessing internal binaries and source
+code is to setup internal infrastructure in your organization and use
+the regular ways to access these sources from a well known internal URI.</p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max-jobs</span></code></p>
+<p>Maximum number of parallel build processes within a given
+build, support for this is conditional on the element type
+and the build system used (any element using ‘make’ can
+implement this).</p>
+</li>
+</ul>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="format_project.html" class="btn btn-neutral float-left" title="Project configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="format_public.html" class="btn btn-neutral float-right" title="Builtin public data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

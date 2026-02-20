@@ -1,0 +1,378 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installing from Source &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Using" href="main_using.html" />
+    <link rel="prev" title="About" href="main_about.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installing from Source</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installing-dependencies">Installing Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#runtime-requirements">Runtime requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-time-requirements">Install-time requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#distribution-specific-guides">Distribution-specific guides</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-buildbox">Installing BuildBox</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#install-binaries">Install binaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-from-source">Build from source</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-buildstream-from-a-git-checkout">Installing BuildStream from a git checkout</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#note-for-packagers">Note for packagers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installing-in-virtual-environments">Installing in virtual environments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-completions">Installing completions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#bash-completions">Bash completions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#zsh-completions">Zsh completions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installing from Source</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/main_install.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installing-from-source">
+<h1>Installing from Source<a class="headerlink" href="#installing-from-source" title="Link to this heading"></a></h1>
+<p>This page explains how to build and install this version of BuildStream from
+source. For general purpose installation instructions consult the
+<a class="reference external" href="https://buildstream.build/install.html">website</a>.</p>
+<p>For full install instructions, read on:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#install-dependencies"><span class="std std-ref">Install dependencies</span></a></p></li>
+<li><p><a class="reference internal" href="#install-buildbox"><span class="std std-ref">Install BuildBox</span></a></p></li>
+<li><p><a class="reference internal" href="#install-buildstream"><span class="std std-ref">Install BuildStream</span></a></p></li>
+<li><p><a class="reference internal" href="#install-completions"><span class="std std-ref">Install completions</span></a></p></li>
+</ul>
+<section id="installing-dependencies">
+<span id="install-dependencies"></span><h2>Installing Dependencies<a class="headerlink" href="#installing-dependencies" title="Link to this heading"></a></h2>
+<section id="runtime-requirements">
+<h3>Runtime requirements<a class="headerlink" href="#runtime-requirements" title="Link to this heading"></a></h3>
+<p>BuildStream requires the following Python environment to run:</p>
+<ul class="simple">
+<li><p>python3 &gt;= 3.10</p></li>
+<li><p>PyPI packages as specified in
+<a class="reference external" href="https://github.com/apache/buildstream/blob/master/requirements/requirements.in">requirements.in</a>.</p></li>
+</ul>
+<p>Some <a class="reference internal" href="buildstream.source.html#module-buildstream.source" title="buildstream.source"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Source</span></code></a> plugins require specific tools installed
+on the host. Here is a commonly used subset based on the
+<a class="reference internal" href="core_plugins.html#plugins-sources"><span class="std std-ref">core source plugins</span></a>
+and <a class="reference external" href="https://apache.github.io/buildstream-plugins/">buildstream-plugins</a>.</p>
+<ul class="simple">
+<li><p>git (for <code class="docutils literal notranslate"><span class="pre">git</span></code> sources)</p></li>
+<li><p>lzip (for <code class="docutils literal notranslate"><span class="pre">.tar.lz</span></code> support in <code class="docutils literal notranslate"><span class="pre">tar</span></code> sources)</p></li>
+<li><p>patch (for <code class="docutils literal notranslate"><span class="pre">patch</span></code> sources)</p></li>
+</ul>
+<p>Some BuildBox tools used by BuildStream require additional host tools:</p>
+<ul class="simple">
+<li><p>bubblewrap (for <code class="docutils literal notranslate"><span class="pre">buildbox-run-bubblewrap</span></code>)</p></li>
+<li><p>fusermount3 (for <code class="docutils literal notranslate"><span class="pre">buildbox-fuse</span></code>)</p></li>
+</ul>
+</section>
+<section id="install-time-requirements">
+<h3>Install-time requirements<a class="headerlink" href="#install-time-requirements" title="Link to this heading"></a></h3>
+<p>BuildStream contains Cython code which implies the following extra
+dependencies at install-time only:</p>
+<ul class="simple">
+<li><p>C and C++ toolchain</p></li>
+<li><p>Python development headers</p></li>
+</ul>
+<p>These instructions use <code class="docutils literal notranslate"><span class="pre">pip3</span></code> to install necessary PyPI packages.
+Packagers and integrators may use a different tool and can ignore
+the <cite>pip</cite> dependency below.</p>
+</section>
+<section id="distribution-specific-guides">
+<h3>Distribution-specific guides<a class="headerlink" href="#distribution-specific-guides" title="Link to this heading"></a></h3>
+<p>This table gives you a list of packages for specific distros:</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><strong>Distribution</strong></p></td>
+<td><p><strong>Runtime requires</strong></p></td>
+<td><p><strong>Install requires</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>Arch Linux</p></td>
+<td><p>bubblewrap fuse3 git lzip patch python</p></td>
+<td><p>gcc python-pip</p></td>
+</tr>
+<tr class="row-odd"><td><p>Debian</p></td>
+<td><p>bubblewrap fuse3 git lzip patch python3</p></td>
+<td><p>g++ python3-dev python3-pip</p></td>
+</tr>
+<tr class="row-even"><td><p>Fedora</p></td>
+<td><p>bubblewrap fuse3 git lzip patch python3</p></td>
+<td><p>gcc-c++ python3-devel python3-pip</p></td>
+</tr>
+<tr class="row-odd"><td><p>Ubuntu</p></td>
+<td><p>bubblewrap fuse3 git lzip patch python3</p></td>
+<td><p>g++ python3-dev python3-pip</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="installing-buildbox">
+<span id="install-buildbox"></span><h2>Installing BuildBox<a class="headerlink" href="#installing-buildbox" title="Link to this heading"></a></h2>
+<p>BuildStream depends on the following tools from
+<a class="reference external" href="https://gitlab.com/BuildGrid/buildbox/">BuildBox</a>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">buildbox-casd</span></code> (to manage local and remote content-addressed storage)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">buildbox-fuse</span></code> (to check out content from the local CAS)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">buildbox-run-bubblewrap</span></code> (to run element commands in a controlled sandbox)</p></li>
+</ul>
+</div></blockquote>
+<p>These components can be installed from binaries, or built from source.</p>
+<section id="install-binaries">
+<h3>Install binaries<a class="headerlink" href="#install-binaries" title="Link to this heading"></a></h3>
+<p>Browse the <a class="reference external" href="https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases">release history of static binaries here</a>.</p>
+<p>Linux x86-64 users can download the <a class="reference external" href="https://gitlab.com/BuildGrid/buildbox/buildbox-integration/-/releases/permalink/latest/downloads/buildbox-x86_64-linux-gnu.tgz">latest statically linked binaries here</a>,
+The contents of the tarball should be extracted into a directory in <code class="docutils literal notranslate"><span class="pre">PATH</span></code>,
+e.g., <code class="docutils literal notranslate"><span class="pre">~/.local/bin</span></code>.</p>
+</section>
+<section id="build-from-source">
+<h3>Build from source<a class="headerlink" href="#build-from-source" title="Link to this heading"></a></h3>
+<p>Buildbox components can be installed from their git repository.
+We recommend installing from the latest release tag.</p>
+<p>See the &lt;”Installation” section here &lt;<a class="reference external" href="https://gitlab.com/BuildGrid/buildbox/buildbox/-/blob/master/README.rst#installation">https://gitlab.com/BuildGrid/buildbox/buildbox/-/blob/master/README.rst#installation</a>&gt;`_.</p>
+<p>Buildbox contains many components, BuildStream needs only <code class="docutils literal notranslate"><span class="pre">buildbox-casd</span></code>,
+<code class="docutils literal notranslate"><span class="pre">buildbox-fuse</span></code> and <code class="docutils literal notranslate"><span class="pre">buildbox-run-bubblewrap</span></code>, which can be selected by
+passing options <code class="docutils literal notranslate"><span class="pre">-DTOOLS=OFF</span> <span class="pre">-DCASD=ON</span> <span class="pre">-DFUSE=ON</span> <span class="pre">-DRUN_BUBBLEWRAP=ON</span></code> to CMake.</p>
+<p>Finally, configure buildbox-run-bubblewrap as the default buildbox-run
+implementation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ln</span> <span class="o">-</span><span class="n">sv</span> <span class="n">buildbox</span><span class="o">-</span><span class="n">run</span><span class="o">-</span><span class="n">bubblewrap</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">buildbox</span><span class="o">-</span><span class="n">run</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="installing-buildstream-from-a-git-checkout">
+<span id="install-buildstream"></span><h2>Installing BuildStream from a git checkout<a class="headerlink" href="#installing-buildstream-from-a-git-checkout" title="Link to this heading"></a></h2>
+<p>First, clone the repository. Please check the existing tags in the git
+repository and determine which version you want to install:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">apache</span><span class="o">/</span><span class="n">buildstream</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">buildstream</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="o">&lt;</span><span class="n">desired</span> <span class="n">release</span> <span class="n">tag</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>We recommend <code class="docutils literal notranslate"><span class="pre">pip</span></code> as a frontend to the underlying <code class="docutils literal notranslate"><span class="pre">setuptools</span></code> build
+system.  The following command will build and install BuildStream into your
+user’s homedir in <code class="docutils literal notranslate"><span class="pre">~/.local</span></code>, and will attempt to fetch and install any
+required PyPI dependencies from the internet at the same time:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip3</span> <span class="n">install</span> <span class="o">--</span><span class="n">user</span> <span class="o">.</span>
+</pre></div>
+</div>
+<p>We do not recommend using Pip’s <a class="reference external" href="https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs">editable mode</a>
+(the <code class="docutils literal notranslate"><span class="pre">-e</span></code> flag). See <a class="reference external" href="https://github.com/apache/buildstream/issues/1760">this issue</a> for discussion.</p>
+<p>If you want to stop Pip from fetching missing dependencies, use the
+<code class="docutils literal notranslate"><span class="pre">--no-index</span></code> and <code class="docutils literal notranslate"><span class="pre">--no-deps</span></code> options.</p>
+<p>Finally, check that the <code class="docutils literal notranslate"><span class="pre">PATH</span></code> variable contains the <code class="docutils literal notranslate"><span class="pre">~/.local/bin</span></code> directory.
+If it doesn’t, you could add this to the end of your Bash configuration <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code>
+and restart Bash:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">PATH</span><span class="o">=</span><span class="s2">&quot;$</span><span class="si">{PATH}</span><span class="s2">:$</span><span class="si">{HOME}</span><span class="s2">/.local/bin&quot;</span>
+</pre></div>
+</div>
+<section id="note-for-packagers">
+<h3>Note for packagers<a class="headerlink" href="#note-for-packagers" title="Link to this heading"></a></h3>
+<p>Distro packaging standards may recommend a specific installation method
+for Python packages.  BuildStream can be installed with any build frontend that
+supports the <a class="reference external" href="https://peps.python.org/pep-0517/">PEP517 standard</a>. You are
+also welcome to use the underlying
+<a class="reference external" href="https://setuptools.pypa.io/en/latest/">setuptools</a> build backend directly.</p>
+</section>
+<section id="installing-in-virtual-environments">
+<span id="install-virtual-environment"></span><h3>Installing in virtual environments<a class="headerlink" href="#installing-in-virtual-environments" title="Link to this heading"></a></h3>
+<p>You can consider installing BuildStream in a
+<a class="reference external" href="https://docs.python.org/3/tutorial/venv.html">Virtual Environment</a> if you want
+to install multiple versions of BuildStream, or to isolate BuildStream and its
+dependencies from other Python packages.</p>
+<p>Here is how to install BuildStream stable and development snapshot releases in
+virtual environments of their own:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install BuildStream stable in an environment called &quot;venv-bst-stable&quot;</span>
+<span class="c1"># (At time of writing, this will be BuildStream 1)</span>
+<span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">venv</span> <span class="n">venv</span><span class="o">-</span><span class="n">bst</span><span class="o">-</span><span class="n">stable</span>
+<span class="n">venv</span><span class="o">-</span><span class="n">bst</span><span class="o">-</span><span class="n">stable</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">pip</span> <span class="n">install</span> <span class="n">BuildStream</span>
+
+<span class="c1"># Install BuildStream latest development snapshot in an environment</span>
+<span class="c1"># called &quot;venv-bst-latest&quot;</span>
+<span class="c1"># (At time of writing, this will be Buildstream 2)</span>
+<span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">venv</span> <span class="n">venv</span><span class="o">-</span><span class="n">bst</span><span class="o">-</span><span class="n">latest</span>
+<span class="n">venv</span><span class="o">-</span><span class="n">bst</span><span class="o">-</span><span class="n">latest</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">pre</span> <span class="n">BuildStream</span>
+</pre></div>
+</div>
+<p>To start using BuildStream from the desired environment, you will need to
+activate it first. Activating it will automatically add <code class="docutils literal notranslate"><span class="pre">bst</span></code> to your <code class="docutils literal notranslate"><span class="pre">PATH</span></code>
+and set up other necessary environment variables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use BuildStream stable from venv-bst-stable</span>
+<span class="n">source</span> <span class="n">venv</span><span class="o">-</span><span class="n">bst</span><span class="o">-</span><span class="n">stable</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+<span class="n">bst</span> <span class="o">--</span><span class="n">version</span>
+
+<span class="c1"># Use BuildStream latest from venv-bst-latest</span>
+<span class="n">source</span> <span class="n">venv</span><span class="o">-</span><span class="n">bst</span><span class="o">-</span><span class="n">latest</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+<span class="n">bst</span> <span class="o">--</span><span class="n">version</span>
+
+<span class="c1"># Once you are done, remember to deactivate the virtual environment</span>
+<span class="n">deactivate</span>
+</pre></div>
+</div>
+<p>If you do not want to manage your virtual environments manually, you can
+consider using <a class="reference external" href="https://docs.python.org/3/tutorial/venv.html">pipx</a>.</p>
+</section>
+</section>
+<section id="installing-completions">
+<span id="install-completions"></span><h2>Installing completions<a class="headerlink" href="#installing-completions" title="Link to this heading"></a></h2>
+<p>BuildStream integrates with Bash and Zsh to provide helpful tab-completion.
+These completion scripts require manual installation.</p>
+<section id="bash-completions">
+<h3>Bash completions<a class="headerlink" href="#bash-completions" title="Link to this heading"></a></h3>
+<p>Bash completions are provided by the <code class="docutils literal notranslate"><span class="pre">bst</span></code> completion script, available online
+(<a class="reference external" href="https://raw.githubusercontent.com/apache/buildstream/master/src/buildstream/data/bst">src/buildstream/data/bst</a>)
+and in your local Git clone at <code class="docutils literal notranslate"><span class="pre">src/buildstream/data/bst</span></code>.</p>
+<p>To install for the current user, paste the contents of the completion script
+into the file <code class="docutils literal notranslate"><span class="pre">~/.bash_completion</span></code>.</p>
+<p>To install completions system-wide, copy the completion script to the system-wide
+bash-completion installation path, which you can discover as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pkg</span><span class="o">-</span><span class="n">config</span> <span class="o">--</span><span class="n">variable</span><span class="o">=</span><span class="n">completionsdir</span> <span class="n">bash</span><span class="o">-</span><span class="n">completion</span>
+</pre></div>
+</div>
+<p>See the <a class="reference external" href="https://github.com/scop/bash-completion#faq">bash-completion FAQ</a>
+for more information.</p>
+</section>
+<section id="zsh-completions">
+<h3>Zsh completions<a class="headerlink" href="#zsh-completions" title="Link to this heading"></a></h3>
+<p>Zsh completions are provided by the <code class="docutils literal notranslate"><span class="pre">_bst</span></code> completion script, available online
+(<a class="reference external" href="https://raw.githubusercontent.com/apache/buildstream/master/src/buildstream/data/zsh/_bst">src/buildstream/data/zsh/_bst</a>)
+and in your local Git clone at <code class="docutils literal notranslate"><span class="pre">src/buildstream/data/zsh/_bst</span></code>.</p>
+<p>Copy the above file to your Zsh completions location. Here are some instructions
+for vanilla Zsh, as well as the <em>Prezto</em> and <em>Oh My Zsh</em> frameworks:</p>
+<p><strong>Zsh</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cp</span> <span class="n">src</span><span class="o">/</span><span class="n">buildstream</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">zsh</span><span class="o">/</span><span class="n">_bst</span> <span class="o">~/.</span><span class="n">zfunc</span><span class="o">/</span><span class="n">_bst</span>
+</pre></div>
+</div>
+<p>You must then add the following lines in your <code class="docutils literal notranslate"><span class="pre">~/.zshrc</span></code>, if they do not already exist:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fpath</span><span class="o">+=~/.</span><span class="n">zfunc</span>
+<span class="n">autoload</span> <span class="o">-</span><span class="n">Uz</span> <span class="n">compinit</span> <span class="o">&amp;&amp;</span> <span class="n">compinit</span>
+</pre></div>
+</div>
+<p><strong>Prezto</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cp</span> <span class="n">src</span><span class="o">/</span><span class="n">buildstream</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">zsh</span><span class="o">/</span><span class="n">_bst</span> <span class="o">~/.</span><span class="n">zprezto</span><span class="o">/</span><span class="n">modules</span><span class="o">/</span><span class="n">completion</span><span class="o">/</span><span class="n">external</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">_bst</span>
+</pre></div>
+</div>
+<p>You may have to reset your zcompdump cache, if you have one, and then restart your shell:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>rm ~/.zcompdump ${XDG_CACHE_HOME:-$HOME/.cache}/prezto/zcompdump
+</pre></div>
+</div>
+<p><strong>Oh My Zsh</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mkdir $ZSH_CUSTOM/plugins/bst
+cp src/buildstream/data/zsh/_bst $ZSH_CUSTOM/plugins/bst/_bst
+</pre></div>
+</div>
+<p>You must then add <code class="docutils literal notranslate"><span class="pre">bst</span></code> to your plugins array in <code class="docutils literal notranslate"><span class="pre">~/.zshrc</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plugins</span><span class="p">(</span>
+  <span class="n">bst</span>
+  <span class="o">...</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="main_about.html" class="btn btn-neutral float-left" title="About" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="main_using.html" class="btn btn-neutral float-right" title="Using" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

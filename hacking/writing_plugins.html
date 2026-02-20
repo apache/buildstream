@@ -1,0 +1,184 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adding core plugins &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Measuring performance" href="measuring_performance.html" />
+    <link rel="prev" title="Writing documentation" href="writing_documentation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_porting.html">Porting guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#filing-issues">Filing issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#fixing-bugs">Fixing bugs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#adding-new-features">Adding new features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#submitting-patches">Submitting patches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#committer-access">Committer access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#windows-ci">Windows CI</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../CONTRIBUTING.html#further-information">Further information</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="coding_guidelines.html">Coding guidelines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using_the_testsuite.html">Using the test suite</a></li>
+<li class="toctree-l3"><a class="reference internal" href="writing_documentation.html">Writing documentation</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Adding core plugins</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#update-documentation-index">Update documentation index</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#add-tests">Add tests</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#extend-the-cachekey-test">Extend the cachekey test</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="measuring_performance.html">Measuring performance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="making_releases.html">Making releases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="grpc_protocols.html">Generating protocol buffers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="managing_data_files.html">Managing data files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html">Updating BuildStream’s Python dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#adding-support-for-a-new-python-release">Adding support for a new Python release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#removing-support-for-a-python-release">Removing support for a Python release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#abi-compatibility-for-binary-python-packages">ABI compatibility for binary Python packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ui.html">Contributing to the UI</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../CONTRIBUTING.html">Contributing</a></li>
+      <li class="breadcrumb-item active">Adding core plugins</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/hacking/writing_plugins.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="adding-core-plugins">
+<span id="writing-plugins"></span><h1>Adding core plugins<a class="headerlink" href="#adding-core-plugins" title="Link to this heading"></a></h1>
+<p>This is a checklist of things which need to be done when adding a new
+core plugin to BuildStream proper.</p>
+<section id="update-documentation-index">
+<h2>Update documentation index<a class="headerlink" href="#update-documentation-index" title="Link to this heading"></a></h2>
+<p>The documentation generating scripts will automatically pick up your
+newly added plugin and generate HTML, but will not add a link to the
+documentation of your plugin automatically.</p>
+<p>Whenever adding a new plugin, you must add an entry for it in <code class="docutils literal notranslate"><span class="pre">doc/source/core_plugins.rst</span></code>.</p>
+</section>
+<section id="add-tests">
+<h2>Add tests<a class="headerlink" href="#add-tests" title="Link to this heading"></a></h2>
+<p>Needless to say, all new feature additions need to be tested. For <code class="docutils literal notranslate"><span class="pre">Element</span></code>
+plugins, these usually need to be added to the integration tests. For <code class="docutils literal notranslate"><span class="pre">Source</span></code>
+plugins, the tests are added in two ways:</p>
+<ul class="simple">
+<li><p>For most normal <code class="docutils literal notranslate"><span class="pre">Source</span></code> plugins, it is important to add a new <code class="docutils literal notranslate"><span class="pre">Repo</span></code>
+implementation for your plugin in the <code class="docutils literal notranslate"><span class="pre">tests/testutils/repo/</span></code> directory
+and update <code class="docutils literal notranslate"><span class="pre">ALL_REPO_KINDS</span></code> in <code class="docutils literal notranslate"><span class="pre">tests/testutils/repo/__init__.py</span></code>. This
+will include your new <code class="docutils literal notranslate"><span class="pre">Source</span></code> implementation in a series of already existing
+tests, ensuring it works well under normal operating conditions.</p></li>
+<li><p>For other source plugins, or in order to test edge cases, such as failure modes,
+which are not tested under the normal test battery, add new tests in <code class="docutils literal notranslate"><span class="pre">tests/sources</span></code>.</p></li>
+</ul>
+</section>
+<section id="extend-the-cachekey-test">
+<h2>Extend the cachekey test<a class="headerlink" href="#extend-the-cachekey-test" title="Link to this heading"></a></h2>
+<p>For any newly added plugins, it is important to add some new simple elements
+in <code class="docutils literal notranslate"><span class="pre">tests/cachekey/project/elements</span></code> or <code class="docutils literal notranslate"><span class="pre">tests/cachekey/project/sources</span></code>,
+and ensure that the newly added elements are depended on by <code class="docutils literal notranslate"><span class="pre">tests/cachekey/project/target.bst</span></code>.</p>
+<p>One new element should be added to the cache key test for every configuration
+value which your plugin understands which can possibly affect the result of
+your plugin’s <code class="docutils literal notranslate"><span class="pre">Plugin.get_unique_key()</span></code> implementation.</p>
+<p>This test ensures that cache keys do not unexpectedly change or become incompatible
+due to code changes. As such, the cache key test should have full coverage of every
+YAML configuration which can possibly affect cache key outcome at all times.</p>
+<p>See the <code class="docutils literal notranslate"><span class="pre">src/buildstream/testing/_update_cachekeys.py</span></code> file for instructions on running the updater,
+you need to run the updater to generate the <code class="docutils literal notranslate"><span class="pre">.expected</span></code> files and add the new
+<code class="docutils literal notranslate"><span class="pre">.expected</span></code> files in the same commit which extends the cache key test.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="writing_documentation.html" class="btn btn-neutral float-left" title="Writing documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="measuring_performance.html" class="btn btn-neutral float-right" title="Measuring performance" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

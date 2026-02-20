@@ -1,0 +1,216 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cache keys &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Caches" href="arch_caches.html" />
+    <link rel="prev" title="Scheduler" href="arch_scheduler.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_architecture.html">Architecture</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="arch_overview.html">Overview of modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_program_flow.html">Overview of program flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_data_model.html">Data model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_dependency_model.html">Dependency model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_scheduler.html">Scheduler</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Cache keys</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#structure">Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cache-key-types">Cache key types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strict-build-plan">Strict build plan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#non-strict-build-plan">Non-strict build plan</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="arch_caches.html">Caches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_sandboxing.html">Sandboxing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_remote_execution.html">Remote execution</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_architecture.html">Architecture</a></li>
+      <li class="breadcrumb-item active">Cache keys</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/arch_cachekeys.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="cache-keys">
+<span id="cachekeys"></span><h1>Cache keys<a class="headerlink" href="#cache-keys" title="Link to this heading"></a></h1>
+<p>Cache keys for artifacts are generated from the inputs of the build process
+for the purpose of reusing artifacts in a well-defined, predictable way.</p>
+<section id="structure">
+<h2>Structure<a class="headerlink" href="#structure" title="Link to this heading"></a></h2>
+<p>Cache keys are SHA256 hash values generated from a UTF-8 JSON document that
+includes:</p>
+<ul class="simple">
+<li><p>Environment (e.g., project configuration and variables).</p></li>
+<li><p>Element configuration (details depend on element kind, <code class="docutils literal notranslate"><span class="pre">Element.get_unique_key()</span></code>).</p></li>
+<li><p>Sources (<code class="docutils literal notranslate"><span class="pre">Source.get_unique_key()</span></code>).</p></li>
+<li><p>Dependencies (depending on cache key type, see below).</p></li>
+<li><p>Public data.</p></li>
+</ul>
+</section>
+<section id="cache-key-types">
+<h2>Cache key types<a class="headerlink" href="#cache-key-types" title="Link to this heading"></a></h2>
+<p>There are two types of cache keys in BuildStream, <code class="docutils literal notranslate"><span class="pre">strong</span></code> and <code class="docutils literal notranslate"><span class="pre">weak</span></code>.</p>
+<p>The purpose of a <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache key is to capture the state of as many aspects
+as possible that can have an influence on the build output. The aim is that
+builds will be fully reproducible as long as the cache key doesn’t change,
+with suitable module build systems that don’t embed timestamps, for example.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache key includes the strong cache key of each build dependency
+(and their runtime dependencies) of the element as changes in build dependencies
+(or their runtime dependencies) can result in build differences in reverse
+dependencies. This means that whenever the strong cache key of a dependency
+changes, the strong cache key of its reverse dependencies will change as well.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">weak</span></code> cache key has an almost identical structure, however, it includes
+only the names of build dependencies, not their cache keys or their runtime
+dependencies. A weak cache key will thus still change when the element itself
+or the environment changes but it will not change when a dependency is updated.</p>
+<p>For elements without build dependencies the <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache key is identical
+to the <code class="docutils literal notranslate"><span class="pre">weak</span></code> cache key.</p>
+<p>Note that dependencies which are not required at build time do not affect
+either kind of key.</p>
+</section>
+<section id="strict-build-plan">
+<h2>Strict build plan<a class="headerlink" href="#strict-build-plan" title="Link to this heading"></a></h2>
+<p>This is the default build plan that exclusively uses <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache keys
+for the core functionality. An element’s cache key can be calculated when
+the cache keys of the element’s build dependencies (and their runtime
+dependencies) have been calculated and either tracking is not enabled or it
+has already completed for this element, i.e., the <code class="docutils literal notranslate"><span class="pre">ref</span></code> is available.
+This means that with tracking disabled the cache keys of all elements could be
+calculated right at the start of a build session.</p>
+<p>While BuildStream only uses <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache keys with the strict build plan
+for the actual staging and build process, it will still calculate <code class="docutils literal notranslate"><span class="pre">weak</span></code>
+cache keys for each element. This allows BuildStream to store the artifact
+in the cache with both keys, reducing rebuilds when switching between strict
+and non-strict build plans. If the artifact cache already contains an
+artifact with the same <code class="docutils literal notranslate"><span class="pre">weak</span></code> cache key, it’s replaced. Thus, non-strict
+builds always use the latest artifact available for a given <code class="docutils literal notranslate"><span class="pre">weak</span></code> cache key.</p>
+</section>
+<section id="non-strict-build-plan">
+<h2>Non-strict build plan<a class="headerlink" href="#non-strict-build-plan" title="Link to this heading"></a></h2>
+<p>The non-strict build plan disables the time-consuming automatic rebuild of
+reverse dependencies at the cost of dropping the reproducibility benefits.
+It uses the <code class="docutils literal notranslate"><span class="pre">weak</span></code> cache keys for the core staging and build process.
+I.e., if an artifact is available with the calculated <code class="docutils literal notranslate"><span class="pre">weak</span></code> cache key,
+it will be reused for staging instead of being rebuilt. <code class="docutils literal notranslate"><span class="pre">weak</span></code> cache keys
+can be calculated early in the build session. After tracking, similar to
+when <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache keys can be calculated with a strict build plan.</p>
+<p>Similar to how strict build plans also calculate <code class="docutils literal notranslate"><span class="pre">weak</span></code> cache keys, non-strict
+build plans also calculate <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache keys. However, this is slightly
+more complex. To calculate the <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache key of an element, BuildStream
+requires the <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache keys of the build dependencies (and their runtime
+dependencies).</p>
+<p>The build dependencies of an element may have been updated since the artifact
+was built. With the non-strict build plan the artifact will still be reused.
+However, this means that we cannot use a <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache key calculated purely
+based on the element definitions. We need a cache key that matches the
+environment at the time the artifact was built, not the current definitions.</p>
+<p>The only way to get the correct <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache key is by retrieving it from
+the metadata stored in the artifact. As artifacts may need to be pulled from a
+remote artifact cache, the <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache key is not readily available early
+in the build session. However, it can always be retrieved when an element is
+about to be built, as the dependencies are guaranteed to be in the local
+artifact cache at that point.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Element._get_cache_key_from_artifact()</span></code> extracts the <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache key
+from an artifact in the local cache. <code class="docutils literal notranslate"><span class="pre">Element._get_cache_key_for_build()</span></code>
+calculates the <code class="docutils literal notranslate"><span class="pre">strong</span></code> cache key that is used for a particular build job.
+This is used for the embedded metadata and also as key to store the artifact in
+the cache.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="arch_scheduler.html" class="btn btn-neutral float-left" title="Scheduler" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="arch_caches.html" class="btn btn-neutral float-right" title="Caches" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

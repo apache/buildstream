@@ -1,0 +1,227 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configuring Cache Servers &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Remote Execution Servers" href="using_configuring_remote_execution.html" />
+    <link rel="prev" title="Commands" href="using_commands.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_using.html">Using</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="using_tutorial.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_developing.html">Developing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_handling_files.html">Handling files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_junctions.html">Combining projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_config.html">User configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_commands.html">Commands</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Configuring Cache Servers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#setting-up-a-remote-cache">Setting up a remote cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#known-implementations">Known implementations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildbarn">Buildbarn</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using_configuring_remote_execution.html">Remote Execution Servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_examples.html">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_using.html">Using</a></li>
+      <li class="breadcrumb-item active">Configuring Cache Servers</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/using_configuring_cache_server.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="configuring-cache-servers">
+<span id="cache-servers"></span><h1>Configuring Cache Servers<a class="headerlink" href="#configuring-cache-servers" title="Link to this heading"></a></h1>
+<p>BuildStream caches the results of builds in a local artifact cache, and will
+avoid building an element if there is a suitable build already present in the
+local artifact cache. Similarly it will cache sources and avoid pulling them if
+present in the local cache. See <a class="reference internal" href="arch_caches.html#caches"><span class="std std-ref">caches</span></a> for more details.</p>
+<p>In addition to the local caches, you can configure one or more remote caches and
+BuildStream will then try to pull a suitable object from one of the remotes,
+falling back to performing a local build or fetching a source if needed.</p>
+<p>On the client side, cache servers are declared and configured in
+<a class="reference internal" href="using_config.html#config-cache-servers"><span class="std std-ref">user configuration</span></a>, and since it is typical
+for projects to maintain their own cache servers, it is also possible for
+projects to provide recommended <a class="reference internal" href="format_project.html#project-artifact-cache"><span class="std std-ref">artifact cache servers</span></a>
+and <a class="reference internal" href="format_project.html#project-source-cache"><span class="std std-ref">source cache servers</span></a> through project
+configuration, so that downstream users can download from services
+provided by upstream projects by default.</p>
+<section id="setting-up-a-remote-cache">
+<h2>Setting up a remote cache<a class="headerlink" href="#setting-up-a-remote-cache" title="Link to this heading"></a></h2>
+<p>BuildStream relies on the <a class="reference external" href="https://github.com/bazelbuild/remote-apis/blob/main/build/bazel/remote/execution/v2/remote_execution.proto">ContentAddressableStorage protocol</a>
+in order to exchange data with remote services, in concert with the <a class="reference external" href="https://github.com/bazelbuild/remote-apis/blob/main/build/bazel/remote/asset/v1/remote_asset.proto">remote asset protocol</a>
+in order to assign symbolic labels (such as <a class="reference internal" href="using_commands.html#artifact-names"><span class="std std-ref">artifact names</span></a>) to identify
+stored content. As such, BuildStream is able to function with any implementations of these
+two services.</p>
+</section>
+<section id="known-implementations">
+<h2>Known implementations<a class="headerlink" href="#known-implementations" title="Link to this heading"></a></h2>
+<p>Here are some details about known open source implementations of the required protocols</p>
+<section id="buildbarn">
+<h3>Buildbarn<a class="headerlink" href="#buildbarn" title="Link to this heading"></a></h3>
+<p>The <a class="reference external" href="https://github.com/buildbarn">Buildbarn</a> project provides a remote execution
+service implementation for use in build tooling such as BuildStream, <a class="reference external" href="https://bazel.build/">Bazel</a>
+and <a class="reference external" href="https://gitlab.com/bloomberg/recc">recc</a>, the <a class="reference external" href="https://github.com/buildbarn/bb-storage">bb-storage</a>
+and <a class="reference external" href="https://github.com/buildbarn/bb-remote-asset">bb-remote-asset</a> services are tested
+to work as cache service for BuildStream’s artifact and source caches.</p>
+<p>A simple configuration to spin up the service using <a class="reference external" href="https://docs.docker.com/compose/">docker compose</a> follows:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">##</span>
+<span class="c1"># Buildbarn Compose manifest for BuildStream.</span>
+<span class="c1">#</span>
+<span class="c1"># Spins-up a unnamed and unauthenticated cache server:</span>
+<span class="c1">#  - STORAGE at http://localhost:7982</span>
+<span class="c1">#  - INDEX at: http://localhost:7981</span>
+<span class="c1">#</span>
+<span class="c1"># BuildStream configuration snippet:</span>
+<span class="c1">#</span>
+<span class="c1"># artifacts:</span>
+<span class="c1">#   - url: https://localhost:7981</span>
+<span class="c1">#     type: index</span>
+<span class="c1">#     push: true</span>
+<span class="c1">#   - url: https://localhost:7982</span>
+<span class="c1">#     type: storage</span>
+<span class="c1">#     push: true</span>
+<span class="c1">#</span>
+<span class="c1"># Basic usage:</span>
+<span class="c1">#  - docker-compose -f ci.buildbarn.yml up</span>
+<span class="c1">#  - docker-compose -f ci.buildbarn.yml down</span>
+
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bb-asset</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/buildbarn/bb-remote-asset:20241031T230517Z-4926e8e</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/config/asset.jsonnet</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;7981:7981&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">volume</span>
+<span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">assets</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/storage</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bind</span>
+<span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./buildbarn-config/</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/config</span>
+
+<span class="w">  </span><span class="nt">bb-storage</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/buildbarn/bb-storage:20241121T154059Z-f5a181e</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/config/storage.jsonnet</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;7982:7982&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">volume</span>
+<span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cas</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/cas</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bind</span>
+<span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./buildbarn-config/</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/config</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">assets</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cas</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>Visit the <a class="reference external" href="https://github.com/buildbarn/bb-storage">bb-storage</a> and
+<a class="reference external" href="https://github.com/buildbarn/bb-remote-asset">bb-remote-asset</a> project pages to
+find more documentation about setting up services with authentication enabled.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="using_commands.html" class="btn btn-neutral float-left" title="Commands" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="using_configuring_remote_execution.html" class="btn btn-neutral float-right" title="Remote Execution Servers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

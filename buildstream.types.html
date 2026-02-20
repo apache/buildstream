@@ -1,0 +1,343 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Foundation types &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Node - Parsed YAML configuration" href="buildstream.node.html" />
+    <link rel="prev" title="Plugin API reference" href="core_framework.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_format.html">Project format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="core_framework.html">Plugin API reference</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Foundation types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.types.FastEnum"><code class="docutils literal notranslate"><span class="pre">FastEnum</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.types.FastEnum.name"><code class="docutils literal notranslate"><span class="pre">FastEnum.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.types.FastEnum.value"><code class="docutils literal notranslate"><span class="pre">FastEnum.value</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.types.FastEnum.values"><code class="docutils literal notranslate"><span class="pre">FastEnum.values()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.types.CoreWarnings"><code class="docutils literal notranslate"><span class="pre">CoreWarnings</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.types.CoreWarnings.OVERLAPS"><code class="docutils literal notranslate"><span class="pre">CoreWarnings.OVERLAPS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.types.CoreWarnings.UNSTAGED_FILES"><code class="docutils literal notranslate"><span class="pre">CoreWarnings.UNSTAGED_FILES</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.types.CoreWarnings.REF_NOT_IN_TRACK"><code class="docutils literal notranslate"><span class="pre">CoreWarnings.REF_NOT_IN_TRACK</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.types.CoreWarnings.UNALIASED_URL"><code class="docutils literal notranslate"><span class="pre">CoreWarnings.UNALIASED_URL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.types.CoreWarnings.UNAVAILABLE_SOURCE_INFO"><code class="docutils literal notranslate"><span class="pre">CoreWarnings.UNAVAILABLE_SOURCE_INFO</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.types.OverlapAction"><code class="docutils literal notranslate"><span class="pre">OverlapAction</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.types.OverlapAction.ERROR"><code class="docutils literal notranslate"><span class="pre">OverlapAction.ERROR</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.types.OverlapAction.WARNING"><code class="docutils literal notranslate"><span class="pre">OverlapAction.WARNING</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.types.OverlapAction.IGNORE"><code class="docutils literal notranslate"><span class="pre">OverlapAction.IGNORE</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.types.SourceRef"><code class="docutils literal notranslate"><span class="pre">SourceRef</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html">Node - Parsed YAML configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode"><code class="docutils literal notranslate"><span class="pre">MappingNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.Node"><code class="docutils literal notranslate"><span class="pre">Node</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.ProvenanceInformation"><code class="docutils literal notranslate"><span class="pre">ProvenanceInformation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode"><code class="docutils literal notranslate"><span class="pre">ScalarNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode"><code class="docutils literal notranslate"><span class="pre">SequenceNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html">Plugin - Base plugin class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin"><code class="docutils literal notranslate"><span class="pre">Plugin</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html">Source - Base source class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#sourcefetcher-object-for-fetching-individual-urls">SourceFetcher - Object for fetching individual URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceError"><code class="docutils literal notranslate"><span class="pre">SourceError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.AliasSubstitution"><code class="docutils literal notranslate"><span class="pre">AliasSubstitution</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType"><code class="docutils literal notranslate"><span class="pre">SourceVersionType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo"><code class="docutils literal notranslate"><span class="pre">SourceInfo</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceFetcher"><code class="docutils literal notranslate"><span class="pre">SourceFetcher</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source"><code class="docutils literal notranslate"><span class="pre">Source</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html">SourceMirror - Base source mirror class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirrorError"><code class="docutils literal notranslate"><span class="pre">SourceMirrorError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror"><code class="docutils literal notranslate"><span class="pre">SourceMirror</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html">DownloadableFileSource - Abstract class for sources downloaded from a URI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html">Element - Base element class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError"><code class="docutils literal notranslate"><span class="pre">ElementError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.DependencyConfiguration"><code class="docutils literal notranslate"><span class="pre">DependencyConfiguration</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element"><code class="docutils literal notranslate"><span class="pre">Element</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html">BuildElement - Abstract class for build elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement"><code class="docutils literal notranslate"><span class="pre">BuildElement</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html">ScriptElement - Abstract class for scripting elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement"><code class="docutils literal notranslate"><span class="pre">ScriptElement</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.setup"><code class="docutils literal notranslate"><span class="pre">setup()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html">Sandbox - The build sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.SandboxCommandError"><code class="docutils literal notranslate"><span class="pre">SandboxCommandError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox"><code class="docutils literal notranslate"><span class="pre">Sandbox</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html">Directory - Interfacing with files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.DirectoryError"><code class="docutils literal notranslate"><span class="pre">DirectoryError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileType"><code class="docutils literal notranslate"><span class="pre">FileType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileStat"><code class="docutils literal notranslate"><span class="pre">FileStat</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory"><code class="docutils literal notranslate"><span class="pre">Directory</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html">Exceptions - API for Error Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain"><code class="docutils literal notranslate"><span class="pre">ErrorDomain</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html">Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.UtilError"><code class="docutils literal notranslate"><span class="pre">UtilError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.ProgramNotFoundError"><code class="docutils literal notranslate"><span class="pre">ProgramNotFoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.DirectoryExistsError"><code class="docutils literal notranslate"><span class="pre">DirectoryExistsError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult"><code class="docutils literal notranslate"><span class="pre">FileListResult</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.list_relative_paths"><code class="docutils literal notranslate"><span class="pre">list_relative_paths()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.glob"><code class="docutils literal notranslate"><span class="pre">glob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.sha256sum"><code class="docutils literal notranslate"><span class="pre">sha256sum()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_copy"><code class="docutils literal notranslate"><span class="pre">safe_copy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_link"><code class="docutils literal notranslate"><span class="pre">safe_link()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_remove"><code class="docutils literal notranslate"><span class="pre">safe_remove()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.copy_files"><code class="docutils literal notranslate"><span class="pre">copy_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.link_files"><code class="docutils literal notranslate"><span class="pre">link_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_host_tool"><code class="docutils literal notranslate"><span class="pre">get_host_tool()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_bst_version"><code class="docutils literal notranslate"><span class="pre">get_bst_version()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.move_atomic"><code class="docutils literal notranslate"><span class="pre">move_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.save_file_atomic"><code class="docutils literal notranslate"><span class="pre">save_file_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_umask"><code class="docutils literal notranslate"><span class="pre">get_umask()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.guess_version"><code class="docutils literal notranslate"><span class="pre">guess_version()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="core_framework.html">Plugin API reference</a></li>
+      <li class="breadcrumb-item active">Foundation types</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/buildstream.types.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="foundation-types">
+<span id="module-buildstream.types"></span><h1>Foundation types<a class="headerlink" href="#foundation-types" title="Link to this heading"></a></h1>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.types.FastEnum">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FastEnum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.types.FastEnum" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A reimplementation of a subset of the <cite>Enum</cite> functionality, which is far quicker than <cite>Enum</cite>.</p>
+<p><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code> attributes accesses can be really slow, and slow down the execution noticeably.
+This reimplementation doesn’t suffer the same problems, but also does not reimplement everything.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.types.FastEnum.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#buildstream.types.FastEnum.name" title="Link to this definition"></a></dt>
+<dd><p>The name of the current Enum entry, same as <code class="xref py py-func docutils literal notranslate"><span class="pre">enum.Enum.name()</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.types.FastEnum.value">
+<span class="sig-name descname"><span class="pre">value</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#buildstream.types.FastEnum.value" title="Link to this definition"></a></dt>
+<dd><p>The value of the current Enum entry, same as <code class="xref py py-func docutils literal notranslate"><span class="pre">enum.Enum.value()</span></code></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.types.FastEnum.values">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.types.FastEnum.values" title="Link to this definition"></a></dt>
+<dd><p>Get all the possible values for the enum.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the list of all possible values for the enum</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.types.CoreWarnings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CoreWarnings</span></span><a class="headerlink" href="#buildstream.types.CoreWarnings" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Some common warnings which are raised by core functionalities within BuildStream are found in this class.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.types.CoreWarnings.OVERLAPS">
+<span class="sig-name descname"><span class="pre">OVERLAPS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'overlaps'</span></em><a class="headerlink" href="#buildstream.types.CoreWarnings.OVERLAPS" title="Link to this definition"></a></dt>
+<dd><p>This warning will be produced when buildstream detects an overlap on an element
+which is not whitelisted. See <a class="reference internal" href="format_public.html#public-overlap-whitelist"><span class="std std-ref">Overlap Whitelist</span></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.types.CoreWarnings.UNSTAGED_FILES">
+<span class="sig-name descname"><span class="pre">UNSTAGED_FILES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'unstaged-files'</span></em><a class="headerlink" href="#buildstream.types.CoreWarnings.UNSTAGED_FILES" title="Link to this definition"></a></dt>
+<dd><p>This warning will be produced when a file cannot be staged. This can happen when
+a file overlaps with a directory in the sandbox that is not empty.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.types.CoreWarnings.REF_NOT_IN_TRACK">
+<span class="sig-name descname"><span class="pre">REF_NOT_IN_TRACK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ref-not-in-track'</span></em><a class="headerlink" href="#buildstream.types.CoreWarnings.REF_NOT_IN_TRACK" title="Link to this definition"></a></dt>
+<dd><p>This warning will be produced when a source is configured with a reference
+which is found to be invalid based on the configured track</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.types.CoreWarnings.UNALIASED_URL">
+<span class="sig-name descname"><span class="pre">UNALIASED_URL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'unaliased-url'</span></em><a class="headerlink" href="#buildstream.types.CoreWarnings.UNALIASED_URL" title="Link to this definition"></a></dt>
+<dd><p>A URL used for fetching a sources was specified without specifying any
+<a class="reference internal" href="format_project.html#project-source-aliases"><span class="std std-ref">alias</span></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.types.CoreWarnings.UNAVAILABLE_SOURCE_INFO">
+<span class="sig-name descname"><span class="pre">UNAVAILABLE_SOURCE_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'unavailable-source-info'</span></em><a class="headerlink" href="#buildstream.types.CoreWarnings.UNAVAILABLE_SOURCE_INFO" title="Link to this definition"></a></dt>
+<dd><p>A source was queried for its provenance information but did not implement
+<a class="reference internal" href="buildstream.source.html#buildstream.source.Source.collect_source_info" title="buildstream.source.Source.collect_source_info"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.collect_source_info()</span></code></a>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.types.OverlapAction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">OverlapAction</span></span><a class="headerlink" href="#buildstream.types.OverlapAction" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#buildstream.types.FastEnum" title="buildstream.types.FastEnum"><code class="xref py py-class docutils literal notranslate"><span class="pre">FastEnum</span></code></a></p>
+<p>Defines what action to take when files staged into the sandbox overlap.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This only dictates what happens when functions such as
+<a class="reference internal" href="buildstream.element.html#buildstream.element.Element.stage_artifact" title="buildstream.element.Element.stage_artifact"><code class="xref py py-func docutils literal notranslate"><span class="pre">Element.stage_artifact()</span></code></a> and
+<a class="reference internal" href="buildstream.element.html#buildstream.element.Element.stage_dependency_artifacts" title="buildstream.element.Element.stage_dependency_artifacts"><code class="xref py py-func docutils literal notranslate"><span class="pre">Element.stage_dependency_artifacts()</span></code></a>
+are called multiple times in an Element’s <a class="reference internal" href="buildstream.element.html#buildstream.element.Element.stage" title="buildstream.element.Element.stage"><code class="xref py py-func docutils literal notranslate"><span class="pre">Element.stage()</span></code></a>
+implementation, and the files staged from one function call result in overlapping files staged
+from previous invocations.</p>
+<p>If multiple staged elements overlap eachother within a single call to
+<a class="reference internal" href="buildstream.element.html#buildstream.element.Element.stage_dependency_artifacts" title="buildstream.element.Element.stage_dependency_artifacts"><code class="xref py py-func docutils literal notranslate"><span class="pre">Element.stage_dependency_artifacts()</span></code></a>,
+then the <a class="reference internal" href="format_public.html#public-overlap-whitelist"><span class="std std-ref">overlap whitelist</span></a> will be ovserved, and warnings will
+be issued for overlapping files, which will be fatal warnings if
+<a class="reference internal" href="#buildstream.types.CoreWarnings.OVERLAPS" title="buildstream.types.CoreWarnings.OVERLAPS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CoreWarnings.OVERLAPS</span></code></a> is specified
+as a <a class="reference internal" href="format_project.html#configurable-warnings"><span class="std std-ref">fatal warning</span></a>.</p>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.types.OverlapAction.ERROR">
+<span class="sig-name descname"><span class="pre">ERROR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;buildstream.types.OverlapAction</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#buildstream.types.OverlapAction.ERROR" title="Link to this definition"></a></dt>
+<dd><p>It is an error to overlap previously staged files</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.types.OverlapAction.WARNING">
+<span class="sig-name descname"><span class="pre">WARNING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;buildstream.types.OverlapAction</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#buildstream.types.OverlapAction.WARNING" title="Link to this definition"></a></dt>
+<dd><p>A warning will be issued for previously staged files, which will fatal if
+<a class="reference internal" href="#buildstream.types.CoreWarnings.OVERLAPS" title="buildstream.types.CoreWarnings.OVERLAPS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CoreWarnings.OVERLAPS</span></code></a> is specified
+as a <a class="reference internal" href="format_project.html#configurable-warnings"><span class="std std-ref">fatal warning</span></a> in the project.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.types.OverlapAction.IGNORE">
+<span class="sig-name descname"><span class="pre">IGNORE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;buildstream.types.OverlapAction</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#buildstream.types.OverlapAction.IGNORE" title="Link to this definition"></a></dt>
+<dd><p>Overlapping files are acceptable, and do not cause any warning or error.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="buildstream.types.SourceRef">
+<span class="sig-name descname"><span class="pre">SourceRef</span></span><a class="headerlink" href="#buildstream.types.SourceRef" title="Link to this definition"></a></dt>
+<dd><p>A simple python object used to describe and exact set of sources</p>
+<p>This can be <code class="docutils literal notranslate"><span class="pre">None</span></code> in order to represent an absense of a source reference,
+otherwise it can be <code class="docutils literal notranslate"><span class="pre">int</span></code>, <code class="docutils literal notranslate"><span class="pre">str</span></code>, or a complex <code class="docutils literal notranslate"><span class="pre">list</span></code> or <code class="docutils literal notranslate"><span class="pre">dict</span></code> consisting
+of <code class="docutils literal notranslate"><span class="pre">int</span></code>, <code class="docutils literal notranslate"><span class="pre">str</span></code>, <code class="docutils literal notranslate"><span class="pre">list</span></code> and <code class="docutils literal notranslate"><span class="pre">dict</span></code> types.</p>
+<p>The order of elements in <code class="docutils literal notranslate"><span class="pre">list</span></code> objects is meaningful and should be produced
+deterministically by <a class="reference internal" href="buildstream.source.html#buildstream.source.Source" title="buildstream.source.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a> implementations, as this order will effect
+<a class="reference internal" href="arch_cachekeys.html#cachekeys"><span class="std std-ref">cache keys</span></a>.</p>
+<p>See the <a class="reference internal" href="buildstream.source.html#core-source-ref"><span class="std std-ref">source documentation</span></a> for more detils on how
+<a class="reference internal" href="buildstream.source.html#buildstream.source.Source" title="buildstream.source.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a> implementations are expected to handle the source ref.</p>
+<p>alias of <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>]</p>
+</dd></dl>
+
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="core_framework.html" class="btn btn-neutral float-left" title="Plugin API reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="buildstream.node.html" class="btn btn-neutral float-right" title="Node - Parsed YAML configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

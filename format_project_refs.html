@@ -1,0 +1,194 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The project.refs file &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Plugin specific documentation" href="core_plugins.html" />
+    <link rel="prev" title="Builtin public data" href="format_public.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="core_format.html">Project format</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="format_intro.html">Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="format_project.html">Project configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="format_declaring.html">Declaring elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="format_public.html">Builtin public data</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">The project.refs file</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#basic-behavior">Basic behavior</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#format">Format</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_framework.html">Plugin API reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="core_format.html">Project format</a></li>
+      <li class="breadcrumb-item active">The project.refs file</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/format_project_refs.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="the-project-refs-file">
+<span id="projectrefs"></span><h1>The project.refs file<a class="headerlink" href="#the-project-refs-file" title="Link to this heading"></a></h1>
+<p>If one has elected to store source references in a single <code class="docutils literal notranslate"><span class="pre">project.refs</span></code>
+file, then it will be stored at the toplevel of your project directory
+adjacent to <code class="docutils literal notranslate"><span class="pre">project.conf</span></code>. This can be configured in your project
+using the <a class="reference internal" href="format_project.html#project-format-ref-storage"><span class="std std-ref">ref-storage configuration</span></a></p>
+<p>Sources for <a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a> elements are stored
+separately in an adjacent <code class="docutils literal notranslate"><span class="pre">junction.refs</span></code> file of the same format.</p>
+<section id="basic-behavior">
+<span id="projectrefs-basics"></span><h2>Basic behavior<a class="headerlink" href="#basic-behavior" title="Link to this heading"></a></h2>
+<p>When a <code class="docutils literal notranslate"><span class="pre">project.refs</span></code> file is in use, any source references found
+in the <a class="reference internal" href="format_declaring.html#format-sources"><span class="std std-ref">inline source declarations</span></a> are considered
+invalid and will be ignored, and a warning will be emitted for them.</p>
+<p>When <code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">source</span> <span class="pre">track</span></code> is run for your project, the <code class="docutils literal notranslate"><span class="pre">project.refs</span></code> file
+will be updated instead of the inline source declarations. In the absence
+of a <code class="docutils literal notranslate"><span class="pre">project.refs</span></code> file, <code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">source</span> <span class="pre">track</span></code> will create one automatically
+with the tracking results.</p>
+<p>An interesting property of <code class="docutils literal notranslate"><span class="pre">project.refs</span></code> is that it allows for
+<em>cross junction tracking</em>. This is to say that it is possible to override
+the <em>ref</em> of a given source in a project that your project depends on via
+a <a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a>, without actually modifying the
+junctioned project.</p>
+</section>
+<section id="format">
+<span id="projectrefs-format"></span><h2>Format<a class="headerlink" href="#format" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">project.refs</span></code> uses the same YAML format used throughout BuildStream,
+and supports the same <a class="reference internal" href="format_intro.html#format-directives"><span class="std std-ref">directives</span></a> which apply to
+<code class="docutils literal notranslate"><span class="pre">project.conf</span></code> and element declaration files (i.e. <em>element.bst</em> files).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">project.refs</span></code> file format itself is very simple, it contains a single <code class="docutils literal notranslate"><span class="pre">projects</span></code>
+key at the toplevel, which is a dictionary of <a class="reference internal" href="format_project.html#project-format-name"><span class="std std-ref">project names</span></a>.
+Each <em>project name</em> is a dictionary of <em>element names</em>, and each <em>element name</em> holds
+a list of dictionaries corresponding to the element’s <a class="reference internal" href="format_declaring.html#format-sources"><span class="std std-ref">sources</span></a>.</p>
+<p><strong>Example</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Main toplevel &quot;projects&quot; key</span>
+<span class="nt">projects</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># The local project&#39;s name is &quot;core&quot;</span>
+<span class="w">  </span><span class="nt">core</span><span class="p">:</span>
+
+<span class="w">    </span><span class="c1"># A dictionary of element names</span>
+<span class="w">    </span><span class="nt">base/automake.bst</span><span class="p">:</span>
+
+<span class="w">    </span><span class="c1"># A list of sources corresponding to the element</span>
+<span class="w">    </span><span class="c1"># in the same order in which they were declared.</span>
+<span class="w">    </span><span class="c1">#</span>
+<span class="w">    </span><span class="c1"># The values of this list are dictionaries of the</span>
+<span class="w">    </span><span class="c1"># symbolic &quot;ref&quot; portion understood by the given</span>
+<span class="w">    </span><span class="c1"># source plugin implementation.</span>
+<span class="w">    </span><span class="c1">#</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">af6ba39142220687c500f79b4aa2f181d9b24e4...</span>
+
+<span class="w">  </span><span class="c1"># The &quot;core&quot; project depends on the &quot;bootstrap&quot; project,</span>
+<span class="w">  </span><span class="c1"># here we are allowed to override the refs for the projects</span>
+<span class="w">  </span><span class="c1"># we depend on through junctions.</span>
+<span class="w">  </span><span class="nt">bootstrap</span><span class="p">:</span>
+
+<span class="w">    </span><span class="nt">zlib.bst</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4ff941449631ace0d4d203e3483be9dbc9da4540...</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="format_public.html" class="btn btn-neutral float-left" title="Builtin public data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="core_plugins.html" class="btn btn-neutral float-right" title="Plugin specific documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

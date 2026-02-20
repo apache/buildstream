@@ -1,0 +1,250 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Updating BuildStream’s Python dependencies &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Contributing to the UI" href="ui.html" />
+    <link rel="prev" title="Managing data files" href="managing_data_files.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_porting.html">Porting guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#filing-issues">Filing issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#fixing-bugs">Fixing bugs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#adding-new-features">Adding new features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#submitting-patches">Submitting patches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#committer-access">Committer access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#windows-ci">Windows CI</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../CONTRIBUTING.html#further-information">Further information</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="coding_guidelines.html">Coding guidelines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using_the_testsuite.html">Using the test suite</a></li>
+<li class="toctree-l3"><a class="reference internal" href="writing_documentation.html">Writing documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="writing_plugins.html">Adding core plugins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="measuring_performance.html">Measuring performance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="making_releases.html">Making releases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="grpc_protocols.html">Generating protocol buffers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="managing_data_files.html">Managing data files</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Updating BuildStream’s Python dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adding-support-for-a-new-python-release">Adding support for a new Python release</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#tox-ini">tox.ini</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pyproject-toml">pyproject.toml</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#github-compose-ci-docker-compose-yml">.github/compose/ci.docker-compose.yml</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#github-workflows-ci-yml-and-github-workflows-release-yml">.github/workflows/ci.yml and .github/workflows/release.yml</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#removing-support-for-a-python-release">Removing support for a Python release</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">tox.ini</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id2">pyproject.toml</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id3">.github/compose/ci.docker-compose.yml</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id4">.github/workflows/ci.yml and .github/workflows/release.yml</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#abi-compatibility-for-binary-python-packages">ABI compatibility for binary Python packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ui.html">Contributing to the UI</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../CONTRIBUTING.html">Contributing</a></li>
+      <li class="breadcrumb-item active">Updating BuildStream’s Python dependencies</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/hacking/updating_python_deps.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="updating-buildstream-s-python-dependencies">
+<span id="updating-python-deps"></span><h1>Updating BuildStream’s Python dependencies<a class="headerlink" href="#updating-buildstream-s-python-dependencies" title="Link to this heading"></a></h1>
+<p>BuildStream’s Python dependencies are listed in multiple
+<a class="reference external" href="https://pip.readthedocs.io/en/latest/reference/pip_install/#requirements-file-format">requirements files</a>
+present in the <code class="docutils literal notranslate"><span class="pre">requirements</span></code> directory.</p>
+<p>All <code class="docutils literal notranslate"><span class="pre">.txt</span></code> files in this directory are generated from the corresponding
+<code class="docutils literal notranslate"><span class="pre">.in</span></code> file, and each <code class="docutils literal notranslate"><span class="pre">.in</span></code> file represents a set of dependencies. For
+example, <code class="docutils literal notranslate"><span class="pre">requirements.in</span></code> contains all runtime dependencies of BuildStream.
+<code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> is generated from it, and contains pinned versions of all
+runtime dependencies (including transitive dependencies) of BuildStream.</p>
+<p>When adding a new dependency to BuildStream, or updating existing dependencies,
+it is important to update the appropriate requirements file accordingly. After
+changing the <code class="docutils literal notranslate"><span class="pre">.in</span></code> file, run the following to update the matching <code class="docutils literal notranslate"><span class="pre">.txt</span></code>
+file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="o">-</span><span class="n">C</span> <span class="n">requirements</span>
+</pre></div>
+</div>
+</section>
+<section id="adding-support-for-a-new-python-release">
+<h1>Adding support for a new Python release<a class="headerlink" href="#adding-support-for-a-new-python-release" title="Link to this heading"></a></h1>
+<p>When a new stable release of Python 3 appears, we must explicitly declare
+our support for it in the following places.</p>
+<section id="tox-ini">
+<h2>tox.ini<a class="headerlink" href="#tox-ini" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">tox.ini</span></code> file defines the environments where the BuildStream test suite
+runs.  Every <code class="docutils literal notranslate"><span class="pre">py{3.x,3.y}</span></code> list must be updated to contain the new version
+number such as <code class="docutils literal notranslate"><span class="pre">311</span></code> for CPython 3.11.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">tox</span> <span class="pre">-e</span> <span class="pre">py311-nocover</span></code> to run the test suite with the new version of
+Python.</p>
+</section>
+<section id="pyproject-toml">
+<h2>pyproject.toml<a class="headerlink" href="#pyproject-toml" title="Link to this heading"></a></h2>
+<section id="bump-cython-version">
+<h3>Bump cython version<a class="headerlink" href="#bump-cython-version" title="Link to this heading"></a></h3>
+<p>New releases of Cython must be depended on with new versions of Python
+in lock step.</p>
+<p>When supporting a new Python version, it is important to bump the minimal
+dependency on Cython to a new enough version which also supports the new
+version of Python.</p>
+</section>
+<section id="wheel-details">
+<h3>Wheel details<a class="headerlink" href="#wheel-details" title="Link to this heading"></a></h3>
+<p>We produce binary “wheel” packages for each supported version of Python.
+The cibuildwheel build tool will build for all released versions of Python
+so no change is needed in the config.</p>
+<p>However, if you want to test wheel building with a prerelease version of Python
+you will need to set <code class="docutils literal notranslate"><span class="pre">CIBW_PRERELEASE_PYTHONS=1</span></code> in the cibuildwheel
+environment.</p>
+</section>
+</section>
+<section id="github-compose-ci-docker-compose-yml">
+<h2>.github/compose/ci.docker-compose.yml<a class="headerlink" href="#github-compose-ci-docker-compose-yml" title="Link to this heading"></a></h2>
+<p>Each binary package is tested in a container, using the
+<a class="reference external" href="https://github.com/pypa/manylinux">pypa/manylinux</a> images.</p>
+<p>You need to add a new docker-compose service here – copy the
+latest one and update the version number where it appears.</p>
+</section>
+<section id="github-workflows-ci-yml-and-github-workflows-release-yml">
+<h2>.github/workflows/ci.yml and .github/workflows/release.yml<a class="headerlink" href="#github-workflows-ci-yml-and-github-workflows-release-yml" title="Link to this heading"></a></h2>
+<p>There is a separate CI job to run each of the above tests. Update the
+matrix config for the <code class="docutils literal notranslate"><span class="pre">test_wheels</span></code> jobs in <code class="docutils literal notranslate"><span class="pre">ci.yml</span></code> and <code class="docutils literal notranslate"><span class="pre">release.yml</span></code>
+to add the new Python version.</p>
+</section>
+</section>
+<section id="removing-support-for-a-python-release">
+<h1>Removing support for a Python release<a class="headerlink" href="#removing-support-for-a-python-release" title="Link to this heading"></a></h1>
+<section id="id1">
+<h2>tox.ini<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<p>You will need to update the <code class="docutils literal notranslate"><span class="pre">py{3.x,3.y}</span></code> lists to remove the old version. In
+the <code class="docutils literal notranslate"><span class="pre">envlist</span></code> section, make sure the oldest version still has coverage
+enabled while the other versions are marked <code class="docutils literal notranslate"><span class="pre">-nocover</span></code>.</p>
+</section>
+<section id="id2">
+<h2>pyproject.toml<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<p>The cibuildwheel tool will produce wheels for all versions of Python supported
+upstream.. If we drop support for a version before upstream do, update the
+<code class="docutils literal notranslate"><span class="pre">tool.cibuildwheel.skip</span></code> list to skip all platform tags for that version.
+The glob <code class="docutils literal notranslate"><span class="pre">cp36-*</span></code> would skip all CPython 3.6 builds, for example.</p>
+</section>
+<section id="id3">
+<h2>.github/compose/ci.docker-compose.yml<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<p>Remove the corresponding service.</p>
+</section>
+<section id="id4">
+<h2>.github/workflows/ci.yml and .github/workflows/release.yml<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
+<p>Update the matrix config for the <cite>test_wheels</cite> jobs in <cite>ci.yml</cite> and
+<cite>release.yml</cite> to remove the old Python version.</p>
+</section>
+</section>
+<section id="abi-compatibility-for-binary-python-packages">
+<h1>ABI compatibility for binary Python packages<a class="headerlink" href="#abi-compatibility-for-binary-python-packages" title="Link to this heading"></a></h1>
+<p>The Python binary packages declare system requirements using
+<a class="reference external" href="https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/">platform compatibility tags</a>.</p>
+<p>For linux-gnu systems we use <a class="reference external" href="https://peps.python.org/pep-0600/">manylinux_x_y platform tags</a>
+to specify a minimum GLIBC version. The platform tag is controlled in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> with the
+<code class="docutils literal notranslate"><span class="pre">tool.cibuildwheel.manylinux-x86_64-image</span></code> key.  It must correspond with the version of
+GLIBC used in <a class="reference external" href="https://gitlab.com/BuildGrid/buildbox/buildbox-integration">buildbox-integration</a>
+to produce static buildbox binaries that are included in the package.
+The <code class="docutils literal notranslate"><span class="pre">cibuildwheel</span></code> tool uses <a class="reference external" href="https://github.com/pypa/auditwheel">auditwheel</a>
+to ensure the correct platform tag is declared.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="managing_data_files.html" class="btn btn-neutral float-left" title="Managing data files" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ui.html" class="btn btn-neutral float-right" title="Contributing to the UI" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

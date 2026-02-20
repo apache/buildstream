@@ -1,0 +1,394 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Writing documentation &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Adding core plugins" href="writing_plugins.html" />
+    <link rel="prev" title="Using the test suite" href="using_the_testsuite.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_porting.html">Porting guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#filing-issues">Filing issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#fixing-bugs">Fixing bugs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#adding-new-features">Adding new features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#submitting-patches">Submitting patches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#committer-access">Committer access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#windows-ci">Windows CI</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../CONTRIBUTING.html#further-information">Further information</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="coding_guidelines.html">Coding guidelines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using_the_testsuite.html">Using the test suite</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Writing documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#documentation-formatting-policy">Documentation formatting policy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#building-docs">Building Docs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#man-pages">Man pages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#user-guide">User guide</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#adding-buildstream-command-output">Adding BuildStream command output</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="writing_plugins.html">Adding core plugins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="measuring_performance.html">Measuring performance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="making_releases.html">Making releases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="grpc_protocols.html">Generating protocol buffers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="managing_data_files.html">Managing data files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html">Updating BuildStream’s Python dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#adding-support-for-a-new-python-release">Adding support for a new Python release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#removing-support-for-a-python-release">Removing support for a Python release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#abi-compatibility-for-binary-python-packages">ABI compatibility for binary Python packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ui.html">Contributing to the UI</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../CONTRIBUTING.html">Contributing</a></li>
+      <li class="breadcrumb-item active">Writing documentation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/hacking/writing_documentation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="writing-documentation">
+<span id="id1"></span><h1>Writing documentation<a class="headerlink" href="#writing-documentation" title="Link to this heading"></a></h1>
+<p>BuildStream starts out as a documented project from day one and uses
+<a class="reference external" href="www.sphinx-doc.org">sphinx</a> to document itself.</p>
+<p>This section discusses formatting policies for editing files in the
+<code class="docutils literal notranslate"><span class="pre">doc/source</span></code> directory, and describes the details of how the docs are
+generated so that you can easily generate and view the docs yourself before
+submitting patches to the documentation.</p>
+<p>For details on how API documenting comments and docstrings are formatted,
+refer to the <a class="reference internal" href="coding_guidelines.html#contributing-documenting-symbols"><span class="std std-ref">documenting section of the coding guidelines</span></a>.</p>
+<section id="documentation-formatting-policy">
+<h2>Documentation formatting policy<a class="headerlink" href="#documentation-formatting-policy" title="Link to this heading"></a></h2>
+<p>The BuildStream documentation style is as follows:</p>
+<ul>
+<li><p>Titles and headings require two leading empty lines above them.
+Only the first word in a title should be capitalized.</p>
+<ul class="simple">
+<li><p>If there is an <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">_internal_link:</span></code> anchor, there should be two empty lines
+above the anchor, followed by one leading empty line.</p></li>
+</ul>
+</li>
+<li><p>Within a section, paragraphs should be separated by one empty line.</p></li>
+<li><p>Notes are defined using: <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">note::</span></code> blocks, followed by an empty line
+and then indented (3 spaces) text.</p>
+<ul>
+<li><p>Other kinds of notes can be used throughout the documentation and will
+be decorated in different ways, these work in the same way as <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">note::</span></code> does.</p>
+<p>Feel free to also use <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">attention::</span></code> or <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">important::</span></code> to call special
+attention to a paragraph, <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">tip::</span></code> to give the reader a special tip on how
+to use an advanced feature or <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">warning::</span></code> to warn the user about a potential
+misuse of the API and explain its consequences.</p>
+</li>
+</ul>
+</li>
+<li><p>Code blocks are defined using: <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">code::</span> <span class="pre">LANGUAGE</span></code> blocks, followed by an empty
+line and then indented (3 spaces) text. Note that the default language is <code class="docutils literal notranslate"><span class="pre">python</span></code>.</p></li>
+<li><p>Cross references should be of the form <code class="docutils literal notranslate"><span class="pre">:role:`target`</span></code>.</p>
+<ul class="simple">
+<li><p>Explicit anchors can be declared as <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">_anchor_name:</span></code> on a line by itself.</p></li>
+<li><p>To cross reference arbitrary locations with, for example, the anchor <code class="docutils literal notranslate"><span class="pre">anchor_name</span></code>,
+always provide some explicit text in the link instead of deriving the text from
+the target, e.g.: <code class="docutils literal notranslate"><span class="pre">:ref:`Link</span> <span class="pre">text</span> <span class="pre">&lt;anchor_name&gt;`</span></code>.
+Note that the “_” prefix is not used when referring to the target.</p></li>
+</ul>
+</li>
+</ul>
+<p>For further information about using the reStructuredText with sphinx, please see the
+<a class="reference external" href="http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html">Sphinx Documentation</a>.</p>
+</section>
+<section id="building-docs">
+<h2>Building Docs<a class="headerlink" href="#building-docs" title="Link to this heading"></a></h2>
+<p>Before you can build the docs, you will end to ensure that you have installed
+the required <a class="reference internal" href="using_the_testsuite.html#contributing-build-deps"><span class="std std-ref">build dependencies</span></a> as mentioned
+in the testing section above.</p>
+<p>To build the documentation, just run the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">-</span><span class="n">e</span> <span class="n">docs</span>
+</pre></div>
+</div>
+<p>This will give you a <code class="docutils literal notranslate"><span class="pre">doc/build/html</span></code> directory with the html docs which
+you can view in your browser locally to test.</p>
+<section id="regenerating-session-html">
+<span id="contributing-session-html"></span><h3>Regenerating session html<a class="headerlink" href="#regenerating-session-html" title="Link to this heading"></a></h3>
+<p>The documentation build will build the session files if they are missing,
+or if explicitly asked to rebuild. We revision the generated session html files
+in order to reduce the burden on documentation contributors.</p>
+<p>To explicitly rebuild the session snapshot html files, it is recommended that you
+first set the <code class="docutils literal notranslate"><span class="pre">BST_SOURCE_CACHE</span></code> environment variable to your source cache, this
+will make the docs build reuse already downloaded sources:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">BST_SOURCE_CACHE</span><span class="o">=~/.</span><span class="n">cache</span><span class="o">/</span><span class="n">buildstream</span><span class="o">/</span><span class="n">sources</span>
+</pre></div>
+</div>
+<p>To force rebuild session html while building the doc, simply run <cite>tox</cite> with the
+<code class="docutils literal notranslate"><span class="pre">BST_FORCE_SESSION_REBUILD</span></code> environment variable set, like so:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">env</span> <span class="n">BST_FORCE_SESSION_REBUILD</span><span class="o">=</span><span class="mi">1</span> <span class="n">tox</span> <span class="o">-</span><span class="n">e</span> <span class="n">docs</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="man-pages">
+<span id="contributing-man-pages"></span><h2>Man pages<a class="headerlink" href="#man-pages" title="Link to this heading"></a></h2>
+<p>Unfortunately it is quite difficult to integrate the man pages build
+into the <code class="docutils literal notranslate"><span class="pre">setup.py</span></code>, as such, whenever the frontend command line
+interface changes, the static man pages should be regenerated and
+committed with that.</p>
+<p>To do this, make sure you know the version you are generating the docs
+for, which should usually be the <em>next</em> <code class="docutils literal notranslate"><span class="pre">major.minor</span></code> version of BuildStream,
+and then run the following from the the toplevel directory of BuildStream:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">-</span><span class="n">e</span> <span class="n">man</span> <span class="o">--</span> <span class="o">&lt;</span><span class="n">version</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>And commit the result, ensuring that you have added anything in
+the <code class="docutils literal notranslate"><span class="pre">man/</span></code> subdirectory, which will be automatically included
+in the buildstream distribution.</p>
+</section>
+<section id="user-guide">
+<h2>User guide<a class="headerlink" href="#user-guide" title="Link to this heading"></a></h2>
+<p>The <a class="reference internal" href="../main_using.html#using"><span class="std std-ref">user guide</span></a> is comprised of free form documentation
+in manually written <code class="docutils literal notranslate"><span class="pre">.rst</span></code> files and is split up into a few sections,
+of main interest are the <a class="reference internal" href="../using_tutorial.html#tutorial"><span class="std std-ref">tutorial</span></a> and the
+<a class="reference internal" href="../using_examples.html#examples"><span class="std std-ref">examples</span></a>.</p>
+<p>The distinction of the two categories of user guides is important to
+understand too.</p>
+<ul>
+<li><p><strong>Tutorial</strong></p>
+<p>The tutorial is structured as a series of exercises which start with
+the most basic concepts and build upon the previous chapters in order
+to arrive at a basic understanding of how to create BuildStream projects.</p>
+<p>This series of examples should be easy enough to complete in a matter
+of a few hours for a new user, and should provide just enough insight to
+get the user started in creating their own projects.</p>
+<p>Going through the tutorial step by step should also result in the user
+becoming proficient enough with the reference manual to get by on their own.</p>
+</li>
+<li><p><strong>Examples</strong></p>
+<p>These exist to demonstrate how to accomplish more advanced tasks which
+are not always obvious and discoverable.</p>
+<p>Alternatively, these also demonstrate elegant and recommended ways of
+accomplishing some tasks which could be done in various ways.</p>
+</li>
+</ul>
+<section id="guidelines">
+<h3>Guidelines<a class="headerlink" href="#guidelines" title="Link to this heading"></a></h3>
+<p>Here are some general guidelines for adding new free form documentation
+to the user guide.</p>
+<ul>
+<li><p><strong>Focus on a single subject</strong></p>
+<p>It is important to stay focused on a single subject and avoid getting
+into tangential material when creating a new entry, so that the articles
+remain concise and the user is not distracted by unrelated subject material.</p>
+<p>A single tutorial chapter or example should not introduce any additional
+subject material than the material being added for the given example.</p>
+</li>
+<li><p><strong>Reuse existing sample project elements</strong></p>
+<p>To help avoid distracting from the topic at hand, it is always preferable to
+reuse the same project sample material from other examples and only deviate
+slightly to demonstrate the new material, than to create completely new projects.</p>
+<p>This helps us remain focused on a single topic at a time, and reduces the amount
+of unrelated material the reader needs to learn in order to digest the new
+example.</p>
+</li>
+<li><p><strong>Don’t be redundant</strong></p>
+<p>When something has already been explained in the tutorial or in another example,
+it is best to simply refer to the other user guide entry in a new example.</p>
+<p>Always prefer to link to the tutorial if an explanation exists in the tutorial,
+rather than linking to another example, where possible.</p>
+</li>
+<li><p><strong>Link into the reference manual at every opportunity</strong></p>
+<p>The format and plugin API is 100% documented at all times. Whenever discussing
+anything about the format or plugin API, always do so while providing a link
+into the more terse reference material.</p>
+<p>We don’t want users to have to search for the material themselves, and we also
+want the user to become proficient at navigating the reference material over
+time.</p>
+</li>
+<li><p><strong>Use concise terminology</strong></p>
+<p>As developers, we tend to come up with code names for features we develop, and
+then end up documenting a new feature in an example.</p>
+<p>Never use a code name or shorthand to refer to a feature in the user guide, instead
+always use fully qualified sentences outlining very explicitly what we are doing
+in the example, or what the example is for in the case of a title.</p>
+<p>We need to be considerate that the audience of our user guide is probably a
+proficient developer or integrator, but has no idea what we might have decided
+to name a given activity.</p>
+</li>
+</ul>
+</section>
+<section id="structure-of-an-example">
+<h3>Structure of an example<a class="headerlink" href="#structure-of-an-example" title="Link to this heading"></a></h3>
+<p>The <a class="reference internal" href="../using_tutorial.html#tutorial"><span class="std std-ref">tutorial</span></a> and the <a class="reference internal" href="../using_examples.html#examples"><span class="std std-ref">examples</span></a> sections
+of the documentation contain a series of sample projects, each chapter in
+the tutorial, or standalone example uses a sample project.</p>
+<p>Here is the the structure for adding new examples and tutorial chapters.</p>
+<ul>
+<li><p>The example has a <code class="docutils literal notranslate"><span class="pre">${name}</span></code>.</p></li>
+<li><p>The example has a project users can copy and use.</p>
+<ul class="simple">
+<li><p>This project is added in the directory <code class="docutils literal notranslate"><span class="pre">doc/examples/${name}</span></code>.</p></li>
+</ul>
+</li>
+<li><p>The example has a documentation component.</p>
+<ul class="simple">
+<li><p>This is added at <code class="docutils literal notranslate"><span class="pre">doc/source/examples/${name}.rst</span></code></p></li>
+<li><p>An entry for <code class="docutils literal notranslate"><span class="pre">examples/${name}</span></code> is added to the toctree in <code class="docutils literal notranslate"><span class="pre">doc/source/using_examples.rst</span></code></p></li>
+<li><p>This documentation discusses the project elements declared in the project and may
+provide some BuildStream command examples.</p></li>
+<li><p>This documentation links out to the reference manual at every opportunity.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the case of a tutorial chapter, the <code class="docutils literal notranslate"><span class="pre">.rst</span></code> file is added in at
+<code class="docutils literal notranslate"><span class="pre">doc/source/tutorial/${name}.rst</span></code> and an entry for <code class="docutils literal notranslate"><span class="pre">tutorial/${name}</span></code>
+is added to <code class="docutils literal notranslate"><span class="pre">doc/source/using_tutorial.rst</span></code>.</p>
+</div>
+</li>
+<li><p>The example has a CI test component.</p>
+<ul class="simple">
+<li><p>This is an integration test added at <code class="docutils literal notranslate"><span class="pre">tests/examples/${name}</span></code>.</p></li>
+<li><p>This test runs BuildStream in the ways described in the example
+and assert that we get the results which we advertize to users in
+the said examples.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="adding-buildstream-command-output">
+<h2>Adding BuildStream command output<a class="headerlink" href="#adding-buildstream-command-output" title="Link to this heading"></a></h2>
+<p>As a part of building the docs, BuildStream will run itself and extract
+some html for the colorized output which is produced.</p>
+<p>If you want to run BuildStream to produce some nice html for your
+documentation, then you can do so by adding new <code class="docutils literal notranslate"><span class="pre">.run</span></code> files to the
+<code class="docutils literal notranslate"><span class="pre">doc/sessions/</span></code> directory.</p>
+<p>Any files added as <code class="docutils literal notranslate"><span class="pre">doc/sessions/${example}.run</span></code> will result in generated
+file at <code class="docutils literal notranslate"><span class="pre">doc/source/sessions/${example}.html</span></code>, and these files can be
+included in the reStructuredText documentation at any time with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>.. raw:: html
+   :file: sessions/${example}.html
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">.run</span></code> file format is just another YAML dictionary which consists of a
+<code class="docutils literal notranslate"><span class="pre">commands</span></code> list, instructing the program what to do command by command.</p>
+<p>Each <em>command</em> is a dictionary, the members of which are listed here:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">directory</span></code>: The input file relative project directory.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output</span></code>: The input file relative output html file to generate (optional).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fake-output</span></code>: Don’t really run the command, just pretend to and pretend
+this was the output, an empty string will enable this too.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">command</span></code>: The command to run, without the leading <code class="docutils literal notranslate"><span class="pre">bst</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shell</span></code>: Specifying <code class="docutils literal notranslate"><span class="pre">True</span></code> indicates that <code class="docutils literal notranslate"><span class="pre">command</span></code> should be run as
+a shell command from the project directory, instead of a bst command (optional).</p></li>
+</ul>
+<p>When adding a new <code class="docutils literal notranslate"><span class="pre">.run</span></code> file, one should normally also commit the new
+resulting generated <code class="docutils literal notranslate"><span class="pre">.html</span></code> file(s) into the <code class="docutils literal notranslate"><span class="pre">doc/source/sessions-stored/</span></code>
+directory at the same time, this ensures that other developers do not need to
+regenerate them locally in order to build the docs.</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">commands</span><span class="p">:</span>
+
+<span class="c1"># Make it fetch first</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">directory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">../examples/foo</span>
+<span class="w">  </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">source fetch hello.bst</span>
+
+<span class="c1"># Capture a build output</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">directory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">../examples/foo</span>
+<span class="w">  </span><span class="nt">output</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">../source/sessions/foo-build.html</span>
+<span class="w">  </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">build hello.bst</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="using_the_testsuite.html" class="btn btn-neutral float-left" title="Using the test suite" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="writing_plugins.html" class="btn btn-neutral float-right" title="Adding core plugins" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

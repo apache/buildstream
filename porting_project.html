@@ -1,0 +1,487 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Porting the project format &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Contributing" href="CONTRIBUTING.html" />
+    <link rel="prev" title="Porting command line usage" href="porting_command_line.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_porting.html">Porting guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="porting_user_configuration.html">Porting the buildstream.conf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="porting_command_line.html">Porting command line usage</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Porting the project format</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-project-conf">The project.conf</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#project-name">Project name</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#project-versioning">Project versioning</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#some-attributes-can-only-be-specified-in-project-conf">Some attributes can only be specified in project.conf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#artifact-cache-configuration">Artifact cache configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#loading-plugins">Loading plugins</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#core-elements">Core elements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#the-stack-element">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">stack</span></code> element</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-script-element">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">script</span></code> element</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-junction-element">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code> element</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#migrated-plugins">Migrated plugins</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#example-of-externally-loaded-plugin">Example of externally loaded plugin</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#miscellaneous">Miscellaneous</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#element-naming">Element naming</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#overlap-whitelist">Overlap whitelist</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#strip-commands">Strip commands</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_porting.html">Porting guide</a></li>
+      <li class="breadcrumb-item active">Porting the project format</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/porting_project.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="porting-the-project-format">
+<span id="porting-project"></span><h1>Porting the project format<a class="headerlink" href="#porting-the-project-format" title="Link to this heading"></a></h1>
+<p>This document outlines breaking changes made to the project format in BuildStream 2.</p>
+<section id="the-project-conf">
+<h2>The project.conf<a class="headerlink" href="#the-project-conf" title="Link to this heading"></a></h2>
+<p>This section outlines breaking changes made to the <a class="reference internal" href="format_project.html#projectconf"><span class="std std-ref">project.conf format</span></a>.</p>
+<section id="project-name">
+<h3>Project name<a class="headerlink" href="#project-name" title="Link to this heading"></a></h3>
+<p>Various features related to <a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a> elements have been added
+which allow addressing projects by their <a class="reference internal" href="format_project.html#project-format-name"><span class="std std-ref">project names</span></a>. For this
+reason, it is important to ensure that your project names are appropriately unique.</p>
+</section>
+<section id="project-versioning">
+<h3>Project versioning<a class="headerlink" href="#project-versioning" title="Link to this heading"></a></h3>
+<p>Instead of maintaining a separate version number for the format and for BuildStream releases,
+projects now declare the minimum version of BuildStream 2 they depend on.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">format-version</span></code> attribute should be removed from your project.conf (if present) and
+the <a class="reference internal" href="format_project.html#project-min-version"><span class="std std-ref">min-version</span></a> attribute must be added.</p>
+</section>
+<section id="some-attributes-can-only-be-specified-in-project-conf">
+<h3>Some attributes can only be specified in project.conf<a class="headerlink" href="#some-attributes-can-only-be-specified-in-project-conf" title="Link to this heading"></a></h3>
+<p>Whenever specifying any of the following toplevel project attributes, they must be
+specified inside the project.conf itself and cannot be <a class="reference internal" href="format_intro.html#format-directives-include"><span class="std std-ref">included</span></a>
+from a separate file:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="format_project.html#project-format-name"><span class="std std-ref">name</span></a></p></li>
+<li><p><a class="reference internal" href="format_project.html#project-element-path"><span class="std std-ref">element-path</span></a></p></li>
+<li><p><a class="reference internal" href="format_project.html#project-min-version"><span class="std std-ref">min-version</span></a></p></li>
+<li><p><a class="reference internal" href="format_project.html#project-plugins"><span class="std std-ref">plugins</span></a></p></li>
+</ul>
+</section>
+<section id="artifact-cache-configuration">
+<h3>Artifact cache configuration<a class="headerlink" href="#artifact-cache-configuration" title="Link to this heading"></a></h3>
+<p>The format for declaring <a class="reference internal" href="format_project.html#project-artifact-cache"><span class="std std-ref">artifact caches</span></a> which are associated to
+your project have been completely redesigned.</p>
+<p><strong>BuildStream 1:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># We used to specify a single URL</span>
+<span class="c1">#</span>
+<span class="nt">artifacts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://foo.com/artifacts</span>
+</pre></div>
+</div>
+<p><strong>BuildStream 2:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Now we declare a list, and credentials have been split</span>
+<span class="c1"># out into a separate &quot;auth&quot; dictionary</span>
+<span class="c1">#</span>
+<span class="nt">artifacts</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://foo.com:11001</span>
+<span class="w">  </span><span class="nt">auth</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">server-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server.crt</span>
+</pre></div>
+</div>
+</section>
+<section id="loading-plugins">
+<h3>Loading plugins<a class="headerlink" href="#loading-plugins" title="Link to this heading"></a></h3>
+<p>The format for <a class="reference internal" href="format_project.html#project-plugins"><span class="std std-ref">loading plugins</span></a> has been completely redesigned.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>A new method for <a class="reference internal" href="format_project.html#project-plugins-junction"><span class="std std-ref">loading plugins through junctions</span></a>
+has been added. In the interest of ensuring strong determinism and reliability it is
+strongly recommended to use this new method.</p>
+</div>
+<section id="local-plugins">
+<h4>Local plugins<a class="headerlink" href="#local-plugins" title="Link to this heading"></a></h4>
+<p>Here is an example of how loading <a class="reference internal" href="format_project.html#project-plugins-local"><span class="std std-ref">local plugins</span></a> has changed.</p>
+<p><strong>BuildStream 1:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">plugins</span><span class="p">:</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<span class="w">  </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plugins/sources</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># We used to specify version numbers, these no longer exist.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">sources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">mysource</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</pre></div>
+</div>
+<p><strong>BuildStream 2:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">plugins</span><span class="p">:</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<span class="w">  </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plugins/sources</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Now we merely specify a list of plugins to load from</span>
+<span class="w">  </span><span class="c1"># a given project local directory</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">sources</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mysource</span>
+</pre></div>
+</div>
+</section>
+<section id="pip-plugins">
+<h4>Pip plugins<a class="headerlink" href="#pip-plugins" title="Link to this heading"></a></h4>
+<p>Here is an example of how loading <a class="reference internal" href="format_project.html#project-plugins-pip"><span class="std std-ref">pip plugins</span></a> has changed.</p>
+<p><strong>BuildStream 1:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">plugins</span><span class="p">:</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip</span>
+
+<span class="w">  </span><span class="nt">package-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vegetables</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># We used to specify version numbers, these no longer exist.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">elements</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">potato</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</pre></div>
+</div>
+<p><strong>BuildStream 2:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">plugins</span><span class="p">:</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># We can now specify version constraints</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">package-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vegetables&gt;=1.2</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Now we merely specify a list of plugins to load from</span>
+<span class="w">  </span><span class="c1"># a given pip package that is expected to be installed</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">elements</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">potato</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="core-elements">
+<h2>Core elements<a class="headerlink" href="#core-elements" title="Link to this heading"></a></h2>
+<p>This section outlines breaking changes made to <a class="reference internal" href="core_plugins.html#plugins"><span class="std std-ref">core element plugins</span></a> which
+may require you to make changes to your project.</p>
+<section id="the-stack-element">
+<h3>The <a class="reference internal" href="elements/stack.html#module-elements.stack" title="elements.stack"><code class="xref py py-mod docutils literal notranslate"><span class="pre">stack</span></code></a> element<a class="headerlink" href="#the-stack-element" title="Link to this heading"></a></h3>
+<p>Stack elements dependencies are now hard required to be both build and runtime dependencies.</p>
+</section>
+<section id="the-script-element">
+<h3>The <a class="reference internal" href="elements/script.html#module-elements.script" title="elements.script"><code class="xref py py-mod docutils literal notranslate"><span class="pre">script</span></code></a> element<a class="headerlink" href="#the-script-element" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">layout</span></code> attribute has now been removed in favor of dependency level configuration.</p>
+<p>Here is an example script which collects a manifest of all files in the hypothetical
+<code class="docutils literal notranslate"><span class="pre">system.bst</span></code> element, using a hypothetical base runtime element <code class="docutils literal notranslate"><span class="pre">base-utilities.bst</span></code>.</p>
+<p><strong>BuildStream 1:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">script</span>
+
+<span class="nt">build-depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">base-utilities.bst</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system.bst</span>
+
+<span class="nt">config</span><span class="p">:</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># The old format was redundant and required explicit layout</span>
+<span class="w">  </span><span class="c1"># of the dependencies already declared above.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">layout</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">element</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">base-utilities.bst</span>
+<span class="w">    </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">element</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system.bst</span>
+<span class="w">    </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{build-root}&quot;</span>
+
+<span class="w">  </span><span class="nt">commands</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">find %{build-root} &gt; %{install-root}/manifest.log</span>
+</pre></div>
+</div>
+<p><strong>BuildStream 2:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">script</span>
+
+<span class="c1">#</span>
+<span class="c1"># The default location is &quot;/&quot; so there is no need to configure</span>
+<span class="c1"># the &quot;base-utilities.bst&quot; dependency</span>
+<span class="c1">#</span>
+<span class="nt">build-depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">base-utilities.bst</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system.bst</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">config</span><span class="p p-Indicator">:</span>
+<span class="w">    </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{build-root}&quot;</span>
+
+<span class="nt">config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">commands</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">find %{build-root} &gt; %{install-root}/manifest.log</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">location</span></code> dependency level configuration is also supported by all
+<a class="reference internal" href="buildstream.buildelement.html#module-buildstream.buildelement" title="buildstream.buildelement"><code class="xref py py-mod docutils literal notranslate"><span class="pre">BuildElement</span></code></a> plugins.</p>
+</div>
+</section>
+<section id="the-junction-element">
+<h3>The <a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a> element<a class="headerlink" href="#the-junction-element" title="Link to this heading"></a></h3>
+<p>The YAML format for declaring junctions has not changed, however the way that
+multiple junctions interact in a loaded pipeline has changed significantly.</p>
+<p>Specifically, the <a class="reference internal" href="format_declaring.html#format-element-names"><span class="std std-ref">element name</span></a> used to declare
+a junction no longer has any special significance, whereas in BuildStream 1
+the junction’s name is used to coalesce matching junctions in subprojects.</p>
+<p>BuildStream 2 offers more flexibility in this regard, and allows you to <em>inherit</em>
+a junction from a subproject, by using a <a class="reference internal" href="elements/link.html#module-elements.link" title="elements.link"><code class="xref py py-mod docutils literal notranslate"><span class="pre">link</span></code></a> element directly
+in place of a junction, and/or explicitly override the configuration of a subproject’s
+junction using the new <code class="docutils literal notranslate"><span class="pre">overrides</span></code> configuration attribute which the junction
+element now provides.</p>
+<p>Consult the <a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a> element documentation for a more
+detailed explanation.</p>
+</section>
+</section>
+<section id="migrated-plugins">
+<h2>Migrated plugins<a class="headerlink" href="#migrated-plugins" title="Link to this heading"></a></h2>
+<p>A majority of the plugins which used to be considered core plugins have been removed
+from BuildStream in favor of a more modular and distributed approach. The remaining
+core plugins are <a class="reference internal" href="core_plugins.html#plugins"><span class="std std-ref">documented here</span></a>.</p>
+<p>Any core plugins which you have been using in BuildStream 1 which have been migrated
+to separate repositories will need to be accessed externally.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Plugin</p></th>
+<th class="head"><p>New location</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td colspan="2"><p><strong>Element plugins</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>make</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/buildstream-plugins/">buildstream-plugins</a></p></td>
+</tr>
+<tr class="row-even"><td><p>autotools</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/buildstream-plugins/">buildstream-plugins</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>cmake</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/buildstream-plugins/">buildstream-plugins</a></p></td>
+</tr>
+<tr class="row-even"><td><p>distutils</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/buildstream-plugins/">buildstream-plugins</a> (as setuptools)</p></td>
+</tr>
+<tr class="row-odd"><td><p>pip</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/buildstream-plugins/">buildstream-plugins</a></p></td>
+</tr>
+<tr class="row-even"><td><p>meson</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/buildstream-plugins/">buildstream-plugins</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>qmake</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/bst-plugins-experimental/">bst-plugins-experimental</a></p></td>
+</tr>
+<tr class="row-even"><td><p>makemaker</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/bst-plugins-experimental/">bst-plugins-experimental</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>modulebuild</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/bst-plugins-experimental/">bst-plugins-experimental</a></p></td>
+</tr>
+<tr class="row-even"><td colspan="2"><p><strong>Source plugins</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>bzr</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/buildstream-plugins/">buildstream-plugins</a></p></td>
+</tr>
+<tr class="row-even"><td><p>git</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/buildstream-plugins/">buildstream-plugins</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>patch</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/buildstream-plugins/">buildstream-plugins</a></p></td>
+</tr>
+<tr class="row-even"><td><p>pip</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/buildstream-plugins/">buildstream-plugins</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>deb</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/bst-plugins-experimental/">bst-plugins-experimental</a></p></td>
+</tr>
+<tr class="row-even"><td><p>ostree</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/bst-plugins-experimental/">bst-plugins-experimental</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>zip</p></td>
+<td><p><a class="reference external" href="https://pypi.org/project/bst-plugins-experimental/">bst-plugins-experimental</a></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p><strong>YAML composition with externally loaded plugins</strong></p>
+<p>Note that when <a class="reference internal" href="format_intro.html#format-composition"><span class="std std-ref">YAML composition</span></a> occurs with plugins loaded
+from external projects, the <em>plugin defaults</em> will be composited with <em>your project.conf</em>
+and not with the project.conf originating in the external project containing the plugin.</p>
+</div>
+<section id="example-of-externally-loaded-plugin">
+<h3>Example of externally loaded plugin<a class="headerlink" href="#example-of-externally-loaded-plugin" title="Link to this heading"></a></h3>
+<p>It is recommended to transition directly <a class="reference internal" href="format_project.html#project-plugins-junction"><span class="std std-ref">loading these plugins through junctions</span></a>,
+which can be done as follows.</p>
+<section id="create-an-alias-for-pypi-in-your-project-conf">
+<h4>Create an alias for PyPI in your project.conf<a class="headerlink" href="#create-an-alias-for-pypi-in-your-project-conf" title="Link to this heading"></a></h4>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">pypi</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://files.pythonhosted.org/packages/</span>
+</pre></div>
+</div>
+</section>
+<section id="create-buildstream-plugins-junction-bst">
+<h4>Create buildstream-plugins-junction.bst<a class="headerlink" href="#create-buildstream-plugins-junction-bst" title="Link to this heading"></a></h4>
+<p>Create a junction which accesses the release tarball of the plugin repository.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">junction</span>
+<span class="nt">sources</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tar</span>
+<span class="w">  </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pypi:e2/d8/ed9e849a1386297f854f9fa0200f3fa108498c0fdb5c86468c1601c7e571/buildstream-plugins-1.91.0.tar.gz</span>
+<span class="w">  </span><span class="nt">ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">44c6ea15d15476b68d0767c1d410d416f71544e57be572201058f8b3d3b05f83</span>
+</pre></div>
+</div>
+</section>
+<section id="declare-the-plugin-you-want-to-use-in-your-project-conf">
+<h4>Declare the plugin you want to use in your project.conf<a class="headerlink" href="#declare-the-plugin-you-want-to-use-in-your-project-conf" title="Link to this heading"></a></h4>
+<p>This will make the <code class="docutils literal notranslate"><span class="pre">make</span></code> and <code class="docutils literal notranslate"><span class="pre">meson</span></code> element plugins from the
+<a class="reference external" href="https://github.com/apache/buildstream-plugins/">buildstream-plugins</a> project available for use in your project.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">plugins</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">junction</span>
+<span class="w">  </span><span class="nt">junction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">buildstream-plugins-junction.bst</span>
+<span class="w">  </span><span class="nt">elements</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">make</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">meson</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="miscellaneous">
+<h2>Miscellaneous<a class="headerlink" href="#miscellaneous" title="Link to this heading"></a></h2>
+<p>Here we list some miscellaneous breaking changes to the format in general.</p>
+<section id="element-naming">
+<h3>Element naming<a class="headerlink" href="#element-naming" title="Link to this heading"></a></h3>
+<p>The names of elements have <a class="reference internal" href="format_declaring.html#format-element-names"><span class="std std-ref">become more restrictive</span></a>, for example
+they must have the <code class="docutils literal notranslate"><span class="pre">.bst</span></code> extension.</p>
+</section>
+<section id="overlap-whitelist">
+<h3>Overlap whitelist<a class="headerlink" href="#overlap-whitelist" title="Link to this heading"></a></h3>
+<p>The <a class="reference internal" href="format_public.html#public-overlap-whitelist"><span class="std std-ref">overlap whitelist</span></a>, which is the public data
+found on elements which indicate which files an element can overwrite, must now
+be expressed with absolute paths.</p>
+</section>
+<section id="strip-commands">
+<h3>Strip commands<a class="headerlink" href="#strip-commands" title="Link to this heading"></a></h3>
+<p>The default <code class="docutils literal notranslate"><span class="pre">strip-commands</span></code> which <a class="reference internal" href="buildstream.buildelement.html#module-buildstream.buildelement" title="buildstream.buildelement"><code class="xref py py-mod docutils literal notranslate"><span class="pre">BuildElement</span></code></a> implementations
+use to split out debug symbols from binaries have been removed.</p>
+<p>This can be solved by declaring a value for the <code class="docutils literal notranslate"><span class="pre">%{strip-binaries}</span></code> variable which
+will be used for this purpose.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="porting_command_line.html" class="btn btn-neutral float-left" title="Porting command line usage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="CONTRIBUTING.html" class="btn btn-neutral float-right" title="Contributing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

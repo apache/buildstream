@@ -1,0 +1,207 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glossary &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Remote execution" href="arch_remote_execution.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Glossary</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/main_glossary.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="glossary">
+<h1>Glossary<a class="headerlink" href="#glossary" title="Link to this heading"></a></h1>
+<dl class="glossary">
+<dt id="term-.bst-file"><code class="docutils literal notranslate"><span class="pre">.bst</span></code> file<a class="headerlink" href="#term-.bst-file" title="Link to this term"></a></dt><dd><p>The configuration for an <a class="reference internal" href="#term-Element"><span class="xref std std-term">Element</span></a>, represented
+in YAML format.</p>
+</dd>
+<dt id="term-Artifact">Artifact<a class="headerlink" href="#term-Artifact" title="Link to this term"></a></dt><dd><p>The output collected after building an <a class="reference internal" href="#term-Element"><span class="xref std std-term">Element</span></a>.</p>
+<p>Artifacts can be built from <a class="reference internal" href="#term-Source"><span class="xref std std-term">Sources</span></a>, or pulled from a
+<a class="reference internal" href="#term-Remote-Cache"><span class="xref std std-term">Remote Cache</span></a>, if available.</p>
+</dd>
+<dt id="term-Artifact-name">Artifact name<a class="headerlink" href="#term-Artifact-name" title="Link to this term"></a></dt><dd><p>The <a class="reference internal" href="using_commands.html#artifact-names"><span class="std std-ref">name of an artifact</span></a>, which can be used
+in various commands to operate directly on artifacts, without requiring
+the use of a <a class="reference internal" href="#term-Project"><span class="xref std std-term">Project</span></a>.</p>
+</dd>
+<dt id="term-Cache">Cache<a class="headerlink" href="#term-Cache" title="Link to this term"></a></dt><dd><p>BuildStream leverages various caching techniques in order to avoid
+duplicating work.</p>
+<p>Depending on context, “Cache” might refer to BuildStream’s <a class="reference internal" href="#term-Local-Cache"><span class="xref std std-term">local
+cache</span></a> or a <a class="reference internal" href="#term-Remote-Cache"><span class="xref std std-term">Remote Cache</span></a>.</p>
+</dd>
+<dt id="term-Core-plugin">Core plugin<a class="headerlink" href="#term-Core-plugin" title="Link to this term"></a></dt><dd><p>A <a class="reference internal" href="#term-Plugin"><span class="xref std std-term">Plugin</span></a> that is contained in the BuildStream
+package.  These are built-in and don’t need to be defined in the
+project configuration.</p>
+<p>See <a class="reference internal" href="core_plugins.html#plugins"><span class="std std-ref">plugin documentation</span></a> for more details on core
+plugins.</p>
+</dd>
+<dt id="term-Dependency">Dependency<a class="headerlink" href="#term-Dependency" title="Link to this term"></a></dt><dd><p><a class="reference internal" href="#term-Element"><span class="xref std std-term">Elements</span></a> in a BuildStream project can depend
+on other elements from the same project. The element dependent upon is
+called a dependency.</p>
+<p>See <a class="reference internal" href="format_declaring.html#format-dependencies"><span class="std std-ref">Dependencies document</span></a> for more
+details.</p>
+</dd>
+<dt id="term-Dependency-configuration">Dependency configuration<a class="headerlink" href="#term-Dependency-configuration" title="Link to this term"></a></dt><dd><p>Additional custom YAML configuration which is used to define
+an <a class="reference internal" href="#term-Element"><span class="xref std std-term">Element’s</span></a> relationship with it’s <a class="reference internal" href="#term-Dependency"><span class="xref std std-term">Dependency</span></a>.</p>
+<p>This is supported on limited <a class="reference internal" href="#term-Element"><span class="xref std std-term">Element</span></a> implementations, and
+each <a class="reference internal" href="#term-Element"><span class="xref std std-term">Element</span></a> defines what configuration it supports.</p>
+<p>See the <a class="reference internal" href="format_declaring.html#format-dependencies"><span class="std std-ref">dependency documentation</span></a> for details
+on dependency configuration.</p>
+</dd>
+<dt id="term-Element">Element<a class="headerlink" href="#term-Element" title="Link to this term"></a></dt><dd><p>An atom of a <a class="reference internal" href="#term-Project"><span class="xref std std-term">BuildStream project</span></a>. Projects consist of
+zero or more elements.</p>
+<p>During the build process, BuildStream transforms <a class="reference internal" href="#term-Source"><span class="xref std std-term">Sources</span></a> and <a class="reference internal" href="#term-Dependency"><span class="xref std std-term">Dependencies</span></a> of an
+element into its output. The output is called an
+<a class="reference internal" href="#term-Artifact"><span class="xref std std-term">Artifact</span></a>.</p>
+<p>Configuration for elements is stored in form of <a class="reference internal" href="#term-.bst-file"><span class="xref std std-term">.bst files</span></a>. See <a class="reference internal" href="format_declaring.html#format-basics"><span class="std std-ref">Declaring Elements document</span></a>
+for more details on element configurtion.</p>
+</dd>
+<dt id="term-External-Plugin">External Plugin<a class="headerlink" href="#term-External-Plugin" title="Link to this term"></a></dt><dd><p>A <a class="reference internal" href="#term-Plugin"><span class="xref std std-term">Plugin</span></a> that is defined in some package other
+than BuildStream.</p>
+<p>External plugins must be declared in <a class="reference internal" href="format_project.html#project-plugins"><span class="std std-ref">the project configuration</span></a>.</p>
+<p>For a list of known external plugin repositories, see
+<a class="reference internal" href="core_plugins.html#plugins-external"><span class="std std-ref">External plugins</span></a>.</p>
+</dd>
+<dt id="term-Junction">Junction<a class="headerlink" href="#term-Junction" title="Link to this term"></a></dt><dd><p>A special kind of <a class="reference internal" href="#term-Element"><span class="xref std std-term">Element</span></a>, that allows you to
+depend on elements from another project.</p>
+<p>See <a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Junction</span> <span class="pre">reference</span></code></a> for details on how to
+configure junction elements.</p>
+<p>See <a class="reference internal" href="junctions/junction-elements.html#junction-elements"><span class="std std-ref">Junction guide</span></a> for details on how to use
+junction elements.</p>
+</dd>
+<dt id="term-Local-Cache">Local Cache<a class="headerlink" href="#term-Local-Cache" title="Link to this term"></a></dt><dd><p>To avoid duplicating work, BuildStream will cache sources, artifacts,
+logs, buildtrees etc. in a local cache directory. If these sources or
+artifacts are needed another time, BuildStream will use them from the
+cache.</p>
+<p>See <a class="reference internal" href="using_config.html#config-local-cache"><span class="std std-ref">Local cache expiry</span></a> section of the user
+guide for details on how to configure the local cache.</p>
+</dd>
+<dt id="term-Plugin">Plugin<a class="headerlink" href="#term-Plugin" title="Link to this term"></a></dt><dd><p>BuildStream Plugins define types of <a class="reference internal" href="#term-Element"><span class="xref std std-term">Elements</span></a>
+and <a class="reference internal" href="#term-Source"><span class="xref std std-term">Sources</span></a>. Hence, they come in two distinct
+varities - Element Plugins and Source Plugins.</p>
+<p>BuildStream supports some plugins <a class="reference internal" href="#term-Core-plugin"><span class="xref std std-term">out of the box</span></a>. It also has support for <a class="reference internal" href="#term-External-Plugin"><span class="xref std std-term">third party
+plugins</span></a>.</p>
+</dd>
+<dt id="term-Project">Project<a class="headerlink" href="#term-Project" title="Link to this term"></a></dt><dd><p>A collection of <a class="reference internal" href="#term-Element"><span class="xref std std-term">Elements</span></a>.</p>
+<p>Elements in a project share some central configuration. See
+<a class="reference internal" href="format_project.html#projectconf"><span class="std std-ref">Project configuration</span></a> to learn how to configure BuildStream projects.</p>
+</dd>
+<dt id="term-Remote-Cache">Remote Cache<a class="headerlink" href="#term-Remote-Cache" title="Link to this term"></a></dt><dd><p>A server setup for sharing BuildStream <a class="reference internal" href="#term-Source"><span class="xref std std-term">Sources</span></a>
+and/or <a class="reference internal" href="#term-Artifact"><span class="xref std std-term">Artifacts</span></a>.</p>
+<p>See <a class="reference internal" href="using_configuring_cache_server.html#cache-servers"><span class="std std-ref">cache server documentation</span></a> for details on
+artifact caches.</p>
+</dd>
+<dt id="term-Source">Source<a class="headerlink" href="#term-Source" title="Link to this term"></a></dt><dd><p>Sources describe the input to the build of an <a class="reference internal" href="#term-Element"><span class="xref std std-term">Element</span></a>.</p>
+<p>In general, an element can have zero or more sources. But, certain
+element plugins may restrict the number of allowed sources.</p>
+<p>Sources are defined in the <a class="reference internal" href="format_declaring.html#format-sources"><span class="std std-ref">Sources</span></a> section of
+<a class="reference internal" href="#term-Element"><span class="xref std std-term">Element</span></a> configuration.</p>
+</dd>
+<dt id="term-Subproject">Subproject<a class="headerlink" href="#term-Subproject" title="Link to this term"></a></dt><dd><p>Subprojects are <a class="reference internal" href="#term-Project"><span class="xref std std-term">projects</span></a> which are referred
+to by a <a class="reference internal" href="#term-Junction"><span class="xref std std-term">Junction</span></a>.</p>
+</dd>
+<dt id="term-Workspace">Workspace<a class="headerlink" href="#term-Workspace" title="Link to this term"></a></dt><dd><p>Workspaces allow building one or more elements using a local, and
+potentially modified, copy of their sources.</p>
+<p>See <a class="reference internal" href="developing/workspaces.html#developing-workspaces"><span class="std std-ref">Workspaces guide</span></a> for more details on
+how to use workspaces.</p>
+</dd>
+</dl>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="arch_remote_execution.html" class="btn btn-neutral float-left" title="Remote execution" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

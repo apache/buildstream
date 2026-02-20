@@ -1,0 +1,526 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2. Filtering &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="3. Overlapping files" href="overlaps.html" />
+    <link rel="prev" title="1. Composition" href="composition.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing from Source</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../main_using.html">Using</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../using_tutorial.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_developing.html">Developing</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../using_handling_files.html">Handling files</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="composition.html">1. Composition</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">2. Filtering</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#overview">2.1. Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#project-structure">2.2. Project structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-the-project">2.3. Using the project</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#summary">2.4. Summary</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="overlaps.html">3. Overlapping files</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../using_junctions.html">Combining projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_config.html">User configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_commands.html">Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_configuring_cache_server.html">Configuring Cache Servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_configuring_remote_execution.html">Remote Execution Servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_examples.html">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../main_using.html">Using</a></li>
+          <li class="breadcrumb-item"><a href="../using_handling_files.html">Handling files</a></li>
+      <li class="breadcrumb-item active"><span class="section-number">2. </span>Filtering</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/handling-files/filtering.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="filtering">
+<span id="handling-files-filtering"></span><h1><span class="section-number">2. </span>Filtering<a class="headerlink" href="#filtering" title="Link to this heading"></a></h1>
+<p>In this chapter we will explore how to <em>filter</em> the files in an artifact
+using the <a class="reference internal" href="../elements/filter.html#module-elements.filter" title="elements.filter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">filter</span></code></a> element, such that an element might
+depend on a subset of the files provided by a filtered element.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This example is distributed with BuildStream
+in the <a class="reference external" href="https://github.com/apache/buildstream/tree/master/doc/examples/filtering">doc/examples/filtering</a>
+subdirectory.</p>
+</div>
+<section id="overview">
+<h2><span class="section-number">2.1. </span>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>In some cases, it can be useful to depend on a <em>subset</em> of the files of an
+element, without depending on the entire element.</p>
+<p>One scenario where filtering can be useful, is when you have an element which
+will build differently depending on what is present in the system where it is
+building. In an edge case where a module fails to offer configure time options to
+disable an unwanted feature or behavior in the build, you might use
+<a class="reference internal" href="../elements/filter.html#module-elements.filter" title="elements.filter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">filter</span></code></a> elements to ensure that special header files or
+pkg-config files are <em>filtered out</em> from the system at build time, such that
+the unwanted behavior cannot be built.</p>
+<p>In many ways, a <a class="reference internal" href="../elements/filter.html#module-elements.filter" title="elements.filter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">filter</span></code></a> element is like a
+<a class="reference internal" href="../elements/compose.html#module-elements.compose" title="elements.compose"><code class="xref py py-mod docutils literal notranslate"><span class="pre">compose</span></code></a> element, except that it operates on a single
+<a class="reference internal" href="../format_declaring.html#format-build-depends"><span class="std std-ref">build dependency</span></a>, without compositing the filtered
+element with its <a class="reference internal" href="../format_declaring.html#format-runtime-depends"><span class="std std-ref">runtime dependencies</span></a>.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The <a class="reference internal" href="../elements/filter.html#module-elements.filter" title="elements.filter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">filter</span></code></a> element is special in the sense
+that it acts as a <em>window</em> into it’s primary
+<a class="reference internal" href="../format_declaring.html#format-build-depends"><span class="std std-ref">build dependency</span></a>.</p>
+<p>As such, <a class="reference internal" href="../using_commands.html#invoking-workspace-open"><span class="std std-ref">opening a workspace</span></a> on a
+<a class="reference internal" href="../elements/filter.html#module-elements.filter" title="elements.filter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">filter</span></code></a> element will result in opening a
+workspace on the element which it filters. Any other workspace
+commands will also be forwarded directly to the filtered element.</p>
+</div>
+</section>
+<section id="project-structure">
+<h2><span class="section-number">2.2. </span>Project structure<a class="headerlink" href="#project-structure" title="Link to this heading"></a></h2>
+<p>This example again expands on the example presenting in the chapter about
+<a class="reference internal" href="../tutorial/integration-commands.html#tutorial-integration-commands"><span class="std std-ref">integration commands</span></a>. In this case
+we will modify <code class="docutils literal notranslate"><span class="pre">libhello.bst</span></code> such that it produces a new file which,
+if present, will affect the behavior of it’s reverse dependency <code class="docutils literal notranslate"><span class="pre">hello.bst</span></code>.</p>
+<p>Let’s first take a look at how the sources have changed.</p>
+<section id="files-hello-makefile">
+<h3><span class="section-number">2.2.1. </span><code class="docutils literal notranslate"><span class="pre">files/hello/Makefile</span></code><a class="headerlink" href="#files-hello-makefile" title="Link to this heading"></a></h3>
+<div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span><span class="c"># Sample makefile for hello.c</span>
+<span class="c">#</span>
+<span class="nf">.PHONY</span><span class="o">:</span><span class="w"> </span><span class="n">all</span> <span class="n">install</span>
+
+<span class="nf">all</span><span class="o">:</span><span class="w"> </span><span class="n">hello</span>
+
+<span class="nf">install</span><span class="o">:</span>
+<span class="w">	</span>install<span class="w"> </span>-d<span class="w"> </span><span class="si">${</span><span class="nv">DESTDIR</span><span class="si">}${</span><span class="nv">PREFIX</span><span class="si">}</span>/bin
+<span class="w">	</span>install<span class="w"> </span>-m<span class="w"> </span><span class="m">755</span><span class="w"> </span>hello<span class="w"> </span><span class="si">${</span><span class="nv">DESTDIR</span><span class="si">}${</span><span class="nv">PREFIX</span><span class="si">}</span>/bin
+
+<span class="nf">hello</span><span class="o">:</span><span class="w"> </span><span class="n">hello</span>.<span class="n">c</span>
+<span class="w">	</span><span class="nv">extra_flags</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">;</span><span class="w">                                               </span><span class="se">\</span>
+<span class="cp">	if [ -f &quot;${PREFIX}/share/libhello/default-person.txt&quot; ]; then \</span>
+<span class="cp">	  extra_flags=-DDEFAULT_PERSON=&quot;\&quot;$$(cat ${PREFIX}/share/libhello/default-person.txt)\&quot;&quot;; \</span>
+<span class="cp">	fi;                                                           \</span>
+<span class="cp">	$(CC) $&lt; -o $@ $${extra_flags} -Wall -lhello</span>
+</pre></div>
+</div>
+<p>Now we have our Makefile discovering the system defined default
+person to say hello to.</p>
+</section>
+<section id="files-hello-hello-c">
+<h3><span class="section-number">2.2.2. </span><code class="docutils literal notranslate"><span class="pre">files/hello/hello.c</span></code><a class="headerlink" href="#files-hello-hello-c" title="Link to this heading"></a></h3>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cm">/*</span>
+<span class="cm"> * hello.c - Simple hello program</span>
+<span class="cm"> */</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;libhello.h&gt;</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">person</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">argc</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="n">person</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">person</span><span class="p">)</span>
+<span class="w">    </span><span class="n">hello</span><span class="p">(</span><span class="n">person</span><span class="p">);</span>
+<span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="cp">#ifdef DEFAULT_PERSON</span>
+<span class="w">    </span><span class="n">hello</span><span class="p">(</span><span class="n">DEFAULT_PERSON</span><span class="p">);</span>
+<span class="cp">#else</span>
+<span class="w">    </span><span class="n">hello</span><span class="p">(</span><span class="s">&quot;stranger&quot;</span><span class="p">);</span>
+<span class="cp">#endif</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>If this program has been given a <code class="docutils literal notranslate"><span class="pre">DEFAULT_PERSON</span></code>, then it will
+say hello to that person in the absence of any argument.</p>
+</section>
+<section id="project-conf">
+<h3><span class="section-number">2.2.3. </span><code class="docutils literal notranslate"><span class="pre">project.conf</span></code><a class="headerlink" href="#project-conf" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Unique project name</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filtering</span>
+
+<span class="c1"># Minimum required BuildStream version</span>
+<span class="nt">min-version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.0</span>
+
+<span class="c1"># Subdirectory where elements are stored</span>
+<span class="nt">element-path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">elements</span>
+
+<span class="c1"># Define an alias for our alpine tarball</span>
+<span class="nt">aliases</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">alpine</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://bst-integration-test-images.ams3.cdn.digitaloceanspaces.com/</span>
+
+<span class="c1"># Use an option to decide if we should use the filter</span>
+<span class="c1">#</span>
+<span class="nt">options</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">use_filter</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bool</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Whether to use a filter on the libhello.bst element</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+</pre></div>
+</div>
+<p>Here, we’ve added a <a class="reference internal" href="../format_project.html#project-options"><span class="std std-ref">project option</span></a> to decide
+whether to use the <a class="reference internal" href="../elements/filter.html#module-elements.filter" title="elements.filter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">filter</span></code></a> element or not.</p>
+<p>This is merely for brevity, so that we can demonstrate the behavior
+of depending on the filtered element without defining two separate versions
+of the <code class="docutils literal notranslate"><span class="pre">hello.bst</span></code> element.</p>
+</section>
+<section id="elements-libhello-bst">
+<h3><span class="section-number">2.2.4. </span><code class="docutils literal notranslate"><span class="pre">elements/libhello.bst</span></code><a class="headerlink" href="#elements-libhello-bst" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">manual</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+
+<span class="w">  </span><span class="no">The libhello library</span>
+
+<span class="c1"># Depend on the base system</span>
+<span class="nt">depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">base.bst</span>
+
+<span class="c1"># Stage the files/libhello directory for building</span>
+<span class="nt">sources</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">files/libhello</span>
+
+<span class="c1"># Now configure the commands to run</span>
+<span class="nt">config</span><span class="p">:</span>
+
+<span class="w">  </span><span class="nt">build-commands</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">make PREFIX=&quot;%{prefix}&quot;</span>
+
+<span class="w">  </span><span class="nt">install-commands</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">make -j1 PREFIX=&quot;%{prefix}&quot; DESTDIR=&quot;%{install-root}&quot; install</span>
+
+<span class="nt">public</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bst</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># Define a split domain which captures the defaults</span>
+<span class="w">    </span><span class="c1"># which this library installs into %{datadir}</span>
+<span class="w">    </span><span class="c1">#</span>
+<span class="w">    </span><span class="nt">split-rules</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">defaults</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;%{datadir}/libhello/default-person.txt&quot;</span>
+</pre></div>
+</div>
+<p>We’ve added some <a class="reference internal" href="../format_public.html#public-split-rules"><span class="std std-ref">split rules</span></a> here to declare
+a new <em>split domain</em> named <code class="docutils literal notranslate"><span class="pre">defaults</span></code>, and we’ve added the new
+<code class="docutils literal notranslate"><span class="pre">default-person.txt</span></code> file to this <em>domain</em>.</p>
+</section>
+<section id="elements-libhello-filtered-bst">
+<h3><span class="section-number">2.2.5. </span><code class="docutils literal notranslate"><span class="pre">elements/libhello-filtered.bst</span></code><a class="headerlink" href="#elements-libhello-filtered-bst" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filter</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+
+<span class="w">  </span><span class="no">A filtered version of libhello which excludes the defaults</span>
+
+<span class="c1"># Specify the build dependency to filter</span>
+<span class="nt">build-depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">libhello.bst</span>
+
+<span class="c1"># Propagate runtime dependencies</span>
+<span class="nt">runtime-depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">base.bst</span>
+
+<span class="c1"># Now configure the commands to run</span>
+<span class="nt">config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">exclude</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">defaults</span>
+</pre></div>
+</div>
+<p>And we’ve added a new <a class="reference internal" href="../elements/filter.html#module-elements.filter" title="elements.filter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">filter</span></code></a> element to the project
+which uses the <code class="docutils literal notranslate"><span class="pre">exclude</span></code> option of the filter configuration.</p>
+<p>This is essentially a statement that any files mentioned in the the
+<code class="docutils literal notranslate"><span class="pre">defaults</span></code> <em>domain</em> of the <code class="docutils literal notranslate"><span class="pre">libhello.bst</span></code> element should be excluded from
+the resulting artifact.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Notice that you need to explicitly declare any
+<a class="reference internal" href="../format_declaring.html#format-runtime-depends"><span class="std std-ref">runtime dependencies</span></a> which are required by the
+resulting artifact of a <a class="reference internal" href="../elements/filter.html#module-elements.filter" title="elements.filter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">filter</span></code></a> element, as runtime
+dependencies of the build dependency are not transient.</p>
+</div>
+</section>
+<section id="elements-hello-bst">
+<h3><span class="section-number">2.2.6. </span><code class="docutils literal notranslate"><span class="pre">elements/hello.bst</span></code><a class="headerlink" href="#elements-hello-bst" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">manual</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+
+<span class="w">  </span><span class="no">The hello application</span>
+
+<span class="c1"># Depend on the hello library, or the filtered version</span>
+<span class="c1">#</span>
+<span class="l l-Scalar l-Scalar-Plain">(?)</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">use_filter == True</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">depends</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">libhello-filtered.bst</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">use_filter == False</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">depends</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">libhello.bst</span>
+
+<span class="c1"># Stage the files/hello directory for building</span>
+<span class="nt">sources</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">files/hello</span>
+
+<span class="c1"># Now configure the commands to run</span>
+<span class="nt">config</span><span class="p">:</span>
+
+<span class="w">  </span><span class="nt">build-commands</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">make PREFIX=&quot;%{prefix}&quot;</span>
+
+<span class="w">  </span><span class="nt">install-commands</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">make -j1 PREFIX=&quot;%{prefix}&quot; DESTDIR=&quot;%{install-root}&quot; install</span>
+</pre></div>
+</div>
+<p>Here we’ve merely added a <a class="reference internal" href="../format_intro.html#format-directives-conditional"><span class="std std-ref">conditional statement</span></a>
+which allows us to test the <code class="docutils literal notranslate"><span class="pre">hello.bst</span></code> element depending on the filtered
+version of the library, or the unfiltered version.</p>
+</section>
+</section>
+<section id="using-the-project">
+<h2><span class="section-number">2.3. </span>Using the project<a class="headerlink" href="#using-the-project" title="Link to this heading"></a></h2>
+<p>Let’s just skip over building the <code class="docutils literal notranslate"><span class="pre">hello.bst</span></code> element with the
+<code class="docutils literal notranslate"><span class="pre">use_filter</span></code> option both <code class="docutils literal notranslate"><span class="pre">True</span></code> and <code class="docutils literal notranslate"><span class="pre">False</span></code>, these elements
+are easily built with <a class="reference internal" href="../using_commands.html#invoking-build"><span class="std std-ref">bst build</span></a> as such:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>--option<span class="w"> </span>use_filter<span class="w"> </span>True<span class="w"> </span>build<span class="w"> </span>hello.bst
+bst<span class="w"> </span>--option<span class="w"> </span>use_filter<span class="w"> </span>False<span class="w"> </span>build<span class="w"> </span>hello.bst
+</pre></div>
+</div>
+<section id="observing-the-artifacts">
+<h3><span class="section-number">2.3.1. </span>Observing the artifacts<a class="headerlink" href="#observing-the-artifacts" title="Link to this heading"></a></h3>
+<p>Let’s take a look at the built artifacts.</p>
+<section id="libhello-bst">
+<h4><span class="section-number">2.3.1.1. </span><code class="docutils literal notranslate"><span class="pre">libhello.bst</span></code><a class="headerlink" href="#libhello-bst" title="Link to this heading"></a></h4>
+<!--
+    WARNING: This file was generated with bst2html.py
+-->
+<div class="highlight" style="font-size:x-small"><pre>
+<span style="color:#C4A000;font-weight:bold">user@host</span>:<span style="color:#3456A4;font-weight:bold">~/filtering</span>$ bst artifact list-contents libhello.bst
+
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Loading elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Loading elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Resolving elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Resolving elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Initializing remote caches
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Initializing remote caches
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Query cache
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Query cache
+<span style="color:#06989A"><span style="opacity:0.5">  libhello.bst:</span></span><span style="color:#C4A000">
+	usr
+	usr/include
+	usr/include/libhello.h
+	usr/lib
+	usr/lib/libhello.so
+	usr/share
+	usr/share/libhello
+	usr/share/libhello/default-person.txt</span>
+</pre></div>
+<p>Here we can see the full content of the <code class="docutils literal notranslate"><span class="pre">libhello.bst</span></code> artifact.</p>
+</section>
+<section id="libhello-filtered-bst">
+<h4><span class="section-number">2.3.1.2. </span><code class="docutils literal notranslate"><span class="pre">libhello-filtered.bst</span></code><a class="headerlink" href="#libhello-filtered-bst" title="Link to this heading"></a></h4>
+<!--
+    WARNING: This file was generated with bst2html.py
+-->
+<div class="highlight" style="font-size:x-small"><pre>
+<span style="color:#C4A000;font-weight:bold">user@host</span>:<span style="color:#3456A4;font-weight:bold">~/filtering</span>$ bst artifact list-contents libhello-filtered.bst
+
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Loading elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Loading elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Resolving elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Resolving elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Initializing remote caches
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Initializing remote caches
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Query cache
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Query cache
+<span style="color:#06989A"><span style="opacity:0.5">  libhello-filtered.bst:</span></span><span style="color:#C4A000">
+	usr
+	usr/include
+	usr/include/libhello.h
+	usr/lib
+	usr/lib/libhello.so</span>
+</pre></div>
+<p>Here we can see that the <code class="docutils literal notranslate"><span class="pre">default-person.txt</span></code> file has been filtered
+out of the <code class="docutils literal notranslate"><span class="pre">libhello.bst</span></code> artifact when creating the <code class="docutils literal notranslate"><span class="pre">libhello-filtered.bst</span></code>
+artifact.</p>
+</section>
+</section>
+<section id="running-hello-bst">
+<h3><span class="section-number">2.3.2. </span>Running hello.bst<a class="headerlink" href="#running-hello-bst" title="Link to this heading"></a></h3>
+<p>Now if we run the program built by <code class="docutils literal notranslate"><span class="pre">hello.bst</span></code> in either build
+modes, we can observe the expected behavior.</p>
+<section id="run-hello-bst-built-directly-against-libhello-bst">
+<h4><span class="section-number">2.3.2.1. </span>Run <code class="docutils literal notranslate"><span class="pre">hello.bst</span></code> built directly against <code class="docutils literal notranslate"><span class="pre">libhello.bst</span></code><a class="headerlink" href="#run-hello-bst-built-directly-against-libhello-bst" title="Link to this heading"></a></h4>
+<!--
+    WARNING: This file was generated with bst2html.py
+-->
+<div class="highlight" style="font-size:x-small"><pre>
+<span style="color:#C4A000;font-weight:bold">user@host</span>:<span style="color:#3456A4;font-weight:bold">~/filtering</span>$ bst --option use_filter False shell hello.bst -- hello
+
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Loading elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Loading elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Resolving elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Resolving elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Initializing remote caches
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Initializing remote caches
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Query cache
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Query cache
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">911b8a6d</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Staging dependencies
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">911b8a6d</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Staging dependencies
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">911b8a6d</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Integrating sandbox
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">        </span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Running commands
+
+<span style="opacity:0.5">    ldconfig "/usr/lib"</span>
+
++ sh -e -c ldconfig "/usr/lib"
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">        </span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Running commands
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">911b8a6d</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Integrating sandbox
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">911b8a6d</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#06989A"><span style=""><span style="opacity:0.5">STATUS </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Running command
+
+<span style="opacity:0.5">    hello</span>
+
+Hello Sophia
+</pre></div>
+<p>Here we can see that the hello world program is using the system
+configured default person to say hello to.</p>
+</section>
+<section id="run-hello-bst-built-against-libhello-filtered-bst">
+<h4><span class="section-number">2.3.2.2. </span>Run <code class="docutils literal notranslate"><span class="pre">hello.bst</span></code> built against <code class="docutils literal notranslate"><span class="pre">libhello-filtered.bst</span></code><a class="headerlink" href="#run-hello-bst-built-against-libhello-filtered-bst" title="Link to this heading"></a></h4>
+<!--
+    WARNING: This file was generated with bst2html.py
+-->
+<div class="highlight" style="font-size:x-small"><pre>
+<span style="color:#C4A000;font-weight:bold">user@host</span>:<span style="color:#3456A4;font-weight:bold">~/filtering</span>$ bst --option use_filter True shell hello.bst -- hello
+
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Loading elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Loading elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Resolving elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Resolving elements
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Initializing remote caches
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Initializing remote caches
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Query cache
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span>        <span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">core activity                 </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Query cache
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">db2ce036</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Staging dependencies
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">db2ce036</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Staging dependencies
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">db2ce036</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Integrating sandbox
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">        </span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#3465A4"><span style=""><span style="opacity:0.5">START  </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Running commands
+
+<span style="opacity:0.5">    ldconfig "/usr/lib"</span>
+
++ sh -e -c ldconfig "/usr/lib"
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">        </span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Running commands
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">00</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">db2ce036</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#4E9A06"><span style=""><span style="opacity:0.5">SUCCESS</span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Integrating sandbox
+<span style="color:#06989A"><span style="opacity:0.5">[</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">--</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">db2ce036</span><span style="color:#06989A"><span style="opacity:0.5">][</span></span><span style="color:#C4A000">    main</span><span style="color:#06989A"><span style="opacity:0.5">:</span></span><span style="color:#C4A000">hello.bst                     </span><span style="color:#06989A"><span style="opacity:0.5">] </span></span><span style="color:#06989A"><span style=""><span style="opacity:0.5">STATUS </span></span></span><span style="color:#06989A"><span style="opacity:0.5"> </span></span>Running command
+
+<span style="opacity:0.5">    hello</span>
+
+Hello stranger
+</pre></div>
+<p>And now we’re reverting to the behavior we have when no
+system configured default person was installed at build time.</p>
+</section>
+</section>
+</section>
+<section id="summary">
+<h2><span class="section-number">2.4. </span>Summary<a class="headerlink" href="#summary" title="Link to this heading"></a></h2>
+<p>In this chapter, we’ve introduced the <a class="reference internal" href="../elements/filter.html#module-elements.filter" title="elements.filter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">filter</span></code></a>
+element which allows one to filter the output of an element and
+effectively create a dependency on a subset of an element’s files.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="composition.html" class="btn btn-neutral float-left" title="1. Composition" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="overlaps.html" class="btn btn-neutral float-right" title="3. Overlapping files" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

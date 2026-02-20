@@ -1,0 +1,1101 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Node - Parsed YAML configuration &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Plugin - Base plugin class" href="buildstream.plugin.html" />
+    <link rel="prev" title="Foundation types" href="buildstream.types.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_format.html">Project format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="core_framework.html">Plugin API reference</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html">Foundation types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum"><code class="docutils literal notranslate"><span class="pre">FastEnum</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings"><code class="docutils literal notranslate"><span class="pre">CoreWarnings</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.OverlapAction"><code class="docutils literal notranslate"><span class="pre">OverlapAction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef"><code class="docutils literal notranslate"><span class="pre">SourceRef</span></code></a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Node - Parsed YAML configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#node-types">Node types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#class-reference">Class Reference</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.node.MappingNode"><code class="docutils literal notranslate"><span class="pre">MappingNode</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.clone"><code class="docutils literal notranslate"><span class="pre">MappingNode.clone()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.get_bool"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_bool()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.get_enum"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_enum()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.get_int"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_int()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.get_mapping"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_mapping()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.get_node"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_node()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.get_scalar"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_scalar()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.get_sequence"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_sequence()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.get_str"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_str()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.get_str_list"><code class="docutils literal notranslate"><span class="pre">MappingNode.get_str_list()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.items"><code class="docutils literal notranslate"><span class="pre">MappingNode.items()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.keys"><code class="docutils literal notranslate"><span class="pre">MappingNode.keys()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.safe_del"><code class="docutils literal notranslate"><span class="pre">MappingNode.safe_del()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.strip_node_info"><code class="docutils literal notranslate"><span class="pre">MappingNode.strip_node_info()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.validate_keys"><code class="docutils literal notranslate"><span class="pre">MappingNode.validate_keys()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.MappingNode.values"><code class="docutils literal notranslate"><span class="pre">MappingNode.values()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.node.Node"><code class="docutils literal notranslate"><span class="pre">Node</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.Node.clone"><code class="docutils literal notranslate"><span class="pre">Node.clone()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.Node.from_dict"><code class="docutils literal notranslate"><span class="pre">Node.from_dict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.Node.get_provenance"><code class="docutils literal notranslate"><span class="pre">Node.get_provenance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.Node.strip_node_info"><code class="docutils literal notranslate"><span class="pre">Node.strip_node_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.node.ProvenanceInformation"><code class="docutils literal notranslate"><span class="pre">ProvenanceInformation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.node.ScalarNode"><code class="docutils literal notranslate"><span class="pre">ScalarNode</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.ScalarNode.as_bool"><code class="docutils literal notranslate"><span class="pre">ScalarNode.as_bool()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.ScalarNode.as_enum"><code class="docutils literal notranslate"><span class="pre">ScalarNode.as_enum()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.ScalarNode.as_int"><code class="docutils literal notranslate"><span class="pre">ScalarNode.as_int()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.ScalarNode.as_str"><code class="docutils literal notranslate"><span class="pre">ScalarNode.as_str()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.ScalarNode.clone"><code class="docutils literal notranslate"><span class="pre">ScalarNode.clone()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.ScalarNode.is_none"><code class="docutils literal notranslate"><span class="pre">ScalarNode.is_none()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.ScalarNode.strip_node_info"><code class="docutils literal notranslate"><span class="pre">ScalarNode.strip_node_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.node.SequenceNode"><code class="docutils literal notranslate"><span class="pre">SequenceNode</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.SequenceNode.append"><code class="docutils literal notranslate"><span class="pre">SequenceNode.append()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.SequenceNode.as_str_list"><code class="docutils literal notranslate"><span class="pre">SequenceNode.as_str_list()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.SequenceNode.clone"><code class="docutils literal notranslate"><span class="pre">SequenceNode.clone()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.SequenceNode.mapping_at"><code class="docutils literal notranslate"><span class="pre">SequenceNode.mapping_at()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.SequenceNode.node_at"><code class="docutils literal notranslate"><span class="pre">SequenceNode.node_at()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.SequenceNode.scalar_at"><code class="docutils literal notranslate"><span class="pre">SequenceNode.scalar_at()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.SequenceNode.sequence_at"><code class="docutils literal notranslate"><span class="pre">SequenceNode.sequence_at()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.node.SequenceNode.strip_node_info"><code class="docutils literal notranslate"><span class="pre">SequenceNode.strip_node_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html">Plugin - Base plugin class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin"><code class="docutils literal notranslate"><span class="pre">Plugin</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html">Source - Base source class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#sourcefetcher-object-for-fetching-individual-urls">SourceFetcher - Object for fetching individual URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceError"><code class="docutils literal notranslate"><span class="pre">SourceError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.AliasSubstitution"><code class="docutils literal notranslate"><span class="pre">AliasSubstitution</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType"><code class="docutils literal notranslate"><span class="pre">SourceVersionType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo"><code class="docutils literal notranslate"><span class="pre">SourceInfo</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceFetcher"><code class="docutils literal notranslate"><span class="pre">SourceFetcher</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source"><code class="docutils literal notranslate"><span class="pre">Source</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html">SourceMirror - Base source mirror class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirrorError"><code class="docutils literal notranslate"><span class="pre">SourceMirrorError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror"><code class="docutils literal notranslate"><span class="pre">SourceMirror</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html">DownloadableFileSource - Abstract class for sources downloaded from a URI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html">Element - Base element class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError"><code class="docutils literal notranslate"><span class="pre">ElementError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.DependencyConfiguration"><code class="docutils literal notranslate"><span class="pre">DependencyConfiguration</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element"><code class="docutils literal notranslate"><span class="pre">Element</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html">BuildElement - Abstract class for build elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement"><code class="docutils literal notranslate"><span class="pre">BuildElement</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html">ScriptElement - Abstract class for scripting elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement"><code class="docutils literal notranslate"><span class="pre">ScriptElement</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.setup"><code class="docutils literal notranslate"><span class="pre">setup()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html">Sandbox - The build sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.SandboxCommandError"><code class="docutils literal notranslate"><span class="pre">SandboxCommandError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox"><code class="docutils literal notranslate"><span class="pre">Sandbox</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html">Directory - Interfacing with files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.DirectoryError"><code class="docutils literal notranslate"><span class="pre">DirectoryError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileType"><code class="docutils literal notranslate"><span class="pre">FileType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileStat"><code class="docutils literal notranslate"><span class="pre">FileStat</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory"><code class="docutils literal notranslate"><span class="pre">Directory</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html">Exceptions - API for Error Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain"><code class="docutils literal notranslate"><span class="pre">ErrorDomain</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html">Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.UtilError"><code class="docutils literal notranslate"><span class="pre">UtilError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.ProgramNotFoundError"><code class="docutils literal notranslate"><span class="pre">ProgramNotFoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.DirectoryExistsError"><code class="docutils literal notranslate"><span class="pre">DirectoryExistsError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult"><code class="docutils literal notranslate"><span class="pre">FileListResult</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.list_relative_paths"><code class="docutils literal notranslate"><span class="pre">list_relative_paths()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.glob"><code class="docutils literal notranslate"><span class="pre">glob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.sha256sum"><code class="docutils literal notranslate"><span class="pre">sha256sum()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_copy"><code class="docutils literal notranslate"><span class="pre">safe_copy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_link"><code class="docutils literal notranslate"><span class="pre">safe_link()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_remove"><code class="docutils literal notranslate"><span class="pre">safe_remove()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.copy_files"><code class="docutils literal notranslate"><span class="pre">copy_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.link_files"><code class="docutils literal notranslate"><span class="pre">link_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_host_tool"><code class="docutils literal notranslate"><span class="pre">get_host_tool()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_bst_version"><code class="docutils literal notranslate"><span class="pre">get_bst_version()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.move_atomic"><code class="docutils literal notranslate"><span class="pre">move_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.save_file_atomic"><code class="docutils literal notranslate"><span class="pre">save_file_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_umask"><code class="docutils literal notranslate"><span class="pre">get_umask()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.guess_version"><code class="docutils literal notranslate"><span class="pre">guess_version()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="core_framework.html">Plugin API reference</a></li>
+      <li class="breadcrumb-item active">Node - Parsed YAML configuration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/buildstream.node.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="node-parsed-yaml-configuration">
+<span id="module-buildstream.node"></span><h1>Node - Parsed YAML configuration<a class="headerlink" href="#node-parsed-yaml-configuration" title="Link to this heading"></a></h1>
+<p>This module contains the building blocks for handling YAML configuration.</p>
+<p>Everything that is loaded from YAML is encapsulated in such nodes, which
+provide helper methods to validate configuration on access.</p>
+<p>Using node methods when reading configuration will ensure that errors
+are always coherently notified to the user.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Plugins are not expected to handle exceptions thrown by node
+methods for the above reason; They are private. There should
+always be a way to acquire information without resorting to
+exception handling.</p>
+</div>
+<section id="node-types">
+<h2>Node types<a class="headerlink" href="#node-types" title="Link to this heading"></a></h2>
+<p>The most important classes defined here are:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a>: represents a YAML Mapping (dictionary)</p></li>
+<li><p><a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a>: represents a YAML Scalar (string, boolean, integer)</p></li>
+<li><p><a class="reference internal" href="#buildstream.node.SequenceNode" title="buildstream.node.SequenceNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequenceNode</span></code></a>: represents a YAML Sequence (list)</p></li>
+</ul>
+</section>
+<section id="class-reference">
+<h2>Class Reference<a class="headerlink" href="#class-reference" title="Link to this heading"></a></h2>
+</section>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MappingNode</span></span><a class="headerlink" href="#buildstream.node.MappingNode" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+<p>This class represents a Mapping (dict) in a YAML document.</p>
+<p>It behaves mostly like a <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, but doesn’t allow untyped value access
+(Nothing of the form <code class="code docutils literal notranslate"><span class="pre">my_dict[my_value]</span></code>.</p>
+<p>It also doesn’t allow anything else than <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> as keys, to align with YAML.</p>
+<p>You can however use common dict operations in it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assign a new value to a key</span>
+<span class="n">my_mapping</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">my_value</span>
+
+<span class="c1"># Delete an entry</span>
+<span class="k">del</span> <span class="n">my_mapping</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>When assigning a key/value pair, the key must be a string,
+and the value can be any of:</p>
+<ul class="simple">
+<li><p>a <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a>, in which case the node is just assigned like normally</p></li>
+<li><p>a <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">None</span></code>.
+In which case, the value will be converted to a <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a> for you.</p></li>
+</ul>
+<p>Therefore, all values in a <a class="reference internal" href="#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a> will be <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You should never create an instance directly. Use <a class="reference internal" href="#buildstream.node.Node.from_dict" title="buildstream.node.Node.from_dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">Node.from_dict()</span></code></a>
+instead, which will ensure your node is correctly formatted.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.clone">
+<span class="sig-name descname"><span class="pre">clone</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.clone" title="Link to this definition"></a></dt>
+<dd><p>Clone the node and return the copy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a clone of the current node</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.get_bool">
+<span class="sig-name descname"><span class="pre">get_bool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">sentinel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.get_bool" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the node for <cite>key</cite> as a boolean.</p>
+<p>This is equivalent to: <code class="code docutils literal notranslate"><span class="pre">mapping.get_scalar(my_key,</span> <span class="pre">my_default).as_bool()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – key for which to get the value</p></li>
+<li><p><strong>default</strong> (<em>bool</em>) – default value to return if <cite>key</cite> is not in the mapping</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>buildstream._exceptions.LoadError</strong> – if the value at <cite>key</cite> is not a
+    <a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a> or isn’t a
+    valid <cite>boolean</cite></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the value at <cite>key</cite> or the default</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.get_enum">
+<span class="sig-name descname"><span class="pre">get_enum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraint</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default=&lt;object</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.get_enum" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the node as an enum member from <cite>constraint</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – key for which to get the value</p></li>
+<li><p><strong>constraint</strong> (<a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum" title="buildstream.types.FastEnum"><code class="xref py py-class docutils literal notranslate"><span class="pre">buildstream.types.FastEnum</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code>) – an enum from which to extract the value
+for the current node.</p></li>
+<li><p><strong>default</strong> (<em>object</em>) – default value to return if <cite>key</cite> is not in the mapping</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>buildstream._exceptions.LoadError</strong> – if the value is not is not found or not part of the
+    provided enum.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>the value contained in the node, as a member of</dt><dd><p><cite>constraint</cite></p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">buildstream.types.Enum</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.get_int">
+<span class="sig-name descname"><span class="pre">get_int</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">sentinel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.get_int" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the node for <cite>key</cite> as an integer.</p>
+<p>This is equivalent to: <code class="code docutils literal notranslate"><span class="pre">mapping.get_scalar(my_key,</span> <span class="pre">my_default).as_int()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – key for which to get the value</p></li>
+<li><p><strong>default</strong> (<em>int</em><em>, </em><em>None</em>) – default value to return if <cite>key</cite> is not in the mapping</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>buildstream._exceptions.LoadError</strong> – if the value at <cite>key</cite> is not a
+    <a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a> or isn’t a
+    valid <cite>integer</cite></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the value at <cite>key</cite> or the default</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.get_mapping">
+<span class="sig-name descname"><span class="pre">get_mapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">sentinel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.get_mapping" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the node for <cite>key</cite> as a <a class="reference internal" href="#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – key for which to get the value</p></li>
+<li><p><strong>default</strong> (<em>dict</em>) – default value to return if <cite>key</cite> is not in the mapping. It will be converted
+to a <a class="reference internal" href="#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a> before being returned</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>buildstream._exceptions.LoadError</strong> – if the value at <cite>key</cite> is not a
+    <a class="reference internal" href="#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the value at <cite>key</cite> or the default</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.get_node">
+<span class="sig-name descname"><span class="pre">get_node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allowed_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_none</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.get_node" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the node for <cite>key</cite> as a <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a>.</p>
+<p>This is useful if you have configuration that can be either a <a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a> or
+a <a class="reference internal" href="#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a> for example.</p>
+<p>This method will validate that the value is indeed exactly one of those types (not a subclass)
+and raise an exception accordingly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – key for which to get the value</p></li>
+<li><p><strong>allowed_types</strong> (<em>list</em>) – list of valid subtypes of <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a> that are valid return values.
+If this is <cite>None</cite>, no checks are done on the return value.</p></li>
+<li><p><strong>allow_none</strong> (<em>bool</em>) – whether to allow the return value to be <cite>None</cite> or not</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>buildstream._exceptions.LoadError</strong> – if the value at <cite>key</cite> is not one
+    of the expected types or if it doesn’t
+    exist.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the value at <cite>key</cite> or <cite>None</cite></p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.get_scalar">
+<span class="sig-name descname"><span class="pre">get_scalar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">sentinel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.get_scalar" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the node for <cite>key</cite> as a <a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – key for which to get the value</p></li>
+<li><p><strong>default</strong> (<em>str</em><em>, </em><em>int</em><em>, </em><em>bool</em><em>, </em><em>None</em>) – default value to return if <cite>key</cite> is not in the mapping.
+It will be converted to a <a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a> before being
+returned.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>buildstream._exceptions.LoadError</strong> – if the value at <cite>key</cite> is not a
+    <a class="reference internal" href="#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the value at <cite>key</cite> or the default</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.get_sequence">
+<span class="sig-name descname"><span class="pre">get_sequence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">sentinel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.get_sequence" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the node for <cite>key</cite> as a <a class="reference internal" href="#buildstream.node.SequenceNode" title="buildstream.node.SequenceNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequenceNode</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – key for which to get the value</p></li>
+<li><p><strong>default</strong> (<em>list</em>) – default value to return if <cite>key</cite> is not in the mapping. It will be converted
+to a <a class="reference internal" href="#buildstream.node.SequenceNode" title="buildstream.node.SequenceNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequenceNode</span></code></a> before being returned</p></li>
+<li><p><strong>allowed_types</strong> (<em>list</em>) – list of valid subtypes of <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a> that are valid for nodes in the sequence.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>buildstream._exceptions.LoadError</strong> – if the value at <cite>key</cite> is not a
+    <a class="reference internal" href="#buildstream.node.SequenceNode" title="buildstream.node.SequenceNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequenceNode</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the value at <cite>key</cite> or the default</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.SequenceNode" title="buildstream.node.SequenceNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequenceNode</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.get_str">
+<span class="sig-name descname"><span class="pre">get_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">sentinel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.get_str" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the node for <cite>key</cite> as an string.</p>
+<p>This is equivalent to: <code class="code docutils literal notranslate"><span class="pre">mapping.get_scalar(my_key,</span> <span class="pre">my_default).as_str()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – key for which to get the value</p></li>
+<li><p><strong>default</strong> (<em>str</em>) – default value to return if <cite>key</cite> is not in the mapping</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>buildstream._exceptions.LoadError</strong> – if the value at <cite>key</cite> is not a
+    <a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a> or isn’t a
+    valid <cite>str</cite></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the value at <cite>key</cite> or the default</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.get_str_list">
+<span class="sig-name descname"><span class="pre">get_str_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">sentinel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.get_str_list" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the node for <cite>key</cite> as a list of strings.</p>
+<p>This is equivalent to: <code class="code docutils literal notranslate"><span class="pre">mapping.get_sequence(my_key,</span> <span class="pre">my_default).as_str_list()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – key for which to get the value</p></li>
+<li><p><strong>default</strong> (<em>str</em>) – default value to return if <cite>key</cite> is not in the mapping</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>buildstream._exceptions.LoadError</strong> – if the value at <cite>key</cite> is not a
+    <a class="reference internal" href="#buildstream.node.SequenceNode" title="buildstream.node.SequenceNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequenceNode</span></code></a> or if any
+    of its internal values is not a ScalarNode.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the value at <cite>key</cite> or the default</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.items">
+<span class="sig-name descname"><span class="pre">items</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.items" title="Link to this definition"></a></dt>
+<dd><p>Get a new view of the mapping items ((key, value) pairs).</p>
+<p>This is equivalent to running <code class="code docutils literal notranslate"><span class="pre">my_dict.item()</span></code> on a <cite>dict</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a view on the underlying dictionary</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict_items</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.keys">
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.keys" title="Link to this definition"></a></dt>
+<dd><p>Get the list of all keys in the mapping.</p>
+<p>This is equivalent to running <code class="code docutils literal notranslate"><span class="pre">my_dict.keys()</span></code> on a <cite>dict</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a list of all keys in the mapping</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.safe_del">
+<span class="sig-name descname"><span class="pre">safe_del</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.safe_del" title="Link to this definition"></a></dt>
+<dd><p>Remove the entry at <cite>key</cite> in the dictionary if it exists.</p>
+<p>This method is a safe equivalent to <code class="code docutils literal notranslate"><span class="pre">del</span> <span class="pre">mapping[key]</span></code>, that doesn’t
+throw anything if the key doesn’t exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – key to remove from the mapping</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.strip_node_info">
+<span class="sig-name descname"><span class="pre">strip_node_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.strip_node_info" title="Link to this definition"></a></dt>
+<dd><p>Remove all the node information (provenance) and return the underlying data as plain python objects</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the underlying data that was held in the node structure.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(list, dict, str, None)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.validate_keys">
+<span class="sig-name descname"><span class="pre">validate_keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">valid_keys</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.validate_keys" title="Link to this definition"></a></dt>
+<dd><p>Validate that the node doesn’t contain extra keys</p>
+<p>This validates the node so as to ensure the user has not specified
+any keys which are unrecognized by BuildStream (usually this
+means a typo which would otherwise not trigger an error).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>valid_keys</strong> (<em>list</em>) – A list of valid keys for the specified node</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>buildstream._exceptions.LoadError</strong> – In the case that the specified node contained
+    one or more invalid keys</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.MappingNode.values">
+<span class="sig-name descname"><span class="pre">values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.MappingNode.values" title="Link to this definition"></a></dt>
+<dd><p>Get the values in the mapping.</p>
+<p>This is equivalent to running <code class="code docutils literal notranslate"><span class="pre">my_dict.values()</span></code> on a <cite>dict</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a list of all values in the mapping</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict_values</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.node.Node">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Node</span></span><a class="headerlink" href="#buildstream.node.Node" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This is the base class for YAML document nodes.</p>
+<p>YAML Nodes contain information to describe the provenance of the YAML
+which resulted in the Node, allowing mapping back from a Node to the place
+in the file it came from.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You should never need to create a <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a> manually.
+If you do, you can create <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a> from dictionaries with
+<a class="reference internal" href="#buildstream.node.Node.from_dict" title="buildstream.node.Node.from_dict"><code class="xref py py-func docutils literal notranslate"><span class="pre">Node.from_dict()</span></code></a>.
+If something else is needed, please open an issue.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.Node.clone">
+<span class="sig-name descname"><span class="pre">clone</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.Node.clone" title="Link to this definition"></a></dt>
+<dd><p>Clone the node and return the copy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a clone of the current node</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.Node.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.Node.from_dict" title="Link to this definition"></a></dt>
+<dd><p>Create a new node from the given dictionary.</p>
+<p>This is a recursive operation, and will transform every value in the
+dictionary to a <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a> instance</p>
+<p>Valid values for keys are <cite>str</cite>
+Valid values for values are <cite>list</cite>, <cite>dict</cite>, <cite>str</cite>, <cite>int</cite>, <cite>bool</cite> or None.
+<cite>list</cite> and <cite>dict</cite> can also only contain such types.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>dict</em>) – dictionary from which to create a node.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>TypeError</strong> – when the value cannot be converted to a <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a new mapping containing the value</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.Node.get_provenance">
+<span class="sig-name descname"><span class="pre">get_provenance</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.Node.get_provenance" title="Link to this definition"></a></dt>
+<dd><p>A convenience accessor to obtain the node’s <a class="reference internal" href="#buildstream.node.ProvenanceInformation" title="buildstream.node.ProvenanceInformation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProvenanceInformation</span></code></a></p>
+<p>The provenance information allows you to inform the user of where
+a node came. Transforming the information to a string will show the file, line and column
+in the file where the node is.</p>
+<p>An example usage would be:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># With `config` being your node</span>
+<span class="n">max_jobs_node</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="s1">&#39;max-jobs&#39;</span><span class="p">)</span>
+<span class="n">max_jobs</span> <span class="o">=</span> <span class="n">max_jobs_node</span><span class="o">.</span><span class="n">as_int</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="n">max_jobs</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># We can&#39;t get a negative number of jobs</span>
+    <span class="k">raise</span> <span class="n">LoadError</span><span class="p">(</span><span class="s2">&quot;Error at </span><span class="si">{}</span><span class="s2">: Max jobs needs to be &gt;= 1&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">max_jobs_node</span><span class="o">.</span><span class="n">get_provenance</span><span class="p">()</span>
+    <span class="p">)</span>
+
+<span class="c1"># Will print something like:</span>
+<span class="c1"># element.bst [line 4, col 7]: Max jobs needs to be &gt;= 1</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the provenance information for the node.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.ProvenanceInformation" title="buildstream.node.ProvenanceInformation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProvenanceInformation</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.Node.strip_node_info">
+<span class="sig-name descname"><span class="pre">strip_node_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.Node.strip_node_info" title="Link to this definition"></a></dt>
+<dd><p>Remove all the node information (provenance) and return the underlying data as plain python objects</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the underlying data that was held in the node structure.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(list, dict, str, None)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.node.ProvenanceInformation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ProvenanceInformation</span></span><a class="headerlink" href="#buildstream.node.ProvenanceInformation" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Represents the location of a YAML node in a file.</p>
+<p>This can effectively be used as a pretty print to display those information in
+errors consistently.</p>
+<p>You can retrieve this information for a <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a> with
+<a class="reference internal" href="#buildstream.node.Node.get_provenance" title="buildstream.node.Node.get_provenance"><code class="xref py py-func docutils literal notranslate"><span class="pre">Node.get_provenance()</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.node.ScalarNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ScalarNode</span></span><a class="headerlink" href="#buildstream.node.ScalarNode" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+<p>This class represents a Scalar (int, str, bool, None) in a YAML document.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you need to store another type of scalars, please open an issue
+on the project.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You should never have to create a <a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a> directly</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.ScalarNode.as_bool">
+<span class="sig-name descname"><span class="pre">as_bool</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.ScalarNode.as_bool" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the node as a boolean.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>BuildStream treats the values ‘True’, ‘true’ and ‘1’ as True,
+and the values ‘False’, ‘false’ and ‘0’ as False.  Any other
+string values (such as the valid YAML ‘TRUE’ or ‘FALSE’
+will be considered as an error)</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>buildstream._exceptions.LoadError</strong> – if the value cannot be coerced to
+    a bool correctly.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the value contained in the node, as a boolean</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.ScalarNode.as_enum">
+<span class="sig-name descname"><span class="pre">as_enum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">constraint</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.ScalarNode.as_enum" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the node as an enum member from <cite>constraint</cite></p>
+<p>The constraint must be a <a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum" title="buildstream.types.FastEnum"><code class="xref py py-class docutils literal notranslate"><span class="pre">buildstream.types.FastEnum</span></code></a> or a plain python Enum.</p>
+<p>For example you could do:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">buildstream.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastEnum</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SupportedCompressions</span><span class="p">(</span><span class="n">FastEnum</span><span class="p">):</span>
+  <span class="n">NONE</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span>
+  <span class="n">GZIP</span> <span class="o">=</span> <span class="s2">&quot;gzip&quot;</span>
+  <span class="n">XZ</span> <span class="o">=</span> <span class="s2">&quot;xz&quot;</span>
+
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_scalar</span><span class="p">(</span><span class="s1">&#39;compress&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">as_enum</span><span class="p">(</span><span class="n">SupportedCompressions</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">SupportedCompressions</span><span class="o">.</span><span class="n">GZIP</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using GZIP&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>constraint</strong> (<a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum" title="buildstream.types.FastEnum"><code class="xref py py-class docutils literal notranslate"><span class="pre">buildstream.types.FastEnum</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code>) – an enum from which to extract the value
+for the current node.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the value contained in the node, as a member of <cite>constraint</cite></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">FastEnum</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.ScalarNode.as_int">
+<span class="sig-name descname"><span class="pre">as_int</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.ScalarNode.as_int" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the node as an integer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>buildstream._exceptions.LoadError</strong> – if the value cannot be coerced to
+    an integer correctly.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the value contained in the node, as a integer</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.ScalarNode.as_str">
+<span class="sig-name descname"><span class="pre">as_str</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.ScalarNode.as_str" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the node as a string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>the value contained in the node, as a string, or <cite>None</cite> if the content</dt><dd><p>is <cite>None</cite>.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.ScalarNode.clone">
+<span class="sig-name descname"><span class="pre">clone</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.ScalarNode.clone" title="Link to this definition"></a></dt>
+<dd><p>Clone the node and return the copy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a clone of the current node</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.ScalarNode.is_none">
+<span class="sig-name descname"><span class="pre">is_none</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.ScalarNode.is_none" title="Link to this definition"></a></dt>
+<dd><p>Determine whether the current scalar is <cite>None</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><cite>True</cite> if the value of the scalar is <cite>None</cite>, else <cite>False</cite></p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.ScalarNode.strip_node_info">
+<span class="sig-name descname"><span class="pre">strip_node_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.ScalarNode.strip_node_info" title="Link to this definition"></a></dt>
+<dd><p>Remove all the node information (provenance) and return the underlying data as plain python objects</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the underlying data that was held in the node structure.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(list, dict, str, None)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.node.SequenceNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SequenceNode</span></span><a class="headerlink" href="#buildstream.node.SequenceNode" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+<p>This class represents a Sequence (list) in a YAML document.</p>
+<p>It behaves mostly like a <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>, but doesn’t allow untyped value access
+(Nothing of the form <code class="code docutils literal notranslate"><span class="pre">my_list[my_value]</span></code>).</p>
+<p>You can however perform common list operations on it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assign a value</span>
+<span class="n">my_sequence</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+<span class="c1"># Get the length</span>
+<span class="nb">len</span><span class="p">(</span><span class="n">my_sequence</span><span class="p">)</span>
+
+<span class="c1"># Reverse it</span>
+<span class="nb">reversed</span><span class="p">(</span><span class="n">my_sequence</span><span class="p">)</span>
+
+<span class="c1"># And iter over it</span>
+<span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">my_sequence</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>All values in a <a class="reference internal" href="#buildstream.node.SequenceNode" title="buildstream.node.SequenceNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequenceNode</span></code></a> will be <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.SequenceNode.append">
+<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.SequenceNode.append" title="Link to this definition"></a></dt>
+<dd><p>Append the given object to the sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>object</em>) – <p>the value to append to the list. This can either be:</p>
+<ul class="simple">
+<li><p>a <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p></li>
+<li><p>a <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">None</span></code>,
+<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>. In which case, this will be
+converted into a <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a> beforehand</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>TypeError</strong> – when the value cannot be converted to a <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.SequenceNode.as_str_list">
+<span class="sig-name descname"><span class="pre">as_str_list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.SequenceNode.as_str_list" title="Link to this definition"></a></dt>
+<dd><p>Get the values of the sequence as a list of strings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>buildstream._exceptions.LoadError</strong> – if the sequence contains more than
+    <a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the content of the sequence as a list of strings</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.SequenceNode.clone">
+<span class="sig-name descname"><span class="pre">clone</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.SequenceNode.clone" title="Link to this definition"></a></dt>
+<dd><p>Clone the node and return the copy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a clone of the current node</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.SequenceNode.mapping_at">
+<span class="sig-name descname"><span class="pre">mapping_at</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.SequenceNode.mapping_at" title="Link to this definition"></a></dt>
+<dd><p>Retrieve the entry at <cite>index</cite> as a <a class="reference internal" href="#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>index</strong> (<em>int</em>) – index for which to get the value</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>buildstream._exceptions.LoadError</strong> – if the value at <cite>key</cite> is not a
+    <a class="reference internal" href="#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a></p></li>
+<li><p><strong>IndexError</strong> – if no value exists at this index</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the value at <cite>index</cite></p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.SequenceNode.node_at">
+<span class="sig-name descname"><span class="pre">node_at</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allowed_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.SequenceNode.node_at" title="Link to this definition"></a></dt>
+<dd><p>Retrieve the entry at <cite>index</cite> as a <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a>.</p>
+<p>This is useful if you have configuration that can be either a <a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a> or
+a <a class="reference internal" href="#buildstream.node.MappingNode" title="buildstream.node.MappingNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingNode</span></code></a> for example.</p>
+<p>This method will validate that the value is indeed exactly one of those types (not a subclass)
+and raise an exception accordingly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index</strong> (<em>int</em>) – index for which to get the value</p></li>
+<li><p><strong>allowed_types</strong> (<em>list</em>) – list of valid subtypes of <a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a> that are valid return values.
+If this is <cite>None</cite>, no checks are done on the return value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>buildstream._exceptions.LoadError</strong> – if the value at <cite>index</cite> is not of one of the
+    expected types</p></li>
+<li><p><strong>IndexError</strong> – if no value exists at this index</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the value at <cite>index</cite></p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.Node" title="buildstream.node.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">Node</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.SequenceNode.scalar_at">
+<span class="sig-name descname"><span class="pre">scalar_at</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.SequenceNode.scalar_at" title="Link to this definition"></a></dt>
+<dd><p>Retrieve the entry at <cite>index</cite> as a <a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>index</strong> (<em>int</em>) – index for which to get the value</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>buildstream._exceptions.LoadError</strong> – if the value at <cite>key</cite> is not a
+    <a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a></p></li>
+<li><p><strong>IndexError</strong> – if no value exists at this index</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the value at <cite>index</cite></p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.ScalarNode" title="buildstream.node.ScalarNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScalarNode</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.SequenceNode.sequence_at">
+<span class="sig-name descname"><span class="pre">sequence_at</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.SequenceNode.sequence_at" title="Link to this definition"></a></dt>
+<dd><p>Retrieve the entry at <cite>index</cite> as a <a class="reference internal" href="#buildstream.node.SequenceNode" title="buildstream.node.SequenceNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequenceNode</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>index</strong> (<em>int</em>) – index for which to get the value</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>buildstream._exceptions.LoadError</strong> – if the value at <cite>key</cite> is not a
+    <a class="reference internal" href="#buildstream.node.SequenceNode" title="buildstream.node.SequenceNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequenceNode</span></code></a></p></li>
+<li><p><strong>IndexError</strong> – if no value exists at this index</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the value at <cite>index</cite></p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.node.SequenceNode" title="buildstream.node.SequenceNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequenceNode</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.node.SequenceNode.strip_node_info">
+<span class="sig-name descname"><span class="pre">strip_node_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.node.SequenceNode.strip_node_info" title="Link to this definition"></a></dt>
+<dd><p>Remove all the node information (provenance) and return the underlying data as plain python objects</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the underlying data that was held in the node structure.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(list, dict, str, None)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="buildstream.types.html" class="btn btn-neutral float-left" title="Foundation types" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="buildstream.plugin.html" class="btn btn-neutral float-right" title="Plugin - Base plugin class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

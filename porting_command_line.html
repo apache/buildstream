@@ -1,0 +1,279 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Porting command line usage &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Porting the project format" href="porting_project.html" />
+    <link rel="prev" title="Porting the buildstream.conf" href="porting_user_configuration.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_porting.html">Porting guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="porting_user_configuration.html">Porting the buildstream.conf</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Porting command line usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#bst-init"><span class="xref std std-ref">bst init</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bst-build"><span class="xref std std-ref">bst build</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bst-show"><span class="xref std std-ref">bst show</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bst-fetch"><span class="xref std std-ref">bst fetch</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bst-track"><span class="xref std std-ref">bst track</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bst-pull"><span class="xref std std-ref">bst pull</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bst-push"><span class="xref std std-ref">bst push</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bst-checkout"><span class="xref std std-ref">bst checkout</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bst-shell"><span class="xref std std-ref">bst shell</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bst-workspace-open"><span class="xref std std-ref">bst workspace open</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bst-workspace-reset"><span class="xref std std-ref">bst workspace reset</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bst-source-bundle"><span class="xref std std-ref">bst source-bundle</span></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="porting_project.html">Porting the project format</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_porting.html">Porting guide</a></li>
+      <li class="breadcrumb-item active">Porting command line usage</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/porting_command_line.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="porting-command-line-usage">
+<span id="porting-command-line"></span><h1>Porting command line usage<a class="headerlink" href="#porting-command-line-usage" title="Link to this heading"></a></h1>
+<p>This document outlines breaking changes made to the <a class="reference internal" href="using_commands.html#commands"><span class="std std-ref">command line interface</span></a>
+in BuildStream 2.</p>
+<section id="bst-init">
+<h2><a class="reference internal" href="using_commands.html#invoking-init"><span class="std std-ref">bst init</span></a><a class="headerlink" href="#bst-init" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>The global <code class="docutils literal notranslate"><span class="pre">--directory</span></code> option is no longer observed by <code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">init</span></code>, instead
+the command accepts an optional target directory argument.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">--format-version</span></code> option has been removed in favor of the new <code class="docutils literal notranslate"><span class="pre">--min-version</span></code> option.</p></li>
+</ul>
+</section>
+<section id="bst-build">
+<h2><a class="reference internal" href="using_commands.html#invoking-build"><span class="std std-ref">bst build</span></a><a class="headerlink" href="#bst-build" title="Link to this heading"></a></h2>
+<ul>
+<li><p>Tracking is no longer supported at build time and must be performed separately, this
+removes the <code class="docutils literal notranslate"><span class="pre">--track</span></code>, <code class="docutils literal notranslate"><span class="pre">--track-all</span></code>, <code class="docutils literal notranslate"><span class="pre">--track-except</span></code>, <code class="docutils literal notranslate"><span class="pre">--track-cross-junctions</span></code>
+and <code class="docutils literal notranslate"><span class="pre">--track-save</span></code> options from the command.</p>
+<p>To track your elements in BuildStream 2, use the <a class="reference internal" href="using_commands.html#invoking-source-track"><span class="std std-ref">bst source track</span></a>
+command instead.</p>
+</li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">--all</span></code> option which was used to indicate that all dependencies should be built
+regardless of whether they are needed for producing the target elements has been removed
+in favor of adding the <code class="docutils literal notranslate"><span class="pre">--deps</span></code> option.</p>
+<p>To acheive the same functionality, use <code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">build</span> <span class="pre">--deps</span> <span class="pre">all</span> <span class="pre">...</span></code>.</p>
+</li>
+</ul>
+</section>
+<section id="bst-show">
+<h2><a class="reference internal" href="using_commands.html#invoking-show"><span class="std std-ref">bst show</span></a><a class="headerlink" href="#bst-show" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">plan</span></code> value is no longer supported as a value for the <code class="docutils literal notranslate"><span class="pre">--deps</span></code> option.</p></li>
+<li><p>Values for the <code class="docutils literal notranslate"><span class="pre">%{state}</span></code> format have changed</p>
+<ul>
+<li><p><a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a> elements will display <code class="docutils literal notranslate"><span class="pre">junction</span></code>, as these cannot be built</p></li>
+<li><p>In the case a cached failed build artifact is found, then <code class="docutils literal notranslate"><span class="pre">failed</span></code> will be displayed</p></li>
+<li><p>Due to changes in the scheduler, we may observe changes as to when <code class="docutils literal notranslate"><span class="pre">waiting</span></code>, <code class="docutils literal notranslate"><span class="pre">buildable</span></code>, <code class="docutils literal notranslate"><span class="pre">fetch</span> <span class="pre">needed</span></code>
+are displayed for a given element.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="bst-fetch">
+<h2><a class="reference internal" href="using_commands.html#invoking-source-fetch"><span class="std std-ref">bst fetch</span></a><a class="headerlink" href="#bst-fetch" title="Link to this heading"></a></h2>
+<ul>
+<li><p>This command has been removed as a top-level command and now exists as <a class="reference internal" href="using_commands.html#invoking-source-fetch"><span class="std std-ref">bst source fetch</span></a></p></li>
+<li><p>Tracking is no longer supported at fetch time and must be performed separately, this
+removes the <code class="docutils literal notranslate"><span class="pre">--track</span></code> and <code class="docutils literal notranslate"><span class="pre">--track-cross-junctions</span></code> options from the command.</p>
+<p>To track your elements in BuildStream 2, use the <a class="reference internal" href="using_commands.html#invoking-source-track"><span class="std std-ref">bst source track</span></a>
+command instead.</p>
+</li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">plan</span></code> value is no longer supported as a value for the <code class="docutils literal notranslate"><span class="pre">--deps</span></code> option. The default
+value for the <code class="docutils literal notranslate"><span class="pre">--deps</span></code> option is now <code class="docutils literal notranslate"><span class="pre">none</span></code>.</p></li>
+</ul>
+</section>
+<section id="bst-track">
+<h2><a class="reference internal" href="using_commands.html#invoking-source-track"><span class="std std-ref">bst track</span></a><a class="headerlink" href="#bst-track" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>This command has been removed as a top-level command and now exists as <a class="reference internal" href="using_commands.html#invoking-source-track"><span class="std std-ref">bst source track</span></a></p></li>
+</ul>
+</section>
+<section id="bst-pull">
+<h2><a class="reference internal" href="using_commands.html#invoking-artifact-pull"><span class="std std-ref">bst pull</span></a><a class="headerlink" href="#bst-pull" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>This command has been removed as a top-level command and now exists as <a class="reference internal" href="using_commands.html#invoking-artifact-pull"><span class="std std-ref">bst artifact pull</span></a></p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">--remote</span></code> option has been removed in favor the <code class="docutils literal notranslate"><span class="pre">--artifact-remote</span></code> option, which can be
+specified multiple times.</p></li>
+<li><p>The values which can be specified by <code class="docutils literal notranslate"><span class="pre">--artifact-remote</span></code> options have a new format which
+is <a class="reference internal" href="using_commands.html#invoking-specify-remotes"><span class="std std-ref">documented here</span></a>.</p></li>
+</ul>
+</section>
+<section id="bst-push">
+<h2><a class="reference internal" href="using_commands.html#invoking-artifact-push"><span class="std std-ref">bst push</span></a><a class="headerlink" href="#bst-push" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>This command has been removed as a top-level command and now exists as <a class="reference internal" href="using_commands.html#invoking-artifact-push"><span class="std std-ref">bst artifact push</span></a></p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">--remote</span></code> option has been removed in favor the <code class="docutils literal notranslate"><span class="pre">--artifact-remote</span></code> option, which can be
+specified multiple times.</p></li>
+<li><p>The values which can be specified by <code class="docutils literal notranslate"><span class="pre">--artifact-remote</span></code> options have a new format which
+is <a class="reference internal" href="using_commands.html#invoking-specify-remotes"><span class="std std-ref">documented here</span></a>.</p></li>
+</ul>
+</section>
+<section id="bst-checkout">
+<h2><a class="reference internal" href="using_commands.html#invoking-artifact-checkout"><span class="std std-ref">bst checkout</span></a><a class="headerlink" href="#bst-checkout" title="Link to this heading"></a></h2>
+<ul>
+<li><p>This command has been removed as a top-level command and now exists as <a class="reference internal" href="using_commands.html#invoking-artifact-checkout"><span class="std std-ref">bst artifact checkout</span></a></p></li>
+<li><p>The trailing <code class="docutils literal notranslate"><span class="pre">LOCATION</span></code> argument has been removed in favor of a <code class="docutils literal notranslate"><span class="pre">--directory</span></code> option.</p>
+<p><strong>BuildStream 1:</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>checkout<span class="w"> </span>element.bst<span class="w"> </span>~/checkout
+</pre></div>
+</div>
+<p><strong>BuildStream 2:</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>artifact<span class="w"> </span>checkout<span class="w"> </span>--directory<span class="w"> </span>~/checkout<span class="w"> </span>element.bst
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="bst-shell">
+<h2><a class="reference internal" href="using_commands.html#invoking-shell"><span class="std std-ref">bst shell</span></a><a class="headerlink" href="#bst-shell" title="Link to this heading"></a></h2>
+<ul>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">--sysroot</span></code> option has been completely removed.</p>
+<p>This is no longer needed for failed builds as the build tree will be cached in a failed build artifact.</p>
+</li>
+<li><p>Sources and artifacts required to produce the shell environment will now be downloaded
+automatically by default.</p></li>
+</ul>
+</section>
+<section id="bst-workspace-open">
+<h2><a class="reference internal" href="using_commands.html#invoking-workspace-open"><span class="std std-ref">bst workspace open</span></a><a class="headerlink" href="#bst-workspace-open" title="Link to this heading"></a></h2>
+<ul>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">--track</span></code> option is now removed.</p></li>
+<li><p>The trailing <code class="docutils literal notranslate"><span class="pre">LOCATION</span></code> argument has been removed in favor of a <code class="docutils literal notranslate"><span class="pre">--directory</span></code> option.</p>
+<p><strong>BuildStream 1:</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>workspace<span class="w"> </span>open<span class="w"> </span>element.bst<span class="w"> </span>~/workspace
+</pre></div>
+</div>
+<p><strong>BuildStream 2:</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>workspace<span class="w"> </span>open<span class="w"> </span>--directory<span class="w"> </span>~/workspace<span class="w"> </span>element.bst
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="bst-workspace-reset">
+<h2><a class="reference internal" href="using_commands.html#invoking-workspace-reset"><span class="std std-ref">bst workspace reset</span></a><a class="headerlink" href="#bst-workspace-reset" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">--track</span></code> option is now removed.</p></li>
+</ul>
+</section>
+<section id="bst-source-bundle">
+<h2><a class="reference internal" href="using_commands.html#invoking-source-checkout"><span class="std std-ref">bst source-bundle</span></a><a class="headerlink" href="#bst-source-bundle" title="Link to this heading"></a></h2>
+<p>This command has been completely removed, but similar behavior can be achieved
+using the <a class="reference internal" href="using_commands.html#invoking-source-checkout"><span class="std std-ref">bst source checkout</span></a> command.</p>
+<p><strong>BuildStream 1:</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>source-bundle<span class="w"> </span>--directory<span class="w"> </span>~/bundle<span class="w"> </span>element.bst
+</pre></div>
+</div>
+<p><strong>BuildStream 2:</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span><span class="nb">source</span><span class="w"> </span>checkout<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--tar<span class="w"> </span>~/sources.tgz<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--compression<span class="w"> </span>gz<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--include-build-scripts<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>element.bst
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="porting_user_configuration.html" class="btn btn-neutral float-left" title="Porting the buildstream.conf" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="porting_project.html" class="btn btn-neutral float-right" title="Porting the project format" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

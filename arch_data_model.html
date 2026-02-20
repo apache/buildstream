@@ -1,0 +1,264 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data model &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Dependency model" href="arch_dependency_model.html" />
+    <link rel="prev" title="Overview of program flow" href="arch_program_flow.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_architecture.html">Architecture</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="arch_overview.html">Overview of modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_program_flow.html">Overview of program flow</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Data model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#project">Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#element">Element</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#element-data-structure">Element data structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#element-composition">Element composition</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#source">Source</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#source-data-structure">Source data structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#source-composition">Source composition</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#context">Context</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#workspaces">Workspaces</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="arch_dependency_model.html">Dependency model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_scheduler.html">Scheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_cachekeys.html">Cache keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_caches.html">Caches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_sandboxing.html">Sandboxing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_remote_execution.html">Remote execution</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_architecture.html">Architecture</a></li>
+      <li class="breadcrumb-item active">Data model</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/arch_data_model.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="data-model">
+<h1>Data model<a class="headerlink" href="#data-model" title="Link to this heading"></a></h1>
+<p>This section details the data model on which the BuildStream core operates. This
+includes an overview of the project data model which is BuildStream’s main input,
+the user preferences, and local state.</p>
+<section id="project">
+<h2>Project<a class="headerlink" href="#project" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Project</span></code> object is the main component of a given BuildStream <em>project</em>, and
+is responsible for loading and validating the <a class="reference internal" href="format_project.html#projectconf"><span class="std std-ref">project.conf</span></a>, and
+providing this loaded <em>project data</em> in a convenient way to the BuildStream core.</p>
+<p>Conceptually, the <em>project</em> is a container for the <a class="reference internal" href="buildstream.element.html#module-buildstream.element" title="buildstream.element"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Elements</span></code></a>,
+which are declared within a user’s project, and as such acts as a factory for instantiating
+elements at load time.</p>
+</section>
+<section id="element">
+<h2>Element<a class="headerlink" href="#element" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="buildstream.element.html#module-buildstream.element" title="buildstream.element"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Elements</span></code></a> are the main processing unit in a pipeline. These
+are the loaded representation of the <code class="docutils literal notranslate"><span class="pre">.bst</span></code> files loaded from the <a class="reference internal" href="format_project.html#project-element-path"><span class="std std-ref">project’s element path</span></a>.</p>
+<p>The <em>Element</em> is an abstract base class which cannot do anything on its own, its
+concrete class is defined by <em>plugins</em> which are either included in the BuildStream
+<a class="reference internal" href="core_plugins.html#plugins"><span class="std std-ref">core set of plugins</span></a> or loaded from external sources <a class="reference internal" href="format_project.html#project-plugins"><span class="std std-ref">defined by the project</span></a>.</p>
+<p>The responsibilities of an element include:</p>
+<ul class="simple">
+<li><p>Loading the element’s configuration from the core provided dictionary.</p></li>
+<li><p>Providing a unique key for any element specific configuration which might
+affect the output produced by the element.</p></li>
+<li><p>Configuring the sandbox.</p></li>
+<li><p>Staging the data into the sandbox, which might include Sources and
+the outputs of previous elements.</p></li>
+<li><p>Assembling the output <em>artifact</em>.</p></li>
+</ul>
+<section id="element-data-structure">
+<h3>Element data structure<a class="headerlink" href="#element-data-structure" title="Link to this heading"></a></h3>
+<p>The properties of an element are a composition of what the BuildStream core understands,
+the configurations exposed by the Element plugin, and free form data which allows
+annotations and configurations which can be read back by reverse dependencies during
+processing, as illustrated here:</p>
+<img alt="_images/arch-datamodel-element.svg" class="align-center" src="_images/arch-datamodel-element.svg" />
+</section>
+<section id="element-composition">
+<h3>Element composition<a class="headerlink" href="#element-composition" title="Link to this heading"></a></h3>
+<p>The element is composed of configurations which are sourced from various entry
+points using the low level YAML utilities.</p>
+<p>This composition takes place after <a class="reference internal" href="format_intro.html#format-directives-include"><span class="std std-ref">includes</span></a> and
+<a class="reference internal" href="format_intro.html#format-directives-conditional"><span class="std std-ref">conditional</span></a> directives are processed, while
+<a class="reference internal" href="format_intro.html#format-directives-list-prepend"><span class="std std-ref">list composition</span></a> directives are processed
+as a result of this composition.</p>
+<p>Here is a diagram showing which sources take precedence in the composition process
+which results in the final element configuration being resolved:</p>
+<img alt="_images/arch-datamodel-element-composition.svg" class="align-center" src="_images/arch-datamodel-element-composition.svg" />
+<p>Note that not all <em>BuildStream Core Data</em> is understood by the <em>Element</em>, but a great
+deal of configurations understood by the <em>Element</em> is also understood by the core and
+has default configurations built into BuildStream and configurable with the project
+configuration. These include values such as <em>variables</em>, <em>environment</em>, <em>sandbox</em>, etc.</p>
+<p>As shown above, composition is performed in two stages for each element. First
+we compose everything below the line, this happens just once per ‘kind’ of
+element - the result is re-used. Secondly, we compose the element declaration
+on top.</p>
+</section>
+</section>
+<section id="source">
+<h2>Source<a class="headerlink" href="#source" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="buildstream.element.html#module-buildstream.element" title="buildstream.element"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Sources</span></code></a> are the abstract objects which are responsible
+for obtaining remote source code or data to import into the build environment, and
+ensuring that it is done in a bit-for-bit reproducible way without any contamination
+of the host or build environment.</p>
+<p>This is to say that:</p>
+<ul class="simple">
+<li><p>User configuration on the host, or filesystem outside of BuildStream designated
+directories, must never be modified as a side-effect of running BuildStream.</p></li>
+<li><p>When the Source uses host tools, host side configurations must never result in
+deviations of what is staged to a build directory. The Source must behave exactly
+the same way regardless of host side configurations.</p></li>
+</ul>
+<p>The responsibilities of a source include:</p>
+<ul class="simple">
+<li><p>Loading the source’s configuration from the core provided dictionary.</p></li>
+<li><p>Providing a unique key for any source specific configuration which might
+affect the staged source.</p></li>
+<li><p>Implement discovery of new versions of the source upstream (referred to as <em>“tracking”</em>).</p></li>
+<li><p>Staging the unpacked source to a given directory.</p></li>
+<li><p>Preparing workspaces.</p></li>
+</ul>
+<section id="source-data-structure">
+<h3>Source data structure<a class="headerlink" href="#source-data-structure" title="Link to this heading"></a></h3>
+<p>Similar to the <em>Element</em>, the properties of a source are a composition of what
+the BuildStream core understands and the configurations exposed by the Source
+plugin:</p>
+<img alt="_images/arch-datamodel-source.svg" class="align-center" src="_images/arch-datamodel-source.svg" />
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In .bst files, the BuildStream core configurations and Source specific configurations
+share the same dictionary.</p>
+<p>Strictly speaking this is limiting, but provides a measure of convenience as .bst
+files are a bit less wordy to express.</p>
+</div>
+</section>
+<section id="source-composition">
+<h3>Source composition<a class="headerlink" href="#source-composition" title="Link to this heading"></a></h3>
+<p>Source composition is much simpler than Element composition, because defaults
+cannot be specified at the project level, excepting for Source type specific
+value overrides.</p>
+<img alt="_images/arch-datamodel-source-composition.svg" class="align-center" src="_images/arch-datamodel-source-composition.svg" />
+</section>
+</section>
+<section id="context">
+<h2>Context<a class="headerlink" href="#context" title="Link to this heading"></a></h2>
+<p>The Context object is a very centric part of the BuildStream data model, and is
+not a part of the Project data described above but rather is where we load and
+store all of the user preferences.</p>
+<p>User preferences are sourced from various locations, but usually have a default,
+an option in the user configuration file, and an option to override it on the
+command line.</p>
+<img alt="_images/arch-datamodel-context.svg" class="align-center" src="_images/arch-datamodel-context.svg" />
+<p>Asides from being a focal point for loading and storing all user configuration,
+the Context object also plays a central role in the logging framework.</p>
+</section>
+<section id="workspaces">
+<h2>Workspaces<a class="headerlink" href="#workspaces" title="Link to this heading"></a></h2>
+<p>The Workspaces object is yet another kind of state. Unlike the Context and
+the Project data model, the Workspaces object loads, saves and stores in
+memory the local state regarding a user’s active and open workspaces.</p>
+<p>These are stored in the local state <code class="docutils literal notranslate"><span class="pre">.bst/</span></code> subdirectory of users projects.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="arch_program_flow.html" class="btn btn-neutral float-left" title="Overview of program flow" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="arch_dependency_model.html" class="btn btn-neutral float-right" title="Dependency model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

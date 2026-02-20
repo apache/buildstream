@@ -1,0 +1,1489 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User configuration &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Commands" href="using_commands.html" />
+    <link rel="prev" title="3. Subproject includes" href="junctions/junction-includes.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_using.html">Using</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="using_tutorial.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_developing.html">Developing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_handling_files.html">Handling files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_junctions.html">Combining projects</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">User configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-file">Configuration file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#working-directories">Working directories</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#attributes">Attributes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#cache-control">Cache control</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">Attributes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#scheduler-controls">Scheduler controls</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id2">Attributes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#build-controls">Build controls</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id3">Attributes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#fetch-controls">Fetch controls</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id4">Attributes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#track-controls">Track controls</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id5">Attributes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#logging-controls">Logging controls</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id6">Attributes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#remote-services">Remote services</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#authentication">Authentication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#connection-configuration">Connection configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cache-servers">Cache servers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#artifact-cache-servers">Artifact cache servers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#source-cache-servers">Source cache servers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#remote-execution">Remote execution</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#project-specific-values">Project specific values</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#strict-build-plan">Strict build plan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mirrors">Mirrors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#default-mirror">Default mirror</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#project-options">Project options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id15">Source cache servers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id16">Artifact cache servers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#remote-execution-configuration">Remote execution configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#default-configuration">Default configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using_commands.html">Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_configuring_cache_server.html">Configuring Cache Servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_configuring_remote_execution.html">Remote Execution Servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_examples.html">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_using.html">Using</a></li>
+      <li class="breadcrumb-item active">User configuration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/using_config.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="user-configuration">
+<span id="user-config"></span><h1>User configuration<a class="headerlink" href="#user-configuration" title="Link to this heading"></a></h1>
+<p>User configuration and preferences can be specified in a user provided
+configuration file, and in most cases these preferences can be overridden
+using <a class="reference internal" href="using_commands.html#commands"><span class="std std-ref">command line options</span></a>.</p>
+<p>Values that are not specified in a user configuration file assume
+their <a class="reference internal" href="#config-defaults"><span class="std std-ref">default values</span></a>.</p>
+<section id="configuration-file">
+<h2>Configuration file<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h2>
+<p>Unless a configuration file is explicitly specified on the <a class="reference internal" href="using_commands.html#invoking-bst"><span class="std std-ref">command line</span></a>
+when invoking <code class="docutils literal notranslate"><span class="pre">bst</span></code>, an attempt is made to load user specific configuration from
+<code class="docutils literal notranslate"><span class="pre">$XDG_CONFIG_HOME/buildstream.conf</span></code>. On most Linux based systems, the location
+will be <code class="docutils literal notranslate"><span class="pre">~/.config/buildstream.conf</span></code></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you have have multiple major versions of BuildStream installed, you
+can have separate configuration files in your <code class="docutils literal notranslate"><span class="pre">${XDG_CONFIG_HOME}</span></code>.</p>
+<p>You can do this by naming them according to the major versions of
+BuildStream you have installed. BuildStream 1 will load its configuration
+from <code class="docutils literal notranslate"><span class="pre">$XDG_CONFIG_HOME/buildstream1.conf</span></code> and BuildStream 2 will load
+its configuration from <code class="docutils literal notranslate"><span class="pre">$XDG_CONFIG_HOME/buildstream2.conf</span></code>, while
+any version will fallback to <code class="docutils literal notranslate"><span class="pre">$XDG_CONFIG_HOME/buildstream.conf</span></code>.</p>
+</div>
+</section>
+<section id="working-directories">
+<h2>Working directories<a class="headerlink" href="#working-directories" title="Link to this heading"></a></h2>
+<p>The working directories control where BuildStream will store data. While
+these will have sane defaults, you may want to change these directories
+depending on your partitioning scheme and where you may have extra space.</p>
+<p>Environment variables and <code class="docutils literal notranslate"><span class="pre">~/</span></code> home directory expressions are supported
+when specifying working directories.</p>
+<p>Working directories are configured at the toplevel of your configuration file, like so:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Configure working directories</span>
+<span class="c1">#</span>
+<span class="nt">sourcedir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~/buildstream/sources</span>
+</pre></div>
+</div>
+<section id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Link to this heading"></a></h3>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">sourcedir</span></code></p>
+<p>This is the location where BuildStream stores the source code it downloads
+for builds.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">logdir</span></code></p>
+<p>This is the location where BuildStream stores log files of build command
+output and basically logs pertaining to any activity BuildStream orchestrates.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cachedir</span></code></p>
+<p>This is the location where BuildStream stores the local <em>CAS</em> (<em>Content Addressable Storage</em>).</p>
+<p>The <em>CAS</em> is used to cache anything and everything which BuildStream may
+reuse at a later time.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>While it may be beneficial at times to delete the entire cache directory
+manually in order to free up disk space, one should keep in mind that
+the <code class="docutils literal notranslate"><span class="pre">sourcedir</span></code> and <code class="docutils literal notranslate"><span class="pre">logdir</span></code> are configured as subdirectories of
+this directory when default configuration is used.</p>
+<p>Take care not to accidentally remove all your cached downloaded sources
+when deleting your cache.</p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">workspacedir</span></code></p>
+<p>A default location for <a class="reference internal" href="using_commands.html#invoking-workspace-open"><span class="std std-ref">opening workspaces</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default this is configured to <code class="docutils literal notranslate"><span class="pre">.</span></code>, which is to say workspaces are
+created as a subdirectory of the current working directory by default.</p>
+<p>Because of this, the <code class="docutils literal notranslate"><span class="pre">workspacedir</span></code> directory is the only directory
+which is allowed to be declared as a relative path.</p>
+</div>
+</li>
+</ul>
+</section>
+</section>
+<section id="cache-control">
+<span id="config-local-cache"></span><h2>Cache control<a class="headerlink" href="#cache-control" title="Link to this heading"></a></h2>
+<p>Beyond deciding what directory you intend to place the cache, there are
+some controls on what is cached locally and how.</p>
+<p>These are controlled by the attributes of a <code class="docutils literal notranslate"><span class="pre">cache</span></code> dictionary at the
+toplevel of your configuration file, like so:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Control the cache</span>
+<span class="c1">#</span>
+<span class="n">cache</span><span class="p">:</span>
+
+  <span class="c1"># Use as much space as possible</span>
+  <span class="n">quota</span><span class="p">:</span> <span class="n">infinity</span>
+
+  <span class="c1"># Keep 5% of disk space available</span>
+  <span class="n">reserved</span><span class="o">-</span><span class="n">disk</span><span class="o">-</span><span class="n">space</span><span class="p">:</span> <span class="mi">5</span><span class="o">%</span>
+
+  <span class="c1"># Retain 80% of the cache on cleanup</span>
+  <span class="n">low</span><span class="o">-</span><span class="n">watermark</span><span class="p">:</span> <span class="mi">80</span><span class="o">%</span>
+
+  <span class="c1"># Avoid pulling large amounts of data we don&#39;t need locally</span>
+  <span class="n">pull</span><span class="o">-</span><span class="n">buildtrees</span><span class="p">:</span> <span class="kc">False</span>
+
+  <span class="c1">#</span>
+  <span class="c1"># Avoid caching build trees if we don&#39;t need them</span>
+  <span class="n">cache</span><span class="o">-</span><span class="n">buildtrees</span><span class="p">:</span> <span class="n">auto</span>
+
+  <span class="c1">#</span>
+  <span class="c1"># Support CAS server as remote cache</span>
+  <span class="c1"># Useful to minimize network traffic with remote execution</span>
+  <span class="c1"># or to work with limited local disk space</span>
+  <span class="n">storage</span><span class="o">-</span><span class="n">service</span><span class="p">:</span>
+    <span class="n">url</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">cache</span><span class="o">-</span><span class="n">server</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">cas</span><span class="p">:</span><span class="mi">11001</span>
+    <span class="n">auth</span><span class="p">:</span>
+      <span class="n">server</span><span class="o">-</span><span class="n">cert</span><span class="p">:</span> <span class="n">server</span><span class="o">.</span><span class="n">crt</span>
+      <span class="n">client</span><span class="o">-</span><span class="n">cert</span><span class="p">:</span> <span class="n">client</span><span class="o">.</span><span class="n">crt</span>
+      <span class="n">client</span><span class="o">-</span><span class="n">key</span><span class="p">:</span> <span class="n">client</span><span class="o">.</span><span class="n">key</span>
+      <span class="n">access</span><span class="o">-</span><span class="n">token</span><span class="p">:</span> <span class="n">access</span><span class="o">.</span><span class="n">token</span>
+      <span class="n">access</span><span class="o">-</span><span class="n">token</span><span class="o">-</span><span class="n">reload</span><span class="o">-</span><span class="n">interval</span><span class="p">:</span> <span class="mi">60</span>
+    <span class="n">connection</span><span class="o">-</span><span class="n">config</span><span class="p">:</span>
+      <span class="n">keepalive</span><span class="o">-</span><span class="n">time</span><span class="p">:</span> <span class="mi">60</span>
+      <span class="n">retry</span><span class="o">-</span><span class="n">limit</span><span class="p">:</span> <span class="mi">4</span>
+      <span class="n">retry</span><span class="o">-</span><span class="n">delay</span><span class="p">:</span> <span class="mi">1000</span>
+      <span class="n">request</span><span class="o">-</span><span class="n">timeout</span><span class="p">:</span> <span class="mi">300</span>
+</pre></div>
+</div>
+<section id="id1">
+<h3>Attributes<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">quota</span></code></p>
+<p>This controls how much data you allow BuildStream to cache locally.</p>
+<p>An attempt will be made to error out instead of exceeding the maximum
+quota which the user has allowed here. Given that it is impossible for
+BuildStream to know how much data a given build will create, this quota
+is implemented on a best effort basis.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">quota</span></code> can be specified in multiple ways:</p>
+<ul>
+<li><p>The special <code class="docutils literal notranslate"><span class="pre">infinity</span></code> value</p>
+<p>This default value states that BuildStream can use as much space as
+is available on the filesystem where the cache resides.</p>
+</li>
+<li><p>A number in bytes.</p></li>
+<li><p>A human readable number, suffixed in K, M, G or T</p>
+<p>E.g. <code class="docutils literal notranslate"><span class="pre">250K</span></code> being 250 kilobytes, <code class="docutils literal notranslate"><span class="pre">100M</span></code> being 100 megabytes, etc.</p>
+</li>
+<li><p>A percentage value, e.g. <code class="docutils literal notranslate"><span class="pre">80%</span></code></p>
+<p>Percentage values are taken to represent a percentage of the partition
+size on the filesystem where the cache has been configured.</p>
+</li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reserved-disk-space</span></code></p>
+<p>This controls how much disk space should remain available. If the amount
+of available disk space falls below the specified value, unused cache
+objects will be pruned even if the configured quota has not been exceeded.</p>
+<p><code class="docutils literal notranslate"><span class="pre">reserved-disk-space</span></code> can be specified in the same way as <code class="docutils literal notranslate"><span class="pre">quota</span></code>, with
+the exception of the special <code class="docutils literal notranslate"><span class="pre">infinity</span></code> value. The default is <code class="docutils literal notranslate"><span class="pre">5%</span></code>.</p>
+<p><em>Since: 2.4</em></p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">low-watermark</span></code></p>
+<p>This controls how much of the cache should be retained on cleanup.</p>
+<p><code class="docutils literal notranslate"><span class="pre">low-watermark</span></code> is specified as a percentage of the effective cache quota
+as configured by <code class="docutils literal notranslate"><span class="pre">quota</span></code> and/or <code class="docutils literal notranslate"><span class="pre">reserved-disk-space</span></code>. The default is
+<code class="docutils literal notranslate"><span class="pre">80%</span></code>, which means that when cleanup is triggered, 20% of the cache will
+be pruned by removing CAS objects that haven’t been used recently.</p>
+<p><em>Since: 2.4</em></p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pull-buildtrees</span></code></p>
+<p>Whether to pull <em>build trees</em> when downloading remote artifacts.</p>
+<p>The <em>build tree</em> of an artifact is the directory where a build took
+place, this is useful for <a class="reference internal" href="using_commands.html#invoking-shell"><span class="std std-ref">running a build shell</span></a>
+in order to observe how an element was built or to debug how a
+build failed if the build failed remotely.</p>
+<p>Since build trees are rather expensive, the default is to not pull
+build trees for every artifact. If you need a build tree that exists
+remotely, it will be possible to download it as an option at the
+time you run a command which requires it.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cache-buildtrees</span></code></p>
+<p>Whether to cache build trees when creating artifacts, if build trees
+are cached locally and the client is configured to push to remote servers,
+then build trees will be pushed along with any uploaded artifacts.</p>
+<p>This configuration has three possible values:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">never</span></code>: Never cache build trees</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">auto</span></code>: Only cache the build trees where necessary (e.g. for failed builds)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">always</span></code>: Always cache the build tree.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">storage-service</span></code></p>
+<p>An optional <a class="reference internal" href="#user-config-remote-execution-service"><span class="std std-ref">service configuration</span></a>
+to use a <em>Content Addressable Storage</em> service as a remote cache. Write access
+is required.</p>
+<p>This service is compatible with the <em>storage</em> service offered by
+<a class="reference internal" href="#config-cache-servers"><span class="std std-ref">cache servers</span></a>.</p>
+<p>Without this option, all content is stored in the local cache. This includes
+CAS objects from fetched sources, build outputs and pulled artifacts.
+With this option, content is primarily stored in the remote cache and the
+local cache is populated only as needed. E.g. <code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">artifact</span> <span class="pre">checkout</span></code>
+will download CAS objects on demand from the remote cache.
+This feature is incompatible with offline operation.</p>
+<p>This is primarily useful in combination with
+<a class="reference internal" href="#user-config-remote-execution"><span class="std std-ref">remote execution</span></a> to minimize downloads
+of build outputs, which may not be needed locally. The elimination of
+unnecessary downloads reduces total build time, especially if the bandwidth
+between the local system and the remote execution cluster is limited.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Skip the <code class="docutils literal notranslate"><span class="pre">storage-service</span></code> option in the
+<a class="reference internal" href="#user-config-remote-execution"><span class="std std-ref">remote execution</span></a> configuration to
+use the same CAS service for caching and remote execution.</p>
+</div>
+<p>It is also possible to configure this with local builds without remote
+execution. This enables operation with a small local cache even with large
+projects. However, for local builds this can result in a longer total build
+time due to additional network transfers. This is only recommended with a
+high bandwidth connection to a storage-service, ideally in a local network.</p>
+</li>
+</ul>
+</section>
+</section>
+<section id="scheduler-controls">
+<h2>Scheduler controls<a class="headerlink" href="#scheduler-controls" title="Link to this heading"></a></h2>
+<p>Controls related to how the scheduler works are exposed as attributes of the
+toplevel <code class="docutils literal notranslate"><span class="pre">scheduler</span></code> dictionary, like so:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Control the scheduler</span>
+<span class="c1">#</span>
+<span class="nt">scheduler</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Allow building up to four seperate elements at a time</span>
+<span class="w">  </span><span class="nt">builders</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+
+<span class="w">  </span><span class="c1"># Continue building as many elements as possible if anything fails</span>
+<span class="w">  </span><span class="nt">on-error</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">continue</span>
+</pre></div>
+</div>
+<section id="id2">
+<h3>Attributes<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">fetchers</span></code></p>
+<p>The number of concurrent tasks which download sources or artifacts.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pushers</span></code></p>
+<p>The number of concurrent tasks which upload sources or artifacts.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">builders</span></code></p>
+<p>The number of concurrent tasks which build elements.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This does not control the number of processes in the scope of the
+build of a single element, but rather the number of elements which
+may be built in parallel.</p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">network-retries</span></code></p>
+<p>The number of times to retry a task which failed due to network connectivity issues.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">on-error</span></code></p>
+<p>What to do when a task fails and BuildStream is running in non-interactive mode. This can
+be set to the following values:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">continue</span></code>: Continue with other tasks, a summary of errors will be printed at the end</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">quit</span></code>: Quit after all ongoing tasks have completed</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">terminate</span></code>: Abort any ongoing tasks and exit immediately</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If BuildStream is running in interactive mode, then the ongoing build will be suspended
+and the user will be prompted and asked what to do when a task fails.</p>
+<p>Interactive mode is automatically enabled if BuildStream is connected to a terminal
+rather than being run automatically, or, it can be specified on the <a class="reference internal" href="using_commands.html#invoking-bst"><span class="std std-ref">command line</span></a>.</p>
+</div>
+</li>
+</ul>
+</section>
+</section>
+<section id="build-controls">
+<h2>Build controls<a class="headerlink" href="#build-controls" title="Link to this heading"></a></h2>
+<p>Some aspects about how elements get built can be controlled by attributes of the <code class="docutils literal notranslate"><span class="pre">build</span></code>
+dictionary at the toplevel, like so:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Build controls</span>
+<span class="c1">#</span>
+<span class="nt">build</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Allow up to 4 parallel processes to execute within the scope of one build</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">max-jobs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+</pre></div>
+</div>
+<section id="id3">
+<h3>Attributes<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">max-jobs</span></code></p>
+<p>This is a best effort attempt to instruct build systems on how many parallel
+processes to use when building an element.</p>
+<p>It is supported by most popular build systems such as <code class="docutils literal notranslate"><span class="pre">make</span></code>, <code class="docutils literal notranslate"><span class="pre">cmake</span></code>, <code class="docutils literal notranslate"><span class="pre">ninja</span></code>,
+etc, via environment variables such as <code class="docutils literal notranslate"><span class="pre">MAXJOBS</span></code> and similar command line options.</p>
+<p>When using the special value <code class="docutils literal notranslate"><span class="pre">0</span></code>, BuildStream will allocate the number of threads
+available on the host and limit this with a hard coded value of <code class="docutils literal notranslate"><span class="pre">8</span></code>, which was
+found to be an optimial number when building even on hosts with many cores.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">retry-failed</span></code></p>
+<p>Try to build elements for which a failed build artifact is found when running
+<a class="reference internal" href="using_commands.html#invoking-build"><span class="std std-ref">bst build</span></a>.</p>
+<p>This is useful in the case that a build has failed due to insufficient resources
+such as memory or disk space.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dependencies</span></code></p>
+<p>This instructs what dependencies of the target elements should be built, valid
+values for this attribute are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">none</span></code>: Only build elements required to generate the expected target artifacts</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">run</span></code>: Build required elements and their their runtime dependencies</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">all</span></code>: Build elements even if they are build dependencies of artifacts which are already cached</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="fetch-controls">
+<h2>Fetch controls<a class="headerlink" href="#fetch-controls" title="Link to this heading"></a></h2>
+<p>Some aspects about how sources get fetched can be controlled by attributes of the <code class="docutils literal notranslate"><span class="pre">fetch</span></code>
+dictionary at the toplevel, like so:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Fetch controls</span>
+<span class="c1">#</span>
+<span class="nt">fetch</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Don&#39;t allow fetching from project defined alias or mirror URIs</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user</span>
+</pre></div>
+</div>
+<section id="id4">
+<h3>Attributes<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">source</span></code></p>
+<p>This controls what URIs are allowed to be accessed when fetching sources,
+valid values for this attribute are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">all</span></code>: Fetch from mirrors defined in <a class="reference internal" href="#config-mirrors"><span class="std std-ref">user configuration</span></a> and
+<a class="reference internal" href="format_project.html#project-essentials-mirrors"><span class="std std-ref">project configuration</span></a>, and also project defined
+<a class="reference internal" href="format_project.html#project-source-aliases"><span class="std std-ref">default alias URIs</span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">aliases</span></code>: Only allow fetching from project defined <a class="reference internal" href="format_project.html#project-source-aliases"><span class="std std-ref">default alias URIs</span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mirrors</span></code>: Only allow fetching from mirrors defined in <a class="reference internal" href="#config-mirrors"><span class="std std-ref">user configuration</span></a> and
+<a class="reference internal" href="format_project.html#project-essentials-mirrors"><span class="std std-ref">project configuration</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">user</span></code>: Only allow fetching from mirrors defined in <a class="reference internal" href="#config-mirrors"><span class="std std-ref">user configuration</span></a></p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="track-controls">
+<h2>Track controls<a class="headerlink" href="#track-controls" title="Link to this heading"></a></h2>
+<p>Some aspects about how sources get tracked can be controlled by attributes of the <code class="docutils literal notranslate"><span class="pre">track</span></code>
+dictionary at the toplevel, like so:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Track controls</span>
+<span class="c1">#</span>
+<span class="nt">track</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Only track sources for new refs from project defined default alias URIs</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aliases</span>
+</pre></div>
+</div>
+<section id="id5">
+<h3>Attributes<a class="headerlink" href="#id5" title="Link to this heading"></a></h3>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">source</span></code></p>
+<p>This controls what URIs are allowed to be accessed when tracking sources
+for new refs, valid values for this attribute are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">all</span></code>: Track from mirrors defined in <a class="reference internal" href="#config-mirrors"><span class="std std-ref">user configuration</span></a> and
+<a class="reference internal" href="format_project.html#project-essentials-mirrors"><span class="std std-ref">project configuration</span></a>, and also project defined
+<a class="reference internal" href="format_project.html#project-source-aliases"><span class="std std-ref">default alias URIs</span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">aliases</span></code>: Only allow tracking from project defined <a class="reference internal" href="format_project.html#project-source-aliases"><span class="std std-ref">default alias URIs</span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mirrors</span></code>: Only allow tracking from mirrors defined in <a class="reference internal" href="#config-mirrors"><span class="std std-ref">user configuration</span></a> and
+<a class="reference internal" href="format_project.html#project-essentials-mirrors"><span class="std std-ref">project configuration</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">user</span></code>: Only allow tracking from mirrors defined in <a class="reference internal" href="#config-mirrors"><span class="std std-ref">user configuration</span></a></p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="logging-controls">
+<h2>Logging controls<a class="headerlink" href="#logging-controls" title="Link to this heading"></a></h2>
+<p>Various aspects of how BuildStream presents output and UI can be controlled with
+attributes of the toplevel <code class="docutils literal notranslate"><span class="pre">logging</span></code> dictionary, like so:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Control logging output</span>
+<span class="c1">#</span>
+<span class="nt">logging</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Whether to be verbose</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">verbose</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+<section id="id6">
+<h3>Attributes<a class="headerlink" href="#id6" title="Link to this heading"></a></h3>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">verbose</span></code></p>
+<p>Whether to use verbose logging.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">debug</span></code></p>
+<p>Whether to print messages related to debugging BuildStream itself.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">key-length</span></code></p>
+<p>When displaying abbreviated cache keys, this controls the number of characters
+of the cache key which should be printed.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">throttle-ui-updates</span></code></p>
+<p>Whether the throttle updates to the status bar in interactive mode. If set to <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+then the status bar will be updated once per second.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">error-lines</span></code></p>
+<p>The maximum number of lines to print in the main logging output related to an
+error processing an element, these will be the last lines found in the relevant
+element’s stdout and stderr.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">message-lines</span></code></p>
+<p>The maximum number of lines to print in a detailed message sent to the main logging output.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">element-format</span></code></p>
+<p>The default format to use when printing out elements in <a class="reference internal" href="using_commands.html#invoking-show"><span class="std std-ref">bst show</span></a>
+output, and when printing the pipeline summary at the beginning of sessions.</p>
+<p>The format is specified as a string containing variables which will be expanded
+in the resulting string, variables must be specified using a leading percent sign
+and enclosed in curly braces, a colon can be specified in the variable to perform
+python style string alignments, e.g.:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">logging</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Set the element format</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">element-format</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+
+<span class="w">    </span><span class="no">%{state: &gt;12} %{full-key} %{name} %{workspace-dirs}</span>
+</pre></div>
+</div>
+<p>Variable names which can be used in the element format consist of:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code></p>
+<p>The <a class="reference internal" href="format_declaring.html#format-element-names"><span class="std std-ref">element path</span></a>, which is the name of the element including
+any leading junctions.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">key</span></code></p>
+<p>The abbreviated cache key, the length of which is controlled by the <code class="docutils literal notranslate"><span class="pre">key-length</span></code> logging configuration.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">full-key</span></code></p>
+<p>The full cache key.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">state</span></code></p>
+<p>The element state, this will be formatted as one of the following:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">no</span> <span class="pre">reference</span></code>: If the element still needs to be <a class="reference internal" href="using_commands.html#invoking-source-track"><span class="std std-ref">tracked</span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">junction</span></code>: If the element is a junction and as such does not have any relevant state.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">failed</span></code>: If the element has been built and the build has failed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cached</span></code>: If the element has been successfully built and is present in the local cache.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fetch</span> <span class="pre">needed</span></code>: If the element cannot be built yet because the sources need to be <a class="reference internal" href="using_commands.html#invoking-source-fetch"><span class="std std-ref">fetched</span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">buildable</span></code>: If the element has all of its sources and build dependency artifacts cached locally.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">waiting</span></code>: If the element has all of its sources cached but its build dependencies are not yet locally cached.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">config</span></code></p>
+<p>The <a class="reference internal" href="format_declaring.html#format-config"><span class="std std-ref">element configuration</span></a>, formatted in YAML.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">vars</span></code></p>
+<p>The resolved <a class="reference internal" href="format_declaring.html#format-variables"><span class="std std-ref">element variables</span></a>, formatted as a simple YAML dictionary.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">env</span></code></p>
+<p>The resolved <a class="reference internal" href="format_declaring.html#format-environment"><span class="std std-ref">environment variables</span></a>, formatted as a simple YAML dictionary.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">public</span></code></p>
+<p>The resolved <a class="reference internal" href="format_declaring.html#format-public"><span class="std std-ref">public data</span></a>, formatted in YAML.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">workspaced</span></code></p>
+<p>If the element has an open workspace, this will expand to the string <em>“(workspaced)”</em>, otherwise
+it will expand to an empty string.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">workspace-dirs</span></code></p>
+<p>If the element has an open workspace, this will expand to the workspace directory, prefixed with
+the text <em>“Workspace: “</em>, otherwise it will expand to an empty string.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">deps</span></code></p>
+<p>A list of the <a class="reference internal" href="format_declaring.html#format-element-names"><span class="std std-ref">element paths</span></a> of all dependency elements.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">build-deps</span></code></p>
+<p>A list of the <a class="reference internal" href="format_declaring.html#format-element-names"><span class="std std-ref">element paths</span></a> of all build dependency elements.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runtime-deps</span></code></p>
+<p>A list of the <a class="reference internal" href="format_declaring.html#format-element-names"><span class="std std-ref">element paths</span></a> of all runtime dependency elements.</p>
+</li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">message-format</span></code></p>
+<p>The format to use for messages being logged in the aggregated main logging output.</p>
+<p>Similarly to the <code class="docutils literal notranslate"><span class="pre">element-format</span></code>, The format is specified as a string containing variables which
+will be expanded in the resulting string, and variables must be specified using a leading percent sign
+and enclosed in curly braces, e.g.:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">logging</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Set the message format</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">message-format</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+
+<span class="w">    </span><span class="no">[%{elapsed}][%{key}][%{element}] %{action} %{message}</span>
+</pre></div>
+</div>
+<p>Variable names which can be used in the element format consist of:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">elapsed</span></code></p>
+<p>If this message announces the completion of (successful or otherwise) of an activity, then
+this will expand to a time code showing how much time elapsed for the given activity, in
+the format: <code class="docutils literal notranslate"><span class="pre">HH:MM:SS</span></code>, otherwise an empty time code will be displayed in the format:
+<code class="docutils literal notranslate"><span class="pre">--:--:--</span></code>.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">elapsed-us</span></code></p>
+<p>Similar to the <code class="docutils literal notranslate"><span class="pre">elapsed</span></code> variable, however the timecode will include microsecond precision.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wallclock</span></code></p>
+<p>This will display a timecode for each message displaying the local wallclock time, in the
+format <code class="docutils literal notranslate"><span class="pre">HH:MM:SS</span></code>.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wallclock-us</span></code></p>
+<p>Similar to the <code class="docutils literal notranslate"><span class="pre">wallclock</span></code> variable, however the timecode will include microsecond precision.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">key</span></code></p>
+<p>The abbreviated cache key of the element the message is related to, the length of which is controlled
+by the <code class="docutils literal notranslate"><span class="pre">key-length</span></code> logging configuration.</p>
+<p>If the message in question is not related to any element, then this will expand to whitespace
+of equal length.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">element</span></code></p>
+<p>This will be formatted to an indicator consisting of the type of activity which is being
+performed on the element (e.g. <em>“build”</em> or <em>“fetch”</em> etc), and the <a class="reference internal" href="format_declaring.html#format-element-names"><span class="std std-ref">element path</span></a>
+of the element this message is related to.</p>
+<p>If the message in question is not related to any element, then a string will be formatted
+to indicate that this message is related to a core activity instead.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">action</span></code></p>
+<p>A classifier of the type of message this is, the possible values this will expand to are:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">DEBUG</span></code></p>
+<p>This is a message related to debugging BuildStream itself</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">STATUS</span></code></p>
+<p>A message showing some detail of what is currently happening, this message will not
+be displayed unless verbose output is enabled.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">INFO</span></code></p>
+<p>An informative message, this may be printed for instance when discovering a new
+ref for source code when running <a class="reference internal" href="using_commands.html#invoking-source-track"><span class="std std-ref">bst source track</span></a>.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">WARN</span></code></p>
+<p>A warning message.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ERROR</span></code></p>
+<p>An error message.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BUG</span></code></p>
+<p>A bug happened in BuildStream, this will usually be accompanied by a python stack trace.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">START</span></code></p>
+<p>An activity related to an element started.</p>
+<p>Any <code class="docutils literal notranslate"><span class="pre">START</span></code> message will always be accompanied by a later <code class="docutils literal notranslate"><span class="pre">SUCCESS</span></code>, <code class="docutils literal notranslate"><span class="pre">FAILURE</span></code>
+or <code class="docutils literal notranslate"><span class="pre">SKIPPED</span></code> message.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SUCCESS</span></code></p>
+<p>An activity related to an element completed successfully.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">FAILURE</span></code></p>
+<p>An activity related to an element failed.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SKIPPED</span></code></p>
+<p>After strating this activity, it was discovered that no work was needed and
+the activity was skipped.</p>
+</li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">message</span></code></p>
+<p>The brief message, or the path to the corresponding log file, will be printed here.</p>
+<p>When this is a scheduler related message about the commencement or completion of
+an element related activity, then the path to the corresponding log for that activity
+will be printed here.</p>
+<p>If it is a message issued for any other reason, then the message text will be formatted here.</p>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Messages issued by the core or by plugins are allowed to provide detailed accounts, these
+are the indented multiline messages which sometimes get displayed in the main aggregated
+logging output, and will be printed regardless of the logging <code class="docutils literal notranslate"><span class="pre">message-format</span></code> value.</p>
+</div>
+</li>
+</ul>
+</section>
+</section>
+<section id="remote-services">
+<h2>Remote services<a class="headerlink" href="#remote-services" title="Link to this heading"></a></h2>
+<p>BuildStream can be configured to cooperate with remote caches and
+execution services.</p>
+<section id="authentication">
+<span id="config-remote-auth"></span><h3>Authentication<a class="headerlink" href="#authentication" title="Link to this heading"></a></h3>
+<p>BuildStream supports end to end encryption when communicating with remote
+services.</p>
+<p>All remote service configuration blocks come with an optional <code class="docutils literal notranslate"><span class="pre">auth</span></code>
+configuration block which allows one to specify the certificates
+and keys required for encrypted traffic.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">auth</span></code> configuration block looks like this:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">auth</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">server-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server.crt</span>
+<span class="w">  </span><span class="nt">client-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client.crt</span>
+<span class="w">  </span><span class="nt">client-key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client.key</span>
+<span class="w">  </span><span class="nt">access-token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">access.token</span>
+<span class="w">  </span><span class="nt">access-token-reload-interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
+</pre></div>
+</div>
+<section id="id7">
+<h4>Attributes<a class="headerlink" href="#id7" title="Link to this heading"></a></h4>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">server-cert</span></code></p>
+<p>The server certificate is used to verify the identity of the server instead
+of using the CA store from the operating system for verification.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">client-cert</span></code></p>
+<p>The client certificate is used by the remote server to authenticate the client.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">client-key</span></code></p>
+<p>The private client key corresponding to the specified client certificate.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">access-token</span></code></p>
+<p>The path to a token for optional HTTP bearer authentication.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">access-token-reload-interval</span></code></p>
+<p>The reload interval in minutes for the specified access token.
+If not specified, automatic reloading is disabled.</p>
+</li>
+</ul>
+<p>Remote cache services may allow <em>downloading</em> artifacts and sources without
+authentication, in which case only <code class="docutils literal notranslate"><span class="pre">server-cert</span></code> is required for secure access
+(or no attributes at all if the CA store from the OS can be used).</p>
+<p>However, remote cache services should normally not allow <em>uploading</em> artifacts
+or sources without authentication. Authentication can be configured by setting
+<code class="docutils literal notranslate"><span class="pre">access-token</span></code> or both <code class="docutils literal notranslate"><span class="pre">client-key</span></code> and <code class="docutils literal notranslate"><span class="pre">client-cert</span></code>.</p>
+</section>
+</section>
+<section id="connection-configuration">
+<span id="config-connection-config"></span><h3>Connection configuration<a class="headerlink" href="#connection-configuration" title="Link to this heading"></a></h3>
+<p>BuildStream uses gRPC to communicate with remote services.</p>
+<p>All remote service configuration blocks come with an optional <code class="docutils literal notranslate"><span class="pre">connection-config</span></code>
+block which allows setting gRPC connection options.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">connection-config</span></code> block looks like this:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">connection-config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">keepalive-time</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
+<span class="w">  </span><span class="nt">retry-limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">  </span><span class="nt">retry-delay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">  </span><span class="nt">request-timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+</pre></div>
+</div>
+<section id="id8">
+<h4>Attributes<a class="headerlink" href="#id8" title="Link to this heading"></a></h4>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">keepalive-time</span></code></p>
+<p>The interval in seconds between gRPC PING frames. Disabled by default.
+<a class="reference external" href="https://grpc.io/docs/guides/keepalive/">gRPC keepalive guide</a></p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">retry-limit</span></code></p>
+<p>The maximum number of retries, not including the original request.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">retry-delay</span></code></p>
+<p>The initial backoff in milliseconds for retries.
+<a class="reference external" href="https://grpc.io/docs/guides/retry/">gRPC retry guide</a></p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">request-timeout</span></code></p>
+<p>The timeout for gRPC requests in seconds. No timeout by default.
+<a class="reference external" href="https://grpc.io/docs/guides/deadlines/">gRPC deadline guide</a></p>
+</li>
+</ul>
+</section>
+</section>
+<section id="cache-servers">
+<span id="config-cache-servers"></span><h3>Cache servers<a class="headerlink" href="#cache-servers" title="Link to this heading"></a></h3>
+<p>BuildStream supports two types of cache servers, <a class="reference internal" href="#config-source-caches"><span class="std std-ref">source cache servers</span></a>
+and <a class="reference internal" href="#config-artifact-caches"><span class="std std-ref">artifact cache servers</span></a>. These services allow you
+to store sources and build artifacts for later reuse, and share them among your
+peers.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p><strong>Storing and indexing</strong></p>
+<p>Cache servers are split into two separate services, the <em>index</em> and the <em>storage</em>.
+Sometimes these services are provided by the same server, and sometimes it is desirable
+to use different cache servers for indexing and storing data.</p>
+<p>In simple setups, it is possible to use the same cache server for indexing and storing
+of both sources and artifacts. However, when using <a class="reference internal" href="#user-config-remote-execution"><span class="std std-ref">remote execution</span></a>
+it is recommended to use the remote execution build cluster’s <code class="docutils literal notranslate"><span class="pre">storage-service</span></code> as the <em>storage</em>
+service of your cache servers, which may require setting up your <em>index</em> service separately.</p>
+<p>When configuring cache servers, BuildStream will require both storage and indexing capabilities,
+otherwise no attempt will be made to fetch or push data to and from cache servers.</p>
+</div>
+<p>Cache server configuration is declared in the following way:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">override-project-caches</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="nt">servers</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://cache-server.com/cache:11001</span>
+<span class="w">  </span><span class="nt">instance-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">all</span>
+<span class="w">  </span><span class="nt">push</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">auth</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">server-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server.crt</span>
+<span class="w">    </span><span class="nt">client-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client.crt</span>
+<span class="w">    </span><span class="nt">client-key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client.key</span>
+<span class="w">  </span><span class="nt">connection-config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">keepalive-time</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
+<span class="w">    </span><span class="nt">retry-limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">    </span><span class="nt">retry-delay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">    </span><span class="nt">request-timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+</pre></div>
+</div>
+<section id="id9">
+<h4>Attributes<a class="headerlink" href="#id9" title="Link to this heading"></a></h4>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">override-project-caches</span></code></p>
+<p>Whether this user configuration overrides the project recommendations for
+<a class="reference internal" href="format_project.html#project-artifact-cache"><span class="std std-ref">artifact caches</span></a> or <a class="reference internal" href="format_project.html#project-source-cache"><span class="std std-ref">source caches</span></a>.</p>
+<p>If this is false (which is the default), then project recommended cache
+servers will be observed after user specified caches.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">servers</span></code></p>
+<p>This is the list of cache servers in the configuration block, every entry
+in the block represents a server which will be accessed in the specified order.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">url</span></code></p>
+<p>Indicates the <code class="docutils literal notranslate"><span class="pre">http</span></code> or <code class="docutils literal notranslate"><span class="pre">https</span></code> url and optionally the port number of
+where the cache server is located.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">instance-name</span></code></p>
+<p>Instance names separate different shards on the same endpoint (<code class="docutils literal notranslate"><span class="pre">url</span></code>).</p>
+<p>The instance name is optional, and not all cache server implementations support
+instance names. The instance name should be given to you by the
+service provider of each service.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code></p>
+<p>The type of service you intend to use this cache server for. If unspecified,
+the default value for this field is <code class="docutils literal notranslate"><span class="pre">all</span></code>.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">storage</span></code></p>
+<p>Use this cache service for storage.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">index</span></code></p>
+<p>Use this cache service for index content expected to be present in one
+or more <em>storage</em> services.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">all</span></code></p>
+<p>Use this cache service for both indexing and storing data.</p>
+</li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">push</span></code></p>
+<p>Set this to <code class="docutils literal notranslate"><span class="pre">true</span></code> if you intend to upload data to this cache server.</p>
+<p>Normally this requires additional credentials in the <code class="docutils literal notranslate"><span class="pre">auth</span></code> field.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">auth</span></code></p>
+<p>The <a class="reference internal" href="#config-remote-auth"><span class="std std-ref">authentication attributes</span></a> to connect to
+this server.</p>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="cache-server-lists">
+<span id="config-cache-server-list"></span><h4>Cache server lists<a class="headerlink" href="#cache-server-lists" title="Link to this heading"></a></h4>
+<p>Cache servers are always specified as <em>lists</em> in the configuration, this allows
+<em>index</em> and <em>storage</em> services to be declared separately, and also allows for
+some redundancy.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://cache-server-1.com/index</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">index</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://cache-server-1.com/storage</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://cache-server-2.com</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">all</span>
+</pre></div>
+</div>
+<p>When downloading data from a cache server, BuildStream will iterate over each
+<em>index</em> service one by one until it finds the reference to the data it is looking
+for, and then it will iterate over each <em>storage</em> service one by one, downloading
+the referenced data until all data is downloaded.</p>
+<p>When uploading data to a cache server, BuildStream will first upload the data to
+each <em>storage</em> service which was configured with the <code class="docutils literal notranslate"><span class="pre">push</span></code> attribute, and
+upon successful upload, it will proceed to upload the references to the uploaded
+data to each <em>index</em> service in the list.</p>
+</section>
+</section>
+<section id="artifact-cache-servers">
+<span id="config-artifact-caches"></span><h3>Artifact cache servers<a class="headerlink" href="#artifact-cache-servers" title="Link to this heading"></a></h3>
+<p>Using artifact <a class="reference internal" href="#config-cache-servers"><span class="std std-ref">cache servers</span></a> is an essential means of
+<em>build avoidance</em>, as it will allow you to avoid building an element which has already
+been built and uploaded to a common artifact server.</p>
+<p>Artifact cache servers can be declared in different ways, with differing priorities.</p>
+<section id="command-line">
+<h4>Command line<a class="headerlink" href="#command-line" title="Link to this heading"></a></h4>
+<p>Various commands which involve connecting to artifact servers allow
+<a class="reference internal" href="using_commands.html#invoking-specify-remotes"><span class="std std-ref">specifying remotes</span></a>, remotes specified
+on the command line replace all user configuration.</p>
+</section>
+<section id="global-caches">
+<h4>Global caches<a class="headerlink" href="#global-caches" title="Link to this heading"></a></h4>
+<p>To declare the global artifact server list, use the <code class="docutils literal notranslate"><span class="pre">artifacts</span></code> key at the
+toplevel of the user configuration.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Configure a global artifact server for pushing and pulling artifacts</span>
+<span class="c1">#</span>
+<span class="nt">artifacts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">override-project-caches</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">servers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://artifacts.com/artifacts:11001</span>
+<span class="w">    </span><span class="nt">push</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">auth</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">server-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server.crt</span>
+<span class="w">      </span><span class="nt">client-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client.crt</span>
+<span class="w">      </span><span class="nt">client-key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client.key</span>
+</pre></div>
+</div>
+</section>
+<section id="project-overrides">
+<h4>Project overrides<a class="headerlink" href="#project-overrides" title="Link to this heading"></a></h4>
+<p>To declare artifact servers lists for individual projects, declare them
+in the <a class="reference internal" href="#user-config-project-overrides"><span class="std std-ref">project specific section</span></a> of
+the user configuration.</p>
+<p>Artifact server lists declared in this section will only be used for
+elements belonging to the specified project, and will be used instead of
+artifact cache servers declared in the global caches.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Configure an artifact server for pushing and pulling artifacts from project &quot;foo&quot;</span>
+<span class="c1">#</span>
+<span class="nt">projects</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">foo</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">artifacts</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">override-project-caches</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">      </span><span class="nt">servers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://artifacts.com/artifacts:11001</span>
+<span class="w">        </span><span class="nt">push</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">auth</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">server-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server.crt</span>
+<span class="w">          </span><span class="nt">client-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client.crt</span>
+<span class="w">          </span><span class="nt">client-key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client.key</span>
+</pre></div>
+</div>
+</section>
+<section id="project-recommendations">
+<h4>Project recommendations<a class="headerlink" href="#project-recommendations" title="Link to this heading"></a></h4>
+<p>Projects can <a class="reference internal" href="format_project.html#project-artifact-cache"><span class="std std-ref">recommend artifact cache servers</span></a> in their
+individual project configuration files.</p>
+<p>These will only be used for elements belonging to their respective projects, and
+are the lowest priority configuration.</p>
+</section>
+</section>
+<section id="source-cache-servers">
+<span id="config-source-caches"></span><h3>Source cache servers<a class="headerlink" href="#source-cache-servers" title="Link to this heading"></a></h3>
+<p>Using source <a class="reference internal" href="#config-cache-servers"><span class="std std-ref">cache servers</span></a> enables BuildStream to cache
+source code referred to by your project and share those sources with peers who have
+access to the same source cache server.</p>
+<p>This can optimize your build times in the case that it is determined that an element needs
+to be rebuilt because of changes in the dependency graph, as BuildStream will first attempt
+to download the source code from the cache server before attempting to obtain it from an
+external source, which may suffer higher latencies.</p>
+<p>Source cache servers can be declared in different ways, with differing priorities.</p>
+<section id="id10">
+<h4>Command line<a class="headerlink" href="#id10" title="Link to this heading"></a></h4>
+<p>Various commands which involve connecting to source cache servers allow
+<a class="reference internal" href="using_commands.html#invoking-specify-remotes"><span class="std std-ref">specifying remotes</span></a>, remotes specified
+on the command line replace all user configuration.</p>
+</section>
+<section id="id11">
+<h4>Global caches<a class="headerlink" href="#id11" title="Link to this heading"></a></h4>
+<p>To declare the global source cache server list, use the <code class="docutils literal notranslate"><span class="pre">source-caches</span></code> key at the
+toplevel of the user configuration.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Configure a global source cache server for pushing and pulling sources</span>
+<span class="c1">#</span>
+<span class="nt">source-caches</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">override-project-caches</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">servers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://sources.com/sources:11001</span>
+<span class="w">    </span><span class="nt">push</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">auth</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">server-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server.crt</span>
+<span class="w">      </span><span class="nt">client-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client.crt</span>
+<span class="w">      </span><span class="nt">client-key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client.key</span>
+</pre></div>
+</div>
+</section>
+<section id="id12">
+<h4>Project overrides<a class="headerlink" href="#id12" title="Link to this heading"></a></h4>
+<p>To declare source cache servers lists for individual projects, declare them
+in the <a class="reference internal" href="#user-config-project-overrides"><span class="std std-ref">project specific section</span></a> of
+the user configuration.</p>
+<p>Source cache server lists declared in this section will only be used for
+elements belonging to the specified project, and will be used instead of
+source cache servers declared in the global caches.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># Configure a source cache server for pushing and pulling sources from project &quot;foo&quot;</span>
+<span class="c1">#</span>
+<span class="nt">projects</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">foo</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">source-caches</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">override-project-caches</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">      </span><span class="nt">servers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://sources.com/sources:11001</span>
+<span class="w">        </span><span class="nt">push</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">auth</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">server-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server.crt</span>
+<span class="w">          </span><span class="nt">client-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client.crt</span>
+<span class="w">          </span><span class="nt">client-key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client.key</span>
+</pre></div>
+</div>
+</section>
+<section id="id13">
+<h4>Project recommendations<a class="headerlink" href="#id13" title="Link to this heading"></a></h4>
+<p>Projects can <a class="reference internal" href="format_project.html#project-source-cache"><span class="std std-ref">recommend source cache servers</span></a> in their
+individual project configuration files.</p>
+<p>These will only be used for elements belonging to their respective projects, and
+are the lowest priority configuration.</p>
+</section>
+</section>
+<section id="remote-execution">
+<span id="user-config-remote-execution"></span><h3>Remote execution<a class="headerlink" href="#remote-execution" title="Link to this heading"></a></h3>
+<p>BuildStream supports building remotely using the
+<a class="reference external" href="https://github.com/bazelbuild/remote-apis">Google Remote Execution API (REAPI)</a>.
+There is also limited support to build locally while still using a remote action cache.</p>
+<p>You can configure the remote execution services globally in your user configuration
+using the <code class="docutils literal notranslate"><span class="pre">remote-execution</span></code> key, like so:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">remote-execution</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">execution-service</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://execution.fallback.example.com:50051</span>
+<span class="w">    </span><span class="nt">instance-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="w">  </span><span class="nt">storage-service</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://storage.fallback.example.com:11002</span>
+<span class="w">    </span><span class="nt">instance-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="w">    </span><span class="nt">auth</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">server-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/keys/server.crt</span>
+<span class="w">      </span><span class="nt">client-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/keys/client.crt</span>
+<span class="w">      </span><span class="nt">client-key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/keys/client.key</span>
+<span class="w">  </span><span class="nt">action-cache-service</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://cache.flalback.example.com:50052</span>
+<span class="w">    </span><span class="nt">instance-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+</pre></div>
+</div>
+<section id="id14">
+<h4>Attributes<a class="headerlink" href="#id14" title="Link to this heading"></a></h4>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">execution-service</span></code></p>
+<p>A <a class="reference internal" href="#user-config-remote-execution-service"><span class="std std-ref">service configuration</span></a> specifying
+how to connect with the main <em>execution service</em>, this service is the main controlling
+entity in a remote execution build cluster.</p>
+<p>Skip the configuration of this service to enable local builds with a remote action cache.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">storage-service</span></code></p>
+<p>A <a class="reference internal" href="#user-config-remote-execution-service"><span class="std std-ref">service configuration</span></a> specifying
+how to connect with the <em>Content Addressable Storage</em> service, this is where build
+input and output is stored on the remote execution build cluster.</p>
+<p>This service is compatible with the <em>storage</em> service offered by
+<a class="reference internal" href="#config-cache-servers"><span class="std std-ref">cache servers</span></a>.</p>
+<p>This is optional if a <code class="docutils literal notranslate"><span class="pre">storage-service</span></code> is configured in the
+<a class="reference internal" href="#config-local-cache"><span class="std std-ref">cache configuration</span></a>, in which case actual file
+contents of build outputs will only be downloaded as needed, e.g. on
+<code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">artifact</span> <span class="pre">checkout</span></code>.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">action-cache-service</span></code></p>
+<p>A <a class="reference internal" href="#user-config-remote-execution-service"><span class="std std-ref">service configuration</span></a> specifying
+how to connect with the <em>action cache</em>, this service stores information about
+activities which clients request be performed by workers on the remote execution
+build cluster, and results of completed operations.</p>
+<p>This service is optional in a remote execution build cluster, if your remote
+execution service provides an action cache, then you should configure it here.</p>
+<p>For local builds with a remote action cache, set <code class="docutils literal notranslate"><span class="pre">push</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code> to
+upload action results to the server. By default, action results are downloaded
+from the server but not uploaded.</p>
+<p>If remote execution is not enabled, the remote action cache is currently only
+used for REAPI clients in the sandbox, not for BuildStream element build jobs.
+For more information about REAPI clients in the sandbox, see <code class="docutils literal notranslate"><span class="pre">remote-apis-socket</span></code>
+in the <a class="reference internal" href="format_declaring.html#format-sandbox"><span class="std std-ref">sandbox configuration</span></a>.</p>
+</li>
+</ul>
+</section>
+<section id="remote-execution-service-configuration">
+<span id="user-config-remote-execution-service"></span><h4>Remote execution service configuration<a class="headerlink" href="#remote-execution-service-configuration" title="Link to this heading"></a></h4>
+<p>Each of the distinct services are described by the same configuration block,
+which looks like this:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://storage.fallback.example.com:11002</span>
+<span class="nt">instance-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="nt">auth</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">server-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/keys/server.crt</span>
+<span class="w">  </span><span class="nt">client-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/keys/client.crt</span>
+<span class="w">  </span><span class="nt">client-key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/keys/client.key</span>
+<span class="nt">connection-config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">keepalive-time</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
+<span class="w">  </span><span class="nt">retry-limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">  </span><span class="nt">retry-delay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">  </span><span class="nt">request-timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+</pre></div>
+</div>
+<p><strong>Attributes:</strong></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">url</span></code></p>
+<p>Indicates the <code class="docutils literal notranslate"><span class="pre">http</span></code> or <code class="docutils literal notranslate"><span class="pre">https</span></code> url and optionally the port number of
+where the service is located.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">instance-name</span></code></p>
+<p>The instance name is optional. Instance names separate different shards on
+the same endpoint (<code class="docutils literal notranslate"><span class="pre">url</span></code>). The instance name should be given to you by the
+service provider of each service.</p>
+<p>Not all service providers support instance names.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">auth</span></code></p>
+<p>The <a class="reference internal" href="#config-remote-auth"><span class="std std-ref">authentication attributes</span></a> to connect to
+this server.</p>
+</li>
+</ul>
+</section>
+</section>
+</section>
+<section id="project-specific-values">
+<span id="user-config-project-overrides"></span><h2>Project specific values<a class="headerlink" href="#project-specific-values" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">projects</span></code> key can be used to specify project specific configurations,
+the supported configurations on a project wide basis are listed here.</p>
+<section id="strict-build-plan">
+<span id="user-config-strict-mode"></span><h3>Strict build plan<a class="headerlink" href="#strict-build-plan" title="Link to this heading"></a></h3>
+<p>The strict build plan option decides whether you want elements
+to rebuild when their dependencies have changed. This is enabled
+by default, but recommended to turn off in developer scenarios where
+you might want to build a large system and test it quickly after
+modifying some low level component.</p>
+<p><strong>Example</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">projects</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">project-name</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">strict</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is always possible to override this at invocation time using
+the <code class="docutils literal notranslate"><span class="pre">--strict</span></code> and <code class="docutils literal notranslate"><span class="pre">--no-strict</span></code> command line options.</p>
+</div>
+</section>
+<section id="mirrors">
+<span id="config-mirrors"></span><h3>Mirrors<a class="headerlink" href="#mirrors" title="Link to this heading"></a></h3>
+<p>Project defined <a class="reference internal" href="format_project.html#project-essentials-mirrors"><span class="std std-ref">mirrors</span></a>, can be overridden
+with user configuration. This is helpful when you need to mirror all of the source
+code used by subprojects and ensure that your project can be built in perpetuity.</p>
+<p><strong>Example</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">projects</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">project-name</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">mirrors</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">middle-earth</span>
+<span class="w">      </span><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">foo</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://www.middle-earth.com/foo/1</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://www.middle-earth.com/foo/2</span>
+<span class="w">        </span><span class="nt">bar</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://www.middle-earth.com/bar/1</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://www.middle-earth.com/bar/2</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oz</span>
+<span class="w">      </span><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">foo</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://www.oz.com/foo</span>
+<span class="w">        </span><span class="nt">bar</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://www.oz.com/bar</span>
+</pre></div>
+</div>
+</section>
+<section id="default-mirror">
+<span id="config-default-mirror"></span><h3>Default mirror<a class="headerlink" href="#default-mirror" title="Link to this heading"></a></h3>
+<p>When using <a class="reference internal" href="format_project.html#project-essentials-mirrors"><span class="std std-ref">mirrors</span></a>, one can specify which
+mirror should be used first.</p>
+<p><strong>Example</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">projects</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">project-name</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default-mirror</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oz</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is possible to override this at invocation time using the
+<code class="docutils literal notranslate"><span class="pre">--default-mirror</span></code> command-line option.</p>
+</div>
+</section>
+<section id="project-options">
+<h3>Project options<a class="headerlink" href="#project-options" title="Link to this heading"></a></h3>
+<p>One can specify values to use for <a class="reference internal" href="format_project.html#project-options"><span class="std std-ref">project options</span></a> for the projects
+you use here, this avoids needing to specify the options on the command line every time.</p>
+<p><strong>Example</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">projects</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Configure the debug flag offered by `project-name`</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">project-name</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">debug-build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+</section>
+<section id="id15">
+<h3>Source cache servers<a class="headerlink" href="#id15" title="Link to this heading"></a></h3>
+<p>As already described in the section concerning configuration of
+<a class="reference internal" href="#config-source-caches"><span class="std std-ref">source cache servers</span></a>, these can be specified on a per project basis.</p>
+</section>
+<section id="id16">
+<h3>Artifact cache servers<a class="headerlink" href="#id16" title="Link to this heading"></a></h3>
+<p>As already described in the section concerning configuration of
+<a class="reference internal" href="#config-artifact-caches"><span class="std std-ref">artifact cache servers</span></a>, these can be specified on a per project basis.</p>
+</section>
+<section id="remote-execution-configuration">
+<h3>Remote execution configuration<a class="headerlink" href="#remote-execution-configuration" title="Link to this heading"></a></h3>
+<p>Following the same format as the toplevel <a class="reference internal" href="#user-config-remote-execution-service"><span class="std std-ref">remote execution configuration</span></a>,
+the global configuration can be overridden on a per project basis in this project override section.</p>
+<p><strong>Example</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">projects</span><span class="p">:</span>
+
+<span class="w">  </span><span class="nt">project-name</span><span class="p">:</span>
+
+<span class="w">    </span><span class="c1">#</span>
+<span class="w">    </span><span class="c1"># If `project-name` is built as the toplevel project in this BuildStream session,</span>
+<span class="w">    </span><span class="c1"># then use this remote execution configuration instead of any globally defined</span>
+<span class="w">    </span><span class="c1"># remote execution configuration.</span>
+<span class="w">    </span><span class="c1">#</span>
+<span class="w">    </span><span class="nt">remote-execution</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">execution-service</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://execution.example.com:50051</span>
+<span class="w">        </span><span class="nt">instance-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Only one remote execution service will be considered for any invocation of BuildStream.</p>
+<p>If you are building a project which has a junction into another subproject for which you have
+specified a project specific remote execution service for in your user configuration, then
+it will be ignored in the context of building that toplevel project.</p>
+</div>
+</section>
+</section>
+<section id="default-configuration">
+<span id="config-defaults"></span><h2>Default configuration<a class="headerlink" href="#default-configuration" title="Link to this heading"></a></h2>
+<p>The default BuildStream configuration is specified here for reference:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1">#  Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1">#  you may not use this file except in compliance with the License.</span>
+<span class="c1">#  You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1">#  Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1">#  distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1">#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1">#  See the License for the specific language governing permissions and</span>
+<span class="c1">#  limitations under the License.</span>
+<span class="c1">#</span>
+
+<span class="c1"># Default BuildStream user configuration.</span>
+
+<span class="c1">#</span>
+<span class="c1">#    Work Directories</span>
+<span class="c1">#</span>
+
+<span class="c1"># Location to store sources</span>
+<span class="nt">sourcedir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${XDG_CACHE_HOME}/buildstream/sources</span>
+
+<span class="c1"># Root location for other directories in the cache</span>
+<span class="nt">cachedir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${XDG_CACHE_HOME}/buildstream</span>
+
+<span class="c1"># Location to store build logs</span>
+<span class="nt">logdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${XDG_CACHE_HOME}/buildstream/logs</span>
+
+<span class="c1"># Default root location for workspaces, blank for no default set.</span>
+<span class="nt">workspacedir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+
+<span class="c1">#</span>
+<span class="c1">#    Cache</span>
+<span class="c1">#</span>
+<span class="nt">cache</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Use as much space as possible</span>
+<span class="w">  </span><span class="nt">quota</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infinity</span>
+
+<span class="w">  </span><span class="c1"># Keep 5% of disk space available</span>
+<span class="w">  </span><span class="nt">reserved-disk-space</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5%</span>
+
+<span class="w">  </span><span class="c1"># Retain 80% of the cache on cleanup</span>
+<span class="w">  </span><span class="nt">low-watermark</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80%</span>
+
+<span class="w">  </span><span class="c1"># Whether to pull build trees when downloading element artifacts</span>
+<span class="w">  </span><span class="nt">pull-buildtrees</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+
+<span class="w">  </span><span class="c1"># Whether to cache build trees on artifact creation</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">cache-buildtrees</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auto</span>
+
+
+<span class="c1">#</span>
+<span class="c1">#    Scheduler</span>
+<span class="c1">#</span>
+<span class="nt">scheduler</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Maximum number of simultaneous downloading tasks.</span>
+<span class="w">  </span><span class="nt">fetchers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+
+<span class="w">  </span><span class="c1"># Maximum number of simultaneous build tasks.</span>
+<span class="w">  </span><span class="nt">builders</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+
+<span class="w">  </span><span class="c1"># Maximum number of simultaneous uploading tasks.</span>
+<span class="w">  </span><span class="nt">pushers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+
+<span class="w">  </span><span class="c1"># Maximum number of retries for network tasks.</span>
+<span class="w">  </span><span class="nt">network-retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+
+<span class="w">  </span><span class="c1"># Control what to do when a task fails, if not running in</span>
+<span class="w">  </span><span class="c1"># interactive mode</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">on-error</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quit</span>
+
+
+<span class="c1">#</span>
+<span class="c1"># Build related configuration</span>
+<span class="c1">#</span>
+<span class="nt">build</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Maximum number of jobs to run per build task.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">max-jobs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Try to build elements for which a failed build artifact is found</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">retry-failed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Control which dependencies to build</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">dependencies</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">run</span>
+
+
+<span class="c1">#</span>
+<span class="c1"># Source fetch related configuration</span>
+<span class="c1">#</span>
+<span class="nt">fetch</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Which URIs are allowed to be accessed</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">all</span>
+
+
+<span class="c1">#</span>
+<span class="c1"># Source track related configuration</span>
+<span class="c1">#</span>
+<span class="nt">track</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Which URIs are allowed to be accessed</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aliases</span>
+
+
+<span class="c1">#</span>
+<span class="c1">#    Logging</span>
+<span class="c1">#</span>
+<span class="nt">logging</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># The abbreviated cache key length to display in the UI</span>
+<span class="w">  </span><span class="nt">key-length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+
+<span class="w">  </span><span class="c1"># Whether to show extra detailed messages</span>
+<span class="w">  </span><span class="nt">verbose</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+
+<span class="w">  </span><span class="c1"># Maximum number of lines to print from the</span>
+<span class="w">  </span><span class="c1"># end of a failing build log</span>
+<span class="w">  </span><span class="nt">error-lines</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
+
+<span class="w">  </span><span class="c1"># Maximum number of lines to print in a detailed</span>
+<span class="w">  </span><span class="c1"># message on the console or in the master log (the full</span>
+<span class="w">  </span><span class="c1"># messages are always recorded in the individual build</span>
+<span class="w">  </span><span class="c1"># logs)</span>
+<span class="w">  </span><span class="nt">message-lines</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
+
+<span class="w">  </span><span class="c1"># Whether to enable debugging messages</span>
+<span class="w">  </span><span class="nt">debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+
+<span class="w">  </span><span class="c1"># Format string for printing the pipeline at startup, this</span>
+<span class="w">  </span><span class="c1"># also determines the default display format for `bst show`</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">element-format</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+
+<span class="w">    </span><span class="no">%{state: &gt;12} %{full-key} %{name} %{workspace-dirs}</span>
+
+<span class="w">  </span><span class="c1"># Format string for log messages.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">message-format</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+
+<span class="w">    </span><span class="no">[%{elapsed}][%{key}][%{element}] %{action} %{message}</span>
+
+<span class="w">  </span><span class="c1"># Limit bst console output update rate to 1Hz where applicable</span>
+<span class="w">  </span><span class="nt">throttle-ui-updates</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="junctions/junction-includes.html" class="btn btn-neutral float-left" title="3. Subproject includes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="using_commands.html" class="btn btn-neutral float-right" title="Commands" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,351 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contributing &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Coding guidelines" href="hacking/coding_guidelines.html" />
+    <link rel="prev" title="Porting the project format" href="porting_project.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#filing-issues">Filing issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fixing-bugs">Fixing bugs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-new-features">Adding new features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#submitting-patches">Submitting patches</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#branch-names">Branch names</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pull-requests">Pull requests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#organized-commits">Organized commits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#commit-messages">Commit messages</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#committer-access">Committer access</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#how-commit-access-is-granted">How commit access is granted</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#windows-ci">Windows CI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#further-information">Further information</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="hacking/coding_guidelines.html">Coding guidelines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hacking/using_the_testsuite.html">Using the test suite</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hacking/writing_documentation.html">Writing documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hacking/writing_plugins.html">Adding core plugins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hacking/measuring_performance.html">Measuring performance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hacking/making_releases.html">Making releases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hacking/grpc_protocols.html">Generating protocol buffers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hacking/managing_data_files.html">Managing data files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hacking/updating_python_deps.html">Updating BuildStream’s Python dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hacking/updating_python_deps.html#adding-support-for-a-new-python-release">Adding support for a new Python release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hacking/updating_python_deps.html#removing-support-for-a-python-release">Removing support for a Python release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hacking/updating_python_deps.html#abi-compatibility-for-binary-python-packages">ABI compatibility for binary Python packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hacking/ui.html">Contributing to the UI</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Contributing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/CONTRIBUTING.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="contributing">
+<h1>Contributing<a class="headerlink" href="#contributing" title="Link to this heading"></a></h1>
+<p>Some tips and guidelines for developers hacking on BuildStream</p>
+<section id="filing-issues">
+<span id="contributing-filing-issues"></span><h2>Filing issues<a class="headerlink" href="#filing-issues" title="Link to this heading"></a></h2>
+<p>If you are experiencing an issue with BuildStream, or would like to submit a patch
+to fix an issue, then you should first search the list of <a class="reference external" href="https://github.com/apache/buildstream/issues">open issues</a>
+to see if the issue is already filed, and <a class="reference external" href="https://github.com/apache/buildstream/issues/new">open an issue</a>
+if no issue already exists.</p>
+</section>
+<section id="fixing-bugs">
+<span id="contributing-fixing-bugs"></span><h2>Fixing bugs<a class="headerlink" href="#fixing-bugs" title="Link to this heading"></a></h2>
+<p>Before fixing a bug, it is preferred that an <a class="reference internal" href="#contributing-filing-issues"><span class="std std-ref">issue be filed</span></a>
+first in order to better document the defect, however this need not be followed to the
+letter for minor fixes.</p>
+<p>Patches which fix bugs should always come with a regression test.</p>
+</section>
+<section id="adding-new-features">
+<span id="contributing-adding-features"></span><h2>Adding new features<a class="headerlink" href="#adding-new-features" title="Link to this heading"></a></h2>
+<p>Feature additions should be proposed on the <a class="reference external" href="https://lists.apache.org/list.html?dev&#64;buildstream.apache.org">mailing list</a>
+before being considered for inclusion. To save time and avoid any frustration,
+we strongly recommend proposing your new feature in advance of commencing work.</p>
+<p>Once consensus has been reached on the mailing list, then the proposing
+party should <a class="reference internal" href="#contributing-filing-issues"><span class="std std-ref">file an issue</span></a> to track the
+work.</p>
+<p>New features must be well documented and tested in our test suite.</p>
+<p>It is expected that the individual submitting the work take ownership
+of their feature within BuildStream for a reasonable timeframe of at least
+one release cycle after their work has landed on the master branch. This is
+to say that the submitter is expected to address and fix any side effects,
+bugs or regressions which may have fell through the cracks in the review
+process, giving us a reasonable timeframe for identifying these.</p>
+</section>
+<section id="submitting-patches">
+<span id="contributing-submitting-patches"></span><h2>Submitting patches<a class="headerlink" href="#submitting-patches" title="Link to this heading"></a></h2>
+<p>Submitting patches works in the regular GitHub workflow of submitting
+pull requests.</p>
+<section id="branch-names">
+<h3>Branch names<a class="headerlink" href="#branch-names" title="Link to this heading"></a></h3>
+<p>If you are an apache member with access to the main repository, and are
+submitting a pull request for a branch within the main repository, then
+please be careful to use an identifiable branch name.</p>
+<p>Branch names for pull requests should be prefixed with the submitter’s
+name or nickname, followed by a forward slash, and then a descriptive
+name. e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">username</span><span class="o">/</span><span class="n">fix</span><span class="o">-</span><span class="n">that</span><span class="o">-</span><span class="n">bug</span>
+</pre></div>
+</div>
+<p>This allows us to more easily identify which branch does what and
+belongs to whom, especially so that we can effectively cleanup stale
+branches in the upstream repository over time.</p>
+</section>
+<section id="pull-requests">
+<h3>Pull requests<a class="headerlink" href="#pull-requests" title="Link to this heading"></a></h3>
+<p>Once you have created a local branch, you can push it to the upstream
+BuildStream repository using the command line:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">push</span> <span class="n">origin</span> <span class="n">username</span><span class="o">/</span><span class="n">fix</span><span class="o">-</span><span class="n">that</span><span class="o">-</span><span class="n">bug</span>
+</pre></div>
+</div>
+<p>GitHub will respond to this with a message and a link to allow you to create
+a new merge request. You can also <a class="reference external" href="https://github.com/apache/buildstream/compare">create a pull request using the GitHub UI</a>.</p>
+<p>You may open pull requests for the branches you create before you are ready
+to have them reviewed and considered for inclusion if you like. Until your merge
+request is ready for review, the pull request title must be prefixed with the
+<code class="docutils literal notranslate"><span class="pre">WIP:</span></code> identifier.</p>
+<p>Consider marking a pull request as WIP again if you are taking a while to
+address a review point. This signals that the next action is on you, and it
+won’t appear in a reviewer’s search for non-WIP merge requests to review.</p>
+</section>
+<section id="organized-commits">
+<h3>Organized commits<a class="headerlink" href="#organized-commits" title="Link to this heading"></a></h3>
+<p>Submitted branches must not contain a history of the work done in the
+feature branch. For example, if you had to change your approach, or
+have a later commit which fixes something in a previous commit on your
+branch, we do not want to include the history of how you came up with
+your patch in the upstream master branch.</p>
+<p>Please use git’s interactive rebase feature in order to compose a clean
+patch series suitable for submission upstream.</p>
+<p>Every commit in series should pass the test suite, this is very important
+for tracking down regressions and performing git bisections in the future.</p>
+<p>We prefer that documentation changes be submitted in separate commits from
+the code changes which they document, and newly added test cases are also
+preferred in separate commits.</p>
+<p>If a commit in your branch modifies behavior such that a test must also
+be changed to match the new behavior, then the tests should be updated
+with the same commit, so that every commit passes its own tests.</p>
+<p>These principles apply whenever a branch is non-WIP. So for example, don’t push
+‘fixup!’ commits when addressing review comments, instead amend the commits
+directly before pushing.</p>
+</section>
+<section id="commit-messages">
+<h3>Commit messages<a class="headerlink" href="#commit-messages" title="Link to this heading"></a></h3>
+<p>Commit messages must be formatted with a brief summary line, followed by
+an empty line and then a free form detailed description of the change.</p>
+<p>The summary line must start with what changed, followed by a colon and
+a very brief description of the change.</p>
+<p>If the commit fixes an issue, or is related to an issue; then the issue
+number must be referenced in the commit message.</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">element</span><span class="o">.</span><span class="n">py</span><span class="p">:</span> <span class="n">Added</span> <span class="n">the</span> <span class="n">frobnicator</span> <span class="n">so</span> <span class="n">that</span> <span class="n">foos</span> <span class="n">are</span> <span class="n">properly</span> <span class="n">frobbed</span><span class="o">.</span>
+
+<span class="n">The</span> <span class="n">new</span> <span class="n">frobnicator</span> <span class="n">frobnicates</span> <span class="n">foos</span> <span class="nb">all</span> <span class="n">the</span> <span class="n">way</span> <span class="n">throughout</span>
+<span class="n">the</span> <span class="n">element</span><span class="o">.</span> <span class="n">Elements</span> <span class="n">that</span> <span class="n">are</span> <span class="ow">not</span> <span class="n">properly</span> <span class="n">frobnicated</span> <span class="k">raise</span>
+<span class="n">an</span> <span class="n">error</span> <span class="n">to</span> <span class="n">inform</span> <span class="n">the</span> <span class="n">user</span> <span class="n">of</span> <span class="n">invalid</span> <span class="n">frobnication</span> <span class="n">rules</span><span class="o">.</span>
+
+<span class="n">Fixes</span> <span class="c1">#123</span>
+</pre></div>
+</div>
+<p>Note that the ‘why’ of a change is as important as the ‘what’.</p>
+<p>When reviewing this, folks can suggest better alternatives when they know the
+‘why’. Perhaps there are other ways to avoid an error when things are not
+frobnicated.</p>
+<p>When folks modify this code, there may be uncertainty around whether the foos
+should always be frobnicated. The comments, the commit message, and issue #123
+should shed some light on that.</p>
+<p>In the case that you have a commit which necessarily modifies multiple
+components, then the summary line should still mention generally what
+changed (if possible), followed by a colon and a brief summary.</p>
+<p>In this case the free form detailed description of the change should
+contain a bullet list describing what was changed in each component
+separately.</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">artifact</span> <span class="n">cache</span><span class="p">:</span> <span class="n">Fixed</span> <span class="n">automatic</span> <span class="n">expiry</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">local</span> <span class="n">cache</span>
+
+  <span class="n">o</span> <span class="n">_artifactcache</span><span class="o">/</span><span class="n">artifactcache</span><span class="o">.</span><span class="n">py</span><span class="p">:</span> <span class="n">Updated</span> <span class="n">the</span> <span class="n">API</span> <span class="n">contract</span>
+    <span class="n">of</span> <span class="n">ArtifactCache</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span> <span class="n">so</span> <span class="n">that</span> <span class="n">something</span> <span class="n">detailed</span> <span class="ow">is</span>
+    <span class="n">explained</span> <span class="n">here</span><span class="o">.</span>
+
+  <span class="n">o</span> <span class="n">_artifactcache</span><span class="o">/</span><span class="n">cascache</span><span class="o">.</span><span class="n">py</span><span class="p">:</span> <span class="n">Adhere</span> <span class="n">to</span> <span class="n">the</span> <span class="n">new</span> <span class="n">API</span> <span class="n">contract</span>
+    <span class="n">dictated</span> <span class="n">by</span> <span class="n">the</span> <span class="n">abstract</span> <span class="n">ArtifactCache</span> <span class="n">class</span><span class="o">.</span>
+
+  <span class="n">o</span> <span class="n">tests</span><span class="o">/</span><span class="n">artifactcache</span><span class="o">/</span><span class="n">expiry</span><span class="o">.</span><span class="n">py</span><span class="p">:</span> <span class="n">Modified</span> <span class="n">test</span> <span class="n">expectations</span> <span class="n">to</span>
+    <span class="k">match</span> <span class="n">the</span> <span class="n">new</span> <span class="n">behavior</span><span class="o">.</span>
+
+<span class="n">This</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">part</span> <span class="n">of</span> <span class="c1">#123</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="committer-access">
+<h2>Committer access<a class="headerlink" href="#committer-access" title="Link to this heading"></a></h2>
+<p>Committers in the BuildStream project are those folks to whom the right to
+directly commit changes to our version controlled resources has been granted.</p>
+<p>While every contribution is valued regardless of its source, not every person
+who contributes code to the project will earn commit access.
+The <a class="reference external" href="https://github.com/apache/buildstream/blob/master/COMMITTERS.rst">COMMITTERS</a> file lists all committers.</p>
+<section id="how-commit-access-is-granted">
+<h3>How commit access is granted<a class="headerlink" href="#how-commit-access-is-granted" title="Link to this heading"></a></h3>
+<p>After someone has successfully contributed a few non-trivial patches, some full
+committer, usually whoever has reviewed and applied the most patches from that
+contributor, proposes them for commit access. This proposal is sent only to the
+other full committers - the ensuing discussion is private, so that everyone can
+feel comfortable speaking their minds. Assuming there are no objections, the
+contributor is granted commit access. The decision is made by consensus; there
+are no formal rules governing the procedure, though generally if someone strongly
+objects the access is not offered, or is offered on a provisional basis.</p>
+<p>This of course relies on contributors being responsive and showing willingness
+to address any problems that may arise after landing patches. However, the primary
+criterion for commit access is good judgement.</p>
+<p>You do not have to be a technical wizard or demonstrate deep knowledge of the
+entire codebase to become a committer. You just need to know what you don’t
+know. Non-code contributions are just as valuable in the path to commit access.
+If your patches adhere to the guidelines in this file, adhere to all the usual
+unquantifiable rules of coding (code should be readable, robust, maintainable, etc.),
+and respect the Hippocratic Principle of “first, do no harm”, then you will probably
+get commit access pretty quickly. The size, complexity, and quantity of your patches
+do not matter as much as the degree of care you show in avoiding bugs and minimizing
+unnecessary impact on the rest of the code. Many full committers are people who have
+not made major code contributions, but rather lots of small, clean fixes, each of
+which was an unambiguous improvement to the code. (Of course, this does not mean the
+project needs a bunch of very trivial patches whose only purpose is to gain commit
+access; knowing what’s worth a patch post and what’s not is part of showing good
+judgement.)</p>
+</section>
+</section>
+<section id="windows-ci">
+<h2>Windows CI<a class="headerlink" href="#windows-ci" title="Link to this heading"></a></h2>
+<p>The infrastructure for running the CI against Windows is different from the usual
+runners, due to a combination of licensing technicalities and differing
+containerisation support.</p>
+<p>The scripts used to generate a CI runner can be found at
+<cite>https://gitlab.com/BuildStream/windows-startup-script</cite>.
+The <cite>wsl</cite> branch can be used to generate a runner for WSL, and the <cite>win32</cite> branch
+can be used to generate a native-windows runner.</p>
+</section>
+<section id="further-information">
+<h2>Further information<a class="headerlink" href="#further-information" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hacking/coding_guidelines.html">Coding guidelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking/using_the_testsuite.html">Using the test suite</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking/writing_documentation.html">Writing documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking/writing_plugins.html">Adding core plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking/measuring_performance.html">Measuring performance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking/making_releases.html">Making releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking/grpc_protocols.html">Generating protocol buffers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking/managing_data_files.html">Managing data files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking/updating_python_deps.html">Updating BuildStream’s Python dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking/updating_python_deps.html#adding-support-for-a-new-python-release">Adding support for a new Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking/updating_python_deps.html#removing-support-for-a-python-release">Removing support for a Python release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking/updating_python_deps.html#abi-compatibility-for-binary-python-packages">ABI compatibility for binary Python packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hacking/ui.html">Contributing to the UI</a></li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="porting_project.html" class="btn btn-neutral float-left" title="Porting the project format" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="hacking/coding_guidelines.html" class="btn btn-neutral float-right" title="Coding guidelines" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

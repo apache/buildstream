@@ -1,0 +1,519 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exceptions - API for Error Handling &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Utilities" href="buildstream.utils.html" />
+    <link rel="prev" title="Directory - Interfacing with files" href="buildstream.storage.directory.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_format.html">Project format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="core_framework.html">Plugin API reference</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html">Foundation types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum"><code class="docutils literal notranslate"><span class="pre">FastEnum</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings"><code class="docutils literal notranslate"><span class="pre">CoreWarnings</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.OverlapAction"><code class="docutils literal notranslate"><span class="pre">OverlapAction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef"><code class="docutils literal notranslate"><span class="pre">SourceRef</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html">Node - Parsed YAML configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode"><code class="docutils literal notranslate"><span class="pre">MappingNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.Node"><code class="docutils literal notranslate"><span class="pre">Node</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.ProvenanceInformation"><code class="docutils literal notranslate"><span class="pre">ProvenanceInformation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode"><code class="docutils literal notranslate"><span class="pre">ScalarNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode"><code class="docutils literal notranslate"><span class="pre">SequenceNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html">Plugin - Base plugin class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin"><code class="docutils literal notranslate"><span class="pre">Plugin</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html">Source - Base source class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#sourcefetcher-object-for-fetching-individual-urls">SourceFetcher - Object for fetching individual URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceError"><code class="docutils literal notranslate"><span class="pre">SourceError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.AliasSubstitution"><code class="docutils literal notranslate"><span class="pre">AliasSubstitution</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType"><code class="docutils literal notranslate"><span class="pre">SourceVersionType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo"><code class="docutils literal notranslate"><span class="pre">SourceInfo</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceFetcher"><code class="docutils literal notranslate"><span class="pre">SourceFetcher</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source"><code class="docutils literal notranslate"><span class="pre">Source</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html">SourceMirror - Base source mirror class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirrorError"><code class="docutils literal notranslate"><span class="pre">SourceMirrorError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror"><code class="docutils literal notranslate"><span class="pre">SourceMirror</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html">DownloadableFileSource - Abstract class for sources downloaded from a URI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html">Element - Base element class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError"><code class="docutils literal notranslate"><span class="pre">ElementError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.DependencyConfiguration"><code class="docutils literal notranslate"><span class="pre">DependencyConfiguration</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element"><code class="docutils literal notranslate"><span class="pre">Element</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html">BuildElement - Abstract class for build elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement"><code class="docutils literal notranslate"><span class="pre">BuildElement</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html">ScriptElement - Abstract class for scripting elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement"><code class="docutils literal notranslate"><span class="pre">ScriptElement</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.setup"><code class="docutils literal notranslate"><span class="pre">setup()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html">Sandbox - The build sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.SandboxCommandError"><code class="docutils literal notranslate"><span class="pre">SandboxCommandError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox"><code class="docutils literal notranslate"><span class="pre">Sandbox</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html">Directory - Interfacing with files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.DirectoryError"><code class="docutils literal notranslate"><span class="pre">DirectoryError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileType"><code class="docutils literal notranslate"><span class="pre">FileType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileStat"><code class="docutils literal notranslate"><span class="pre">FileStat</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory"><code class="docutils literal notranslate"><span class="pre">Directory</span></code></a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Exceptions - API for Error Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain"><code class="docutils literal notranslate"><span class="pre">ErrorDomain</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.PLUGIN"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.PLUGIN</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.LOAD"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.LOAD</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.IMPL"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.IMPL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.PLATFORM"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.PLATFORM</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.SANDBOX"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.SANDBOX</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.ARTIFACT"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.ARTIFACT</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.PIPELINE"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.PIPELINE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.UTIL"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.UTIL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.SOURCE"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.SOURCE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.ELEMENT"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.ELEMENT</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.APP"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.APP</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.STREAM"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.STREAM</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.VIRTUAL_FS"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.VIRTUAL_FS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.CAS"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.CAS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.PROG_NOT_FOUND"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.PROG_NOT_FOUND</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.REMOTE"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.REMOTE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.ErrorDomain.PROFILE"><code class="docutils literal notranslate"><span class="pre">ErrorDomain.PROFILE</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.MISSING_FILE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.MISSING_FILE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.INVALID_YAML"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.INVALID_YAML</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.INVALID_DATA"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.INVALID_DATA</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.ILLEGAL_COMPOSITE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.ILLEGAL_COMPOSITE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.CIRCULAR_DEPENDENCY"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.CIRCULAR_DEPENDENCY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.UNRESOLVED_VARIABLE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.UNRESOLVED_VARIABLE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.UNSUPPORTED_PROJECT"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.UNSUPPORTED_PROJECT</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.UNSUPPORTED_PLUGIN"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.UNSUPPORTED_PLUGIN</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.EXPRESSION_FAILED"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.EXPRESSION_FAILED</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.USER_ASSERTION"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.USER_ASSERTION</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.TRAILING_LIST_DIRECTIVE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.TRAILING_LIST_DIRECTIVE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.CONFLICTING_JUNCTION"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.CONFLICTING_JUNCTION</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.INVALID_JUNCTION"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.INVALID_JUNCTION</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.SUBPROJECT_INCONSISTENT"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.SUBPROJECT_INCONSISTENT</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.INVALID_SYMBOL_NAME"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.INVALID_SYMBOL_NAME</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.MISSING_PROJECT_CONF"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.MISSING_PROJECT_CONF</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.LOADING_DIRECTORY"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.LOADING_DIRECTORY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.PROJ_PATH_INVALID"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.PROJ_PATH_INVALID</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.PROJ_PATH_INVALID_KIND"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.PROJ_PATH_INVALID_KIND</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.RECURSIVE_INCLUDE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.RECURSIVE_INCLUDE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.PROTECTED_VARIABLE_REDEFINED"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.PROTECTED_VARIABLE_REDEFINED</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.INVALID_DEPENDENCY_CONFIG"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.INVALID_DEPENDENCY_CONFIG</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.LINK_FORBIDDEN_DEPENDENCIES"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.LINK_FORBIDDEN_DEPENDENCIES</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.CIRCULAR_REFERENCE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.CIRCULAR_REFERENCE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.BAD_ELEMENT_SUFFIX"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.BAD_ELEMENT_SUFFIX</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.BAD_CHARACTERS_IN_NAME"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.BAD_CHARACTERS_IN_NAME</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.exceptions.LoadErrorReason.UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason.UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html">Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.UtilError"><code class="docutils literal notranslate"><span class="pre">UtilError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.ProgramNotFoundError"><code class="docutils literal notranslate"><span class="pre">ProgramNotFoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.DirectoryExistsError"><code class="docutils literal notranslate"><span class="pre">DirectoryExistsError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult"><code class="docutils literal notranslate"><span class="pre">FileListResult</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.list_relative_paths"><code class="docutils literal notranslate"><span class="pre">list_relative_paths()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.glob"><code class="docutils literal notranslate"><span class="pre">glob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.sha256sum"><code class="docutils literal notranslate"><span class="pre">sha256sum()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_copy"><code class="docutils literal notranslate"><span class="pre">safe_copy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_link"><code class="docutils literal notranslate"><span class="pre">safe_link()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_remove"><code class="docutils literal notranslate"><span class="pre">safe_remove()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.copy_files"><code class="docutils literal notranslate"><span class="pre">copy_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.link_files"><code class="docutils literal notranslate"><span class="pre">link_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_host_tool"><code class="docutils literal notranslate"><span class="pre">get_host_tool()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_bst_version"><code class="docutils literal notranslate"><span class="pre">get_bst_version()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.move_atomic"><code class="docutils literal notranslate"><span class="pre">move_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.save_file_atomic"><code class="docutils literal notranslate"><span class="pre">save_file_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_umask"><code class="docutils literal notranslate"><span class="pre">get_umask()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.guess_version"><code class="docutils literal notranslate"><span class="pre">guess_version()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="core_framework.html">Plugin API reference</a></li>
+      <li class="breadcrumb-item active">Exceptions - API for Error Handling</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/buildstream.exceptions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="exceptions-api-for-error-handling">
+<span id="module-buildstream.exceptions"></span><h1>Exceptions - API for Error Handling<a class="headerlink" href="#exceptions-api-for-error-handling" title="Link to this heading"></a></h1>
+<p>This module contains some Enums used in Error Handling which are useful in
+testing external plugins.</p>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ErrorDomain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.exceptions.ErrorDomain" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>Describes what the error is related to.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.PLUGIN">
+<span class="sig-name descname"><span class="pre">PLUGIN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.PLUGIN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.LOAD">
+<span class="sig-name descname"><span class="pre">LOAD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.LOAD" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.IMPL">
+<span class="sig-name descname"><span class="pre">IMPL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.IMPL" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.PLATFORM">
+<span class="sig-name descname"><span class="pre">PLATFORM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.PLATFORM" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.SANDBOX">
+<span class="sig-name descname"><span class="pre">SANDBOX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.SANDBOX" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.ARTIFACT">
+<span class="sig-name descname"><span class="pre">ARTIFACT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.ARTIFACT" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.PIPELINE">
+<span class="sig-name descname"><span class="pre">PIPELINE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.PIPELINE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.UTIL">
+<span class="sig-name descname"><span class="pre">UTIL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.UTIL" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.SOURCE">
+<span class="sig-name descname"><span class="pre">SOURCE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">9</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.SOURCE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.ELEMENT">
+<span class="sig-name descname"><span class="pre">ELEMENT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.ELEMENT" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.APP">
+<span class="sig-name descname"><span class="pre">APP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">11</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.APP" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.STREAM">
+<span class="sig-name descname"><span class="pre">STREAM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.STREAM" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.VIRTUAL_FS">
+<span class="sig-name descname"><span class="pre">VIRTUAL_FS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">13</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.VIRTUAL_FS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.CAS">
+<span class="sig-name descname"><span class="pre">CAS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">14</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.CAS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.PROG_NOT_FOUND">
+<span class="sig-name descname"><span class="pre">PROG_NOT_FOUND</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">15</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.PROG_NOT_FOUND" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.REMOTE">
+<span class="sig-name descname"><span class="pre">REMOTE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">16</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.REMOTE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.ErrorDomain.PROFILE">
+<span class="sig-name descname"><span class="pre">PROFILE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">17</span></em><a class="headerlink" href="#buildstream.exceptions.ErrorDomain.PROFILE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">LoadErrorReason</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>Describes the reason why a <code class="xref py py-class docutils literal notranslate"><span class="pre">LoadError</span></code> was raised.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.MISSING_FILE">
+<span class="sig-name descname"><span class="pre">MISSING_FILE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.MISSING_FILE" title="Link to this definition"></a></dt>
+<dd><p>A file was not found.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.INVALID_YAML">
+<span class="sig-name descname"><span class="pre">INVALID_YAML</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.INVALID_YAML" title="Link to this definition"></a></dt>
+<dd><p>The parsed data was not valid YAML.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.INVALID_DATA">
+<span class="sig-name descname"><span class="pre">INVALID_DATA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.INVALID_DATA" title="Link to this definition"></a></dt>
+<dd><p>Data was malformed, a value was not of the expected type, etc</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.ILLEGAL_COMPOSITE">
+<span class="sig-name descname"><span class="pre">ILLEGAL_COMPOSITE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.ILLEGAL_COMPOSITE" title="Link to this definition"></a></dt>
+<dd><p>An error occurred during YAML dictionary composition.</p>
+<p>This can happen by overriding a value with a new differently typed
+value, or by overwriting some named value when that was not allowed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.CIRCULAR_DEPENDENCY">
+<span class="sig-name descname"><span class="pre">CIRCULAR_DEPENDENCY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.CIRCULAR_DEPENDENCY" title="Link to this definition"></a></dt>
+<dd><p>A circular dependency chain was detected</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.UNRESOLVED_VARIABLE">
+<span class="sig-name descname"><span class="pre">UNRESOLVED_VARIABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.UNRESOLVED_VARIABLE" title="Link to this definition"></a></dt>
+<dd><p>A variable could not be resolved. This can happen if your project
+has cyclic dependencies in variable declarations, or, when substituting
+a string which refers to an undefined variable.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.UNSUPPORTED_PROJECT">
+<span class="sig-name descname"><span class="pre">UNSUPPORTED_PROJECT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.UNSUPPORTED_PROJECT" title="Link to this definition"></a></dt>
+<dd><p>The project requires an incompatible BuildStream version</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.UNSUPPORTED_PLUGIN">
+<span class="sig-name descname"><span class="pre">UNSUPPORTED_PLUGIN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.UNSUPPORTED_PLUGIN" title="Link to this definition"></a></dt>
+<dd><p>Project requires a newer version of a plugin than the one which was
+loaded</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.EXPRESSION_FAILED">
+<span class="sig-name descname"><span class="pre">EXPRESSION_FAILED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">9</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.EXPRESSION_FAILED" title="Link to this definition"></a></dt>
+<dd><p>A conditional expression failed to resolve</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.USER_ASSERTION">
+<span class="sig-name descname"><span class="pre">USER_ASSERTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.USER_ASSERTION" title="Link to this definition"></a></dt>
+<dd><p>An assertion was intentionally encoded into project YAML</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.TRAILING_LIST_DIRECTIVE">
+<span class="sig-name descname"><span class="pre">TRAILING_LIST_DIRECTIVE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">11</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.TRAILING_LIST_DIRECTIVE" title="Link to this definition"></a></dt>
+<dd><p>A list composition directive did not apply to any underlying list</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.CONFLICTING_JUNCTION">
+<span class="sig-name descname"><span class="pre">CONFLICTING_JUNCTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.CONFLICTING_JUNCTION" title="Link to this definition"></a></dt>
+<dd><p>Conflicting junctions in subprojects</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.INVALID_JUNCTION">
+<span class="sig-name descname"><span class="pre">INVALID_JUNCTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">13</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.INVALID_JUNCTION" title="Link to this definition"></a></dt>
+<dd><p>Failure to load a project from a specified junction</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.SUBPROJECT_INCONSISTENT">
+<span class="sig-name descname"><span class="pre">SUBPROJECT_INCONSISTENT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">15</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.SUBPROJECT_INCONSISTENT" title="Link to this definition"></a></dt>
+<dd><p>Subproject has no ref</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.INVALID_SYMBOL_NAME">
+<span class="sig-name descname"><span class="pre">INVALID_SYMBOL_NAME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">16</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.INVALID_SYMBOL_NAME" title="Link to this definition"></a></dt>
+<dd><p>An invalid symbol name was encountered</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.MISSING_PROJECT_CONF">
+<span class="sig-name descname"><span class="pre">MISSING_PROJECT_CONF</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">17</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.MISSING_PROJECT_CONF" title="Link to this definition"></a></dt>
+<dd><p>A project.conf file was missing</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.LOADING_DIRECTORY">
+<span class="sig-name descname"><span class="pre">LOADING_DIRECTORY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">18</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.LOADING_DIRECTORY" title="Link to this definition"></a></dt>
+<dd><p>Try to load a directory not a yaml file</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.PROJ_PATH_INVALID">
+<span class="sig-name descname"><span class="pre">PROJ_PATH_INVALID</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">19</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.PROJ_PATH_INVALID" title="Link to this definition"></a></dt>
+<dd><p>A project path leads outside of the project directory</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.PROJ_PATH_INVALID_KIND">
+<span class="sig-name descname"><span class="pre">PROJ_PATH_INVALID_KIND</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">20</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.PROJ_PATH_INVALID_KIND" title="Link to this definition"></a></dt>
+<dd><p>A project path points to a file of the not right kind (e.g. a
+socket)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.RECURSIVE_INCLUDE">
+<span class="sig-name descname"><span class="pre">RECURSIVE_INCLUDE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">21</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.RECURSIVE_INCLUDE" title="Link to this definition"></a></dt>
+<dd><p>A recursive include has been encountered</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE">
+<span class="sig-name descname"><span class="pre">CIRCULAR_REFERENCE_VARIABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">22</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE" title="Link to this definition"></a></dt>
+<dd><p>A circular variable reference was detected</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.PROTECTED_VARIABLE_REDEFINED">
+<span class="sig-name descname"><span class="pre">PROTECTED_VARIABLE_REDEFINED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">23</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.PROTECTED_VARIABLE_REDEFINED" title="Link to this definition"></a></dt>
+<dd><p>An attempt was made to set the value of a protected variable</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.INVALID_DEPENDENCY_CONFIG">
+<span class="sig-name descname"><span class="pre">INVALID_DEPENDENCY_CONFIG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">24</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.INVALID_DEPENDENCY_CONFIG" title="Link to this definition"></a></dt>
+<dd><p>An attempt was made to specify dependency configuration on an element
+which does not support custom dependency configuration</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.LINK_FORBIDDEN_DEPENDENCIES">
+<span class="sig-name descname"><span class="pre">LINK_FORBIDDEN_DEPENDENCIES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">25</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.LINK_FORBIDDEN_DEPENDENCIES" title="Link to this definition"></a></dt>
+<dd><p>A link element declared dependencies</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.CIRCULAR_REFERENCE">
+<span class="sig-name descname"><span class="pre">CIRCULAR_REFERENCE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">26</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.CIRCULAR_REFERENCE" title="Link to this definition"></a></dt>
+<dd><p>A circular element reference was detected</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.BAD_ELEMENT_SUFFIX">
+<span class="sig-name descname"><span class="pre">BAD_ELEMENT_SUFFIX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">27</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.BAD_ELEMENT_SUFFIX" title="Link to this definition"></a></dt>
+<dd><p>This warning will be produced when an element whose name does not end in .bst
+is referenced either on the command line or by another element</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.BAD_CHARACTERS_IN_NAME">
+<span class="sig-name descname"><span class="pre">BAD_CHARACTERS_IN_NAME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">28</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.BAD_CHARACTERS_IN_NAME" title="Link to this definition"></a></dt>
+<dd><p>This warning will be produced when a filename for a target contains invalid
+characters in its name.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.exceptions.LoadErrorReason.UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE">
+<span class="sig-name descname"><span class="pre">UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">29</span></em><a class="headerlink" href="#buildstream.exceptions.LoadErrorReason.UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE" title="Link to this definition"></a></dt>
+<dd><p>Thee source provenance attribute specified was not defined in the project config</p>
+</dd></dl>
+
+</dd></dl>
+
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="buildstream.storage.directory.html" class="btn btn-neutral float-left" title="Directory - Interfacing with files" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="buildstream.utils.html" class="btn btn-neutral float-right" title="Utilities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

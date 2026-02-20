@@ -1,0 +1,405 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>junction - Integrate subprojects &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="filter - Extract a subset of files from another element" href="filter.html" />
+    <link rel="prev" title="link - Link elements" href="link.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core_format.html">Project format</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../core_plugins.html">Plugin specific documentation</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../core_plugins.html#elements">Elements</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="stack.html">stack - Symbolic Element for dependency grouping</a></li>
+<li class="toctree-l4"><a class="reference internal" href="import.html">import - Import sources directly</a></li>
+<li class="toctree-l4"><a class="reference internal" href="compose.html">compose - Compose the output of multiple elements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="script.html">script - Run scripts to create output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="link.html">link - Link elements</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">junction - Integrate subprojects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="filter.html">filter - Extract a subset of files from another element</a></li>
+<li class="toctree-l4"><a class="reference internal" href="manual.html">manual - Manual build element</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../core_plugins.html#sources">Sources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core_plugins.html#external-plugins">External plugins</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core_framework.html">Plugin API reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="../core_plugins.html">Plugin specific documentation</a></li>
+      <li class="breadcrumb-item active">junction - Integrate subprojects</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/elements/junction.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="junction-integrate-subprojects">
+<span id="module-elements.junction"></span><h1>junction - Integrate subprojects<a class="headerlink" href="#junction-integrate-subprojects" title="Link to this heading"></a></h1>
+<p>This element acts as a window into another BuildStream project. It allows integration
+of multiple projects into a single pipeline.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">junction</span>
+
+<span class="c1"># Specify the BuildStream project source</span>
+<span class="nt">sources</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git</span>
+<span class="w">  </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">upstream:projectname.git</span>
+<span class="w">  </span><span class="nt">track</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">master</span>
+<span class="w">  </span><span class="nt">ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">d0b38561afb8122a3fc6bafc5a733ec502fcaed6</span>
+
+<span class="c1"># Specify the junction configuration</span>
+<span class="nt">config</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Override project options</span>
+<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">machine_arch</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{machine_arch}&quot;</span>
+<span class="w">    </span><span class="nt">debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+
+<span class="w">  </span><span class="c1"># Optionally look in a subpath of the source repository for the project</span>
+<span class="w">  </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">projects/hello</span>
+
+<span class="w">  </span><span class="c1"># Optionally override elements in subprojects, including junctions.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">overrides</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">subproject-junction.bst</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local-junction.bst</span>
+
+<span class="w">  </span><span class="c1"># Optionally override aliases in subprojects, to allow using mirrors</span>
+<span class="w">  </span><span class="c1"># defined in the parent project.</span>
+<span class="w">  </span><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">subproject-alias</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local-alias</span>
+
+<span class="w">  </span><span class="c1"># A default mapping can be set (defaults to none)</span>
+<span class="w">  </span><span class="nt">map-aliases</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">identity</span>
+</pre></div>
+</div>
+<p>With a junction element in place, local elements can depend on elements in
+the other BuildStream project using <a class="reference internal" href="../format_declaring.html#format-element-names"><span class="std std-ref">element paths</span></a>.
+For example, if you have a <code class="docutils literal notranslate"><span class="pre">toolchain.bst</span></code> junction element referring to
+a project which contains a <code class="docutils literal notranslate"><span class="pre">gcc.bst</span></code> element, you can express a build
+dependency to the compiler like this:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">build-depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">junction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">toolchain.bst:gcc.bst</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p><strong>Limitations</strong></p>
+<p>Junction elements are only connectors which bring multiple projects together,
+and as such they are not in the element dependency graph. This means that it is
+illegal to depend on a junction, and it is also illegal for a junction to have
+dependencies.</p>
+<p>While junctions are elements, a limited set of element operations are
+supported. Junction elements can be tracked and fetched like other
+elements but they do not produce any artifacts, which means that they
+cannot be built or staged.</p>
+<p>Note that when running <a class="reference internal" href="../using_commands.html#invoking-source-track"><span class="std std-ref">bst source track</span></a>
+on your project, elements found in subprojects are not tracked by default.
+You may specify <code class="docutils literal notranslate"><span class="pre">--cross-junctions</span></code> to the
+<a class="reference internal" href="../using_commands.html#invoking-source-track"><span class="std std-ref">bst source track</span></a> command to explicitly track
+elements across junction boundaries.</p>
+</div>
+</section>
+<section id="sources">
+<h2>Sources<a class="headerlink" href="#sources" title="Link to this heading"></a></h2>
+<p>The sources of a junction element define how to obtain the BuildStream project
+that the junction connects to.</p>
+<p>Most commands, such as <a class="reference internal" href="../using_commands.html#invoking-build"><span class="std std-ref">bst build</span></a>, will automatically
+try to fetch the junction elements required to access any subproject elements which
+are specified as dependencies of the targets provided.</p>
+<p>Some commands, such as <a class="reference internal" href="../using_commands.html#invoking-show"><span class="std std-ref">bst show</span></a>, do not do this, and in
+such cases they can be fetched explicitly using
+<a class="reference internal" href="../using_commands.html#invoking-source-fetch"><span class="std std-ref">bst source fetch</span></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bst</span> <span class="n">source</span> <span class="n">fetch</span> <span class="n">junction</span><span class="o">.</span><span class="n">bst</span>
+</pre></div>
+</div>
+</section>
+<section id="options">
+<h2>Options<a class="headerlink" href="#options" title="Link to this heading"></a></h2>
+<p>Junction elements can configure the <a class="reference internal" href="../format_project.html#project-options"><span class="std std-ref">project options</span></a>
+in the subproject, using the <code class="docutils literal notranslate"><span class="pre">options</span></code> configuration.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">junction</span>
+
+<span class="nn">...</span>
+
+<span class="nt">config</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Specify the options for this subproject</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">machine_arch</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{machine_arch}&quot;</span>
+<span class="w">    </span><span class="nt">debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+<p>Options are never implicitly propagated across junctions, however
+<a class="reference internal" href="../format_declaring.html#format-variables"><span class="std std-ref">variables</span></a> can be used to explicitly assign
+configuration in a subproject which matches the toplevel project’s
+configuration.</p>
+</section>
+<section id="overriding-elements">
+<h2>Overriding elements<a class="headerlink" href="#overriding-elements" title="Link to this heading"></a></h2>
+<p>It is possible to override elements in subprojects. This can be useful if for
+example, you need to work with a custom variant or fork of some software in the
+subproject. This is a better strategy than overlapping and overwriting shared
+libraries built by the subproject later on, as we can ensure that reverse dependencies
+in the subproject are built against the overridden element.</p>
+<p>Overridding elements allows you to build on top of an existing project
+and benefit from updates and releases for the vast majority of the upstream project,
+even when there are some parts of the upstream project which need to be customized
+for your own applications.</p>
+<p>Even junction elements in subprojects can be overridden, this is sometimes important
+in order to reconcile conflicts when multiple projects depend on the same subproject,
+as <a class="reference internal" href="#core-junction-nested-overrides"><span class="std std-ref">discussed below</span></a>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">junction</span>
+
+<span class="nn">...</span>
+
+<span class="nt">config</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Override elements in a junctioned project</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">overrides</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">subproject-element.bst</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local-element.bst</span>
+</pre></div>
+</div>
+<p>It is also possible to override elements in deeply nested subprojects, using
+project relative <a class="reference internal" href="../format_declaring.html#format-element-names"><span class="std std-ref">junction paths</span></a>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">junction</span>
+
+<span class="nn">...</span>
+
+<span class="nt">config</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Override deeply nested elements</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">overrides</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">subproject.bst:subsubproject-element.bst</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local-element.bst</span>
+</pre></div>
+</div>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>Overriding an element causes your project to completely define the
+element being overridden, which means you will no longer receive updates
+or security patches to the element in question when updating to newer
+versions and releases of the upstream project.</p>
+<p>As such, overriding elements is only recommended in cases where the
+element is very significantly redefined.</p>
+<p>Such cases include cases when you need a newer version of the element than
+the one maintained by the upstream project you are using as a subproject,
+or when you have significanly modified the code in your own custom ways.</p>
+<p>If you only need to introduce a security patch, then it is recommended that
+you create your own downstream branch of the upstream project, not only will
+this allow you to more easily consume updates with VCS tools like <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">rebase</span></code>,
+but it will also be more convenient for submitting your security patches
+to the upstream project so that you can drop them in a future update.</p>
+<p>Similarly, if you only need to enable/disable a specific feature of a module,
+it is also preferrable to use a downstream branch of the upstream project.
+In such a case, it is also worth trying to convince the upstream project to
+support a <a class="reference internal" href="../format_project.html#project-options"><span class="std std-ref">project option</span></a> for your specific element
+configuration, if it would be of use to other users too.</p>
+</div>
+</section>
+<section id="nested-junctions">
+<span id="core-junction-nested"></span><h2>Nested Junctions<a class="headerlink" href="#nested-junctions" title="Link to this heading"></a></h2>
+<p>Junctions can be nested. That is, subprojects are allowed to have junctions on
+their own. Nested junctions in different subprojects may point to the same
+project, however, in most use cases the same project should be loaded only once.</p>
+<p>As the junctions may differ in source version and options, BuildStream cannot
+simply use one junction and ignore the others. Due to this, BuildStream requires
+the user to resolve conflicting nested junctions, and will provide an error
+message whenever a conflict is detected.</p>
+<section id="overriding-subproject-junctions">
+<span id="core-junction-nested-overrides"></span><h3>Overriding subproject junctions<a class="headerlink" href="#overriding-subproject-junctions" title="Link to this heading"></a></h3>
+<p>If your project and a subproject share a subproject in common, then one way
+to resolve the conflict is to override the subproject’s junction with a local
+in your project.</p>
+<p>You can override junctions in a subproject in the junction declaration
+of that subproject, e.g.:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">junction</span>
+
+<span class="c1"># Here we are junctioning &quot;subproject&quot; which</span>
+<span class="c1"># also junctions &quot;subsubproject&quot;, which we also</span>
+<span class="c1"># use directly.</span>
+<span class="c1">#</span>
+<span class="nt">sources</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git</span>
+<span class="w">  </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://example.com/subproject.git</span>
+
+<span class="nt">config</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Override `subsubproject.bst` in the subproject using</span>
+<span class="w">  </span><span class="c1"># the locally declared `local-subsubproject.bst` junction.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">overrides</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">subsubproject.bst</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local-subsubproject.bst</span>
+</pre></div>
+</div>
+<p>When declaring the <code class="docutils literal notranslate"><span class="pre">overrides</span></code> dictionary, the keys (on the left side)
+refer to <a class="reference internal" href="../format_declaring.html#format-element-names"><span class="std std-ref">junction paths</span></a> which are relative
+to the subproject you are declaring. The values (on the right side) refer
+to <a class="reference internal" href="../format_declaring.html#format-element-names"><span class="std std-ref">junction paths</span></a> which are relative to the
+project in which your junction is declared.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This approach modifies your subproject, causing its output artifacts
+to differ from that project’s expectations.</p>
+<p>If you rely on validation and guarantees provided by the organization
+which maintains the subproject, then it is desirable to avoid overriding
+any details from that upstream project.</p>
+</div>
+</section>
+<section id="linking-to-other-junctions">
+<h3>Linking to other junctions<a class="headerlink" href="#linking-to-other-junctions" title="Link to this heading"></a></h3>
+<p>Another way to resolve the conflict when your project and a subproject both
+junction a common project, is to simply reuse the same junction from the
+subproject in your toplevel project.</p>
+<p>This is preferable to <em>overrides</em> because you can avoid modifying the
+subproject you would otherwise be changing with an override.</p>
+<p>A convenient way to reuse a nested junction in a higher level project
+is to create a <a class="reference internal" href="link.html#module-elements.link" title="elements.link"><code class="xref py py-mod docutils literal notranslate"><span class="pre">link</span></code></a> element to that subproject’s
+junction. This will help you avoid redundantly typing out longer
+<a class="reference internal" href="../format_declaring.html#format-element-names"><span class="std std-ref">element paths</span></a> in your project’s
+<a class="reference internal" href="../format_declaring.html#format-dependencies"><span class="std std-ref">dependency declarations</span></a>.</p>
+<p>This way you can simply create the <a class="reference internal" href="link.html#module-elements.link" title="elements.link"><code class="xref py py-mod docutils literal notranslate"><span class="pre">link</span></code></a> once
+in your project and use it locally to depend on elements in a nested
+subproject.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Declare the `subsubproject-link.bst` link element, which</span>
+<span class="c1"># is a symbolic link to the junction declared in the subproject</span>
+<span class="c1">#</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">link</span>
+
+<span class="nt">config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">subproject.bst:subsubproject.bst</span>
+</pre></div>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Depend on elements in the subsubproject using</span>
+<span class="c1"># the subproject&#39;s junction directly</span>
+<span class="c1">#</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">autotools</span>
+
+<span class="nt">depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">subsubproject-link.bst:glibc.bst</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>When reconciling conflicting junction declarations to the
+same subproject, it is also possible to use a locally defined
+<a class="reference internal" href="link.html#module-elements.link" title="elements.link"><code class="xref py py-mod docutils literal notranslate"><span class="pre">link</span></code></a> element from one subproject to
+override another junction to the same project in an adjacent
+subproject.</p>
+</div>
+</section>
+<section id="multiple-project-instances">
+<h3>Multiple project instances<a class="headerlink" href="#multiple-project-instances" title="Link to this heading"></a></h3>
+<p>By default, loading the same project more than once will result
+in a <em>conflicting junction error</em>. There are some use cases which
+demand that you load the same project more than once in the same
+build pipeline.</p>
+<p>In order to allow the loading of multiple instances of the same project
+in the same build pipeline, please refer to the
+<a class="reference internal" href="../format_project.html#project-junctions"><span class="std std-ref">relevant project.conf documentation</span></a>.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="link.html" class="btn btn-neutral float-left" title="link - Link elements" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="filter.html" class="btn btn-neutral float-right" title="filter - Extract a subset of files from another element" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

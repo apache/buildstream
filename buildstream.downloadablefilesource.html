@@ -1,0 +1,532 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DownloadableFileSource - Abstract class for sources downloaded from a URI &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Element - Base element class" href="buildstream.element.html" />
+    <link rel="prev" title="SourceMirror - Base source mirror class" href="buildstream.sourcemirror.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_format.html">Project format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="core_framework.html">Plugin API reference</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html">Foundation types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum"><code class="docutils literal notranslate"><span class="pre">FastEnum</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings"><code class="docutils literal notranslate"><span class="pre">CoreWarnings</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.OverlapAction"><code class="docutils literal notranslate"><span class="pre">OverlapAction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef"><code class="docutils literal notranslate"><span class="pre">SourceRef</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html">Node - Parsed YAML configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode"><code class="docutils literal notranslate"><span class="pre">MappingNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.Node"><code class="docutils literal notranslate"><span class="pre">Node</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.ProvenanceInformation"><code class="docutils literal notranslate"><span class="pre">ProvenanceInformation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode"><code class="docutils literal notranslate"><span class="pre">ScalarNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode"><code class="docutils literal notranslate"><span class="pre">SequenceNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html">Plugin - Base plugin class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin"><code class="docutils literal notranslate"><span class="pre">Plugin</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html">Source - Base source class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#sourcefetcher-object-for-fetching-individual-urls">SourceFetcher - Object for fetching individual URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceError"><code class="docutils literal notranslate"><span class="pre">SourceError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.AliasSubstitution"><code class="docutils literal notranslate"><span class="pre">AliasSubstitution</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType"><code class="docutils literal notranslate"><span class="pre">SourceVersionType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo"><code class="docutils literal notranslate"><span class="pre">SourceInfo</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceFetcher"><code class="docutils literal notranslate"><span class="pre">SourceFetcher</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source"><code class="docutils literal notranslate"><span class="pre">Source</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html">SourceMirror - Base source mirror class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirrorError"><code class="docutils literal notranslate"><span class="pre">SourceMirrorError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror"><code class="docutils literal notranslate"><span class="pre">SourceMirror</span></code></a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">DownloadableFileSource - Abstract class for sources downloaded from a URI</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#built-in-functionality">Built-in functionality</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sourcemirror-extra-data-http-auth">SourceMirror extra data “http-auth”</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.downloadablefilesource.DownloadableFileSource"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.downloadablefilesource.DownloadableFileSource.COMMON_CONFIG_KEYS"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.COMMON_CONFIG_KEYS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.downloadablefilesource.DownloadableFileSource.configure"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.configure()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.downloadablefilesource.DownloadableFileSource.preflight"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.preflight()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.downloadablefilesource.DownloadableFileSource.get_unique_key"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.get_unique_key()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.downloadablefilesource.DownloadableFileSource.is_cached"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.is_cached()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.downloadablefilesource.DownloadableFileSource.load_ref"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.load_ref()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.downloadablefilesource.DownloadableFileSource.get_ref"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.get_ref()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.downloadablefilesource.DownloadableFileSource.set_ref"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.set_ref()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.downloadablefilesource.DownloadableFileSource.track"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.track()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.downloadablefilesource.DownloadableFileSource.fetch"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.fetch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.downloadablefilesource.DownloadableFileSource.collect_source_info"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource.collect_source_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html">Element - Base element class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError"><code class="docutils literal notranslate"><span class="pre">ElementError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.DependencyConfiguration"><code class="docutils literal notranslate"><span class="pre">DependencyConfiguration</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element"><code class="docutils literal notranslate"><span class="pre">Element</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html">BuildElement - Abstract class for build elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement"><code class="docutils literal notranslate"><span class="pre">BuildElement</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html">ScriptElement - Abstract class for scripting elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement"><code class="docutils literal notranslate"><span class="pre">ScriptElement</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.setup"><code class="docutils literal notranslate"><span class="pre">setup()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html">Sandbox - The build sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.SandboxCommandError"><code class="docutils literal notranslate"><span class="pre">SandboxCommandError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox"><code class="docutils literal notranslate"><span class="pre">Sandbox</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html">Directory - Interfacing with files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.DirectoryError"><code class="docutils literal notranslate"><span class="pre">DirectoryError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileType"><code class="docutils literal notranslate"><span class="pre">FileType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.FileStat"><code class="docutils literal notranslate"><span class="pre">FileStat</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.storage.directory.html#buildstream.storage.directory.Directory"><code class="docutils literal notranslate"><span class="pre">Directory</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html">Exceptions - API for Error Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain"><code class="docutils literal notranslate"><span class="pre">ErrorDomain</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html">Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.UtilError"><code class="docutils literal notranslate"><span class="pre">UtilError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.ProgramNotFoundError"><code class="docutils literal notranslate"><span class="pre">ProgramNotFoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.DirectoryExistsError"><code class="docutils literal notranslate"><span class="pre">DirectoryExistsError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult"><code class="docutils literal notranslate"><span class="pre">FileListResult</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.list_relative_paths"><code class="docutils literal notranslate"><span class="pre">list_relative_paths()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.glob"><code class="docutils literal notranslate"><span class="pre">glob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.sha256sum"><code class="docutils literal notranslate"><span class="pre">sha256sum()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_copy"><code class="docutils literal notranslate"><span class="pre">safe_copy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_link"><code class="docutils literal notranslate"><span class="pre">safe_link()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_remove"><code class="docutils literal notranslate"><span class="pre">safe_remove()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.copy_files"><code class="docutils literal notranslate"><span class="pre">copy_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.link_files"><code class="docutils literal notranslate"><span class="pre">link_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_host_tool"><code class="docutils literal notranslate"><span class="pre">get_host_tool()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_bst_version"><code class="docutils literal notranslate"><span class="pre">get_bst_version()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.move_atomic"><code class="docutils literal notranslate"><span class="pre">move_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.save_file_atomic"><code class="docutils literal notranslate"><span class="pre">save_file_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_umask"><code class="docutils literal notranslate"><span class="pre">get_umask()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.guess_version"><code class="docutils literal notranslate"><span class="pre">guess_version()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="core_framework.html">Plugin API reference</a></li>
+      <li class="breadcrumb-item active">DownloadableFileSource - Abstract class for sources downloaded from a URI</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/buildstream.downloadablefilesource.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="downloadablefilesource-abstract-class-for-sources-downloaded-from-a-uri">
+<span id="module-buildstream.downloadablefilesource"></span><h1>DownloadableFileSource - Abstract class for sources downloaded from a URI<a class="headerlink" href="#downloadablefilesource-abstract-class-for-sources-downloaded-from-a-uri" title="Link to this heading"></a></h1>
+<p>This DownloadableFileSource class is a convenience class on can derive for
+implementing sources that get downloaded from a URI.</p>
+<p>It provides utilities around handling mirrors, tracking and fetching the source.</p>
+<p>Any derived classes must write their own stage() and get_unique_key()
+implementation.</p>
+<section id="built-in-functionality">
+<span id="core-downloadable-source-builtins"></span><h2>Built-in functionality<a class="headerlink" href="#built-in-functionality" title="Link to this heading"></a></h2>
+<p>The DownloadableFileSource class provides built in keys which can be set when
+intantiating any Source which derives from DownloadableFileSource</p>
+<ul>
+<li><p>Guess pattern</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">version-guess-pattern</span></code> sets the regular expression which will be used to attempt
+to guess the version of a source when parsing the source’s URI.</p>
+<p>The DownloadableFileSource provides a default implementation of
+<a class="reference internal" href="buildstream.source.html#buildstream.source.Source.collect_source_info" title="buildstream.source.Source.collect_source_info"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.collect_source_info()</span></code></a>,
+which will use the <code class="docutils literal notranslate"><span class="pre">version-guess-pattern</span></code> to attempt to extract a human readable
+version string from the specified URI, in order to fill out the reported
+<a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo.version_guess" title="buildstream.source.SourceInfo.version_guess"><code class="xref py py-attr docutils literal notranslate"><span class="pre">version_guess</span></code></a>.</p>
+<p>This is done using the <a class="reference internal" href="buildstream.utils.html#buildstream.utils.guess_version" title="buildstream.utils.guess_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">utils.guess_version()</span></code></a>
+utility function, please refer to that function documentation to understand how
+the guessing mechanics works, and what kind of string you should provide here.</p>
+<p><strong>Since: 2.5</strong>.</p>
+</li>
+<li><p>Version</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">version</span></code> explicitly sets the <a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo.version_guess" title="buildstream.source.SourceInfo.version_guess"><code class="xref py py-attr docutils literal notranslate"><span class="pre">version_guess</span></code></a>
+attribute of the <a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo" title="buildstream.source.SourceInfo"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceInfo</span></code></a> reported for this
+source, overriding any guessing.</p>
+<p>This is useful for remote files which do not express their version in their filenames.</p>
+<p><strong>Since: 2.5</strong>.</p>
+</li>
+</ul>
+</section>
+<section id="sourcemirror-extra-data-http-auth">
+<h2>SourceMirror extra data “http-auth”<a class="headerlink" href="#sourcemirror-extra-data-http-auth" title="Link to this heading"></a></h2>
+<p>The DownloadableFileSource, and consequently any <a class="reference internal" href="buildstream.source.html#buildstream.source.Source" title="buildstream.source.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a>
+implementations which derive from DownloadableFileSource, support the “http-auth”
+extra data returned by <a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror" title="buildstream.sourcemirror.SourceMirror"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceMirror</span></code></a> plugins
+through <a class="reference internal" href="buildstream.source.html#buildstream.source.Source.translate_url" title="buildstream.source.Source.translate_url"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.translate_url()</span></code></a>.</p>
+<p>This functionality is available <strong>Since: 2.2</strong>.</p>
+<p>This allows one to use <a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror" title="buildstream.sourcemirror.SourceMirror"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceMirror</span></code></a> plugins
+to add an authorization header to the <code class="docutils literal notranslate"><span class="pre">GET</span></code> requests.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">MySourceMirror</span><span class="p">(</span><span class="n">SourceMirror</span><span class="p">):</span>
+
+     <span class="k">def</span><span class="w"> </span><span class="nf">translate_url</span><span class="p">(</span>
+         <span class="bp">self</span><span class="p">,</span>
+         <span class="o">*</span><span class="p">,</span>
+         <span class="n">alias</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+         <span class="n">alias_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+         <span class="n">source_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+         <span class="n">extra_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+
+         <span class="c1">#</span>
+         <span class="c1"># Set the &quot;http-auth&quot; extra data</span>
+         <span class="c1">#</span>
+         <span class="k">if</span> <span class="n">extra_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+             <span class="n">extra_data</span><span class="p">[</span><span class="s2">&quot;http-auth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;bearer&quot;</span>
+
+         <span class="c1"># ...</span>
+</pre></div>
+</div>
+<p>Only the “http-auth” value <code class="docutils literal notranslate"><span class="pre">bearer</span></code> is supported.</p>
+<p><strong>Example:</strong></p>
+<p>If the URL reported by <a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror.translate_url" title="buildstream.sourcemirror.SourceMirror.translate_url"><code class="xref py py-func docutils literal notranslate"><span class="pre">SourceMirror.translate_url()</span></code></a>
+is <code class="docutils literal notranslate"><span class="pre">http://flying-ponies.com/downloads/pony.tgz</span></code>, then a corresponding entry will be expected in the
+user’s <code class="docutils literal notranslate"><span class="pre">~/.netrc</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">flying</span><span class="o">-</span><span class="n">ponies</span><span class="o">.</span><span class="n">com</span>
+    <span class="n">password</span> <span class="mi">1234</span>
+</pre></div>
+</div>
+<p>DownloadableFileSource will add the following header to the <code class="docutils literal notranslate"><span class="pre">GET</span></code> request to download the file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Authorization</span><span class="p">:</span> <span class="n">Bearer</span> <span class="mi">1234</span>
+</pre></div>
+</div>
+<section id="default-reporting-of-sourceinfo">
+<span id="core-downloadable-source-info"></span><h3>Default reporting of <a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo" title="buildstream.source.SourceInfo"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceInfo</span></code></a><a class="headerlink" href="#default-reporting-of-sourceinfo" title="Link to this heading"></a></h3>
+<p>Source plugins which derive from the DownloadableFileSource, unless overridden
+and specified in the documentation of the specific source plugin, will behave
+as described here.</p>
+<p>The DownloadableFileSource reports the URL of the remote file as the <em>url</em>.</p>
+<p>Further, the DownloadableFileSourcebzr source reports the
+<a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium.REMOTE_FILE" title="buildstream.source.SourceInfoMedium.REMOTE_FILE"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceInfoMedium.REMOTE_FILE</span></code></a> <em>medium</em> and the
+<a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType.SHA256" title="buildstream.source.SourceVersionType.SHA256"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceVersionType.SHA256</span></code></a> <em>version_type</em>,
+for which it reports the sha256 checksum of the remote file content as the <em>version</em>.</p>
+<p>An attempt to guess the version based on the remote filename will be made
+for the reporting of the <em>version_guess</em>. Control over how the guess is made
+or overridden is explained above in the
+<a class="reference internal" href="#core-downloadable-source-builtins"><span class="std std-ref">built-in functionality documentation</span></a>.</p>
+</section>
+</section>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.downloadablefilesource.DownloadableFileSource">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DownloadableFileSource</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Context</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Project</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MetaSource</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variables</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Variables</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alias_override</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="buildstream.source.html#buildstream.source.AliasSubstitution" title="buildstream.source.AliasSubstitution"><span class="pre">AliasSubstitution</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unique_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.downloadablefilesource.DownloadableFileSource" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="buildstream.source.html#buildstream.source.Source" title="buildstream.source.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.downloadablefilesource.DownloadableFileSource.COMMON_CONFIG_KEYS">
+<span class="sig-name descname"><span class="pre">COMMON_CONFIG_KEYS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['kind',</span> <span class="pre">'directory',</span> <span class="pre">'provenance',</span> <span class="pre">'url',</span> <span class="pre">'ref',</span> <span class="pre">'version-guess-pattern',</span> <span class="pre">'version']</span></em><a class="headerlink" href="#buildstream.downloadablefilesource.DownloadableFileSource.COMMON_CONFIG_KEYS" title="Link to this definition"></a></dt>
+<dd><p>Common source config keys</p>
+<p>Source config keys that must not be accessed in configure(), and
+should be checked for using node.validate_keys().</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.downloadablefilesource.DownloadableFileSource.configure">
+<span class="sig-name descname"><span class="pre">configure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.downloadablefilesource.DownloadableFileSource.configure" title="Link to this definition"></a></dt>
+<dd><p>Configure the Plugin from loaded configuration data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>node</strong> – The loaded configuration dictionary</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>.SourceError</strong> – If it’s a <a class="reference internal" href="buildstream.source.html#buildstream.source.Source" title="buildstream.source.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a> implementation</p></li>
+<li><p><strong>.ElementError</strong> – If it’s an <a class="reference internal" href="buildstream.element.html#buildstream.element.Element" title="buildstream.element.Element"><code class="xref py py-class docutils literal notranslate"><span class="pre">Element</span></code></a> implementation</p></li>
+</ul>
+</dd>
+</dl>
+<p>Plugin implementors should implement this method to read configuration
+data and store it.</p>
+<p>The <a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode.validate_keys" title="buildstream.node.MappingNode.validate_keys"><code class="xref py py-func docutils literal notranslate"><span class="pre">MappingNode.validate_keys()</span></code></a> method
+should be used to ensure that the user has not specified keys in <cite>node</cite> which are unsupported
+by the plugin.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.downloadablefilesource.DownloadableFileSource.preflight">
+<span class="sig-name descname"><span class="pre">preflight</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.downloadablefilesource.DownloadableFileSource.preflight" title="Link to this definition"></a></dt>
+<dd><p>Preflight Check</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>.SourceError</strong> – If it’s a <a class="reference internal" href="buildstream.source.html#buildstream.source.Source" title="buildstream.source.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a> implementation</p></li>
+<li><p><strong>.ElementError</strong> – If it’s an <a class="reference internal" href="buildstream.element.html#buildstream.element.Element" title="buildstream.element.Element"><code class="xref py py-class docutils literal notranslate"><span class="pre">Element</span></code></a> implementation</p></li>
+</ul>
+</dd>
+</dl>
+<p>This method is run after <a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a>
+and after the pipeline is fully constructed.</p>
+<p>Implementors should simply raise <a class="reference internal" href="buildstream.source.html#buildstream.source.SourceError" title="buildstream.source.SourceError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceError</span></code></a> or <a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError" title="buildstream.element.ElementError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementError</span></code></a>
+with an informative message in the case that the host environment is
+unsuitable for operation.</p>
+<p>Plugins which require host tools (only sources usually) should obtain
+them with <a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_host_tool" title="buildstream.utils.get_host_tool"><code class="xref py py-func docutils literal notranslate"><span class="pre">utils.get_host_tool()</span></code></a> which
+will raise an error automatically informing the user that a host tool is needed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.downloadablefilesource.DownloadableFileSource.get_unique_key">
+<span class="sig-name descname"><span class="pre">get_unique_key</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.downloadablefilesource.DownloadableFileSource.get_unique_key" title="Link to this definition"></a></dt>
+<dd><p>Return something which uniquely identifies the plugin input</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A string, list or dictionary which uniquely identifies the input</p>
+</dd>
+</dl>
+<p>This is used to construct unique <a class="reference internal" href="arch_cachekeys.html#cachekeys"><span class="std std-ref">cache keys</span></a> for elements
+and sources, sources should return something which uniquely identifies the payload,
+such as an sha256 sum of a tarball content.</p>
+<p>Elements and Sources should implement this by collecting any configurations
+which could possibly affect the output and return a dictionary of these settings.</p>
+<p>For Sources, this is guaranteed to only be called if
+<a class="reference internal" href="buildstream.source.html#buildstream.source.Source.is_resolved" title="buildstream.source.Source.is_resolved"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.is_resolved()</span></code></a> has returned
+<code class="docutils literal notranslate"><span class="pre">True</span></code> which is to say that the <a class="reference internal" href="buildstream.source.html#buildstream.source.Source" title="buildstream.source.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a> is expected to have an exact
+<a class="reference internal" href="buildstream.source.html#core-source-ref"><span class="std std-ref">source ref</span></a> indicating exactly what source is going to be staged.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If your plugin is concerned with API stability, then future extensions of your
+plugin YAML configuration which affect the unique key returned here should be added
+to this key with care.</p>
+<p>A good rule of thumb is to only compute the new value in the returned key if
+the value of the newly added YAML key is not equal to it’s default value.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.downloadablefilesource.DownloadableFileSource.is_cached">
+<span class="sig-name descname"><span class="pre">is_cached</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#buildstream.downloadablefilesource.DownloadableFileSource.is_cached" title="Link to this definition"></a></dt>
+<dd><p>Get whether the source has a local copy of its data.</p>
+<p>This method is guaranteed to only be called whenever
+<a class="reference internal" href="buildstream.source.html#buildstream.source.Source.is_resolved" title="buildstream.source.Source.is_resolved"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.is_resolved()</span></code></a>
+returns <cite>True</cite>.</p>
+<p>Returns: whether the source is cached locally or not.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.downloadablefilesource.DownloadableFileSource.load_ref">
+<span class="sig-name descname"><span class="pre">load_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.downloadablefilesource.DownloadableFileSource.load_ref" title="Link to this definition"></a></dt>
+<dd><p>Loads the <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a> for this Source from the specified <em>node</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>node</strong> – The YAML node to load the ref from</p>
+</dd>
+</dl>
+<p>Working with the <a class="reference internal" href="buildstream.source.html#core-source-ref"><span class="std std-ref">source ref is discussed here</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a> for the Source is expected to be read at
+<a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a> time,
+this will only be used for loading refs from alternative locations
+than in the <cite>element.bst</cite> file where the given Source object has
+been declared.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.downloadablefilesource.DownloadableFileSource.get_ref">
+<span class="sig-name descname"><span class="pre">get_ref</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.downloadablefilesource.DownloadableFileSource.get_ref" title="Link to this definition"></a></dt>
+<dd><p>Fetch the <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The internal <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a>, or <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+<p>Working with the <a class="reference internal" href="buildstream.source.html#core-source-ref"><span class="std std-ref">source ref is discussed here</span></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.downloadablefilesource.DownloadableFileSource.set_ref">
+<span class="sig-name descname"><span class="pre">set_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.downloadablefilesource.DownloadableFileSource.set_ref" title="Link to this definition"></a></dt>
+<dd><p>Applies the internal ref, however it is represented</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ref</strong> – The internal <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a> to set, or <code class="docutils literal notranslate"><span class="pre">None</span></code></p></li>
+<li><p><strong>node</strong> – The same node which was previously passed
+to <a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin.configure" title="buildstream.plugin.Plugin.configure"><code class="xref py py-func docutils literal notranslate"><span class="pre">Plugin.configure()</span></code></a>
+and <a class="reference internal" href="buildstream.source.html#buildstream.source.Source.load_ref" title="buildstream.source.Source.load_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.load_ref()</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<p>The implementor must update the <em>node</em> parameter to reflect the new <em>ref</em>,
+and it should store the passed <em>ref</em> so that it will be returned in any
+later calls to <a class="reference internal" href="buildstream.source.html#buildstream.source.Source.get_ref" title="buildstream.source.Source.get_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.get_ref()</span></code></a>.</p>
+<p>The passed <em>ref</em> parameter is guaranteed to either be a value which has
+been previously retrieved by the <a class="reference internal" href="buildstream.source.html#buildstream.source.Source.get_ref" title="buildstream.source.Source.get_ref"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.get_ref()</span></code></a>
+method on the same plugin, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Implementation of Source.set_ref()</span>
+<span class="c1">#</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+
+    <span class="c1"># Update internal state of the ref</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">ref</span> <span class="o">=</span> <span class="n">ref</span>
+
+    <span class="c1"># Update the passed node so that we will read the new ref</span>
+    <span class="c1"># next time this source plugin is configured with this node.</span>
+    <span class="c1">#</span>
+    <span class="n">node</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref</span>
+</pre></div>
+</div>
+<p>Working with the <a class="reference internal" href="buildstream.source.html#core-source-ref"><span class="std std-ref">source ref is discussed here</span></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.downloadablefilesource.DownloadableFileSource.track">
+<span class="sig-name descname"><span class="pre">track</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.downloadablefilesource.DownloadableFileSource.track" title="Link to this definition"></a></dt>
+<dd><p>Resolve a new ref from the plugin’s track option</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>previous_sources_dir</strong> (<em>str</em>) – directory where previous sources are staged.
+Note that this keyword argument is available only when
+<a class="reference internal" href="buildstream.source.html#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK" title="buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BST_REQUIRES_PREVIOUS_SOURCES_TRACK</span></code></a>
+is set to True.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new <a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef" title="buildstream.types.SourceRef"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SourceRef</span></code></a>, or None</p>
+</dd>
+</dl>
+<p>If the backend in question supports resolving references from
+a symbolic tracking branch or tag, then this should be implemented
+to perform this task on behalf of <a class="reference internal" href="using_commands.html#invoking-source-track"><span class="std std-ref">bst source track</span></a>
+commands.</p>
+<p>This usually requires fetching new content from a remote origin
+to see if a new ref has appeared for your branch or tag. If the
+backend store allows one to query for a new ref from a symbolic
+tracking data without downloading then that is desirable.</p>
+<p>Working with the <a class="reference internal" href="buildstream.source.html#core-source-ref"><span class="std std-ref">source ref is discussed here</span></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.downloadablefilesource.DownloadableFileSource.fetch">
+<span class="sig-name descname"><span class="pre">fetch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.downloadablefilesource.DownloadableFileSource.fetch" title="Link to this definition"></a></dt>
+<dd><p>Fetch remote sources and mirror them locally, ensuring at least
+that the specific reference is cached locally.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>previous_sources_dir</strong> (<em>str</em>) – directory where previous sources are staged.
+Note that this keyword argument is available only when
+<a class="reference internal" href="buildstream.source.html#buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH" title="buildstream.source.Source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BST_REQUIRES_PREVIOUS_SOURCES_FETCH</span></code></a>
+is set to True.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>.SourceError</strong> – </p>
+</dd>
+</dl>
+<p>Implementors should raise <a class="reference internal" href="buildstream.source.html#buildstream.source.SourceError" title="buildstream.source.SourceError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceError</span></code></a> if the there is some
+network error or if the source reference could not be matched.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.downloadablefilesource.DownloadableFileSource.collect_source_info">
+<span class="sig-name descname"><span class="pre">collect_source_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.downloadablefilesource.DownloadableFileSource.collect_source_info" title="Link to this definition"></a></dt>
+<dd><p>Get the <a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo" title="buildstream.source.SourceInfo"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceInfo</span></code></a> objects describing this source</p>
+<p>This method should only be called whenever
+<a class="reference internal" href="buildstream.source.html#buildstream.source.Source.is_resolved" title="buildstream.source.Source.is_resolved"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.is_resolved()</span></code></a>
+returns <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<p>SourceInfo objects created by implementors should be created with
+<a class="reference internal" href="buildstream.source.html#buildstream.source.Source.create_source_info" title="buildstream.source.Source.create_source_info"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.create_source_info()</span></code></a>.</p>
+<dl class="simple">
+<dt>Returns: the <a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo" title="buildstream.source.SourceInfo"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceInfo</span></code></a> objects describing this source, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if the</dt><dd><p>Source does not implement this method.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If your plugin uses <a class="reference internal" href="buildstream.source.html#buildstream.source.SourceFetcher" title="buildstream.source.SourceFetcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceFetcher</span></code></a> objects, you can implement
+<a class="reference internal" href="buildstream.source.html#buildstream.source.SourceFetcher.get_source_info" title="buildstream.source.SourceFetcher.get_source_info"><code class="xref py py-func docutils literal notranslate"><span class="pre">Source.get_source_info()</span></code></a> instead.</p>
+</div>
+<p><em>Since: 2.5</em></p>
+</dd></dl>
+
+</dd></dl>
+
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="buildstream.sourcemirror.html" class="btn btn-neutral float-left" title="SourceMirror - Base source mirror class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="buildstream.element.html" class="btn btn-neutral float-right" title="Element - Base element class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,261 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Remote Execution Servers &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="using_examples.html" />
+    <link rel="prev" title="Configuring Cache Servers" href="using_configuring_cache_server.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_using.html">Using</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="using_tutorial.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_developing.html">Developing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_handling_files.html">Handling files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_junctions.html">Combining projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_config.html">User configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_commands.html">Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using_configuring_cache_server.html">Configuring Cache Servers</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Remote Execution Servers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream-specific-requirements">BuildStream specific requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#implementation-of-platform-properties">Implementation of platform properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#staging-the-input-root-as-the-filesystem-root">Staging the input root as the filesystem root</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#example-working-configuration">Example working configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using_examples.html">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_using.html">Using</a></li>
+      <li class="breadcrumb-item active">Remote Execution Servers</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/using_configuring_remote_execution.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="remote-execution-servers">
+<span id="id1"></span><h1>Remote Execution Servers<a class="headerlink" href="#remote-execution-servers" title="Link to this heading"></a></h1>
+<p>BuildStream supports building remotely using the
+<a class="reference external" href="https://github.com/bazelbuild/remote-apis">Google Remote Execution API (REAPI).</a>, which
+has various known implementations.</p>
+<p>Some of these implementations include:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://buildgrid.build/">BuildGrid</a></p></li>
+<li><p><a class="reference external" href="https://github.com/buildbarn">BuildBarn</a></p></li>
+<li><p><a class="reference external" href="https://github.com/bazelbuild/bazel-buildfarm">Buildfarm</a></p></li>
+</ul>
+<p>These various implementations implement the <a class="reference external" href="https://github.com/bazelbuild/remote-apis">Google Remote Execution API (REAPI)</a> to various degrees as these projects
+have different priorities.</p>
+<p>On the client side, the remote execution service to use can be
+specified in the <a class="reference internal" href="using_config.html#user-config-remote-execution"><span class="std std-ref">user configuration</span></a>.</p>
+<section id="buildstream-specific-requirements">
+<h2>BuildStream specific requirements<a class="headerlink" href="#buildstream-specific-requirements" title="Link to this heading"></a></h2>
+<p>In order for BuildStream to work correctly with a remote execution cluster, there
+are a couple of requirements that implementation needs to meet.</p>
+<section id="implementation-of-platform-properties">
+<h3>Implementation of platform properties<a class="headerlink" href="#implementation-of-platform-properties" title="Link to this heading"></a></h3>
+<p>The remote execution service must properly implement <a class="reference external" href="https://github.com/bazelbuild/remote-apis/blob/main/build/bazel/remote/execution/v2/platform.md">platform properties</a>.</p>
+<p>This is crucial because BuildStream needs to be guaranteed the correct operating
+system and ISA which it requests from the service.</p>
+</section>
+<section id="staging-the-input-root-as-the-filesystem-root">
+<h3>Staging the input root as the filesystem root<a class="headerlink" href="#staging-the-input-root-as-the-filesystem-root" title="Link to this heading"></a></h3>
+<p>BuildStream requires that the <em>input root</em> given to the remote execution service
+be treated as the absolute <em>filesystem root</em>.</p>
+<p>This is because BuildStream provides guarantees that all build dependencies, including
+the base runtime and compilers, are defined by elements and run within a sandboxed and
+isolated build environment, but the <a class="reference external" href="https://github.com/bazelbuild/remote-apis">REAPI</a>
+was originally developped without this determinism and control in mind. Instead, typically
+it is up to the user to configure a cluster to use a docker image to build payloads
+with, rather than allowing the REAPI client to control the entire sandbox.</p>
+<p>Unfortunately the ability to dictate that the <em>input root</em> be treated as the <em>filesystem root</em>
+in a container on remote workers in the cluster is not yet standardized in the REAPI protocol.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <em>input root</em> is referred to as the <code class="docutils literal notranslate"><span class="pre">input_root_digest</span></code> member of the <code class="docutils literal notranslate"><span class="pre">Action</span></code> message
+as defined in the <a class="reference external" href="https://github.com/bazelbuild/remote-apis/blob/main/build/bazel/remote/execution/v2/remote_execution.proto">protocol</a></p>
+</div>
+</section>
+</section>
+<section id="example-working-configuration">
+<h2>Example working configuration<a class="headerlink" href="#example-working-configuration" title="Link to this heading"></a></h2>
+<p>A simple configuration to spin up the <a class="reference external" href="https://buildgrid.build/">BuildGrid</a> service using
+<a class="reference external" href="https://docs.docker.com/compose/">docker compose</a> follows:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">##</span>
+<span class="c1"># BuildGrid Compose manifest for BuildStream.</span>
+<span class="c1">#</span>
+<span class="c1"># Spins-up a unnamed and unauthenticated grid:</span>
+<span class="c1">#  - Controller + CAS + AC at http://localhost:50051</span>
+<span class="c1">#</span>
+<span class="c1"># BuildStream configuration snippet:</span>
+<span class="c1">#</span>
+<span class="c1">#    remote-execution:</span>
+<span class="c1">#      execution-service:</span>
+<span class="c1">#        url: http://localhost:50051</span>
+<span class="c1">#      action-cache-service:</span>
+<span class="c1">#        url: http://localhost:50051</span>
+<span class="c1">#      storage-service:</span>
+<span class="c1">#        url: http://localhost:50051</span>
+<span class="c1">#</span>
+<span class="c1"># Basic usage:</span>
+<span class="c1">#  - docker-compose -f ci.buildgrid.yml up</span>
+<span class="c1">#  - docker-compose -f ci.buildgrid.yml down</span>
+<span class="c1">#</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;3.2&quot;</span>
+
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">database</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid-postgres:nightly</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bgd</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">insecure</span>
+<span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bgd</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">volume</span>
+<span class="w">        </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">db</span>
+<span class="w">        </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/lib/postgresql</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grid</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;5432:5432&quot;</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;pg_isready&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-U&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;bgd&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1s</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+
+<span class="w">  </span><span class="nt">controller</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid:nightly</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
+<span class="w">      </span><span class="s">&quot;bgd&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;server&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;start&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-v&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">      </span><span class="s">&quot;/etc/buildgrid/default.yml&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50051:50051</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grid</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">database</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_healthy</span>
+
+<span class="w">  </span><span class="nt">bot</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:nightly</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
+<span class="w">      </span><span class="s">&quot;sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;sleep</span><span class="nv"> </span><span class="s">15</span><span class="nv"> </span><span class="s">&amp;&amp;</span><span class="nv"> </span><span class="s">(</span><span class="nv"> </span><span class="s">buildbox-casd</span><span class="nv"> </span><span class="s">--cas-remote=http://controller:50051</span><span class="nv"> </span><span class="s">/var/lib/buildgrid/cache</span><span class="nv"> </span><span class="s">&amp;</span><span class="nv"> </span><span class="s">buildbox-worker</span><span class="nv"> </span><span class="s">--request-timeout=30</span><span class="nv"> </span><span class="s">--bots-remote=http://controller:50051</span><span class="nv"> </span><span class="s">--cas-remote=unix:/var/lib/buildgrid/cache/casd.sock</span><span class="nv"> </span><span class="s">--buildbox-run=buildbox-run-bubblewrap</span><span class="nv"> </span><span class="s">--platform</span><span class="nv"> </span><span class="s">OSFamily=linux</span><span class="nv"> </span><span class="s">--platform</span><span class="nv"> </span><span class="s">ISA=x86-64</span><span class="nv"> </span><span class="s">--verbose</span><span class="nv"> </span><span class="s">)&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">privileged</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">volume</span>
+<span class="w">        </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cache</span>
+<span class="w">        </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/lib/buildgrid/cache</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controller</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grid</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">grid</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">driver</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bridge</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cache</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">db</span><span class="p">:</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="using_configuring_cache_server.html" class="btn btn-neutral float-left" title="Configuring Cache Servers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="using_examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

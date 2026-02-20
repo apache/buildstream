@@ -1,0 +1,295 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sandboxing &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Remote execution" href="arch_remote_execution.html" />
+    <link rel="prev" title="Caches" href="arch_caches.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_architecture.html">Architecture</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="arch_overview.html">Overview of modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_program_flow.html">Overview of program flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_data_model.html">Data model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_dependency_model.html">Dependency model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_scheduler.html">Scheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_cachekeys.html">Cache keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_caches.html">Caches</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Sandboxing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#what-elements-can-and-can-t-do-in-the-sandbox">What elements can and can’t do in the sandbox</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#filesystem-access">Filesystem access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#filesystem-metadata">Filesystem metadata</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#user-and-permissions-model">User and permissions model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#network-access">Network access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#device-access">Device access</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#platform-notes">Platform notes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#linux">Linux</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#other-posix-systems">Other POSIX systems</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="arch_remote_execution.html">Remote execution</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_architecture.html">Architecture</a></li>
+      <li class="breadcrumb-item active">Sandboxing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/arch_sandboxing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sandboxing">
+<span id="id1"></span><h1>Sandboxing<a class="headerlink" href="#sandboxing" title="Link to this heading"></a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>BuildStream assembles each element in a <em>sandbox</em>. The sandbox is a container
+environment which serves two purposes: giving BuildStream control over
+all build aspects in order to ensure reproducibility of build results,
+and providing safety guarantees for the host system that BuildStream is
+running on.</p>
+<p>The exact implementation of the sandbox varies depending on which platform you
+are running BuildStream. See below for backend-specific details.</p>
+<p>There are several factors that affect the build output and must therefore be
+under BuildStream’s control:</p>
+<ul class="simple">
+<li><p>Filesystem contents and metadata</p></li>
+<li><p>The user and permissions model</p></li>
+<li><p>Network access</p></li>
+<li><p>Device access</p></li>
+</ul>
+<p>Each of these is detailed below.</p>
+<p>For safety reasons, BuildStream also controls the following things:</p>
+<ul class="simple">
+<li><p>Access to files outside of the sandbox directory</p></li>
+<li><p>Access to certain kernel-specific syscalls</p></li>
+</ul>
+<p>Creating a sandbox can require special priviliges. This is a safety concern too
+because bugs in the <cite>bst</cite> program can cause damage to a host if the program is
+running with extra privileges. The exact priviliges that are required depend on
+your platform and backend.</p>
+<p>Element plugins can run arbitary commands within the sandbox using the
+<a class="reference internal" href="buildstream.sandbox.sandbox.html#module-buildstream.sandbox.sandbox" title="buildstream.sandbox.sandbox"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sandbox</span> <span class="pre">API</span></code></a>.</p>
+</section>
+<section id="what-elements-can-and-can-t-do-in-the-sandbox">
+<h2>What elements can and can’t do in the sandbox<a class="headerlink" href="#what-elements-can-and-can-t-do-in-the-sandbox" title="Link to this heading"></a></h2>
+<p>This section specifies how BuildStream sandboxes are intended to work. A
+specific sandbox provider may not necessarily be able to achieve all of the
+requirements listed below so be sure to read the “platform notes” section as
+well.</p>
+<section id="filesystem-access">
+<h3>Filesystem access<a class="headerlink" href="#filesystem-access" title="Link to this heading"></a></h3>
+<p>The filesystem inside sandboxes should be read-only during element assembly,
+except for certain directories which element plugins can mark as being
+read/write. Most elements plugins derive from <a class="reference internal" href="buildstream.buildelement.html#module-buildstream.buildelement" title="buildstream.buildelement"><code class="xref py py-mod docutils literal notranslate"><span class="pre">BuildElement</span></code></a>, which marks <code class="docutils literal notranslate"><span class="pre">%{build-root}</span></code> and
+<code class="docutils literal notranslate"><span class="pre">%{install-root}</span></code> as read/write.</p>
+<p>When running integration commands or <cite>bst shell</cite>, the sandbox should have a
+fully read-write filesystem. The changes made here do not need to persist
+beyond the lifetime of that sandbox, and <strong>must not</strong> affect the contents of
+artifacts stored in the cache.</p>
+<p>Certain top level directories should be treated specially in all sandboxes:</p>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">/dev</span></code> directory should contain device nodes, which are described in
+a separate section.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">/proc</span></code> directory should have a UNIX ‘procfs’ style filesystem mounted.
+It should not expose any information about processes running outside of the
+sandbox.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">/tmp</span></code> directory should be writable.</p></li>
+</ul>
+</section>
+<section id="filesystem-metadata">
+<h3>Filesystem metadata<a class="headerlink" href="#filesystem-metadata" title="Link to this heading"></a></h3>
+<p>The writable areas inside a BuildStream sandbox are limited in what metadata
+can be written and stored.</p>
+<ul class="simple">
+<li><p>All files must be owned by UID 0 and GID 0</p></li>
+<li><p>No files may have the setuid or setgid bits set</p></li>
+<li><p>Extended file attributes (xattrs) cannot be written to or read.</p></li>
+<li><p>Hardlinks to other files can be created, but the information about which
+files are hardlinked to each other will not be stored in the artifact
+that is created from the sandbox.</p></li>
+</ul>
+<p>These restrictions are due to technical limitations. In future we hope to
+support a wider range of filesystem metadata operations. See <a class="reference external" href="https://github.com/apache/buildstream/issues/38">issue #38</a> for more details.</p>
+</section>
+<section id="user-and-permissions-model">
+<h3>User and permissions model<a class="headerlink" href="#user-and-permissions-model" title="Link to this heading"></a></h3>
+<p>All commands inside the sandbox run with user ID 0 and group ID 0. It should
+not be possible to become any other user ID.</p>
+</section>
+<section id="network-access">
+<h3>Network access<a class="headerlink" href="#network-access" title="Link to this heading"></a></h3>
+<p>Builds should not be able to access the network at all from the sandbox. All
+remote resources needed to build an element must be specified in the element’s
+<code class="docutils literal notranslate"><span class="pre">sources</span></code> list so that BuildStream is able to see when they have changed.</p>
+<p>A sandbox opened by <cite>bst shell</cite> should allow network access.</p>
+</section>
+<section id="device-access">
+<h3>Device access<a class="headerlink" href="#device-access" title="Link to this heading"></a></h3>
+<p>Builds should not be able to access any hardware devices at all.</p>
+<p>A few standard UNIX device files are needed, the whitelist is:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">/dev/full</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/dev/null</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/dev/urandom</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/dev/random</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/dev/zero</span></code></p></li>
+</ul>
+<p>It may seem odd that we have sources of randomness in the sandbox, but a lot of
+tools do expect them to exist. We take the view that it’s up to integrators to
+ensure that elements do not deliberately include randomness in their output.</p>
+<p>A sandbox opened by <cite>bst shell</cite> can make any devices available. There needs to
+be a console device so that it can be used interactively.</p>
+</section>
+</section>
+<section id="platform-notes">
+<h2>Platform notes<a class="headerlink" href="#platform-notes" title="Link to this heading"></a></h2>
+<p>BuildStream delegates sandboxing for local builds to the <code class="docutils literal notranslate"><span class="pre">buildbox-run</span></code>
+command. <code class="docutils literal notranslate"><span class="pre">buildbox-run</span></code> provides a platform-independent interface to execute
+commands in a sandbox based on parts of the Remote Execution API.</p>
+<section id="linux">
+<h3>Linux<a class="headerlink" href="#linux" title="Link to this heading"></a></h3>
+<p>The recommended <code class="docutils literal notranslate"><span class="pre">buildbox-run</span></code> implementation for Linux is
+<code class="docutils literal notranslate"><span class="pre">buildbox-run-bubblewrap</span></code>, in combination with <code class="docutils literal notranslate"><span class="pre">buildbox-fuse</span></code>.</p>
+<p>These implementations use the following isolation and sandboxing primitives:</p>
+<ul class="simple">
+<li><p>bind mounts</p></li>
+<li><p>FUSE</p></li>
+<li><p>Mount namespaces</p></li>
+<li><p>Network namespaces</p></li>
+<li><p>PID (process ID) namespaces</p></li>
+<li><p>User namespaces (if available)</p></li>
+<li><p>seccomp</p></li>
+</ul>
+<p>We access all of these features through a sandboxing tool named <a class="reference external" href="https://github.com/projectatomic/bubblewrap/">Bubblewrap</a>.</p>
+<p>User namespaces are not enabled by default in all Linux distributions.
+BuildStream still runs on such systems but can’t build projects that set
+<code class="docutils literal notranslate"><span class="pre">build-uid</span></code> or <code class="docutils literal notranslate"><span class="pre">build-gid</span></code> in the <code class="docutils literal notranslate"><span class="pre">sandbox</span></code> configuration.</p>
+<p>The Linux platform can operate as a standard user, if unprivileged user namespace
+support is available. If user namespace support is not available you have the
+option of installing bubblewrap as a setuid binary to avoid needing to run the
+entire <code class="docutils literal notranslate"><span class="pre">bst</span></code> process as the <code class="docutils literal notranslate"><span class="pre">root</span></code> user.</p>
+<p>FUSE is used to provide access to directories and files stored in CAS without
+having to copy or hardlink the complete input tree into a regular filesystem
+directory structure for each build job.</p>
+<p>Some of the operations on filesystem metadata listed above are not prohibited
+by the sandbox, but will instead be silently dropped when an artifact is
+created. For more details see <a class="reference external" href="https://github.com/apache/buildstream/issues/38">issue #38</a>.</p>
+<p>Some details of the host machine are currently leaked by this platform backend.
+For more details, see <a class="reference external" href="https://github.com/apache/buildstream/issues/262">issue #262</a>.</p>
+</section>
+<section id="other-posix-systems">
+<h3>Other POSIX systems<a class="headerlink" href="#other-posix-systems" title="Link to this heading"></a></h3>
+<p>On other POSIX systems <code class="docutils literal notranslate"><span class="pre">buildbox-run-userchroot</span></code> may be used for sandboxing.
+<a class="reference external" href="https://gitlab.com/BuildGrid/buildbox/userchroot">userchroot</a> allows regular
+users to invoke processes in a chroot environment.</p>
+<p><code class="docutils literal notranslate"><span class="pre">buildbox-run-userchroot</span></code> stages the input tree for each build job using
+hardlinks to avoid more expensive file copies. To avoid cache corruption it is
+vital that hardlinked files cannot be overwritten. Due to this it’s required
+to run <code class="docutils literal notranslate"><span class="pre">buildbox-casd</span></code> as a separate user, which owns the files in the local
+cache.</p>
+<p>Network access is not blocked in the chroot. However since there is unlikely
+to be a correct <cite>/etc/resolv.conf</cite> file, any network access that depends on
+name resolution will most likely fail anyway.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="arch_caches.html" class="btn btn-neutral float-left" title="Caches" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="arch_remote_execution.html" class="btn btn-neutral float-right" title="Remote execution" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,233 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scheduler &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Cache keys" href="arch_cachekeys.html" />
+    <link rel="prev" title="Dependency model" href="arch_dependency_model.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_architecture.html">Architecture</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="arch_overview.html">Overview of modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_program_flow.html">Overview of program flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_data_model.html">Data model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_dependency_model.html">Dependency model</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Scheduler</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#jobs">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resources">Resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#queues">Queues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#queue-internals">Queue internals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Scheduler</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="arch_cachekeys.html">Cache keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_caches.html">Caches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_sandboxing.html">Sandboxing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_remote_execution.html">Remote execution</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_architecture.html">Architecture</a></li>
+      <li class="breadcrumb-item active">Scheduler</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/arch_scheduler.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="scheduler">
+<h1>Scheduler<a class="headerlink" href="#scheduler" title="Link to this heading"></a></h1>
+<p>The <em>Scheduler</em> is what is responsible for running the main event loop and
+dispatching <em>Jobs</em> to complete tasks on behalf of <em>Queues</em>.</p>
+<section id="jobs">
+<h2>Jobs<a class="headerlink" href="#jobs" title="Link to this heading"></a></h2>
+<p>The basic functionality of multiprocessing tasks is implemented by the base Job
+class, which is derived in a few ways but for now we’ll only talk about the
+ElementJob type since that is the most centric.</p>
+<p>The Job class has the following responsibilities:</p>
+<ul class="simple">
+<li><p>Starting the given job as a subprocess.</p></li>
+<li><p>Offering an abstract method for subclasses to handle the outcome of
+a job when it completes.</p></li>
+<li><p>Forcefully terminating its subprocess.</p></li>
+<li><p>Suspending and resuming its subprocess.</p></li>
+<li><p>Declaring the types of resources it will require, and which resources
+it will require exclusively.</p></li>
+</ul>
+<p>Below is a rough outline of the interactions between the main process
+and job specific child process:</p>
+<img alt="_images/arch-scheduler-job.svg" class="align-center" src="_images/arch-scheduler-job.svg" />
+</section>
+<section id="resources">
+<h2>Resources<a class="headerlink" href="#resources" title="Link to this heading"></a></h2>
+<p>To understand how we manage load balancing in the scheduler it is important
+to understand <em>resources</em>.</p>
+<p>For the scheduler, <em>resources</em> are domains which a Job can request which represent
+physical resources, such as the CPU or some network bandwidth, or the local
+artifact cache.</p>
+<p>This is used by the Scheduler when consuming Jobs from Queues and deciding
+how many jobs can be run at a given time.</p>
+</section>
+<section id="queues">
+<h2>Queues<a class="headerlink" href="#queues" title="Link to this heading"></a></h2>
+<p>The various Queue implementations in the Scheduler can be combined such that
+parallelism is maximized. For example one can <em>Track</em> and <em>Build</em> inside the
+same session, in this way one does not need to wait for a tracking session to
+complete in order to start building.</p>
+<p>The input elements to the scheduler are expected to be sorted in depth first
+order whenever the order is important, again allowing maximum parallelism
+at build time.</p>
+<img alt="_images/arch-scheduler-queues.svg" class="align-center" src="_images/arch-scheduler-queues.svg" />
+<p>The Queue implementations are:</p>
+<ul>
+<li><p><strong>Track</strong></p>
+<p>The tracking queue must always come first if it is used in the given session.
+This is because the Source <em>“ref”</em>, and consequently the cache key of any elements
+which have been requested for tracking, cannot be known until tracking is complete.</p>
+</li>
+<li><p><strong>Pull</strong></p>
+<p>The pull queue tries to obtain a built artifact from a remote artifact server,
+it should be placed in advance of the fetch queue if used, since we can safely
+avoid fetching if fetching is not imperative, and we already have a cached
+artifact.</p>
+</li>
+<li><p><strong>Fetch</strong></p>
+<p>The fetch queue attempts to download source code to build the given element,
+this activity is sometimes skipped if the artifact is already present, or
+if the exact source code is already present.</p>
+</li>
+<li><p><strong>Build</strong></p>
+<p>The build queue attempts to build the element if its artifact is not locally
+present.</p>
+</li>
+<li><p><strong>Push</strong></p>
+<p>The push queue attempts to push the resulting artifact to a remote artifact
+server.</p>
+</li>
+</ul>
+</section>
+<section id="queue-internals">
+<h2>Queue internals<a class="headerlink" href="#queue-internals" title="Link to this heading"></a></h2>
+<p>Internally, the queue has an input queue and an output queue.</p>
+<img alt="_images/arch-scheduler-queue-ports.svg" class="align-center" src="_images/arch-scheduler-queue-ports.svg" />
+<p>When elements are on the input queue they get queried for their <em>QueueStatus</em>
+in order to determine which elements should be processed or moved from the input
+queue to the output queue. When elements are on the output queue, they are ready
+to be consumed by the scheduler and moved on to the next queue; however each
+queue holds on to the result status of every element which passed through for later
+reference and reports to the user.</p>
+</section>
+<section id="id1">
+<h2>Scheduler<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<p>The scheduler itself has the main responsibility of popping off jobs from
+the existing queues it was given, and running the jobs as long as elements
+remain to be processed.</p>
+<p>A huge simplification of this can be visualized as follows:</p>
+<img alt="_images/arch-scheduler-run.svg" class="align-center" src="_images/arch-scheduler-run.svg" />
+<p>This is implemented by iterating over the Queues given to the scheduler
+and processing any <em>“Ready”</em> elements so long as there are sufficient resource
+tokens available for the ready elements to run, and by moving the <em>“Done”</em>
+elements onto the subsequent queues in the list of queues.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When looking for <em>“Ready”</em> elements in the queues, we iterate over the
+queue list in <em>reverse order</em>. This is important to allow elements to
+get as far as they can in the queue list as fast as possible, and helps
+to prevent resource starvation.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="arch_dependency_model.html" class="btn btn-neutral float-left" title="Dependency model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="arch_cachekeys.html" class="btn btn-neutral float-right" title="Cache keys" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

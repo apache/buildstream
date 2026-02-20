@@ -1,0 +1,158 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Remote execution &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Glossary" href="main_glossary.html" />
+    <link rel="prev" title="Sandboxing" href="arch_sandboxing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_architecture.html">Architecture</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="arch_overview.html">Overview of modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_program_flow.html">Overview of program flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_data_model.html">Data model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_dependency_model.html">Dependency model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_scheduler.html">Scheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_cachekeys.html">Cache keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_caches.html">Caches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="arch_sandboxing.html">Sandboxing</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Remote execution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sandbox-extension">Sandbox extension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#artifact-caches-and-other-storage">Artifact caches and other storage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#use-of-sandboxes-outside-builds">Use of sandboxes outside builds</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_architecture.html">Architecture</a></li>
+      <li class="breadcrumb-item active">Remote execution</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/arch_remote_execution.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="remote-execution">
+<h1>Remote execution<a class="headerlink" href="#remote-execution" title="Link to this heading"></a></h1>
+<p>Remote execution allows builds to take place on different machines from the machine <em>bst</em> is run on, allowing faster builds, shared resources and different build capabilities, for example different machine architectures.</p>
+<section id="sandbox-extension">
+<h2>Sandbox extension<a class="headerlink" href="#sandbox-extension" title="Link to this heading"></a></h2>
+<p>The previous section <a class="reference internal" href="arch_sandboxing.html#sandboxing"><span class="std std-ref">Sandboxing</span></a> describes the two forms of local sandbox: the <em>bubblewrap</em> sandbox and the less common <em>chroot</em> sandbox (which is used on non-Linux POSIX environments). Remote execution uses a third type, the <em>remote sandbox</em>, which functions similarly to the local sandbox types, but is responsible for causing the build to occur on a remote system. Remote sandboxes should produce the same result as local sandboxes.</p>
+</section>
+<section id="artifact-caches-and-other-storage">
+<h2>Artifact caches and other storage<a class="headerlink" href="#artifact-caches-and-other-storage" title="Link to this heading"></a></h2>
+<p>BuildStream can transmit the results of local builds to remote artifact caches and retrieve them later. The same mechanism is used for remote execution. The filesystem staged before building is stored in a local content-addressable store, which may be the same as the local artifact cache. The command to execute is also stored as an object in local CAS. Both the initial source filesystem and command are transmitted to remote storage specific to the remote execution service, and after the build is complete, the filesystem after build is retrieved from remote storage to the local CAS. The remote execution service uses the same communication protocol as artifact caches, and may use the same internal storage, but may not implement the Remote Asset API used by BuildStream to store full artifacts.</p>
+<img alt="_images/arch-remote-execution.svg" class="align-center" src="_images/arch-remote-execution.svg" />
+<p>After sending the prerequisite file system and command to the remote execution cache, BuildStream uses the <em>Remote Execution API (REAPI)</em> <a class="footnote-reference brackets" href="#id2" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> to signal to the build server that it should perform a build.
+How the build service does this is not BuildStream’s concern, but typically there will be a worker that will be assigned the work, retrieve the inputs of the build from CAS, carry out the build, and store the results in CAS. The remote execution service is entitled to return a cached result, if the filesystem and command have already been executed.</p>
+<p>BuildStream will continue to poll the remote execution server until the build is completed or lost. If it’s completed (successfully or otherwise) the resulting objects (typically the finished file system and logs of stdout and stderr) will be pulled to the local cache. BuildStream will retry jobs that are lost by the remote build server or which complete with certain error types.</p>
+<p><em>sandboxremote.py</em> contains all the communication with the remote execution API.</p>
+<p>After a successful build, BuildStream will push the completed artifact to the remote artifact servers as if it had built it locally.</p>
+</section>
+<section id="use-of-sandboxes-outside-builds">
+<h2>Use of sandboxes outside builds<a class="headerlink" href="#use-of-sandboxes-outside-builds" title="Link to this heading"></a></h2>
+<p>Because staging requires <em>integration-commands</em> to be run, a sandbox is necessary for the <em>bst artifact checkout</em> command to run.</p>
+<p>A sandbox is also required for the <em>bst shell</em> command. Because the REAPI does not provide any mechanism for interactive use, <em>bst shell</em> will always use a local sandbox.</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id2" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>See <a class="reference external" href="https://github.com/bazelbuild/remote-apis">https://github.com/bazelbuild/remote-apis</a>.</p>
+</aside>
+</aside>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="arch_sandboxing.html" class="btn btn-neutral float-left" title="Sandboxing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="main_glossary.html" class="btn btn-neutral float-right" title="Glossary" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

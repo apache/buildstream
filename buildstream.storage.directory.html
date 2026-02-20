@@ -1,0 +1,599 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Directory - Interfacing with files &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Exceptions - API for Error Handling" href="buildstream.exceptions.html" />
+    <link rel="prev" title="Sandbox - The build sandbox" href="buildstream.sandbox.sandbox.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_format.html">Project format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="core_framework.html">Plugin API reference</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html">Foundation types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum"><code class="docutils literal notranslate"><span class="pre">FastEnum</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings"><code class="docutils literal notranslate"><span class="pre">CoreWarnings</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.OverlapAction"><code class="docutils literal notranslate"><span class="pre">OverlapAction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.types.html#buildstream.types.SourceRef"><code class="docutils literal notranslate"><span class="pre">SourceRef</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html">Node - Parsed YAML configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.MappingNode"><code class="docutils literal notranslate"><span class="pre">MappingNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.Node"><code class="docutils literal notranslate"><span class="pre">Node</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.ProvenanceInformation"><code class="docutils literal notranslate"><span class="pre">ProvenanceInformation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.ScalarNode"><code class="docutils literal notranslate"><span class="pre">ScalarNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.node.html#buildstream.node.SequenceNode"><code class="docutils literal notranslate"><span class="pre">SequenceNode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html">Plugin - Base plugin class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.plugin.html#buildstream.plugin.Plugin"><code class="docutils literal notranslate"><span class="pre">Plugin</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html">Source - Base source class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#sourcefetcher-object-for-fetching-individual-urls">SourceFetcher - Object for fetching individual URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceError"><code class="docutils literal notranslate"><span class="pre">SourceError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.AliasSubstitution"><code class="docutils literal notranslate"><span class="pre">AliasSubstitution</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfoMedium"><code class="docutils literal notranslate"><span class="pre">SourceInfoMedium</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceVersionType"><code class="docutils literal notranslate"><span class="pre">SourceVersionType</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceInfo"><code class="docutils literal notranslate"><span class="pre">SourceInfo</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.SourceFetcher"><code class="docutils literal notranslate"><span class="pre">SourceFetcher</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.source.html#buildstream.source.Source"><code class="docutils literal notranslate"><span class="pre">Source</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html">SourceMirror - Base source mirror class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirrorError"><code class="docutils literal notranslate"><span class="pre">SourceMirrorError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sourcemirror.html#buildstream.sourcemirror.SourceMirror"><code class="docutils literal notranslate"><span class="pre">SourceMirror</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html">DownloadableFileSource - Abstract class for sources downloaded from a URI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.downloadablefilesource.html#buildstream.downloadablefilesource.DownloadableFileSource"><code class="docutils literal notranslate"><span class="pre">DownloadableFileSource</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html">Element - Base element class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError"><code class="docutils literal notranslate"><span class="pre">ElementError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.DependencyConfiguration"><code class="docutils literal notranslate"><span class="pre">DependencyConfiguration</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.element.html#buildstream.element.Element"><code class="docutils literal notranslate"><span class="pre">Element</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html">BuildElement - Abstract class for build elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.buildelement.html#buildstream.buildelement.BuildElement"><code class="docutils literal notranslate"><span class="pre">BuildElement</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html">ScriptElement - Abstract class for scripting elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.ScriptElement"><code class="docutils literal notranslate"><span class="pre">ScriptElement</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.scriptelement.html#buildstream.scriptelement.setup"><code class="docutils literal notranslate"><span class="pre">setup()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html">Sandbox - The build sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.SandboxCommandError"><code class="docutils literal notranslate"><span class="pre">SandboxCommandError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox"><code class="docutils literal notranslate"><span class="pre">Sandbox</span></code></a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Directory - Interfacing with files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#paths">Paths</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.storage.directory.DirectoryError"><code class="docutils literal notranslate"><span class="pre">DirectoryError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.storage.directory.FileType"><code class="docutils literal notranslate"><span class="pre">FileType</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.FileType.DIRECTORY"><code class="docutils literal notranslate"><span class="pre">FileType.DIRECTORY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.FileType.REGULAR_FILE"><code class="docutils literal notranslate"><span class="pre">FileType.REGULAR_FILE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.FileType.SYMLINK"><code class="docutils literal notranslate"><span class="pre">FileType.SYMLINK</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.storage.directory.FileStat"><code class="docutils literal notranslate"><span class="pre">FileStat</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.FileStat.file_type"><code class="docutils literal notranslate"><span class="pre">FileStat.file_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.FileStat.executable"><code class="docutils literal notranslate"><span class="pre">FileStat.executable</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.FileStat.size"><code class="docutils literal notranslate"><span class="pre">FileStat.size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.FileStat.mtime"><code class="docutils literal notranslate"><span class="pre">FileStat.mtime</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buildstream.storage.directory.Directory"><code class="docutils literal notranslate"><span class="pre">Directory</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.open_directory"><code class="docutils literal notranslate"><span class="pre">Directory.open_directory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.import_files"><code class="docutils literal notranslate"><span class="pre">Directory.import_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.import_single_file"><code class="docutils literal notranslate"><span class="pre">Directory.import_single_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.export_to_tar"><code class="docutils literal notranslate"><span class="pre">Directory.export_to_tar()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.list_relative_paths"><code class="docutils literal notranslate"><span class="pre">Directory.list_relative_paths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.exists"><code class="docutils literal notranslate"><span class="pre">Directory.exists()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.stat"><code class="docutils literal notranslate"><span class="pre">Directory.stat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.open_file"><code class="docutils literal notranslate"><span class="pre">Directory.open_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.file_digest"><code class="docutils literal notranslate"><span class="pre">Directory.file_digest()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.readlink"><code class="docutils literal notranslate"><span class="pre">Directory.readlink()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.remove"><code class="docutils literal notranslate"><span class="pre">Directory.remove()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.rename"><code class="docutils literal notranslate"><span class="pre">Directory.rename()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.isfile"><code class="docutils literal notranslate"><span class="pre">Directory.isfile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.isdir"><code class="docutils literal notranslate"><span class="pre">Directory.isdir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildstream.storage.directory.Directory.islink"><code class="docutils literal notranslate"><span class="pre">Directory.islink()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html">Exceptions - API for Error Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.ErrorDomain"><code class="docutils literal notranslate"><span class="pre">ErrorDomain</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.exceptions.html#buildstream.exceptions.LoadErrorReason"><code class="docutils literal notranslate"><span class="pre">LoadErrorReason</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html">Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.UtilError"><code class="docutils literal notranslate"><span class="pre">UtilError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.ProgramNotFoundError"><code class="docutils literal notranslate"><span class="pre">ProgramNotFoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.DirectoryExistsError"><code class="docutils literal notranslate"><span class="pre">DirectoryExistsError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult"><code class="docutils literal notranslate"><span class="pre">FileListResult</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.list_relative_paths"><code class="docutils literal notranslate"><span class="pre">list_relative_paths()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.glob"><code class="docutils literal notranslate"><span class="pre">glob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.sha256sum"><code class="docutils literal notranslate"><span class="pre">sha256sum()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_copy"><code class="docutils literal notranslate"><span class="pre">safe_copy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_link"><code class="docutils literal notranslate"><span class="pre">safe_link()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.safe_remove"><code class="docutils literal notranslate"><span class="pre">safe_remove()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.copy_files"><code class="docutils literal notranslate"><span class="pre">copy_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.link_files"><code class="docutils literal notranslate"><span class="pre">link_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_host_tool"><code class="docutils literal notranslate"><span class="pre">get_host_tool()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_bst_version"><code class="docutils literal notranslate"><span class="pre">get_bst_version()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.move_atomic"><code class="docutils literal notranslate"><span class="pre">move_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.save_file_atomic"><code class="docutils literal notranslate"><span class="pre">save_file_atomic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.get_umask"><code class="docutils literal notranslate"><span class="pre">get_umask()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.guess_version"><code class="docutils literal notranslate"><span class="pre">guess_version()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="core_framework.html">Plugin API reference</a></li>
+      <li class="breadcrumb-item active">Directory - Interfacing with files</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/buildstream.storage.directory.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="directory-interfacing-with-files">
+<span id="module-buildstream.storage.directory"></span><h1>Directory - Interfacing with files<a class="headerlink" href="#directory-interfacing-with-files" title="Link to this heading"></a></h1>
+<p>The Directory class is given to plugins by way of the <a class="reference internal" href="buildstream.sandbox.sandbox.html#buildstream.sandbox.sandbox.Sandbox" title="buildstream.sandbox.sandbox.Sandbox"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sandbox</span></code></a>
+and in some other instances. This API allows plugins to interface with files
+and directory hierarchies owned by BuildStream.</p>
+<section id="paths">
+<span id="directory-path"></span><h2>Paths<a class="headerlink" href="#paths" title="Link to this heading"></a></h2>
+<p>The path argument to directory functions depict a relative path. Path elements are
+separated with the <code class="docutils literal notranslate"><span class="pre">/</span></code> character regardless of the platform. Both <code class="docutils literal notranslate"><span class="pre">.</span></code> and <code class="docutils literal notranslate"><span class="pre">..</span></code> entries
+are permitted. Absolute paths are not permitted, as such it is illegal to specify a path
+with a leading <code class="docutils literal notranslate"><span class="pre">/</span></code> character.</p>
+<p>Directory objects represent a directory entry within the context of a <em>directory tree</em>,
+and the directory returned by
+<code class="xref py py-func docutils literal notranslate"><span class="pre">Sandbox.get_virtual_directory()</span></code>
+is the root of the sandbox’s <em>directory tree</em>. Attempts to escape the root of a <em>directory tree</em>
+using <code class="docutils literal notranslate"><span class="pre">..</span></code> entries will not result in an error, instead <code class="docutils literal notranslate"><span class="pre">..</span></code> entries which cross the
+root boundary will be evaluated as the root directory. This behavior matches POSIX behavior
+of filesystem root directories.</p>
+</section>
+</section>
+<dl class="py exception">
+<dt class="sig sig-object py" id="buildstream.storage.directory.DirectoryError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DirectoryError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.DirectoryError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BstError</span></code></p>
+<p>Raised by Directory functions.</p>
+<p>It is recommended to handle this error and raise a more descriptive
+user facing <a class="reference internal" href="buildstream.element.html#buildstream.element.ElementError" title="buildstream.element.ElementError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementError</span></code></a> or <a class="reference internal" href="buildstream.source.html#buildstream.source.SourceError" title="buildstream.source.SourceError"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceError</span></code></a> from this error.</p>
+<p>If this is not handled, the BuildStream core will fail the current
+task where the error occurs and present the user with the error.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.storage.directory.FileType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FileType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.FileType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="buildstream.types.html#buildstream.types.FastEnum" title="buildstream.types.FastEnum"><code class="xref py py-class docutils literal notranslate"><span class="pre">FastEnum</span></code></a></p>
+<p>Depicts the type of a file</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.storage.directory.FileType.DIRECTORY">
+<span class="sig-name descname"><span class="pre">DIRECTORY</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;buildstream.storage.directory.FileType</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#buildstream.storage.directory.FileType.DIRECTORY" title="Link to this definition"></a></dt>
+<dd><p>A directory</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.storage.directory.FileType.REGULAR_FILE">
+<span class="sig-name descname"><span class="pre">REGULAR_FILE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;buildstream.storage.directory.FileType</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#buildstream.storage.directory.FileType.REGULAR_FILE" title="Link to this definition"></a></dt>
+<dd><p>A regular file</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.storage.directory.FileType.SYMLINK">
+<span class="sig-name descname"><span class="pre">SYMLINK</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;buildstream.storage.directory.FileType</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#buildstream.storage.directory.FileType.SYMLINK" title="Link to this definition"></a></dt>
+<dd><p>A symbolic link</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.storage.directory.FileStat">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FileStat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">executable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mtime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1321009871</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.FileStat" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Depicts stats about a file</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This object can be compared with the equality operator, two <a class="reference internal" href="#buildstream.storage.directory.FileStat" title="buildstream.storage.directory.FileStat"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileStat</span></code></a>
+objects will be considered equivalent if they have the same <a class="reference internal" href="#buildstream.storage.directory.FileType" title="buildstream.storage.directory.FileType"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileType</span></code></a>
+and have equivalent attributes.</p>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.storage.directory.FileStat.file_type">
+<span class="sig-name descname"><span class="pre">file_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#buildstream.storage.directory.FileStat.file_type" title="Link to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="#buildstream.storage.directory.FileType" title="buildstream.storage.directory.FileType"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileType</span></code></a> of this file</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.storage.directory.FileStat.executable">
+<span class="sig-name descname"><span class="pre">executable</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#buildstream.storage.directory.FileStat.executable" title="Link to this definition"></a></dt>
+<dd><p>Whether this file is executable</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.storage.directory.FileStat.size">
+<span class="sig-name descname"><span class="pre">size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#buildstream.storage.directory.FileStat.size" title="Link to this definition"></a></dt>
+<dd><p>The size of the file in bytes</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="buildstream.storage.directory.FileStat.mtime">
+<span class="sig-name descname"><span class="pre">mtime</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#buildstream.storage.directory.FileStat.mtime" title="Link to this definition"></a></dt>
+<dd><p>The modification time of the file</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">external_directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buildstream.storage.directory.Directory" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The Directory object represents a directory in a filesystem hierarchy</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Directory objects behave as a collection of entries in the pythonic sense.
+Iterating over a directory will yield the entries, and a directory is
+truthy if it contains any entries and falsy if it is empty.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.open_directory">
+<span class="sig-name descname"><span class="pre">open_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_symlinks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#buildstream.storage.directory.Directory" title="buildstream.storage.directory.Directory"><span class="pre">Directory</span></a></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.open_directory" title="Link to this definition"></a></dt>
+<dd><p>Open a Directory object relative to this directory</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – A <a class="reference internal" href="#directory-path"><span class="std std-ref">path</span></a> relative to this directory.</p></li>
+<li><p><strong>create</strong> – If this is true, the directories will be created if
+they don’t already exist.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A Directory object representing the found directory.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#buildstream.storage.directory.DirectoryError" title="buildstream.storage.directory.DirectoryError"><strong>DirectoryError</strong></a> – if any of the components in subdirectory_spec
+    cannot be found, or are files, or symlinks to files.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.import_files">
+<span class="sig-name descname"><span class="pre">import_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">external_pathspec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#buildstream.storage.directory.Directory" title="buildstream.storage.directory.Directory"><span class="pre">Directory</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_callback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">collect_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult" title="buildstream.utils.FileListResult"><span class="pre">FileListResult</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.import_files" title="Link to this definition"></a></dt>
+<dd><p>Imports some or all files from external_path into this directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>external_pathspec</strong> – Either a string containing a pathname, or a
+Directory object, to use as the source.</p></li>
+<li><p><strong>filter_callback</strong> – Optional filter callback. Called with the
+relative path as argument for every file in the source directory.
+The file is imported only if the callable returns True.
+If no filter callback is specified, all files will be imported.</p></li>
+<li><p><strong>collect_result</strong> – Whether to collect data for the <a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult" title="buildstream.utils.FileListResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileListResult</span></code></a>, defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult" title="buildstream.utils.FileListResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileListResult</span></code></a> report of files imported and overwritten,
+or <cite>None</cite> if <cite>collect_result</cite> is False.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#buildstream.storage.directory.DirectoryError" title="buildstream.storage.directory.DirectoryError"><strong>DirectoryError</strong></a> – if any system error occurs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.import_single_file">
+<span class="sig-name descname"><span class="pre">import_single_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">external_pathspec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult" title="buildstream.utils.FileListResult"><span class="pre">FileListResult</span></a></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.import_single_file" title="Link to this definition"></a></dt>
+<dd><p>Imports a single file from an external path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>external_pathspec</strong> – A string containing a pathname.</p></li>
+<li><p><strong>properties</strong> – Optional list of strings representing file properties to capture when importing.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <a class="reference internal" href="buildstream.utils.html#buildstream.utils.FileListResult" title="buildstream.utils.FileListResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileListResult</span></code></a> report of files imported and overwritten.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#buildstream.storage.directory.DirectoryError" title="buildstream.storage.directory.DirectoryError"><strong>DirectoryError</strong></a> – if any system error occurs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.export_to_tar">
+<span class="sig-name descname"><span class="pre">export_to_tar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tarfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TarFile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">destination_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mtime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1321009871</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.export_to_tar" title="Link to this definition"></a></dt>
+<dd><p>Exports this directory into the given tar file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tarfile</strong> – A Python TarFile object to export into.</p></li>
+<li><p><strong>destination_dir</strong> – The prefix for all filenames inside the archive.</p></li>
+<li><p><strong>mtime</strong> – mtimes of all files in the archive are set to this.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.storage.directory.DirectoryError" title="buildstream.storage.directory.DirectoryError"><strong>DirectoryError</strong></a> – if any system error occurs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.list_relative_paths">
+<span class="sig-name descname"><span class="pre">list_relative_paths</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.list_relative_paths" title="Link to this definition"></a></dt>
+<dd><p>Generate a list of all relative paths in this directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Yields<span class="colon">:</span></dt>
+<dd class="field-odd"><p>All files in this directory with relative paths.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.exists">
+<span class="sig-name descname"><span class="pre">exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_symlinks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.exists" title="Link to this definition"></a></dt>
+<dd><p>Check whether the specified path exists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – A <a class="reference internal" href="#directory-path"><span class="std std-ref">path</span></a> relative to this directory.</p></li>
+<li><p><strong>follow_symlinks</strong> – True to follow symlinks.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the path exists, False otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.stat">
+<span class="sig-name descname"><span class="pre">stat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_symlinks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#buildstream.storage.directory.FileStat" title="buildstream.storage.directory.FileStat"><span class="pre">FileStat</span></a></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.stat" title="Link to this definition"></a></dt>
+<dd><p>Get the status of a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – A <a class="reference internal" href="#directory-path"><span class="std std-ref">path</span></a> relative to this directory.</p></li>
+<li><p><strong>follow_symlinks</strong> – True to follow symlinks.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <a class="reference internal" href="#buildstream.storage.directory.FileStat" title="buildstream.storage.directory.FileStat"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileStat</span></code></a> object.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#buildstream.storage.directory.DirectoryError" title="buildstream.storage.directory.DirectoryError"><strong>DirectoryError</strong></a> – if any system error occurs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.open_file">
+<span class="sig-name descname"><span class="pre">open_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'r'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">IO</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.open_file" title="Link to this definition"></a></dt>
+<dd><p>Open file and return a corresponding file object. In text mode,
+UTF-8 is used as encoding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – A <a class="reference internal" href="#directory-path"><span class="std std-ref">path</span></a> relative to this directory.</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – An optional string that specifies the mode in which the file is opened.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Yields<span class="colon">:</span></dt>
+<dd class="field-even"><p>The file object for the open file</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#buildstream.storage.directory.DirectoryError" title="buildstream.storage.directory.DirectoryError"><strong>DirectoryError</strong></a> – if any system error occurs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.file_digest">
+<span class="sig-name descname"><span class="pre">file_digest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.file_digest" title="Link to this definition"></a></dt>
+<dd><p>Return a unique digest of a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – A <a class="reference internal" href="#directory-path"><span class="std std-ref">path</span></a> relative to this directory.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.storage.directory.DirectoryError" title="buildstream.storage.directory.DirectoryError"><strong>DirectoryError</strong></a> – if the specified <em>path</em> depicts an entry that is not a
+    <a class="reference internal" href="#buildstream.storage.directory.FileType.REGULAR_FILE" title="buildstream.storage.directory.FileType.REGULAR_FILE"><code class="xref py py-attr docutils literal notranslate"><span class="pre">FileType.REGULAR_FILE</span></code></a>, or if any system error occurs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.readlink">
+<span class="sig-name descname"><span class="pre">readlink</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.readlink" title="Link to this definition"></a></dt>
+<dd><p>Return a string representing the path to which the symbolic link points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – A <a class="reference internal" href="#directory-path"><span class="std std-ref">path</span></a> relative to this directory.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The path to which the symbolic link points to.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#buildstream.storage.directory.DirectoryError" title="buildstream.storage.directory.DirectoryError"><strong>DirectoryError</strong></a> – if any system error occurs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recursive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.remove" title="Link to this definition"></a></dt>
+<dd><p>Remove a file, symlink or directory. Symlinks are not followed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – A <a class="reference internal" href="#directory-path"><span class="std std-ref">path</span></a> relative to this directory.</p></li>
+<li><p><strong>recursive</strong> – True to delete non-empty directories.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.storage.directory.DirectoryError" title="buildstream.storage.directory.DirectoryError"><strong>DirectoryError</strong></a> – if any system error occurs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.rename">
+<span class="sig-name descname"><span class="pre">rename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dest</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.rename" title="Link to this definition"></a></dt>
+<dd><p>Rename a file, symlink or directory. If destination path exists
+already and is a file or empty directory, it will be replaced.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – A source <a class="reference internal" href="#directory-path"><span class="std std-ref">path</span></a> relative to this directory.</p></li>
+<li><p><strong>dest</strong> – A destination <a class="reference internal" href="#directory-path"><span class="std std-ref">path</span></a> relative to this directory.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#buildstream.storage.directory.DirectoryError" title="buildstream.storage.directory.DirectoryError"><strong>DirectoryError</strong></a> – if any system error occurs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.isfile">
+<span class="sig-name descname"><span class="pre">isfile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_symlinks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.isfile" title="Link to this definition"></a></dt>
+<dd><p>Check whether the specified path is an existing regular file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – A <a class="reference internal" href="#directory-path"><span class="std std-ref">path</span></a> relative to this directory.</p></li>
+<li><p><strong>follow_symlinks</strong> – True to follow symlinks.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the path is an existing regular file, False otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.isdir">
+<span class="sig-name descname"><span class="pre">isdir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_symlinks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.isdir" title="Link to this definition"></a></dt>
+<dd><p>Check whether the specified path is an existing directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – A <a class="reference internal" href="#directory-path"><span class="std std-ref">path</span></a> relative to this directory.</p></li>
+<li><p><strong>follow_symlinks</strong> – True to follow symlinks.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the path is an existing directory, False otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buildstream.storage.directory.Directory.islink">
+<span class="sig-name descname"><span class="pre">islink</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_symlinks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#buildstream.storage.directory.Directory.islink" title="Link to this definition"></a></dt>
+<dd><p>Check whether the specified path is an existing symlink.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – A <a class="reference internal" href="#directory-path"><span class="std std-ref">path</span></a> relative to this directory.</p></li>
+<li><p><strong>follow_symlinks</strong> – True to follow symlinks.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the path is an existing symlink, False otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="buildstream.sandbox.sandbox.html" class="btn btn-neutral float-left" title="Sandbox - The build sandbox" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="buildstream.exceptions.html" class="btn btn-neutral float-right" title="Exceptions - API for Error Handling" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

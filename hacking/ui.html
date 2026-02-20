@@ -1,0 +1,209 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contributing to the UI &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Architecture" href="../main_architecture.html" />
+    <link rel="prev" title="Updating BuildStream’s Python dependencies" href="updating_python_deps.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_porting.html">Porting guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#filing-issues">Filing issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#fixing-bugs">Fixing bugs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#adding-new-features">Adding new features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#submitting-patches">Submitting patches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#committer-access">Committer access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#windows-ci">Windows CI</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../CONTRIBUTING.html#further-information">Further information</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="coding_guidelines.html">Coding guidelines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using_the_testsuite.html">Using the test suite</a></li>
+<li class="toctree-l3"><a class="reference internal" href="writing_documentation.html">Writing documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="writing_plugins.html">Adding core plugins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="measuring_performance.html">Measuring performance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="making_releases.html">Making releases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="grpc_protocols.html">Generating protocol buffers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="managing_data_files.html">Managing data files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html">Updating BuildStream’s Python dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#adding-support-for-a-new-python-release">Adding support for a new Python release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#removing-support-for-a-python-release">Removing support for a Python release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#abi-compatibility-for-binary-python-packages">ABI compatibility for binary Python packages</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Contributing to the UI</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#the-command-line-interface">The command line interface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#displaying-information">Displaying information</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../CONTRIBUTING.html">Contributing</a></li>
+      <li class="breadcrumb-item active">Contributing to the UI</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/hacking/ui.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="contributing-to-the-ui">
+<h1>Contributing to the UI<a class="headerlink" href="#contributing-to-the-ui" title="Link to this heading"></a></h1>
+<p>As we wish to cleanly separate BuildStream’s core from the frontend, anything
+user facing should be defined within the modules contained within the <a class="reference external" href="https://github.com/apache/buildstream/tree/master/src/buildstream/_frontend">_frontend</a>
+directory.</p>
+<p>BuildStream’s frontend includes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Implementation of the command line interface (cli.py)</p></li>
+<li><p>Logline/text formatting (widget.py)</p></li>
+<li><p>The main application state (app.py) which initializes the stream to handle
+logging and user interactions.</p></li>
+<li><p>Colour profiles (profile.py)</p></li>
+<li><p>Rendering of the status bar (status.py)</p></li>
+<li><p>Autocompletion behaviour (completions.py)</p></li>
+</ul>
+</div></blockquote>
+<section id="the-command-line-interface">
+<h2>The command line interface<a class="headerlink" href="#the-command-line-interface" title="Link to this heading"></a></h2>
+<p>All of BuildStream’s commands are defined within the module <a class="reference external" href="https://github.com/apache/buildstream/tree/master/src/buildstream/_frontend/cli.py">cli.py</a> -,
+the main entry point which implements the CLI.</p>
+<p>The command line interface is generated with <a class="reference external" href="https://palletsprojects.com/p/click/">Click</a> - a third party Python package. Click
+is easy to use and automatically generates help pages.</p>
+<p>When working with commands, please adhere to the following checklist:</p>
+<ol class="arabic simple">
+<li><p>All commands should be defined with a help text</p></li>
+<li><p>The command should be placed within the appropriate sub group</p>
+<ul class="simple">
+<li><p>If the command manipulates sources, it should be part of the
+<a class="reference internal" href="../using_commands.html#source-subcommands"><span class="std std-ref">Source subcommands</span></a>.</p></li>
+<li><p>If the command manipulates cached artifacts, it should be part of the
+<a class="reference internal" href="../using_commands.html#artifact-subcommands"><span class="std std-ref">Artifact subcommands</span></a>.</p></li>
+<li><p>If the command has anything to do with workspaces, it should be part
+of the <a class="reference internal" href="../using_commands.html#workspace-subcommands"><span class="std std-ref">Workspace subcommands</span></a>.</p></li>
+</ul>
+</li>
+<li><p>If the command is intended to work with artifact refs as well as element
+names, the command’s argument should be “artifacts” as this supports the
+auto-completion of artifact refs.</p></li>
+<li><p>The supported <cite>–deps</cite> options are: “run”, “build”, “all”, “plan” and “none”.
+These are always of type <a class="reference external" href="https://click.palletsprojects.com/en/7.x/options/#choice-options">click.Choice</a> and
+should always be specified with a default. If the default is “none”, note that
+we use the string “none”, not the Python built-in <code class="docutils literal notranslate"><span class="pre">None</span></code>. In addition to this,
+the <code class="docutils literal notranslate"><span class="pre">show_default</span></code> flag should be set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p>Commands should use the app and go through the stream (via a similarly named
+method within Stream) in order to communicate to BuildStream’s core.</p></li>
+</ol>
+</section>
+<section id="displaying-information">
+<h2>Displaying information<a class="headerlink" href="#displaying-information" title="Link to this heading"></a></h2>
+<p>Output which we wish to display to the user from the frontend should use the
+implemented classes in widget.py. This module contains classes which represent
+widgets for displaying information to the user.</p>
+<p>To report messages back to the frontend, we use the <code class="docutils literal notranslate"><span class="pre">Message()</span></code> object
+which is available from the <code class="docutils literal notranslate"><span class="pre">Context</span></code>.</p>
+<p>Supported message types are defined in <a class="reference external" href="https://github.com/apache/buildstream/tree/master/src/buildstream/_message.py">_message.py</a>
+and various uses of the messenger are defined in <a class="reference external" href="https://github.com/apache/buildstream/tree/master/src/buildstream/_messenger.py">_messenger.py</a></p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Messenger</span></code> class defines various methods which allow us to report back to
+the frontend in particular ways. The common methods are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Messenger.message()</span></code> - the central point through which all messages pass</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Messenger.timed_activity()</span></code> - a context manager for performing and logging
+timed activities.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Messenger.simple_task()</span></code> - a Context manager for creating a task to report
+progress too.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="updating_python_deps.html" class="btn btn-neutral float-left" title="Updating BuildStream’s Python dependencies" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../main_architecture.html" class="btn btn-neutral float-right" title="Architecture" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

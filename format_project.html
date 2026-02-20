@@ -1,0 +1,1373 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project configuration &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Declaring elements" href="format_declaring.html" />
+    <link rel="prev" title="Introduction" href="format_intro.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="core_format.html">Project format</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="format_intro.html">Introduction</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Project configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#essentials">Essentials</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#loading-plugins">Loading plugins</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#junctions">Junctions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#element-default-configuration">Element default configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#overriding-plugin-defaults">Overriding plugin defaults</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#customizing-the-shell">Customizing the shell</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#default-targets">Default targets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#builtin-defaults">Builtin defaults</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="format_declaring.html">Declaring elements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="format_public.html">Builtin public data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="format_project_refs.html">The project.refs file</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_framework.html">Plugin API reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="core_format.html">Project format</a></li>
+      <li class="breadcrumb-item active">Project configuration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/format_project.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="project-configuration">
+<span id="projectconf"></span><h1>Project configuration<a class="headerlink" href="#project-configuration" title="Link to this heading"></a></h1>
+<p>The project configuration file should be named <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> and
+be located at the project root. It holds information such as Source
+aliases relevant for the sources used in the given project as well as
+overrides for the configuration of element types used in the project.</p>
+<p>Values specified in the project configuration override any of the
+default BuildStream project configuration, which is included
+<a class="reference internal" href="#project-defaults"><span class="std std-ref">here</span></a> for reference.</p>
+<section id="essentials">
+<span id="project-essentials"></span><h2>Essentials<a class="headerlink" href="#essentials" title="Link to this heading"></a></h2>
+<section id="project-name">
+<span id="project-format-name"></span><h3>Project name<a class="headerlink" href="#project-name" title="Link to this heading"></a></h3>
+<p>The project name is a unique symbol for your project and will
+be used to distinguish your project from others in user preferences,
+namespacing of your project’s artifacts in shared artifact caches,
+and in any case where BuildStream needs to distinguish between multiple
+projects.</p>
+<p>The first thing to setup in your <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> should be the name
+of your project.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-project-name</span>
+</pre></div>
+</div>
+<p>The project name may contain alphanumeric characters, dashes and
+underscores, and may not start with a leading digit.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>The project name must be specified in the <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> and
+cannot be <a class="reference internal" href="format_intro.html#format-directives-include"><span class="std std-ref">included</span></a> from a separate file.</p>
+</div>
+</section>
+<section id="minimum-version">
+<span id="project-min-version"></span><h3>Minimum version<a class="headerlink" href="#minimum-version" title="Link to this heading"></a></h3>
+<p>The BuildStream format is guaranteed to be backwards compatible
+with any earlier minor point releases, which is to say that
+BuildStream 1.4 can read projects written for BuildStream 1.0,
+and that BuildStream 2.2 can read projects written for BuildStream 2.0.</p>
+<p>Projects are required to specify the minimum version of BuildStream
+which it requires, this allows project authors to convey a useful
+error message to their users and peers, in the case that a user needs
+to get a newer version of BuildStream in order to work with a given
+project.</p>
+<p>The project’s minimum required BuildStream version must be specified
+in <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> using the <code class="docutils literal notranslate"><span class="pre">min-version</span></code> field, e.g.:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># This project uses features which were added in 2.2</span>
+<span class="nt">min-version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.2</span>
+</pre></div>
+</div>
+<p>It is recommended that when using new features, always consult this
+documentation and observe which BuildStream version a feature you are
+using was added in. If a feature in the BuildStream YAML format is
+not documented with a specific <em>Since</em> version, you can assume that
+it has been there from the beginning.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>External <a class="reference internal" href="buildstream.element.html#module-buildstream.element" title="buildstream.element"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Element</span></code></a> and <a class="reference internal" href="buildstream.source.html#module-buildstream.source" title="buildstream.source"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Source</span></code></a>
+plugins also implement their own YAML configuration fragments and as
+such are revisioned separately from the core format.</p>
+</div>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">min-version</span></code> must be specified in the <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> and
+cannot be <a class="reference internal" href="format_intro.html#format-directives-include"><span class="std std-ref">included</span></a> from a separate file.</p>
+</div>
+</section>
+<section id="element-path">
+<span id="project-element-path"></span><h3>Element path<a class="headerlink" href="#element-path" title="Link to this heading"></a></h3>
+<p>To allow the user to structure their project nicely, BuildStream
+allows the user to specify a project subdirectory where element
+<code class="docutils literal notranslate"><span class="pre">.bst</span></code> files are stored.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">element-path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">elements</span>
+</pre></div>
+</div>
+<p>Note that elements are referred to by their relative paths, whenever
+elements are referred to in a <code class="docutils literal notranslate"><span class="pre">.bst</span></code> file or on the command line.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">element-path</span></code> can only be specified in the <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> and
+cannot be <a class="reference internal" href="format_intro.html#format-directives-include"><span class="std std-ref">included</span></a> from a separate file.</p>
+</div>
+</section>
+<section id="ref-storage">
+<span id="project-format-ref-storage"></span><h3>Ref storage<a class="headerlink" href="#ref-storage" title="Link to this heading"></a></h3>
+<p>By default, BuildStream expects to read and write source references
+directly in the <a class="reference internal" href="format_declaring.html#format-sources"><span class="std std-ref">source declaration</span></a>, but this
+can be inconvenient and prohibitive in some workflows.</p>
+<p>Alternatively, BuildStream allows source references to be stored
+centrally in a <a class="reference internal" href="format_project_refs.html#projectrefs"><span class="std std-ref">project.refs file</span></a> in the toplevel
+<a class="reference internal" href="format_intro.html#format-structure"><span class="std std-ref">project directory</span></a>.</p>
+<p>This can be controlled with the <code class="docutils literal notranslate"><span class="pre">ref-storage</span></code> option, which is
+allowed to be configured with the following values:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">inline</span></code></p>
+<p>Source references are stored directly in the
+<a class="reference internal" href="format_declaring.html#format-sources"><span class="std std-ref">source declaration</span></a></p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">project.refs</span></code></p>
+<p>Source references are stored in the <code class="docutils literal notranslate"><span class="pre">project.refs</span></code> file, and
+junction source references are stored in the <code class="docutils literal notranslate"><span class="pre">junction.refs</span></code> file.</p>
+</li>
+</ul>
+<p>To enable storing of source references in <code class="docutils literal notranslate"><span class="pre">project.refs</span></code>, add the
+following to your <code class="docutils literal notranslate"><span class="pre">project.conf</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">ref-storage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">project.refs</span>
+</pre></div>
+</div>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p><strong>Storing subproject source references in project.refs</strong></p>
+<p>When using the <code class="docutils literal notranslate"><span class="pre">project.refs</span></code> file, it is possible to override the
+references in subprojects by editing the <code class="docutils literal notranslate"><span class="pre">project.refs</span></code> file directly
+or by using <a class="reference internal" href="using_commands.html#invoking-source-track"><span class="std std-ref">bst source track –cross-junctions</span></a>,
+this can be practical to try out fresher versions of components which
+are maintained in a subproject.</p>
+<p>It should be noted however that overridden subproject source references listed
+in your <code class="docutils literal notranslate"><span class="pre">project.refs</span></code> file will be ignored by projects which use your project
+as a subproject.</p>
+</div>
+</section>
+<section id="configurable-warnings">
+<span id="id1"></span><h3>Configurable Warnings<a class="headerlink" href="#configurable-warnings" title="Link to this heading"></a></h3>
+<p>Warnings can be configured as fatal using the <code class="docutils literal notranslate"><span class="pre">fatal-warnings</span></code> configuration item.
+When a warning is configured as fatal, where a warning would usually be thrown instead an error will be thrown
+causing the build to fail.</p>
+<p>Individual warnings can be configured as fatal by setting <code class="docutils literal notranslate"><span class="pre">fatal-warnings</span></code> to a list of warnings.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fatal-warnings</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">overlaps</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ref-not-in-track</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;plugin&gt;:&lt;warning&gt;</span>
+</pre></div>
+</div>
+<p>BuildStream provides a collection of <a class="reference internal" href="buildstream.types.html#buildstream.types.CoreWarnings" title="buildstream.types.CoreWarnings"><code class="xref py py-class docutils literal notranslate"><span class="pre">Core</span> <span class="pre">Warnings</span></code></a> which may be raised
+by a variety of plugins. Other configurable warnings are plugin specific and should be noted within their individual documentation.</p>
+</section>
+<section id="source-aliases">
+<span id="project-source-aliases"></span><h3>Source aliases<a class="headerlink" href="#source-aliases" title="Link to this heading"></a></h3>
+<p>In order to abstract the download location of source code and
+any assets which need to be downloaded, and also as a matter of
+convenience, BuildStream allows one to create named aliases for
+URLs which are to be used in the individual <code class="docutils literal notranslate"><span class="pre">.bst</span></code> files.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">foo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">git://git.foo.org/</span>
+<span class="w">  </span><span class="nt">bar</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://bar.com/downloads/</span>
+</pre></div>
+</div>
+<p>If you want this project’s alias definitions to also be used for subprojects,
+see <a class="reference internal" href="#project-junctions-source-aliases"><span class="std std-ref">Mapping source aliases of subprojects</span></a>.</p>
+</section>
+<section id="sandbox-options">
+<h3>Sandbox options<a class="headerlink" href="#sandbox-options" title="Link to this heading"></a></h3>
+<p>Sandbox options for the whole project can be supplied in
+<code class="docutils literal notranslate"><span class="pre">project.conf</span></code> in the same way as in an element. See <a class="reference internal" href="format_declaring.html#format-sandbox"><span class="std std-ref">element configuration</span></a>
+for more detail.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify a user id and group id to use in the build sandbox.</span>
+<span class="nt">sandbox</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">build-uid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1003</span>
+<span class="w">  </span><span class="nt">build-gid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1001</span>
+</pre></div>
+</div>
+</section>
+<section id="artifact-server">
+<span id="project-artifact-cache"></span><h3>Artifact server<a class="headerlink" href="#artifact-server" title="Link to this heading"></a></h3>
+<p>When maintaining a BuildStream project, it can be convenient to downstream users
+of your project to provide access to a <a class="reference internal" href="using_configuring_cache_server.html#cache-servers"><span class="std std-ref">cache server</span></a> you maintain.</p>
+<p>The project can provide <em>recommended</em> artifact cache servers through project configuration
+using the same semantics as one normally uses in the <code class="docutils literal notranslate"><span class="pre">servers</span></code> list of the
+<a class="reference internal" href="using_config.html#config-cache-servers"><span class="std std-ref">cache server user configuration</span></a>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># A remote cache from which to download prebuilt artifacts</span>
+<span class="c1">#</span>
+<span class="nt">artifacts</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://foo.com:11001</span>
+<span class="w">  </span><span class="nt">auth</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">server-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server.crt</span>
+</pre></div>
+</div>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>Unlike user configuration, the filenames provided in the <a class="reference internal" href="using_config.html#config-remote-auth"><span class="std std-ref">auth</span></a>
+configuration block are relative to the <a class="reference internal" href="format_intro.html#format-structure"><span class="std std-ref">project directory</span></a>.</p>
+<p>It is recommended to include public keys such as the <code class="docutils literal notranslate"><span class="pre">server-cert</span></code> along with your
+project so that downstream users can have automatic read access to your project.</p>
+<p>To provide write access to downstream users, it is recommended that the required
+private keys such as the <code class="docutils literal notranslate"><span class="pre">client-key</span></code> be provided to users out of band,
+and require that users configure write access separately in their own
+<a class="reference internal" href="using_config.html#config-cache-servers"><span class="std std-ref">user configuration</span></a>.</p>
+</div>
+</section>
+<section id="source-cache-server">
+<span id="project-source-cache"></span><h3>Source cache server<a class="headerlink" href="#source-cache-server" title="Link to this heading"></a></h3>
+<p>In the same way as artifact cache servers, the project can provide <em>recommended</em> source cache
+servers through project configuration using the same semantics as one normally uses in the
+<code class="docutils literal notranslate"><span class="pre">servers</span></code> list of the <a class="reference internal" href="using_config.html#config-cache-servers"><span class="std std-ref">cache server user configuration</span></a>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1"># A remote cache from which to download prestaged sources</span>
+<span class="c1">#</span>
+<span class="nt">source-caches</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://foo.com:11001</span>
+<span class="w">  </span><span class="nt">auth</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">server-cert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server.crt</span>
+</pre></div>
+</div>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>Unlike user configuration, the filenames provided in the <a class="reference internal" href="using_config.html#config-remote-auth"><span class="std std-ref">auth</span></a>
+configuration block are relative to the <a class="reference internal" href="format_intro.html#format-structure"><span class="std std-ref">project directory</span></a>.</p>
+<p>It is recommended to include public keys such as the <code class="docutils literal notranslate"><span class="pre">server-cert</span></code> along with your
+project so that downstream users can have automatic read access to your project.</p>
+<p>To provide write access to downstream users, it is recommended that the required
+private keys such as the <code class="docutils literal notranslate"><span class="pre">client-key</span></code> be provided to users out of band,
+and require that users configure write access separately in their own
+<a class="reference internal" href="using_config.html#config-cache-servers"><span class="std std-ref">user configuration</span></a>.</p>
+</div>
+</section>
+<section id="mirrors">
+<span id="project-essentials-mirrors"></span><h3>Mirrors<a class="headerlink" href="#mirrors" title="Link to this heading"></a></h3>
+<p>A list of mirrors can be defined that couple a location to a mapping of aliases to a
+list of URIs, e.g.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">mirrors</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">middle-earth</span>
+<span class="w">  </span><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">foo</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://www.middle-earth.com/foo/1</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://www.middle-earth.com/foo/2</span>
+<span class="w">    </span><span class="nt">bar</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://www.middle-earth.com/bar/1</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://www.middle-earth.com/bar/2</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oz</span>
+<span class="w">  </span><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">foo</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://www.oz.com/foo</span>
+<span class="w">    </span><span class="nt">bar</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://www.oz.com/bar</span>
+</pre></div>
+</div>
+<p>The order that the mirrors (and the URIs therein) are consulted is in the order
+they are defined when fetching, and in reverse-order when tracking.</p>
+<p>The mirrors can be overridden on a per project basis using
+<a class="reference internal" href="using_config.html#config-mirrors"><span class="std std-ref">user configuration</span></a>. One can also specify which mirror should
+be used first in the <a class="reference internal" href="using_config.html#config-default-mirror"><span class="std std-ref">user configuration</span></a>, or using
+the  <a class="reference internal" href="using_commands.html#invoking-bst"><span class="std std-ref">–default-mirror</span></a> command-line argument.</p>
+<p>If you want this project’s mirrors to also be used for subprojects,
+see <a class="reference internal" href="#project-junctions-source-aliases"><span class="std std-ref">Mapping source aliases of subprojects</span></a>.</p>
+</section>
+</section>
+<section id="loading-plugins">
+<span id="project-plugins"></span><h2>Loading plugins<a class="headerlink" href="#loading-plugins" title="Link to this heading"></a></h2>
+<p>If your project makes use of any custom <a class="reference internal" href="buildstream.element.html#module-buildstream.element" title="buildstream.element"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Element</span></code></a> or
+<a class="reference internal" href="buildstream.source.html#module-buildstream.source" title="buildstream.source"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Source</span></code></a> plugins, then the project must inform BuildStream
+of the plugins it means to make use of and the origin from which they can be loaded.</p>
+<p>Note that plugins with the same name from different origins are not permitted.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>The plugins can only be specified in the <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> and cannot be
+<a class="reference internal" href="format_intro.html#format-directives-include"><span class="std std-ref">included</span></a> from a separate file.</p>
+</div>
+<section id="local-plugins">
+<span id="project-plugins-local"></span><h3>Local plugins<a class="headerlink" href="#local-plugins" title="Link to this heading"></a></h3>
+<p>Local plugins are expected to be found in a subdirectory of the actual
+BuildStream project. <a class="reference internal" href="buildstream.element.html#module-buildstream.element" title="buildstream.element"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Element</span></code></a> and
+<a class="reference internal" href="buildstream.source.html#module-buildstream.source" title="buildstream.source"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Source</span></code></a> plugins should be stored in separate
+directories to avoid namespace collisions, you can achieve this by
+specifying a separate <em>origin</em> for sources and elements.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">plugins</span><span class="p">:</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<span class="w">  </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plugins/sources</span>
+
+<span class="w">  </span><span class="c1"># We want to use the `mysource` source plugin located in our</span>
+<span class="w">  </span><span class="c1"># project&#39;s `plugins/sources` subdirectory.</span>
+<span class="w">  </span><span class="nt">sources</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mysource</span>
+</pre></div>
+</div>
+<p>There is no strict versioning policy for plugins loaded from the local
+origin because the plugin is provided with the project data and as such,
+it is considered to be completely deterministic.</p>
+<p>Usually your project will be managed by a VCS like git, and any changes
+to your local plugins may have an impact on your project, such as changes
+to the artifact cache keys produced by elements which use these plugins.
+Changes to plugins might provide new YAML configuration options, changes
+in the semantics of existing configurations or even removal of existing
+YAML configurations.</p>
+</section>
+<section id="pip-plugins">
+<span id="project-plugins-pip"></span><h3>Pip plugins<a class="headerlink" href="#pip-plugins" title="Link to this heading"></a></h3>
+<p>Plugins loaded from the <code class="docutils literal notranslate"><span class="pre">pip</span></code> origin are expected to be installed
+separately on the host operating system using python’s package management
+system.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">plugins</span><span class="p">:</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip</span>
+
+<span class="w">  </span><span class="c1"># Specify the name of the python package containing</span>
+<span class="w">  </span><span class="c1"># the plugins we want to load. The name one would use</span>
+<span class="w">  </span><span class="c1"># on the `pip install` command line.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">package-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">potato</span>
+
+<span class="w">  </span><span class="c1"># We again must specify specifically which plugins we</span>
+<span class="w">  </span><span class="c1"># want loaded from this origin.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">elements</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">starch</span>
+</pre></div>
+</div>
+<p>Unlike local plugins, plugins loaded from the <code class="docutils literal notranslate"><span class="pre">pip</span></code> origin are
+loaded from the active <em>python environment</em>, and as such you do not
+usually have full control over the plugins your project uses unless
+one uses strict <a class="reference internal" href="#project-plugins-pip-version-constraints"><span class="std std-ref">version constraints</span></a>.</p>
+<p>The official plugin packages maintained by the BuildStream community are
+guaranteed to be fully API stable. If one chooses to load these plugins
+from the <code class="docutils literal notranslate"><span class="pre">pip</span></code> origin, then it is recommended to use <em>minimal bound dependency</em>
+<a class="reference internal" href="#project-plugins-pip-version-constraints"><span class="std std-ref">constraints</span></a> when using
+official plugin packages so as to be sure that you have access to all the
+features you intend to use in your project.</p>
+<section id="versioning-constraints">
+<span id="project-plugins-pip-version-constraints"></span><h4>Versioning constraints<a class="headerlink" href="#versioning-constraints" title="Link to this heading"></a></h4>
+<p>When loading plugins from the <code class="docutils literal notranslate"><span class="pre">pip</span></code> plugin origin, it is possible to
+specify constraints on the versions of packages you want to load
+your plugins from.</p>
+<p>The syntax for specifying versioning constraints is the same format supported by
+the <code class="docutils literal notranslate"><span class="pre">pip</span></code> package manager.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In order to be certain that versioning constraints work properly, plugin
+packages should be careful to adhere to <a class="reference external" href="https://www.python.org/dev/peps/pep-0440/">PEP 440, Version Identification and Dependency
+Specification</a>.</p>
+</div>
+<p>Here are a couple of examples:</p>
+<p><strong>Specifying minimal bound dependencies</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">plugins</span><span class="p">:</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip</span>
+
+<span class="w">  </span><span class="c1"># This project uses the API stable potato project and</span>
+<span class="w">  </span><span class="c1"># requires features from at least version 1.2</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">package-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">potato&gt;=1.2</span>
+</pre></div>
+</div>
+<p><strong>Specifying exact versions</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">plugins</span><span class="p">:</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip</span>
+
+<span class="w">  </span><span class="c1"># This project requires plugins from the potato</span>
+<span class="w">  </span><span class="c1"># project at exactly version 1.2.3</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">package-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">potato==1.2.3</span>
+</pre></div>
+</div>
+<p><strong>Specifying version constraints</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">plugins</span><span class="p">:</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip</span>
+
+<span class="w">  </span><span class="c1"># This project requires plugins from the potato</span>
+<span class="w">  </span><span class="c1"># project from version 1.2.3 onward until 1.3.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">package-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">potato&gt;=1.2.3,&lt;1.3</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p><strong>Unstable plugin packages</strong></p>
+<p>When using unstable plugins loaded from the <code class="docutils literal notranslate"><span class="pre">pip</span></code> origin, the installed
+plugins can sometimes be incompatible with your project.</p>
+<p><strong>Use virtual environments</strong></p>
+<p>Your operating system’s default python environment can only have one
+version of a given package installed at a time, if you work on multiple
+BuildStream projects on the same host, they may not agree on which versions
+of plugins to use.</p>
+<p>In order to guarantee that you can use a specific version of a plugin,
+you may need to install BuildStream into a <a class="reference external" href="https://docs.python.org/3/tutorial/venv.html">virtual environment</a> in order to control which
+python package versions are available when using your project.</p>
+<p>Follow <a class="reference external" href="https://buildstream.build/source_install.html#installing-in-virtual-environments">these instructions</a>
+to install BuildStream in a virtual environment.</p>
+<p><strong>Possible junction conflicts</strong></p>
+<p>If you have multiple projects which are connected through
+<a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a> elements, these projects can disagree
+on which version of a plugin is needed from the <code class="docutils literal notranslate"><span class="pre">pip</span></code> origin.</p>
+<p>Since only one version of a given plugin <em>package</em> can be installed
+at a time in a given <em>python environment</em>, you must ensure that all
+projects connected through <a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a> elements
+agree on which versions of API unstable plugin packages to use.</p>
+</div>
+</section>
+</section>
+<section id="junction-plugins">
+<span id="project-plugins-junction"></span><h3>Junction plugins<a class="headerlink" href="#junction-plugins" title="Link to this heading"></a></h3>
+<p>Junction plugins are loaded from another project which your project has a
+<a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a> declaration for. Plugins are loaded directly
+from the referenced project, the source and element plugins listed will simply
+be loaded from the subproject regardless of how they were defined in that project.</p>
+<p>Plugins loaded from a junction might even come from another junction and
+be <em>deeply nested</em>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">plugins</span><span class="p">:</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">junction</span>
+
+<span class="w">  </span><span class="c1"># Specify the local junction name declared in your</span>
+<span class="w">  </span><span class="c1"># project as the origin from where to load plugins from.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">junction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">subproject-junction.bst</span>
+
+<span class="w">  </span><span class="c1"># Here we want to get the `frobnicate` element</span>
+<span class="w">  </span><span class="c1"># from the subproject and use it in our project.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">elements</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frobnicate</span>
+</pre></div>
+</div>
+<p>Plugins loaded across junction boundaries will be loaded in the
+context of your project, and any default values set in the <code class="docutils literal notranslate"><span class="pre">project.conf</span></code>
+of the junctioned project will be ignored when resolving the
+defaults provided with element plugins.</p>
+<p>It is recommended to use <a class="reference internal" href="format_intro.html#format-directives-include"><span class="std std-ref">include directives</span></a>
+in the case that the referenced plugins from junctioned projects depend
+on variables defined in the project they come from, in this way you can include
+variables needed by your plugins into your own <code class="docutils literal notranslate"><span class="pre">project.conf</span></code>.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p><strong>Distributing plugins as projects</strong></p>
+<p>It is encouraged that people use BuildStream projects to distribute plugins
+which are intended to be shared among projects, especially when these plugins
+are not guaranteed to be completely API stable. This can still be done while
+also distributing your plugins as <a class="reference internal" href="#project-plugins-pip"><span class="std std-ref">pip packages</span></a> at
+the same time.</p>
+<p>This can be achieved by simply creating a repository or tarball which
+contains only the plugins you want to distribute, along with a <code class="docutils literal notranslate"><span class="pre">project.conf</span></code>
+file declaring these plugins as <a class="reference internal" href="#project-plugins-local"><span class="std std-ref">local plugins</span></a>.</p>
+<p>Using plugins which are distributed as local plugins in a BuildStream project
+ensures that you always have full control over which exact plugin your
+project is using at all times, without needing to store the plugin as a
+<a class="reference internal" href="#project-plugins-local"><span class="std std-ref">local plugin</span></a> in your own project.</p>
+</div>
+</section>
+<section id="suppressing-deprecation-warnings">
+<span id="project-plugins-deprecation"></span><h3>Suppressing deprecation warnings<a class="headerlink" href="#suppressing-deprecation-warnings" title="Link to this heading"></a></h3>
+<p>Plugins can be deprecated over time, and using deprecated plugins will
+trigger a warning when loading elements and sources which use
+deprecated plugin kinds.</p>
+<p>These deprecation warnings can be suppressed for the entire plugin
+origin or on a per plugin kind basis.</p>
+<p>To suppress all deprecation warnings from the origin, set the
+<code class="docutils literal notranslate"><span class="pre">allow-deprecated</span></code> flag for the origin as follows:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">plugins</span><span class="p">:</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<span class="w">  </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plugins/sources</span>
+
+<span class="w">  </span><span class="c1"># Suppress deprecation warnings for any plugins loaded here</span>
+<span class="w">  </span><span class="nt">allow-deprecated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+
+<span class="w">  </span><span class="nt">sources</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mysource</span>
+</pre></div>
+</div>
+<p>In order to suppress deprecation warnings for a single element or
+source kind within an origin, you will have to use a dictionary
+to declare the specific plugin kind and set the <code class="docutils literal notranslate"><span class="pre">allow-deprecated</span></code> flag
+on that dictionary as follows:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">plugins</span><span class="p">:</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip</span>
+<span class="w">  </span><span class="nt">package-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">potato</span>
+
+<span class="w">  </span><span class="c1"># Here we use a dictionary to declare the &quot;starch&quot;</span>
+<span class="w">  </span><span class="c1"># element kind, and specify that it is allowed to</span>
+<span class="w">  </span><span class="c1"># be deprecated.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">elements</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">starch</span>
+<span class="w">    </span><span class="nt">allow-deprecated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="options">
+<span id="project-options"></span><h2>Options<a class="headerlink" href="#options" title="Link to this heading"></a></h2>
+<p>Options are how BuildStream projects can define parameters which
+can be configured by users invoking BuildStream to build your project.</p>
+<p>Options are declared in the <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> in the main <code class="docutils literal notranslate"><span class="pre">options</span></code>
+dictionary.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">options</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">debug</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bool</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Whether to enable debugging</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+</pre></div>
+</div>
+<p>Project options can be specified on the command line using
+<a class="reference internal" href="using_commands.html#invoking-bst"><span class="std std-ref">bst –option …</span></a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The name of the option may contain alphanumeric characters
+underscores, and may not start with a leading digit.</p>
+</div>
+<section id="common-properties">
+<h3>Common properties<a class="headerlink" href="#common-properties" title="Link to this heading"></a></h3>
+<p>All option types accept the following common attributes</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code></p>
+<p>Indicates the type of option to declare</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">description</span></code></p>
+<p>A description of the meaning of the option</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">variable</span></code></p>
+<p>Optionally indicate a <a class="reference internal" href="format_declaring.html#format-variables"><span class="std std-ref">variable</span></a> name to
+export the option to. A string form of the selected option will
+be used to set the exported value.</p>
+<p>If used, this value will override any existing value for the
+variable declared in <code class="docutils literal notranslate"><span class="pre">project.conf</span></code>, and will be overridden in
+the regular <a class="reference internal" href="format_intro.html#format-composition"><span class="std std-ref">composition order</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The name of the variable to export may contain alphanumeric
+characters, dashes, underscores, and may not start with a leading
+digit.</p>
+</div>
+</li>
+</ul>
+</section>
+<section id="boolean">
+<span id="project-options-bool"></span><h3>Boolean<a class="headerlink" href="#boolean" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">bool</span></code> option type allows specifying boolean values which
+can be cased in conditional expressions.</p>
+<p><strong>Declaring</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">options</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">debug</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bool</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Whether to enable debugging</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+</pre></div>
+</div>
+<p><strong>Evaluating</strong></p>
+<p>Boolean options can be tested in expressions with equality tests:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">(?)</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">debug == True</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+<p>Or simply treated as truthy values:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">(?)</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">debug</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+<p><strong>Exporting</strong></p>
+<p>When exporting boolean options as variables, a <code class="docutils literal notranslate"><span class="pre">True</span></code> option value
+will be exported as <code class="docutils literal notranslate"><span class="pre">1</span></code> and a <code class="docutils literal notranslate"><span class="pre">False</span></code> option as <code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</section>
+<section id="enumeration">
+<span id="project-options-enum"></span><h3>Enumeration<a class="headerlink" href="#enumeration" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">enum</span></code> option type allows specifying a string value
+with a restricted set of possible values.</p>
+<p><strong>Declaring</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">options</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">loglevel</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">enum</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The logging level</span>
+<span class="w">    </span><span class="nt">values</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">info</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">info</span>
+</pre></div>
+</div>
+<p><strong>Evaluating</strong></p>
+<p>Enumeration options must be tested as strings in conditional
+expressions:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">(?)</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loglevel == &quot;debug&quot;</span><span class="p p-Indicator">:</span>
+<span class="w">      </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+<p><strong>Exporting</strong></p>
+<p>When exporting enumeration options as variables, the value is
+exported as a variable directly, as it is a simple string.</p>
+</section>
+<section id="flags">
+<span id="project-options-flags"></span><h3>Flags<a class="headerlink" href="#flags" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">flags</span></code> option type allows specifying a list of string
+values with a restricted set of possible values.</p>
+<p>In contrast with the <code class="docutils literal notranslate"><span class="pre">enum</span></code> option type, the <em>default</em> value
+need not be specified and will default to an empty set.</p>
+<p><strong>Declaring</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">options</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">logmask</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flags</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The logging mask</span>
+<span class="w">    </span><span class="nt">values</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">info</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
+<span class="w">    </span><span class="nt">default</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">info</span>
+</pre></div>
+</div>
+<p><strong>Evaluating</strong></p>
+<p>Options of type <code class="docutils literal notranslate"><span class="pre">flags</span></code> can be tested in conditional expressions using
+a pythonic <em>in</em> syntax to test if an element is present in a set:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">(?)</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">(&quot;debug&quot; in logmask)</span><span class="p p-Indicator">:</span>
+<span class="w">      </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+<p><strong>Exporting</strong></p>
+<p>When exporting flags options as variables, the value is
+exported as a comma separated list of selected value strings.</p>
+</section>
+<section id="architecture">
+<span id="project-options-arch"></span><h3>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">arch</span></code> option type is a special enumeration option which defaults via
+<cite>uname -m</cite> results to the following list.</p>
+<ul class="simple">
+<li><p>aarch32</p></li>
+<li><p>aarch64</p></li>
+<li><p>aarch64-be</p></li>
+<li><p>power-isa-be</p></li>
+<li><p>power-isa-le</p></li>
+<li><p>sparc-v9</p></li>
+<li><p>x86-32</p></li>
+<li><p>x86-64</p></li>
+</ul>
+<p>The reason for this, opposed to using just <cite>uname -m</cite>, is that we want an
+OS-independent list, as well as several results mapping to the same architecture
+(e.g. i386, i486 etc. are all x86-32). It does not support assigning any default
+in the project configuration.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">options</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">machine_arch</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">arch</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The machine architecture</span>
+<span class="w">    </span><span class="nt">values</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aarch32</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aarch64</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">x86-32</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">x86-64</span>
+</pre></div>
+</div>
+<p>Architecture options can be tested with the same expressions
+as other Enumeration options.</p>
+</section>
+<section id="os">
+<span id="project-options-os"></span><h3>OS<a class="headerlink" href="#os" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">os</span></code> option type is a special enumeration option, which defaults to the
+results of <cite>uname -s</cite>. It does not support assigning any default in the project
+configuration.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">options</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">machine_os</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">os</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The machine OS</span>
+<span class="w">    </span><span class="nt">values</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Linux</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SunOS</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Darwin</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FreeBSD</span>
+</pre></div>
+</div>
+<p>Os options can be tested with the same expressions as other Enumeration options.</p>
+</section>
+<section id="element-mask">
+<span id="project-options-element-mask"></span><h3>Element mask<a class="headerlink" href="#element-mask" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">element-mask</span></code> option type is a special Flags option
+which automatically allows only element names as values.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">options</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">debug_elements</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">element-mask</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The elements to build in debug mode</span>
+</pre></div>
+</div>
+<p>This can be convenient for automatically declaring an option
+which might apply to any element, and can be tested with the
+same syntax as other Flag options.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">(?)</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">(&quot;element.bst&quot; in debug_elements)</span><span class="p p-Indicator">:</span>
+<span class="w">      </span><span class="nt">enable-debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="junctions">
+<span id="project-junctions"></span><h2>Junctions<a class="headerlink" href="#junctions" title="Link to this heading"></a></h2>
+<p>In this section of <code class="docutils literal notranslate"><span class="pre">project.conf</span></code>, we can define the relationship a project
+has with <a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a> elements in the same project, or
+even in subprojects.</p>
+<p>Sometimes when your project has multiple <a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a> elements,
+a situation can arise where you have multiple instances of the same project loaded
+at the same time. In most cases, you will want to reconcile this conflict by ensuring
+that your projects share the same junction. In order to reconcile conflicts by
+ensuring nested junctions to the same project are shared, please refer to
+<a class="reference internal" href="elements/junction.html#core-junction-nested"><span class="std std-ref">the documentation on nested junctions</span></a>.</p>
+<p>In some exceptional cases, it is entirely intentional and appropriate to use
+the same project more than once in the same build pipeline. The attributes
+in the <code class="docutils literal notranslate"><span class="pre">junctions</span></code> group here in <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> provide some tools you can
+use to explicitly allow the coexistence of the same project multiple times.</p>
+<section id="duplicate-junctions">
+<h3>Duplicate junctions<a class="headerlink" href="#duplicate-junctions" title="Link to this heading"></a></h3>
+<p>In the case that you are faced with an error due to subprojects sharing
+a common sub-subproject, you can use the <code class="docutils literal notranslate"><span class="pre">duplicates</span></code> configuration
+in order to allow the said project to be loaded twice.</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">junctions</span><span class="p">:</span>
+
+<span class="w">  </span><span class="nt">duplicates</span><span class="p">:</span>
+
+<span class="w">    </span><span class="c1"># Here we use the packaging tooling completely separately from</span>
+<span class="w">    </span><span class="c1"># the payload that we are packaging, they are never staged to</span>
+<span class="w">    </span><span class="c1"># the same location in a given sandbox, and as such we would</span>
+<span class="w">    </span><span class="c1"># prefer to allow the &#39;runtime&#39; project to be loaded separately.</span>
+<span class="w">    </span><span class="c1">#</span>
+<span class="w">    </span><span class="c1"># This statement will ensure that loading the &#39;runtime&#39; project</span>
+<span class="w">    </span><span class="c1"># from these two locations will not produce any errors.</span>
+<span class="w">    </span><span class="c1">#</span>
+<span class="w">    </span><span class="nt">runtime</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">payload.bst:runtime.bst</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">packaging.bst:runtime.bst</span>
+</pre></div>
+</div>
+<p>When considering duplicated projects in the same pipeline, all instances
+of the said project need to be marked as <code class="docutils literal notranslate"><span class="pre">duplicates</span></code> in order to avoid
+a <em>conflicting junction error</em> at load time.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The declaration of <code class="docutils literal notranslate"><span class="pre">duplicates</span></code> is inherited by any dependant projects
+which may later decide to depend on your project.</p>
+<p>If you depend on a project which itself has <code class="docutils literal notranslate"><span class="pre">duplicates</span></code>, and you need
+to duplicate it again, then you only need to declare the new duplicate,
+you do not need to redeclare duplicates redundantly.</p>
+</div>
+</section>
+<section id="internal-junctions">
+<h3>Internal junctions<a class="headerlink" href="#internal-junctions" title="Link to this heading"></a></h3>
+<p>Another way to avoid <em>conflicting junction errors</em> when you know that your
+subproject should not conflict with other instances of the same subproject,
+is to declare the said subproject as <em>internal</em>.</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">junctions</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Declare this subproject as &quot;internal&quot; because we know</span>
+<span class="w">  </span><span class="c1"># that we only use it for build dependencies, and as such</span>
+<span class="w">  </span><span class="c1"># we know that it cannot collide with elements in dependant</span>
+<span class="w">  </span><span class="c1"># projects.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">internal</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">special-compiler.bst</span>
+</pre></div>
+</div>
+<p>When compared to <em>duplicates</em> above, <em>internal</em> projects have the advantage
+of never producing any <em>conflicting junction errors</em> in dependant projects
+(reverse dependency projects).</p>
+<p>This approach is preferrable in cases where you know for sure that dependant
+projects will not be depending directly on elements from your internal
+subproject.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>Declaring a junction as <em>internal</em> is a promise that dependant projects
+will not accrue runtime dependencies on elements in your <em>internal</em> subproject.</p>
+</div>
+</section>
+<section id="mapping-source-aliases-of-subprojects">
+<span id="project-junctions-source-aliases"></span><h3>Mapping source aliases of subprojects<a class="headerlink" href="#mapping-source-aliases-of-subprojects" title="Link to this heading"></a></h3>
+<p><a class="reference internal" href="elements/junction.html#module-elements.junction" title="elements.junction"><code class="xref py py-mod docutils literal notranslate"><span class="pre">junction</span></code></a> elements allow source aliases of subprojects
+to be mapped to aliases of the parent project. This makes it possible to control
+the translation of aliases to URLs including mirror configuration across multiple
+project levels.</p>
+<p>To ensure that there are mappings for all aliases of all subprojects, you can set the
+<code class="docutils literal notranslate"><span class="pre">disallow-subproject-uris</span></code> flag in the <code class="docutils literal notranslate"><span class="pre">junctions</span></code> group here in <code class="docutils literal notranslate"><span class="pre">project.conf</span></code>.</p>
+<p>top-level</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">junctions</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">disallow-subproject-uris</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+<p>This will raise an error if an alias without a mapping is encountered. This flag
+is applied recursively across all junctions.</p>
+<p>It also configures <code class="docutils literal notranslate"><span class="pre">unaliased-url</span></code> as a fatal warning in all subprojects to
+ensure that the current project is in full control over all source URLs.
+As the fatal warning configuration contributes to the cache key, this flag will
+affect the cache key of subprojects that haven’t already configured
+<code class="docutils literal notranslate"><span class="pre">unaliased-url</span></code> as a fatal warning.</p>
+</section>
+</section>
+<section id="element-default-configuration">
+<span id="project-defaults"></span><h2>Element default configuration<a class="headerlink" href="#element-default-configuration" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> plays a role in defining elements by
+providing default values and also by overriding values declared
+by plugins on a plugin wide basis.</p>
+<p>See the <a class="reference internal" href="format_intro.html#format-composition"><span class="std std-ref">composition</span></a> documentation for
+more detail on how elements are composed.</p>
+<section id="variables">
+<span id="project-defaults-variables"></span><h3>Variables<a class="headerlink" href="#variables" title="Link to this heading"></a></h3>
+<p>The defaults for <a class="reference internal" href="format_declaring.html#format-variables"><span class="std std-ref">Variables</span></a> used in your
+project is defined here.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">prefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/usr&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="environment">
+<span id="project-defaults-environment"></span><h3>Environment<a class="headerlink" href="#environment" title="Link to this heading"></a></h3>
+<p>The defaults environment for the build sandbox is defined here.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">PATH</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/bin:/bin:/usr/sbin:/sbin</span>
+</pre></div>
+</div>
+<p>Additionally, the special <code class="docutils literal notranslate"><span class="pre">environment-nocache</span></code> list which specifies
+which environment variables do not affect build output, and are thus
+not considered in the calculation of artifact keys can be defined here.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment-nocache</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MAXJOBS</span>
+</pre></div>
+</div>
+<p>Note that the <code class="docutils literal notranslate"><span class="pre">environment-nocache</span></code> list only exists so that we can
+control parameters such as <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">-j</span> <span class="pre">${MAXJOBS}</span></code>, allowing us to control
+the number of jobs for a given build without affecting the resulting
+cache key.</p>
+</section>
+<section id="split-rules">
+<span id="project-split-rules"></span><h3>Split rules<a class="headerlink" href="#split-rules" title="Link to this heading"></a></h3>
+<p>The project wide <a class="reference internal" href="format_public.html#public-split-rules"><span class="std std-ref">split rules</span></a> defaults can
+be specified here.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">split-rules</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">devel</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{includedir}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{includedir}/**</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{libdir}/lib*.a</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{libdir}/lib*.la</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="overriding-plugin-defaults">
+<span id="project-overrides"></span><h2>Overriding plugin defaults<a class="headerlink" href="#overriding-plugin-defaults" title="Link to this heading"></a></h2>
+<p>Base attributes declared by element and source plugins can be overridden
+on a project wide basis. This section explains how to make project wide
+statements which augment the configuration of an element or source plugin.</p>
+<section id="element-overrides">
+<span id="project-element-overrides"></span><h3>Element overrides<a class="headerlink" href="#element-overrides" title="Link to this heading"></a></h3>
+<p>The elements dictionary can be used to override variables, environments
+or plugin specific configuration data as shown below.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">elements</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Override default values for all autotools elements</span>
+<span class="w">  </span><span class="nt">autotools</span><span class="p">:</span>
+
+<span class="w">    </span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">bindir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{prefix}/bin&quot;</span>
+
+<span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">configure-commands</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">PKG_CONFIG_PATH=%{libdir}/pkgconfig</span>
+</pre></div>
+</div>
+</section>
+<section id="source-overrides">
+<span id="project-source-overrides"></span><h3>Source overrides<a class="headerlink" href="#source-overrides" title="Link to this heading"></a></h3>
+<p>The sources dictionary can be used to override source plugin
+specific configuration data as shown below.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">sources</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Override default values for all git sources</span>
+<span class="w">  </span><span class="nt">git</span><span class="p">:</span>
+
+<span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">checkout-submodules</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="customizing-the-shell">
+<span id="project-shell"></span><h2>Customizing the shell<a class="headerlink" href="#customizing-the-shell" title="Link to this heading"></a></h2>
+<p>Since BuildStream cannot know intimate details about your host or about
+the nature of the runtime and software that you are building, the shell
+environment for debugging and testing applications may need some help.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">shell</span></code> section allows some customization of the shell environment.</p>
+<section id="interactive-shell-command">
+<h3>Interactive shell command<a class="headerlink" href="#interactive-shell-command" title="Link to this heading"></a></h3>
+<p>By default, BuildStream will use <code class="docutils literal notranslate"><span class="pre">sh</span> <span class="pre">-i</span></code> when running an interactive
+shell, unless a specific command is given to the <code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">shell</span></code> command.</p>
+<p>BuildStream will automatically set a convenient prompt via the <code class="docutils literal notranslate"><span class="pre">PS1</span></code>
+environment variable for interactive shells; which might be overwritten
+depending on the shell you use in your runtime.</p>
+<p>If you are using <code class="docutils literal notranslate"><span class="pre">bash</span></code>, we recommend the following configuration to
+ensure that the customized prompt is not overwritten:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">shell</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Specify the command to run by default for interactive shells</span>
+<span class="w">  </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"> </span><span class="s">&#39;bash&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;--noprofile&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;--norc&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;-i&#39;</span><span class="w"> </span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+</section>
+<section id="environment-assignments">
+<h3>Environment assignments<a class="headerlink" href="#environment-assignments" title="Link to this heading"></a></h3>
+<p>In order to cooperate with your host environment, a debugging shell
+sometimes needs to be configured with some extra knowledge inheriting
+from your host environment.</p>
+<p>This can be achieved by setting up the shell <code class="docutils literal notranslate"><span class="pre">environment</span></code> configuration,
+which is expressed as a dictionary very similar to the
+<a class="reference internal" href="#project-defaults-environment"><span class="std std-ref">default environment</span></a>, except that it
+supports host side environment variable expansion in values.</p>
+<p>For example, to share your host <code class="docutils literal notranslate"><span class="pre">DISPLAY</span></code> and <code class="docutils literal notranslate"><span class="pre">DBUS_SESSION_BUS_ADDRESS</span></code>
+environments with debugging shells for your project, specify the following:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">shell</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Share some environment variables from the host environment</span>
+<span class="w">  </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">DISPLAY</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;$DISPLAY&#39;</span>
+<span class="w">    </span><span class="nt">DBUS_SESSION_BUS_ADDRESS</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;$DBUS_SESSION_BUS_ADDRESS&#39;</span>
+</pre></div>
+</div>
+<p>Or, a more complex example is how one might share the host pulseaudio
+server with a <code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">shell</span></code> environment:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">shell</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Set some environment variables explicitly</span>
+<span class="w">  </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">PULSE_SERVER</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;unix:${XDG_RUNTIME_DIR}/pulse/native&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="host-files">
+<h3>Host files<a class="headerlink" href="#host-files" title="Link to this heading"></a></h3>
+<p>It can be useful to share some files on the host with a shell so that
+it can integrate better with the host environment.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">host-files</span></code> configuration allows one to specify files and
+directories on the host to be bind mounted into the sandbox.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>One should never mount directories where one expects to
+find data and files which belong to the user, such as <code class="docutils literal notranslate"><span class="pre">/home</span></code>
+on POSIX platforms.</p>
+<p>This is because the unsuspecting user may corrupt their own
+files accidentally as a result. Instead users can use the
+<code class="docutils literal notranslate"><span class="pre">--mount</span></code> option of <code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">shell</span></code> to mount data into the shell.</p>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">host-files</span></code> configuration is an ordered list of <em>mount specifications</em>.</p>
+<p>Members of the list can be <em>fully specified</em> as a dictionary, or a simple
+string can be used if only the defaults are required.</p>
+<p>The fully specified dictionary has the following members:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">path</span></code></p>
+<p>The path inside the sandbox. This is the only mandatory
+member of the mount specification.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">host_path</span></code></p>
+<p>The host path to mount at <code class="docutils literal notranslate"><span class="pre">path</span></code> in the sandbox. This
+will default to <code class="docutils literal notranslate"><span class="pre">path</span></code> if left unspecified.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">optional</span></code></p>
+<p>Whether the mount should be considered optional. This
+is <code class="docutils literal notranslate"><span class="pre">False</span></code> by default.</p>
+</li>
+</ul>
+<p>Here is an example of a <em>fully specified mount specification</em>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">shell</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Mount an arbitrary resolv.conf from the host to</span>
+<span class="w">  </span><span class="c1"># /etc/resolv.conf in the sandbox, and avoid any</span>
+<span class="w">  </span><span class="c1"># warnings if the host resolv.conf doesnt exist.</span>
+<span class="w">  </span><span class="nt">host-files</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">host_path</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;/usr/local/work/etc/resolv.conf&#39;</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;/etc/resolv.conf&#39;</span>
+<span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+<p>Here is an example of using <em>shorthand mount specifications</em>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">shell</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Specify a list of files to mount in the sandbox</span>
+<span class="w">  </span><span class="c1"># directory from the host.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># If these do not exist on the host, a warning will</span>
+<span class="w">  </span><span class="c1"># be issued but the shell will still be launched.</span>
+<span class="w">  </span><span class="nt">host-files</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&#39;/etc/passwd&#39;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&#39;/etc/group&#39;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&#39;/etc/resolv.conf&#39;</span>
+</pre></div>
+</div>
+<p>Host side environment variable expansion is also supported:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">shell</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Mount a host side pulseaudio server socket into</span>
+<span class="w">  </span><span class="c1"># the shell environment at the same location.</span>
+<span class="w">  </span><span class="nt">host-files</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&#39;${XDG_RUNTIME_DIR}/pulse/native&#39;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="default-targets">
+<span id="project-default-targets"></span><h2>Default targets<a class="headerlink" href="#default-targets" title="Link to this heading"></a></h2>
+<p>When running BuildStream commands from a project directory or subdirectory
+without specifying any target elements on the command line, the default targets
+of the project will be used.  The default targets can be configured in the
+<code class="docutils literal notranslate"><span class="pre">defaults</span></code> section as follows:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">defaults</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># List of default target elements</span>
+<span class="w">  </span><span class="nt">targets</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app.bst</span>
+</pre></div>
+</div>
+<p>If no default targets are configured in <code class="docutils literal notranslate"><span class="pre">project.conf</span></code>, BuildStream commands
+will default to all <code class="docutils literal notranslate"><span class="pre">.bst</span></code> files in the configured element path.</p>
+<p>Commands that cannot support junctions as target elements (<code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">build</span></code>,
+<code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">artifact</span> <span class="pre">push</span></code>, and <code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">artifact</span> <span class="pre">pull</span></code>) ignore junctions in the list
+of default targets.</p>
+<p>When running BuildStream commands from a workspace directory (that is not a
+BuildStream project directory), project default targets are not used and the
+workspace element will be used as the default target instead.</p>
+<p><code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">artifact</span> <span class="pre">checkout</span></code>, <code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">source</span> <span class="pre">checkout</span></code>, and <code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">shell</span></code> are
+currently limited to a single target element and due to this, they currently
+do not use project default targets.  However, they still use the workspace
+element as default target when run from a workspace directory.</p>
+</section>
+<section id="builtin-defaults">
+<span id="project-builtin-defaults"></span><h2>Builtin defaults<a class="headerlink" href="#builtin-defaults" title="Link to this heading"></a></h2>
+<p>BuildStream defines some default values for convenience, the default
+values overridden by your project’s <code class="docutils literal notranslate"><span class="pre">project.conf</span></code> are presented here:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1">#</span>
+<span class="c1">#  Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1">#  you may not use this file except in compliance with the License.</span>
+<span class="c1">#  You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1">#  Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1">#  distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1">#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1">#  See the License for the specific language governing permissions and</span>
+<span class="c1">#  limitations under the License.</span>
+<span class="c1">#</span>
+
+<span class="c1"># Default BuildStream project configuration.</span>
+
+
+<span class="c1"># General configuration defaults</span>
+<span class="c1">#</span>
+
+<span class="c1"># Elements are found at the project root</span>
+<span class="nt">element-path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+
+<span class="c1"># Store source references in element files</span>
+<span class="nt">ref-storage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inline</span>
+
+<span class="c1"># Variable Configuration</span>
+<span class="c1">#</span>
+<span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Path configuration, to be used in build instructions.</span>
+<span class="w">  </span><span class="nt">prefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/usr&quot;</span>
+<span class="w">  </span><span class="nt">exec_prefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{prefix}&quot;</span>
+<span class="w">  </span><span class="nt">bindir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{exec_prefix}/bin&quot;</span>
+<span class="w">  </span><span class="nt">sbindir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{exec_prefix}/sbin&quot;</span>
+<span class="w">  </span><span class="nt">libexecdir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{exec_prefix}/libexec&quot;</span>
+<span class="w">  </span><span class="nt">datadir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{prefix}/share&quot;</span>
+<span class="w">  </span><span class="nt">sysconfdir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/etc&quot;</span>
+<span class="w">  </span><span class="nt">sharedstatedir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{prefix}/com&quot;</span>
+<span class="w">  </span><span class="nt">localstatedir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/var&quot;</span>
+<span class="w">  </span><span class="nt">lib</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lib&quot;</span>
+<span class="w">  </span><span class="nt">libdir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{prefix}/%{lib}&quot;</span>
+<span class="w">  </span><span class="nt">debugdir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{libdir}/debug&quot;</span>
+<span class="w">  </span><span class="nt">includedir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{prefix}/include&quot;</span>
+<span class="w">  </span><span class="nt">docdir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{datadir}/doc&quot;</span>
+<span class="w">  </span><span class="nt">infodir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{datadir}/info&quot;</span>
+<span class="w">  </span><span class="nt">mandir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{datadir}/man&quot;</span>
+
+<span class="w">  </span><span class="c1"># Indicates the default build directory where input is</span>
+<span class="w">  </span><span class="c1"># normally staged</span>
+<span class="w">  </span><span class="nt">build-root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/buildstream/%{project-name}/%{element-name}</span>
+
+<span class="w">  </span><span class="c1"># Indicates where the build system should look for configuration files  </span>
+<span class="w">  </span><span class="nt">conf-root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="c1"># Indicates the build installation directory in the sandbox</span>
+<span class="w">  </span><span class="nt">install-root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/buildstream-install</span>
+
+<span class="w">  </span><span class="c1"># You need to override this with the commands specific for your system</span>
+<span class="w">  </span><span class="nt">strip-binaries</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+
+<span class="c1"># Base sandbox environment, can be overridden by plugins</span>
+<span class="nt">environment</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">PATH</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/bin:/bin:/usr/sbin:/sbin</span>
+<span class="w">  </span><span class="nt">SHELL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/bin/sh</span>
+<span class="w">  </span><span class="nt">TERM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dumb</span>
+<span class="w">  </span><span class="nt">USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tomjon</span>
+<span class="w">  </span><span class="nt">USERNAME</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tomjon</span>
+<span class="w">  </span><span class="nt">LOGNAME</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tomjon</span>
+<span class="w">  </span><span class="nt">LC_ALL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C</span>
+<span class="w">  </span><span class="nt">HOME</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp</span>
+<span class="w">  </span><span class="nt">TZ</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UTC</span>
+
+<span class="w">  </span><span class="c1"># For reproducible builds we use 2011-11-11 11:11:11 UTC as a constant</span>
+<span class="w">  </span><span class="nt">SOURCE_DATE_EPOCH</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1321009871</span>
+
+<span class="c1"># List of environment variables which should not be taken into</span>
+<span class="c1"># account when calculating a cache key for a given element.</span>
+<span class="c1">#</span>
+<span class="nt">environment-nocache</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+
+<span class="c1"># Configuration for the sandbox other than environment variables</span>
+<span class="c1"># should go in &#39;sandbox&#39;.</span>
+<span class="nt">sandbox</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+
+<span class="c1"># Defaults for the &#39;split-rules&#39; public data found on elements</span>
+<span class="c1"># in the &#39;bst&#39; domain.</span>
+<span class="c1">#</span>
+<span class="nt">split-rules</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># The runtime domain includes whatever is needed for the</span>
+<span class="w">  </span><span class="c1"># built element to run, this includes stripped executables</span>
+<span class="w">  </span><span class="c1"># and shared libraries by default.</span>
+<span class="w">  </span><span class="nt">runtime</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{bindir}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{bindir}/*</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{sbindir}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{sbindir}/*</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{libexecdir}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{libexecdir}/*</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{libdir}/lib*.so*</span>
+
+<span class="w">  </span><span class="c1"># The devel domain includes additional things which</span>
+<span class="w">  </span><span class="c1"># you may need for development.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># By default this includes header files, static libraries</span>
+<span class="w">  </span><span class="c1"># and other metadata such as pkgconfig files, m4 macros and</span>
+<span class="w">  </span><span class="c1"># libtool archives.</span>
+<span class="w">  </span><span class="nt">devel</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{includedir}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{includedir}/**</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{libdir}/lib*.a</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{libdir}/lib*.la</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{libdir}/pkgconfig/*.pc</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{datadir}/pkgconfig/*.pc</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{datadir}/aclocal/*.m4</span>
+
+<span class="w">  </span><span class="c1"># The debug domain includes debugging information stripped</span>
+<span class="w">  </span><span class="c1"># away from libraries and executables</span>
+<span class="w">  </span><span class="nt">debug</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{debugdir}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{debugdir}/**</span>
+
+<span class="w">  </span><span class="c1"># The doc domain includes documentation</span>
+<span class="w">  </span><span class="nt">doc</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{docdir}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{docdir}/**</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{infodir}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{infodir}/**</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{mandir}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{mandir}/**</span>
+
+<span class="w">  </span><span class="c1"># The locale domain includes translations etc</span>
+<span class="w">  </span><span class="nt">locale</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{datadir}/locale</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{datadir}/locale/**</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{datadir}/i18n</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{datadir}/i18n/**</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{datadir}/zoneinfo</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">%{datadir}/zoneinfo/**</span>
+
+
+<span class="c1"># Default behavior for `bst shell`</span>
+<span class="c1">#</span>
+<span class="nt">shell</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Command to run when `bst shell` does not provide a command</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"> </span><span class="s">&#39;sh&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;-i&#39;</span><span class="w"> </span><span class="p p-Indicator">]</span>
+
+<span class="c1"># Define the set of fields accepted in `provenance` dictionaries of sources.</span>
+<span class="c1">#</span>
+<span class="nt">source-provenance-attributes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">homepage</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;The</span><span class="nv"> </span><span class="s">project</span><span class="nv"> </span><span class="s">homepage</span><span class="nv"> </span><span class="s">URL&quot;</span>
+<span class="w">  </span><span class="nt">issue-tracker</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;The</span><span class="nv"> </span><span class="s">project&#39;s</span><span class="nv"> </span><span class="s">issue</span><span class="nv"> </span><span class="s">tracking</span><span class="nv"> </span><span class="s">URL&quot;</span>
+
+<span class="c1"># Defaults for bst commands</span>
+<span class="c1">#</span>
+<span class="nt">defaults</span><span class="p">:</span>
+
+<span class="w">  </span><span class="c1"># Set default target elements to use when none are passed on the command line.</span>
+<span class="w">  </span><span class="c1"># If none are configured in the project, default to all project elements.</span>
+<span class="w">  </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="format_intro.html" class="btn btn-neutral float-left" title="Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="format_declaring.html" class="btn btn-neutral float-right" title="Declaring elements" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,205 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stack - Symbolic Element for dependency grouping &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="import - Import sources directly" href="import.html" />
+    <link rel="prev" title="Plugin specific documentation" href="../core_plugins.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core_format.html">Project format</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../core_plugins.html">Plugin specific documentation</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../core_plugins.html#elements">Elements</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">stack - Symbolic Element for dependency grouping</a></li>
+<li class="toctree-l4"><a class="reference internal" href="import.html">import - Import sources directly</a></li>
+<li class="toctree-l4"><a class="reference internal" href="compose.html">compose - Compose the output of multiple elements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="script.html">script - Run scripts to create output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="link.html">link - Link elements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="junction.html">junction - Integrate subprojects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="filter.html">filter - Extract a subset of files from another element</a></li>
+<li class="toctree-l4"><a class="reference internal" href="manual.html">manual - Manual build element</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../core_plugins.html#sources">Sources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../core_plugins.html#external-plugins">External plugins</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core_framework.html">Plugin API reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="../core_plugins.html">Plugin specific documentation</a></li>
+      <li class="breadcrumb-item active">stack - Symbolic Element for dependency grouping</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/elements/stack.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="stack-symbolic-element-for-dependency-grouping">
+<span id="module-elements.stack"></span><h1>stack - Symbolic Element for dependency grouping<a class="headerlink" href="#stack-symbolic-element-for-dependency-grouping" title="Link to this heading"></a></h1>
+<p>Stack elements are simply a symbolic element used for representing
+a logical group of elements.</p>
+<p>All dependencies declared in stack elements must always be both
+<a class="reference internal" href="../format_declaring.html#format-dependencies-types"><span class="std std-ref">build and runtime dependencies</span></a>.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stack</span>
+
+<span class="c1"># Declare all of your dependencies in the `depends` list.</span>
+<span class="nt">depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">libc.bst</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coreutils.bst</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Unlike other elements, whose cache keys are a unique identifier
+of the contents of the artifacts they produce, stack elements do
+not produce any artifact content. Instead, the cache key of an artifact
+is a unique identifier for the assembly of its own dependencies.</p>
+</div>
+<section id="using-intermediate-stacks">
+<h2>Using intermediate stacks<a class="headerlink" href="#using-intermediate-stacks" title="Link to this heading"></a></h2>
+<p>Using a stack element at intermediate levels of your build graph
+allows you to abstract away some parts of your project into logical
+subsystems which elements can more conveniently depend on as a whole.</p>
+<p>In addition to the added convenience, it will allow you to more
+easily change the implementation of a subsystem later on, without needing
+to update many reverse dependencies to depend on new elements, or even
+allow you to conditionally implement a subsystem with various implementations
+depending on what <a class="reference internal" href="../format_project.html#project-options"><span class="std std-ref">project options</span></a> were specified at
+build time.</p>
+</section>
+<section id="using-toplevel-stacks">
+<h2>Using toplevel stacks<a class="headerlink" href="#using-toplevel-stacks" title="Link to this heading"></a></h2>
+<p>Stack elements can also be useful as toplevel targets in your build graph
+to simply indicate all of the components which need to be built for a given
+system to be complete, or for your integration pipeline to be successful.</p>
+<section id="checking-out-and-deploying-toplevel-stacks">
+<h3>Checking out and deploying toplevel stacks<a class="headerlink" href="#checking-out-and-deploying-toplevel-stacks" title="Link to this heading"></a></h3>
+<p>In case that your software is built remotely, it is possible to checkout
+the built content of a stack on your own machine for the purposes of
+inspection or further deployment.</p>
+<p>To accomplish this, you will need to know the cache key of the stack element
+which was built remotely, possibly by inspecting the remote build log or by
+deriving it with an equally configured BuildStream project, and you will
+need read access to the artifact cache server which the build was uploaded to,
+this should be configured in your <a class="reference internal" href="../using_config.html#config-artifact-caches"><span class="std std-ref">user configuration file</span></a>.</p>
+<p>You can then checkout the remotely built stack using the
+<a class="reference internal" href="../using_commands.html#invoking-artifact-checkout"><span class="std std-ref">bst artifact checkout</span></a> command and providing
+it with the <a class="reference internal" href="../using_commands.html#artifact-names"><span class="std std-ref">artifact name</span></a>:</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bst<span class="w"> </span>artifact<span class="w"> </span>checkout<span class="w"> </span>--deps<span class="w"> </span>build<span class="w"> </span>--pull<span class="w"> </span>--integrate<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--directory<span class="w"> </span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>/checkout<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>project/stack/788da21e7c1b5818b7e7b60f7eb75841057ff7e45d362cc223336c606fe47f27
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is possible to checkout other elements in the same way, however stack
+elements are uniquely suited to this purpose, as they cannot have
+<a class="reference internal" href="../format_declaring.html#format-dependencies-types"><span class="std std-ref">runtime only dependencies</span></a>, and consequently
+their cache keys are always a unique representation of their collective
+dependencies.</p>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../core_plugins.html" class="btn btn-neutral float-left" title="Plugin specific documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="import.html" class="btn btn-neutral float-right" title="import - Import sources directly" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

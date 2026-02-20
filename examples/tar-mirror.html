@@ -1,0 +1,216 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Creating and using a tar mirror &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Creating and using a git mirror" href="git-mirror.html" />
+    <link rel="prev" title="Examples" href="../using_examples.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing from Source</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../main_using.html">Using</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../using_tutorial.html">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_developing.html">Developing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_handling_files.html">Handling files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_junctions.html">Combining projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_config.html">User configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_commands.html">Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_configuring_cache_server.html">Configuring Cache Servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../using_configuring_remote_execution.html">Remote Execution Servers</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../using_examples.html">Examples</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Creating and using a tar mirror</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starting-a-tar-server">Starting a tar server</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#further-reading">Further reading</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="git-mirror.html">Creating and using a git mirror</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../main_using.html">Using</a></li>
+          <li class="breadcrumb-item"><a href="../using_examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Creating and using a tar mirror</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/tar-mirror.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="creating-and-using-a-tar-mirror">
+<span id="using-tar-mirror"></span><h1>Creating and using a tar mirror<a class="headerlink" href="#creating-and-using-a-tar-mirror" title="Link to this heading"></a></h1>
+<p>This is an example of how to create a tar mirror using
+<a class="reference external" href="https://redmine.lighttpd.net/projects/1/wiki/TutorialConfiguration">lighttpd</a>.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<p>You will need <cite>lighttpd</cite> installed.</p>
+<p>I will be using gnome-modulesets as an example, which can be cloned from
+<cite>http://gnome7.codethink.co.uk/gnome-modulesets.git</cite>.</p>
+</section>
+<section id="starting-a-tar-server">
+<h2>Starting a tar server<a class="headerlink" href="#starting-a-tar-server" title="Link to this heading"></a></h2>
+<section id="set-up-a-directory-containing-mirrors">
+<h3>1. Set up a directory containing mirrors<a class="headerlink" href="#set-up-a-directory-containing-mirrors" title="Link to this heading"></a></h3>
+<p>Choose a suitable directory to hold your mirrored tar files, e.g. <cite>/var/www/tar</cite>.</p>
+<p>Place the tar files you want to use as mirrors in your mirror dir, e.g.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">-</span><span class="n">p</span> <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">www</span><span class="o">/</span><span class="n">tar</span><span class="o">/</span><span class="n">gettext</span>
+<span class="n">wget</span> <span class="o">-</span><span class="n">O</span> <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">www</span><span class="o">/</span><span class="n">tar</span><span class="o">/</span><span class="n">gettext</span><span class="o">/</span><span class="n">gettext</span><span class="o">-</span><span class="mf">0.19.8.1</span><span class="o">.</span><span class="n">tar</span><span class="o">.</span><span class="n">xz</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">ftp</span><span class="o">.</span><span class="n">gnu</span><span class="o">.</span><span class="n">org</span><span class="o">/</span><span class="n">gnu</span><span class="o">/</span><span class="n">gettext</span><span class="o">/</span><span class="n">gettext</span><span class="o">-</span><span class="mf">0.19.8.1</span><span class="o">.</span><span class="n">tar</span><span class="o">.</span><span class="n">xz</span>
+</pre></div>
+</div>
+</section>
+<section id="configure-lighttpd">
+<h3>2. Configure lighttpd<a class="headerlink" href="#configure-lighttpd" title="Link to this heading"></a></h3>
+<p>Write out a lighttpd.conf as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">server</span><span class="o">.</span><span class="n">document</span><span class="o">-</span><span class="n">root</span> <span class="o">=</span> <span class="s2">&quot;/var/www/tar/&quot;</span>
+<span class="n">server</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="mi">3000</span>
+
+<span class="nb">dir</span><span class="o">-</span><span class="n">listing</span><span class="o">.</span><span class="n">activate</span> <span class="o">=</span> <span class="s2">&quot;enable&quot;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you have your mirrors in another directory, replace /var/www/tar/ with that directory.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>An example lighttpd.conf that works for both git and tar services is available
+<a class="reference internal" href="git-mirror.html#lighttpd-git-tar-conf"><span class="std std-ref">here</span></a></p>
+</div>
+</section>
+<section id="start-lighttpd">
+<h3>3. Start lighttpd<a class="headerlink" href="#start-lighttpd" title="Link to this heading"></a></h3>
+<p>lighttpd can be invoked with the command-line <code class="docutils literal notranslate"><span class="pre">lighttpd</span> <span class="pre">-D</span> <span class="pre">-f</span> <span class="pre">lighttpd.conf</span></code>.</p>
+</section>
+<section id="test-that-you-can-fetch-from-it">
+<h3>4. Test that you can fetch from it<a class="headerlink" href="#test-that-you-can-fetch-from-it" title="Link to this heading"></a></h3>
+<p>We can then download the mirrored file with <code class="docutils literal notranslate"><span class="pre">wget</span> <span class="pre">127.0.0.1:3000/tar/gettext/gettext-0.19.8.1.tar.xz</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you have set server.port to something other than the default, you will need
+to replace the ‘3000’ in the command-line.</p>
+</div>
+</section>
+<section id="configure-the-project-to-use-the-mirror">
+<h3>5. Configure the project to use the mirror<a class="headerlink" href="#configure-the-project-to-use-the-mirror" title="Link to this heading"></a></h3>
+<p>To add this local http server as a mirror, add the following to the project.conf:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">mirrors</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local-mirror</span>
+<span class="w">  </span><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ftp_gnu_org</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://127.0.0.1:3000/tar/</span>
+</pre></div>
+</div>
+</section>
+<section id="test-that-the-mirror-works">
+<h3>6. Test that the mirror works<a class="headerlink" href="#test-that-the-mirror-works" title="Link to this heading"></a></h3>
+<p>We can make buildstream use the mirror by setting the alias to an invalid URL, e.g.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ftp_gnu_org</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://www.example.com/invalid/url/</span>
+</pre></div>
+</div>
+<p>Now, if you build an element that uses the source you placed in the mirror
+(e.g. <code class="docutils literal notranslate"><span class="pre">bst</span> <span class="pre">build</span> <span class="pre">core-deps/gettext.bst</span></code>), you will see that it uses your mirror.</p>
+</section>
+</section>
+<section id="further-reading">
+<h2>Further reading<a class="headerlink" href="#further-reading" title="Link to this heading"></a></h2>
+<p>If this mirror isn’t being used exclusively in a secure network, it is strongly
+recommended you <a class="reference external" href="https://redmine.lighttpd.net/projects/1/wiki/HowToSimpleSSL">use SSL</a>.</p>
+<p>Lighttpd is documented on <a class="reference external" href="https://redmine.lighttpd.net/projects/lighttpd/wiki">its wiki</a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../using_examples.html" class="btn btn-neutral float-left" title="Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="git-mirror.html" class="btn btn-neutral float-right" title="Creating and using a git mirror" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

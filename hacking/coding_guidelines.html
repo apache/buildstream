@@ -1,0 +1,935 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coding guidelines &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Using the test suite" href="using_the_testsuite.html" />
+    <link rel="prev" title="Contributing" href="../CONTRIBUTING.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_porting.html">Porting guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#filing-issues">Filing issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#fixing-bugs">Fixing bugs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#adding-new-features">Adding new features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#submitting-patches">Submitting patches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#committer-access">Committer access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#windows-ci">Windows CI</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../CONTRIBUTING.html#further-information">Further information</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Coding guidelines</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#approximate-pep-8-style">Approximate PEP-8 Style</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#documenting-symbols">Documenting symbols</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#class-structure-and-ordering">Class structure and ordering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#public-and-private-symbols">Public and private symbols</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#public-api-surface">Public API surface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#file-naming-convention">File naming convention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#imports">Imports</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#instance-variables">Instance variables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#accessors-and-mutators">Accessors and mutators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#abstract-methods">Abstract methods</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#error-handling">Error handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#always-be-consistent">Always be consistent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#avoid-tail-calling">Avoid tail calling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#vertical-stacking-of-modules">Vertical stacking of modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#minimize-arguments-in-methods">Minimize arguments in methods</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#minimize-api-surfaces">Minimize API surfaces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#avoid-transient-state-on-instances">Avoid transient state on instances</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#refactor-the-codebase-as-needed">Refactor the codebase as needed</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="using_the_testsuite.html">Using the test suite</a></li>
+<li class="toctree-l3"><a class="reference internal" href="writing_documentation.html">Writing documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="writing_plugins.html">Adding core plugins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="measuring_performance.html">Measuring performance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="making_releases.html">Making releases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="grpc_protocols.html">Generating protocol buffers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="managing_data_files.html">Managing data files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html">Updating BuildStream’s Python dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#adding-support-for-a-new-python-release">Adding support for a new Python release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#removing-support-for-a-python-release">Removing support for a Python release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#abi-compatibility-for-binary-python-packages">ABI compatibility for binary Python packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ui.html">Contributing to the UI</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../CONTRIBUTING.html">Contributing</a></li>
+      <li class="breadcrumb-item active">Coding guidelines</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/hacking/coding_guidelines.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="coding-guidelines">
+<span id="id1"></span><h1>Coding guidelines<a class="headerlink" href="#coding-guidelines" title="Link to this heading"></a></h1>
+<p>This section discusses coding style and other guidelines for hacking
+on BuildStream. This is important to read through for writing any non-trivial
+patches and especially outlines what people should watch out for when
+reviewing patches.</p>
+<p>Much of the rationale behind what is layed out in this section considers
+good traceability of lines of code with <em>git blame</em>, overall sensible
+modular structure, consistency in how we write code, and long term maintenance
+in mind.</p>
+<section id="approximate-pep-8-style">
+<h2>Approximate PEP-8 Style<a class="headerlink" href="#approximate-pep-8-style" title="Link to this heading"></a></h2>
+<p>Python coding style for BuildStream is approximately <a class="reference external" href="https://www.python.org/dev/peps/pep-0008/">pep8</a>.</p>
+<p>The coding style is automatically enforced by <a class="reference external" href="https://black.readthedocs.io/en/stable/">black</a>.</p>
+<p>Formatting will be checked automatically when running the testsuite on CI. For
+details on how to format your code locally, see <a class="reference internal" href="using_the_testsuite.html#contributing-formatting-code"><span class="std std-ref">formatting code</span></a>.</p>
+</section>
+<section id="documenting-symbols">
+<span id="contributing-documenting-symbols"></span><h2>Documenting symbols<a class="headerlink" href="#documenting-symbols" title="Link to this heading"></a></h2>
+<p>In BuildStream, we maintain what we call a <em>“Public API Surface”</em> that
+is guaranteed to be stable and unchanging across stable releases. The
+symbols which fall into this special class are documented using Python’s
+standard <em>docstrings</em>, while all other internals of BuildStream are documented
+with comments above the related symbol.</p>
+<p>When documenting the public API surface which is rendered in the reference
+manual, we always mention the major version in which the API was introduced,
+as shown in the examples below. If a public API exists without the <em>Since</em>
+annotation, this is taken to mean that it was available since the first stable
+major point release (e.g: 2.0).</p>
+<p>We also always ensure that the <strong>public API</strong> is entirely typed using type
+annotations inline.</p>
+<p>The private API <em>can</em> be typed inline or in the documentation at the author’s
+discretion.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Types are checked using <cite>mypy</cite>. You can run it like <strong class="command">tox -e mypy</strong></p>
+</div>
+<p>Here are some examples to get the hang of the format of API documenting
+comments and docstrings.</p>
+<p><strong>Public API Surface method</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">frobnicate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Source</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">frobilicious</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Element</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Frobnicates this element with the specified source</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">       source: The Source to frobnicate with</span>
+<span class="sd">       frobilicious: Optionally specify that frobnication should be</span>
+<span class="sd">                            performed frobiliciously</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">       The frobnicated version of this Element.</span>
+
+<span class="sd">    *Since: 2.2*</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p><strong>Internal method</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># frobnicate():</span>
+<span class="c1">#</span>
+<span class="c1"># Frobnicates this element with the specified source</span>
+<span class="c1">#</span>
+<span class="c1"># Args:</span>
+<span class="c1">#    source: The Source to frobnicate with</span>
+<span class="c1">#    frobilicious: Optionally specify that frobnication should be</span>
+<span class="c1">#                         performed frobiliciously</span>
+<span class="c1">#</span>
+<span class="c1"># Returns:</span>
+<span class="c1">#    The frobnicated version of this Element.</span>
+<span class="c1">#</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">frobnicate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Source</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">frobilicious</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Element</span><span class="p">:</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p><strong>Public API Surface instance variable</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+
+  <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_name</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;The name of this foo</span>
+
+<span class="sd">  *Since: 2.2*</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Python does not support docstrings on instance variables, but sphinx does
+pick them up and includes them in the generated documentation.</p>
+</div>
+<p><strong>Internal instance variable</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+
+  <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_name</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span>  <span class="c1"># The name of this foo</span>
+</pre></div>
+</div>
+<p><strong>Internal instance variable (long)</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+
+  <span class="c1"># This instance variable required a longer explanation, so</span>
+  <span class="c1"># it is on a line above the instance variable declaration.</span>
+  <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_name</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Public API Surface class</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">(</span><span class="n">Bar</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The main Foo object in the data model</span>
+
+<span class="sd">    Explanation about Foo. Note that we always document</span>
+<span class="sd">    the constructor arguments here, and not beside the __init__</span>
+<span class="sd">    method.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">       context: The invocation Context</span>
+<span class="sd">       count: The number to count</span>
+
+<span class="sd">    *Since: 2.2*</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Context</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p><strong>Internal class</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Foo()</span>
+<span class="c1">#</span>
+<span class="c1"># The main Foo object in the data model</span>
+<span class="c1">#</span>
+<span class="c1"># Args:</span>
+<span class="c1">#    context (Context): The invocation Context</span>
+<span class="c1">#    count (int): The number to count</span>
+<span class="c1">#</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">(</span><span class="n">Bar</span><span class="p">):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+<section id="class-structure-and-ordering">
+<span id="contributing-class-order"></span><h2>Class structure and ordering<a class="headerlink" href="#class-structure-and-ordering" title="Link to this heading"></a></h2>
+<p>When creating or modifying an object class in BuildStream, it is
+important to keep in mind the order in which symbols should appear
+and keep this consistent.</p>
+<p>Here is an example to illustrate the expected ordering of symbols
+on a Python class in BuildStream:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">(</span><span class="n">Bar</span><span class="p">):</span>
+
+    <span class="c1"># Public class-wide variables come first, if any.</span>
+
+    <span class="c1"># Private class-wide variables, if any</span>
+
+    <span class="c1"># Now we have the dunder/magic methods, always starting</span>
+    <span class="c1"># with the __init__() method.</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="c1"># NOTE: In the instance initializer we declare any instance variables,</span>
+        <span class="c1">#       always declare the public instance variables (if any) before</span>
+        <span class="c1">#       the private ones.</span>
+        <span class="c1">#</span>
+        <span class="c1">#       It is preferred to avoid any public instance variables, and</span>
+        <span class="c1">#       always expose an accessor method for it instead.</span>
+
+        <span class="c1">#</span>
+        <span class="c1"># Public instance variables</span>
+        <span class="c1">#</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>  <span class="c1"># The name of this foo</span>
+
+        <span class="c1">#</span>
+        <span class="c1"># Private instance variables</span>
+        <span class="c1">#</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_count</span> <span class="o">=</span> <span class="mi">0</span>   <span class="c1"># The count of this foo</span>
+
+    <span class="c1">################################################</span>
+    <span class="c1">#               Abstract Methods               #</span>
+    <span class="c1">################################################</span>
+
+    <span class="c1"># NOTE: Abstract methods in BuildStream are allowed to have</span>
+    <span class="c1">#       default methods.</span>
+    <span class="c1">#</span>
+    <span class="c1">#       Subclasses must NEVER override any method which was</span>
+    <span class="c1">#       not advertized as an abstract method by the parent class.</span>
+
+    <span class="c1"># frob()</span>
+    <span class="c1">#</span>
+    <span class="c1"># Implementors should implement this to frob this foo</span>
+    <span class="c1"># count times if possible.</span>
+    <span class="c1">#</span>
+    <span class="c1"># Args:</span>
+    <span class="c1">#    count (int): The number of times to frob this foo</span>
+    <span class="c1">#</span>
+    <span class="c1"># Returns:</span>
+    <span class="c1">#    (int): The number of times this foo was frobbed.</span>
+    <span class="c1">#</span>
+    <span class="c1"># Raises:</span>
+    <span class="c1">#    (FooError): Implementors are expected to raise this error</span>
+    <span class="c1">#</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">frob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="p">):</span>
+
+        <span class="c1">#</span>
+        <span class="c1"># An abstract method in BuildStream is allowed to have</span>
+        <span class="c1"># a default implementation.</span>
+        <span class="c1">#</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_frobbing</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count</span>
+
+    <span class="c1">################################################</span>
+    <span class="c1">#     Implementation of abstract methods       #</span>
+    <span class="c1">################################################</span>
+
+    <span class="c1"># NOTE: Implementations of abstract methods defined by</span>
+    <span class="c1">#       the parent class should NEVER document the API</span>
+    <span class="c1">#       here redundantly.</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">frobbish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+       <span class="c1">#</span>
+       <span class="c1"># Implementation of the &quot;frobbish&quot; abstract method</span>
+       <span class="c1"># defined by the parent Bar class.</span>
+       <span class="c1">#</span>
+       <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="c1">################################################</span>
+    <span class="c1">#                 Public Methods               #</span>
+    <span class="c1">################################################</span>
+
+    <span class="c1"># NOTE: Public methods here are the ones which are expected</span>
+    <span class="c1">#       to be called from outside of this class.</span>
+    <span class="c1">#</span>
+    <span class="c1">#       These, along with any abstract methods, usually</span>
+    <span class="c1">#       constitute the API surface of this class.</span>
+
+    <span class="c1"># frobnicate()</span>
+    <span class="c1">#</span>
+    <span class="c1"># Perform the frobnication process on this Foo</span>
+    <span class="c1">#</span>
+    <span class="c1"># Raises:</span>
+    <span class="c1">#    (FrobError): In the case that a frobnication error was</span>
+    <span class="c1">#                 encountered</span>
+    <span class="c1">#</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">frobnicate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">frobnicator</span><span class="o">.</span><span class="n">frobnicate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="c1"># set_count()</span>
+    <span class="c1">#</span>
+    <span class="c1"># Sets the count of this foo</span>
+    <span class="c1">#</span>
+    <span class="c1"># Args:</span>
+    <span class="c1">#    count (int): The new count to set</span>
+    <span class="c1">#</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_count</span> <span class="o">=</span> <span class="n">count</span>
+
+    <span class="c1"># get_count()</span>
+    <span class="c1">#</span>
+    <span class="c1"># Accessor for the count value of this foo.</span>
+    <span class="c1">#</span>
+    <span class="c1"># Returns:</span>
+    <span class="c1">#    (int): The count of this foo</span>
+    <span class="c1">#</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="p">):</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count</span>
+
+    <span class="c1">################################################</span>
+    <span class="c1">#                 Private Methods              #</span>
+    <span class="c1">################################################</span>
+
+    <span class="c1"># NOTE: Private methods are the ones which are internal</span>
+    <span class="c1">#       implementation details of this class.</span>
+    <span class="c1">#</span>
+    <span class="c1">#       Even though these are private implementation</span>
+    <span class="c1">#       details, they still MUST have API documenting</span>
+    <span class="c1">#       comments on them.</span>
+
+    <span class="c1"># _do_frobbing()</span>
+    <span class="c1">#</span>
+    <span class="c1"># Does the actual frobbing</span>
+    <span class="c1">#</span>
+    <span class="c1"># Args:</span>
+    <span class="c1">#    count (int): The number of times to frob this foo</span>
+    <span class="c1">#</span>
+    <span class="c1"># Returns:</span>
+    <span class="c1">#    (int): The number of times this foo was frobbed.</span>
+    <span class="c1">#</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">self</span><span class="o">.</span><span class="n">_do_frobbing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">count</span>
+</pre></div>
+</div>
+</section>
+<section id="public-and-private-symbols">
+<span id="contributing-public-and-private"></span><h2>Public and private symbols<a class="headerlink" href="#public-and-private-symbols" title="Link to this heading"></a></h2>
+<p>BuildStream mostly follows the PEP-8 for defining <em>public</em> and <em>private</em> symbols
+for any given class, with some deviations. Please read the <a class="reference external" href="https://www.python.org/dev/peps/pep-0008/#designing-for-inheritance">section on inheritance</a> for
+reference on how the PEP-8 defines public and non-public.</p>
+<ul>
+<li><p>A <em>public</em> symbol is any symbol which you expect to be used by clients
+of your class or module within BuildStream.</p>
+<p>Public symbols are written without any leading underscores.</p>
+</li>
+<li><p>A <em>private</em> symbol is any symbol which is entirely internal to your class
+or module within BuildStream. These symbols cannot ever be accessed by
+external clients or modules.</p>
+<p>A private symbol must be denoted by a leading underscore.</p>
+</li>
+<li><p>When a class can have subclasses, then private symbols should be denoted
+by two leading underscores. For example, the <code class="docutils literal notranslate"><span class="pre">Sandbox</span></code> or <code class="docutils literal notranslate"><span class="pre">Platform</span></code>
+classes which have various implementations, or the <code class="docutils literal notranslate"><span class="pre">Element</span></code> and <code class="docutils literal notranslate"><span class="pre">Source</span></code>
+classes which plugins derive from.</p>
+<p>The double leading underscore naming convention invokes Python’s name
+mangling algorithm which helps prevent namespace collisions in the case
+that subclasses might have a private symbol with the same name.</p>
+</li>
+</ul>
+<p>In BuildStream, we have what we call a <em>“Public API Surface”</em>, as previously
+mentioned in <a class="reference internal" href="#contributing-documenting-symbols"><span class="std std-ref">Documenting symbols</span></a>. In the <a class="reference internal" href="#contributing-public-api-surface"><span class="std std-ref">next section</span></a> we will discuss the <em>“Public API Surface”</em> and
+outline the exceptions to the rules discussed here.</p>
+</section>
+<section id="public-api-surface">
+<span id="contributing-public-api-surface"></span><h2>Public API surface<a class="headerlink" href="#public-api-surface" title="Link to this heading"></a></h2>
+<p>BuildStream exposes what we call a <em>“Public API Surface”</em> which is stable
+and unchanging. This is for the sake of stability of the interfaces which
+plugins use, so it can also be referred to as the <em>“Plugin facing API”</em>.</p>
+<p>Any symbols which are a part of the <em>“Public API Surface</em>” are never allowed
+to change once they have landed in a stable release version of BuildStream. As
+such, we aim to keep the <em>“Public API Surface”</em> as small as possible at all
+times, and never expose any internal details to plugins inadvertently.</p>
+<p>One problem which arises from this is that we end up having symbols
+which are <em>public</em> according to the <a class="reference internal" href="#contributing-public-and-private"><span class="std std-ref">rules discussed in the previous section</span></a>, but must be hidden away from the
+<em>“Public API Surface”</em>. For example, BuildStream internal classes need
+to invoke methods on the <code class="docutils literal notranslate"><span class="pre">Element</span></code> and <code class="docutils literal notranslate"><span class="pre">Source</span></code> classes, whereas these
+methods need to be hidden from the <em>“Public API Surface”</em>.</p>
+<p>This is where BuildStream deviates from the PEP-8 standard for public
+and private symbol naming.</p>
+<p>In order to disambiguate between:</p>
+<ul class="simple">
+<li><p>Symbols which are publicly accessible details of the <code class="docutils literal notranslate"><span class="pre">Element</span></code> class, can
+be accessed by BuildStream internals, but must remain hidden from the
+<em>“Public API Surface”</em>.</p></li>
+<li><p>Symbols which are private to the <code class="docutils literal notranslate"><span class="pre">Element</span></code> class, and cannot be accessed
+from outside of the <code class="docutils literal notranslate"><span class="pre">Element</span></code> class at all.</p></li>
+</ul>
+<p>We denote the former category of symbols with only a single underscore, and the latter
+category of symbols with a double underscore. We often refer to this distinction
+as <em>“API Private”</em> (the former category) and <em>“Local Private”</em> (the latter category).</p>
+<p>Classes which are a part of the <em>“Public API Surface”</em> and require this disambiguation
+were not discussed in <a class="reference internal" href="#contributing-class-order"><span class="std std-ref">the class ordering section</span></a>, for
+these classes, the <em>“API Private”</em> symbols always come <strong>before</strong> the <em>“Local Private”</em>
+symbols in the class declaration.</p>
+<p>Modules which are not a part of the <em>“Public API Surface”</em> have their Python files
+prefixed with a single underscore, and are not imported in BuildStream’s the master
+<code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> which is used by plugins.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">utils.py</span></code> module is public and exposes a handful of utility functions,
+however many of the functions it provides are <em>“API Private”</em>.</p>
+<p>In this case, the <em>“API Private”</em> functions are prefixed with a single underscore.</p>
+</div>
+<p>Any objects which are a part of the <em>“Public API Surface”</em> should be exposed via the
+toplevel <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> of the <code class="docutils literal notranslate"><span class="pre">buildstream</span></code> package.</p>
+</section>
+<section id="file-naming-convention">
+<h2>File naming convention<a class="headerlink" href="#file-naming-convention" title="Link to this heading"></a></h2>
+<p>With the exception of a few helper objects and data structures, we structure
+the code in BuildStream such that every filename is named after the object it
+implements. E.g. The <code class="docutils literal notranslate"><span class="pre">Project</span></code> object is implemented in <code class="docutils literal notranslate"><span class="pre">_project.py</span></code>, the
+<code class="docutils literal notranslate"><span class="pre">Context</span></code> object in <code class="docutils literal notranslate"><span class="pre">_context.py</span></code>, the base <code class="docutils literal notranslate"><span class="pre">Element</span></code> class in <code class="docutils literal notranslate"><span class="pre">element.py</span></code>,
+etc.</p>
+<p>As mentioned in the previous section, objects which are not a part of the
+<a class="reference internal" href="#contributing-public-api-surface"><span class="std std-ref">public, plugin facing API surface</span></a> have their
+filenames prefixed with a leading underscore (like <code class="docutils literal notranslate"><span class="pre">_context.py</span></code> and <code class="docutils literal notranslate"><span class="pre">_project.py</span></code>
+in the examples above).</p>
+<p>When an object name has multiple words in it, e.g. <code class="docutils literal notranslate"><span class="pre">ArtifactCache</span></code>, then the
+resulting file is named all in lower case without any underscore to separate
+words. In the case of <code class="docutils literal notranslate"><span class="pre">ArtifactCache</span></code>, the filename implementing this object
+is found at <code class="docutils literal notranslate"><span class="pre">_artifactcache/artifactcache.py</span></code>.</p>
+</section>
+<section id="imports">
+<h2>Imports<a class="headerlink" href="#imports" title="Link to this heading"></a></h2>
+<p>Module imports inside BuildStream are done with relative <code class="docutils literal notranslate"><span class="pre">.</span></code> notation:</p>
+<p><strong>Good</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">._context</span><span class="w"> </span><span class="kn">import</span> <span class="n">Context</span>
+</pre></div>
+</div>
+<p><strong>Bad</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">buildstream._context</span><span class="w"> </span><span class="kn">import</span> <span class="n">Context</span>
+</pre></div>
+</div>
+<p>The exception to the above rule is when authoring plugins,
+plugins do not reside in the same namespace so they must
+address buildstream in the imports.</p>
+<p>An element plugin will derive from Element by importing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">buildstream</span><span class="w"> </span><span class="kn">import</span> <span class="n">Element</span>
+</pre></div>
+</div>
+<p>When importing utilities specifically, don’t import function names
+from there, instead import the module itself:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">utils</span>
+</pre></div>
+</div>
+<p>This makes things clear when reading code that said functions
+are not defined in the same file but come from utils.py for example.</p>
+</section>
+<section id="instance-variables">
+<span id="contributing-instance-variables"></span><h2>Instance variables<a class="headerlink" href="#instance-variables" title="Link to this heading"></a></h2>
+<p>It is preferred that all instance state variables be declared as <a class="reference internal" href="#contributing-public-and-private"><span class="std std-ref">private symbols</span></a>, however in some cases, especially when the state
+is immutable for the object’s life time (like an <code class="docutils literal notranslate"><span class="pre">Element</span></code> name for example), it
+is acceptable to save some typing by using a publicly accessible instance variable.</p>
+<p>It is never acceptable to modify the value of an instance variable from outside
+of the declaring class, even if the variable is <em>public</em>. In other words, the class
+which exposes an instance variable is the only one in control of the value of this
+variable.</p>
+<ul class="simple">
+<li><p>If an instance variable is public and must be modified; then it must be
+modified using a <a class="reference internal" href="#contributing-accessor-mutator"><span class="std std-ref">mutator</span></a>.</p></li>
+<li><p>Ideally for better encapsulation, all object state is declared as
+<a class="reference internal" href="#contributing-public-and-private"><span class="std std-ref">private instance variables</span></a> and can
+only be accessed by external classes via public <a class="reference internal" href="#contributing-accessor-mutator"><span class="std std-ref">accessors and mutators</span></a>.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In some cases, we may use small data structures declared as objects for the sake
+of better readability, where the object class itself has no real supporting code.</p>
+<p>In these exceptions, it can be acceptable to modify the instance variables
+of these objects directly, unless they are otherwise documented to be immutable.</p>
+</div>
+</section>
+<section id="accessors-and-mutators">
+<span id="contributing-accessor-mutator"></span><h2>Accessors and mutators<a class="headerlink" href="#accessors-and-mutators" title="Link to this heading"></a></h2>
+<p>An accessor and mutator, are methods defined on the object class to access (get)
+or mutate (set) a value owned by the declaring class, respectively.</p>
+<p>An accessor might derive the returned value from one or more of its components,
+and a mutator might have side effects, or delegate the mutation to a component.</p>
+<p>Accessors and mutators are always <a class="reference internal" href="#contributing-public-and-private"><span class="std std-ref">public</span></a>
+(even if they might have a single leading underscore and are considered
+<a class="reference internal" href="#contributing-public-api-surface"><span class="std std-ref">API Private</span></a>), as their purpose is to
+enforce encapsulation with regards to any accesses to the state which is owned
+by the declaring class.</p>
+<p>Accessors and mutators are functions prefixed with <code class="docutils literal notranslate"><span class="pre">get_</span></code> and <code class="docutils literal notranslate"><span class="pre">set_</span></code>
+respectively, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">():</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="c1"># Declare some internal state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># get_count()</span>
+    <span class="c1">#</span>
+    <span class="c1"># Gets the count of this Foo.</span>
+    <span class="c1">#</span>
+    <span class="c1"># Returns:</span>
+    <span class="c1">#    (int): The current count of this Foo</span>
+    <span class="c1">#</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count</span>
+
+    <span class="c1"># set_count()</span>
+    <span class="c1">#</span>
+    <span class="c1"># Sets the count of this Foo.</span>
+    <span class="c1">#</span>
+    <span class="c1"># Args:</span>
+    <span class="c1">#    count (int): The new count for this Foo</span>
+    <span class="c1">#</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_foo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_count</span> <span class="o">=</span> <span class="n">count</span>
+</pre></div>
+</div>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>We are aware that Python offers a facility for accessors and
+mutators using the <code class="docutils literal notranslate"><span class="pre">&#64;property</span></code> decorator instead. Do not use
+the <code class="docutils literal notranslate"><span class="pre">&#64;property</span></code> decorator.</p>
+<p>The decision to use explicitly defined functions instead of the
+<code class="docutils literal notranslate"><span class="pre">&#64;property</span></code> decorator is rather arbitrary, there is not much
+technical merit to preferring one technique over the other.
+However as <a class="reference internal" href="#contributing-always-consistent"><span class="std std-ref">discussed below</span></a>,
+it is of the utmost importance that we do not mix both techniques
+in the same codebase.</p>
+</div>
+</section>
+<section id="abstract-methods">
+<span id="contributing-abstract-methods"></span><h2>Abstract methods<a class="headerlink" href="#abstract-methods" title="Link to this heading"></a></h2>
+<p>In BuildStream, an <em>“Abstract Method”</em> is a bit of a misnomer and does
+not match up to how Python defines abstract methods, we need to seek out
+a new nomenclature to refer to these methods.</p>
+<p>In Python, an <em>“Abstract Method”</em> is a method which <strong>must</strong> be
+implemented by a subclass, whereas all methods in Python can be
+overridden.</p>
+<p>In BuildStream, we use the term <em>“Abstract Method”</em>, to refer to
+a method which <strong>can</strong> be overridden by a subclass, whereas it
+is <strong>illegal</strong> to override any other method.</p>
+<ul class="simple">
+<li><p>Abstract methods are allowed to have default implementations.</p></li>
+<li><p>Subclasses are not allowed to redefine the calling signature
+of an abstract method, or redefine the API contract in any way.</p></li>
+<li><p>Subclasses are not allowed to override any other methods.</p></li>
+</ul>
+<p>The key here is that in BuildStream, we consider it unacceptable
+that a subclass overrides a method of its parent class unless
+the said parent class has explicitly given permission to subclasses
+to do so, and outlined the API contract for this purpose. No surprises
+are allowed.</p>
+</section>
+<section id="error-handling">
+<h2>Error handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>In BuildStream, all non recoverable errors are expressed via
+subclasses of the <code class="docutils literal notranslate"><span class="pre">BstError</span></code> exception.</p>
+<p>This exception is handled deep in the core in a few places, and
+it is rarely necessary to handle a <code class="docutils literal notranslate"><span class="pre">BstError</span></code>.</p>
+<section id="raising-exceptions">
+<h3>Raising exceptions<a class="headerlink" href="#raising-exceptions" title="Link to this heading"></a></h3>
+<p>When writing code in the BuildStream core, ensure that all system
+calls and third party library calls are wrapped in a <code class="docutils literal notranslate"><span class="pre">try:</span></code> block,
+and raise a descriptive <code class="docutils literal notranslate"><span class="pre">BstError</span></code> of the appropriate class explaining
+what exactly failed.</p>
+<p>Ensure that the original system call error is formatted into your new
+exception, and that you use the Python <code class="docutils literal notranslate"><span class="pre">from</span></code> semantic to retain the
+original call trace, example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">utime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_refpath</span><span class="p">(</span><span class="n">ref</span><span class="p">))</span>
+<span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="n">ArtifactError</span><span class="p">(</span><span class="s2">&quot;Attempt to access unavailable artifact: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+</pre></div>
+</div>
+</section>
+<section id="enhancing-exceptions">
+<h3>Enhancing exceptions<a class="headerlink" href="#enhancing-exceptions" title="Link to this heading"></a></h3>
+<p>Sometimes the <code class="docutils literal notranslate"><span class="pre">BstError</span></code> originates from a lower level component,
+and the code segment which raised the exception did not have enough context
+to create a complete, informative summary of the error for the user.</p>
+<p>In these cases it is necessary to handle the error and raise a new
+one, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">extracted_artifact</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_artifacts</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_key</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">ArtifactError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="n">ElementError</span><span class="p">(</span><span class="s2">&quot;Failed to extract </span><span class="si">{}</span><span class="s2"> while checking out </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&quot;</span>
+                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+</pre></div>
+</div>
+</section>
+<section id="programming-errors">
+<h3>Programming errors<a class="headerlink" href="#programming-errors" title="Link to this heading"></a></h3>
+<p>Sometimes you are writing code and have detected an unexpected condition,
+or a broken invariant for which the code cannot be prepared to handle
+gracefully.</p>
+<p>In these cases, do <strong>not</strong> raise any of the <code class="docutils literal notranslate"><span class="pre">BstError</span></code> class exceptions.</p>
+<p>Instead, use the <code class="docutils literal notranslate"><span class="pre">assert</span></code> statement, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">assert</span> <span class="n">utils</span><span class="o">.</span><span class="n">_is_main_process</span><span class="p">(),</span> \
+    <span class="s2">&quot;Attempted to save workspace configuration from child process&quot;</span>
+</pre></div>
+</div>
+<p>This will result in a <code class="docutils literal notranslate"><span class="pre">BUG</span></code> message with the stack trace included being
+logged and reported in the frontend.</p>
+</section>
+<section id="bsterror-parameters">
+<h3>BstError parameters<a class="headerlink" href="#bsterror-parameters" title="Link to this heading"></a></h3>
+<p>When raising <code class="docutils literal notranslate"><span class="pre">BstError</span></code> class exceptions, there are some common properties
+which can be useful to know about:</p>
+<ul class="simple">
+<li><p><strong>message:</strong> The brief human readable error, will be formatted on one line in the frontend.</p></li>
+<li><p><strong>detail:</strong> An optional detailed human readable message to accompany the <strong>message</strong> summary
+of the error. This is often used to recommend the user some course of action, or to provide
+additional context about the error.</p></li>
+<li><p><strong>temporary:</strong> Some errors are allowed to be <em>temporary</em>, this attribute is only
+observed from child processes which fail in a temporary way. This distinction
+is used to determine whether the task should be <em>retried</em> or not. An error is usually
+only a <em>temporary</em> error if the cause of the error was a network timeout.</p></li>
+<li><p><strong>reason:</strong> A machine readable identifier for the error. This is used for the purpose
+of regression testing, such that we check that BuildStream has errored out for the
+expected reason in a given failure mode.</p></li>
+</ul>
+</section>
+<section id="documenting-exceptions">
+<h3>Documenting Exceptions<a class="headerlink" href="#documenting-exceptions" title="Link to this heading"></a></h3>
+<p>We have already seen <a class="reference internal" href="#contributing-class-order"><span class="std std-ref">some examples</span></a> of how
+exceptions are documented in API documenting comments, but this is worth some
+additional disambiguation.</p>
+<ul class="simple">
+<li><p>Only document the exceptions which are raised directly by the function in question.
+It is otherwise nearly impossible to keep track of what exceptions <em>might</em> be raised
+indirectly by calling the given function.</p></li>
+<li><p>For a regular public or private method, your audience is a caller of the function;
+document the exception in terms of what exception might be raised as a result of
+calling this method.</p></li>
+<li><p>For an <a class="reference internal" href="#contributing-abstract-methods"><span class="std std-ref">abstract method</span></a>, your audience is the
+implementor of the method in a subclass; document the exception in terms of what
+exception is prescribed for the implementing class to raise.</p></li>
+</ul>
+</section>
+</section>
+<section id="always-be-consistent">
+<span id="contributing-always-consistent"></span><h2>Always be consistent<a class="headerlink" href="#always-be-consistent" title="Link to this heading"></a></h2>
+<p>There are various ways to define functions and classes in Python,
+which has evolved with various features over time.</p>
+<p>In BuildStream, we may not have leveraged all of the nice features
+we could have, that is okay, and where it does not break API, we
+can consider changing it.</p>
+<p>Even if you know there is a <em>better</em> way to do a given thing in
+Python when compared to the way we do it in BuildStream, <em>do not do it</em>.</p>
+<p>Consistency of how we do things in the codebase is more important
+than the actual way in which things are done, always.</p>
+<p>Instead, if you like a certain Python feature and think the BuildStream
+codebase should use it, then propose your change on the <a class="reference external" href="https://lists.apache.org/list.html?dev&#64;buildstream.apache.org">mailing list</a>. Chances
+are that we will reach agreement to use your preferred approach, and
+in that case, it will be important to apply the change unilaterally
+across the entire codebase, such that we continue to have a consistent
+codebase.</p>
+</section>
+<section id="avoid-tail-calling">
+<h2>Avoid tail calling<a class="headerlink" href="#avoid-tail-calling" title="Link to this heading"></a></h2>
+<p>With the exception of tail calling with simple functions from
+the standard Python library, such as splitting and joining lines
+of text and encoding/decoding text; always avoid tail calling.</p>
+<p><strong>Good</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Variables that we will need declared up top</span>
+<span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_context</span><span class="p">()</span>
+<span class="n">workspaces</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get_workspaces</span><span class="p">()</span>
+
+<span class="o">...</span>
+
+<span class="c1"># Saving the workspace configuration</span>
+<span class="n">workspaces</span><span class="o">.</span><span class="n">save_config</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><strong>Bad</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Saving the workspace configuration</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">_get_context</span><span class="p">()</span><span class="o">.</span><span class="n">get_workspaces</span><span class="p">()</span><span class="o">.</span><span class="n">save_config</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><strong>Acceptable</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Decode the raw text loaded from a log file for display,</span>
+<span class="c1"># join them into a single utf-8 string and strip away any</span>
+<span class="c1"># trailing whitespace.</span>
+<span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">])</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>When you need to obtain a delegate object via an accessor function,
+either do it at the beginning of the function, or at the beginning
+of a code block within the function that will use that object.</p>
+<p>There are several reasons for this convention:</p>
+<ul>
+<li><p>When observing a stack trace, it is always faster and easier to
+determine what went wrong when all statements are on separate lines.</p></li>
+<li><p>We always want individual lines to trace back to their origin as
+much as possible for the purpose of tracing the history of code
+with <em>git blame</em>.</p>
+<p>One day, you might need the <code class="docutils literal notranslate"><span class="pre">Context</span></code> or <code class="docutils literal notranslate"><span class="pre">Workspaces</span></code> object
+in the same function for another reason, at which point it will
+be unacceptable to leave the existing line as written, because it
+will introduce a redundant accessor to the same object, so the
+line written as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">_get_context</span><span class="p">()</span><span class="o">.</span><span class="n">get_workspaces</span><span class="p">()</span><span class="o">.</span><span class="n">save_config</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Will have to change at that point, meaning we lose the valuable
+information of which commit originally introduced this call
+when running <em>git blame</em>.</p>
+</li>
+<li><p>For similar reasons, we prefer delegate objects be accessed near
+the beginning of a function or code block so that there is less
+chance that this statement will have to move in the future, if
+the same function or code block needs the delegate object for any
+other reason.</p>
+<p>Asides from this, code is generally more legible and uniform when
+variables are declared at the beginning of function blocks.</p>
+</li>
+</ul>
+</section>
+<section id="vertical-stacking-of-modules">
+<h2>Vertical stacking of modules<a class="headerlink" href="#vertical-stacking-of-modules" title="Link to this heading"></a></h2>
+<p>For the sake of overall comprehensiveness of the BuildStream
+architecture, it is important that we retain vertical stacking
+order of the dependencies and knowledge of modules as much as
+possible, and avoid any cyclic relationships in modules.</p>
+<p>For instance, the <code class="docutils literal notranslate"><span class="pre">Source</span></code> objects are owned by <code class="docutils literal notranslate"><span class="pre">Element</span></code>
+objects in the BuildStream data model, and as such the <code class="docutils literal notranslate"><span class="pre">Element</span></code>
+will delegate some activities to the <code class="docutils literal notranslate"><span class="pre">Source</span></code> objects in its
+possession. The <code class="docutils literal notranslate"><span class="pre">Source</span></code> objects should however never call functions
+on the <code class="docutils literal notranslate"><span class="pre">Element</span></code> object, nor should the <code class="docutils literal notranslate"><span class="pre">Source</span></code> object itself
+have any understanding of what an <code class="docutils literal notranslate"><span class="pre">Element</span></code> is.</p>
+<p>If you are implementing a low level utility layer, for example
+as a part of the <code class="docutils literal notranslate"><span class="pre">YAML</span></code> loading code layers, it can be tempting
+to derive context from the higher levels of the codebase which use
+these low level utilities, instead of defining properly stand alone
+APIs for these utilities to work: Never do this.</p>
+<p>Unfortunately, unlike other languages where include files play
+a big part in ensuring that it is difficult to make a mess; Python,
+allows you to just call methods on arbitrary objects passed through
+a function call without having to import the module which defines
+those methods - this leads to cyclic dependencies of modules quickly
+if the developer does not take special care of ensuring this does not
+happen.</p>
+</section>
+<section id="minimize-arguments-in-methods">
+<h2>Minimize arguments in methods<a class="headerlink" href="#minimize-arguments-in-methods" title="Link to this heading"></a></h2>
+<p>When creating an object, or adding a new API method to an existing
+object, always strive to keep as much context as possible on the
+object itself rather than expecting callers of the methods to provide
+everything the method needs every time.</p>
+<p>If the value or object that is needed in a function call is a constant
+for the lifetime of the object which exposes the given method, then
+that value or object should be passed in the constructor instead of
+via a method call.</p>
+</section>
+<section id="minimize-api-surfaces">
+<h2>Minimize API surfaces<a class="headerlink" href="#minimize-api-surfaces" title="Link to this heading"></a></h2>
+<p>When creating an object, or adding new functionality in any way,
+try to keep the number of <a class="reference internal" href="#contributing-public-and-private"><span class="std std-ref">public, outward facing</span></a>
+symbols to a minimum, this is important for both
+<a class="reference internal" href="#contributing-public-api-surface"><span class="std std-ref">internal and public, plugin facing API surfaces</span></a>.</p>
+<p>When anyone visits a file, there are two levels of comprehension:</p>
+<ul class="simple">
+<li><p>What do I need to know in order to <em>use</em> this object.</p></li>
+<li><p>What do I need to know in order to <em>modify</em> this object.</p></li>
+</ul>
+<p>For the former, we want the reader to understand with as little effort
+as possible, what the public API contract is for a given object and consequently,
+how it is expected to be used. This is also why we
+<a class="reference internal" href="#contributing-class-order"><span class="std std-ref">order the symbols of a class</span></a> in such a way
+as to keep all outward facing public API surfaces at the top of the file, so that the
+reader never needs to dig deep into the bottom of the file to find something they
+might need to use.</p>
+<p>For the latter, when it comes to having to modify the file or add functionality,
+you want to retain as much freedom as possible to modify internals, while
+being sure that nothing external will be affected by internal modifications.
+Less client facing API means that you have less surrounding code to modify
+when your API changes. Further, ensuring that there is minimal outward facing
+API for any module minimizes the complexity for the developer working on
+that module, by limiting the considerations needed regarding external side
+effects of their modifications to the module.</p>
+<p>When modifying a file, one should not have to understand or think too
+much about external side effects, when the API surface of the file is
+well documented and minimal.</p>
+<p>When adding new API to a given object for a new purpose, consider whether
+the new API is in any way redundant with other API (should this value now
+go into the constructor, since we use it more than once? could this
+value be passed along with another function, and the other function renamed,
+to better suit the new purposes of this module/object?) and repurpose
+the outward facing API of an object as a whole every time.</p>
+</section>
+<section id="avoid-transient-state-on-instances">
+<h2>Avoid transient state on instances<a class="headerlink" href="#avoid-transient-state-on-instances" title="Link to this heading"></a></h2>
+<p>At times, it can be tempting to store transient state that is
+the result of one operation on an instance, only to be retrieved
+later via an accessor function elsewhere.</p>
+<p>As a basic rule of thumb, if the value is transient and just the
+result of one operation, which needs to be observed directly after
+by another code segment, then never store it on the instance.</p>
+<p>BuildStream is complicated in the sense that it is multi processed
+and it is not always obvious how to pass the transient state around
+as a return value or a function parameter. Do not fall prey to this
+obstacle and pollute object instances with transient state.</p>
+<p>Instead, always refactor the surrounding code so that the value
+is propagated to the desired end point via a well defined API, either
+by adding new code paths or changing the design such that the
+architecture continues to make sense.</p>
+</section>
+<section id="refactor-the-codebase-as-needed">
+<h2>Refactor the codebase as needed<a class="headerlink" href="#refactor-the-codebase-as-needed" title="Link to this heading"></a></h2>
+<p>Especially when implementing features, always move the BuildStream
+codebase forward as a whole.</p>
+<p>Taking a short cut is alright when prototyping, but circumventing
+existing architecture and design to get a feature implemented without
+re-designing the surrounding architecture to accommodate the new
+feature instead, is never acceptable upstream.</p>
+<p>For example, let’s say that you have to implement a feature and you’ve
+successfully prototyped it, but it launches a <code class="docutils literal notranslate"><span class="pre">Job</span></code> directly from a
+<code class="docutils literal notranslate"><span class="pre">Queue</span></code> implementation to get the feature to work, while the <code class="docutils literal notranslate"><span class="pre">Scheduler</span></code>
+is normally responsible for dispatching <code class="docutils literal notranslate"><span class="pre">Jobs</span></code> for the elements on
+a <code class="docutils literal notranslate"><span class="pre">Queue</span></code>. This means that you’ve proven that your feature can work,
+and now it is time to start working on a patch for upstream.</p>
+<p>Consider what the scenario is and why you are circumventing the design,
+and then redesign the <code class="docutils literal notranslate"><span class="pre">Scheduler</span></code> and <code class="docutils literal notranslate"><span class="pre">Queue</span></code> objects to accommodate for
+the new feature and condition under which you need to dispatch a <code class="docutils literal notranslate"><span class="pre">Job</span></code>,
+or how you can give the <code class="docutils literal notranslate"><span class="pre">Queue</span></code> implementation the additional context it
+needs.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../CONTRIBUTING.html" class="btn btn-neutral float-left" title="Contributing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="using_the_testsuite.html" class="btn btn-neutral float-right" title="Using the test suite" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

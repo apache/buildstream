@@ -1,0 +1,164 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>remote - stage files from remote urls &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="tar - stage files from tar archives" href="tar.html" />
+    <link rel="prev" title="local - stage local files and directories" href="local.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core_format.html">Project format</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../core_plugins.html">Plugin specific documentation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../core_plugins.html#elements">Elements</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../core_plugins.html#sources">Sources</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="local.html">local - stage local files and directories</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">remote - stage files from remote urls</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tar.html">tar - stage files from tar archives</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../core_plugins.html#external-plugins">External plugins</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../core_framework.html">Plugin API reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="../core_plugins.html">Plugin specific documentation</a></li>
+      <li class="breadcrumb-item active">remote - stage files from remote urls</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sources/remote.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="remote-stage-files-from-remote-urls">
+<span id="module-sources.remote"></span><h1>remote - stage files from remote urls<a class="headerlink" href="#remote-stage-files-from-remote-urls" title="Link to this heading"></a></h1>
+<p><strong>Usage:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the remote source kind</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">remote</span>
+
+<span class="c1"># Optionally specify a relative staging filename.</span>
+<span class="c1"># If not specified, the basename of the url will be used.</span>
+<span class="c1"># filename: customfilename</span>
+
+<span class="c1"># Optionally specify whether the downloaded file should be</span>
+<span class="c1"># marked executable.</span>
+<span class="c1"># executable: true</span>
+
+<span class="c1"># Specify the url. Using an alias defined in your project</span>
+<span class="c1"># configuration is encouraged. &#39;bst source track&#39; will update the</span>
+<span class="c1"># sha256sum in &#39;ref&#39; to the downloaded file&#39;s sha256sum.</span>
+<span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">upstream:foo</span>
+
+<span class="c1"># Specify the ref. It&#39;s a sha256sum of the file you download.</span>
+<span class="nt">ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6c9f6f68a131ec6381da82f2bff978083ed7f4f7991d931bfa767b7965ebc94b</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="../buildstream.source.html#core-source-builtins"><span class="std std-ref">built-in base class functionality doumentation</span></a>
+and <a class="reference internal" href="../buildstream.downloadablefilesource.html#core-downloadable-source-builtins"><span class="std std-ref">built-in downloadable file source functionality doumentation</span></a>
+for details on common configuration options applicable to this source.</p>
+<section id="reporting-sourceinfo">
+<h2>Reporting <a class="reference internal" href="../buildstream.source.html#buildstream.source.SourceInfo" title="buildstream.source.SourceInfo"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceInfo</span></code></a><a class="headerlink" href="#reporting-sourceinfo" title="Link to this heading"></a></h2>
+<p>The remote source does not override any of the DownloadableFileSource reporting functionality and
+as such, behaves as described in the <a class="reference internal" href="../buildstream.downloadablefilesource.html#core-downloadable-source-info"><span class="std std-ref">default reporting of SourceInfo</span></a>
+documentation.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="local.html" class="btn btn-neutral float-left" title="local - stage local files and directories" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tar.html" class="btn btn-neutral float-right" title="tar - stage files from tar archives" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

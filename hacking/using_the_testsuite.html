@@ -1,0 +1,387 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Using the test suite &mdash; BuildStream 2.7.0.dev0+4.ge4dcda055 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5e8ab668"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Writing documentation" href="writing_documentation.html" />
+    <link rel="prev" title="Coding guidelines" href="coding_guidelines.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_install.html">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_using.html">Using</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_core.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_porting.html">Porting guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#filing-issues">Filing issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#fixing-bugs">Fixing bugs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#adding-new-features">Adding new features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#submitting-patches">Submitting patches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#committer-access">Committer access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CONTRIBUTING.html#windows-ci">Windows CI</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../CONTRIBUTING.html#further-information">Further information</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="coding_guidelines.html">Coding guidelines</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Using the test suite</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#installing-build-dependencies">Installing build dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#installing-runtime-dependencies">Installing runtime dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#running-tests">Running tests</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#running-linters">Running linters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#formatting-code">Formatting code</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#observing-coverage">Observing coverage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#adding-tests">Adding tests</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="writing_documentation.html">Writing documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="writing_plugins.html">Adding core plugins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="measuring_performance.html">Measuring performance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="making_releases.html">Making releases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="grpc_protocols.html">Generating protocol buffers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="managing_data_files.html">Managing data files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html">Updating BuildStream’s Python dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#adding-support-for-a-new-python-release">Adding support for a new Python release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#removing-support-for-a-python-release">Removing support for a Python release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="updating_python_deps.html#abi-compatibility-for-binary-python-packages">ABI compatibility for binary Python packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ui.html">Contributing to the UI</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../CONTRIBUTING.html">Contributing</a></li>
+      <li class="breadcrumb-item active">Using the test suite</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/hacking/using_the_testsuite.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="using-the-test-suite">
+<span id="contributing-testing"></span><h1>Using the test suite<a class="headerlink" href="#using-the-test-suite" title="Link to this heading"></a></h1>
+<p>BuildStream uses <a class="reference external" href="https://tox.readthedocs.org/">tox</a> as a frontend to run the
+tests which are implemented using <a class="reference external" href="https://pytest.org/">pytest</a>. We use
+pytest for regression tests and testing out the behavior of newly added
+components.</p>
+<p>The elaborate documentation for pytest can be found here: <a class="reference external" href="http://doc.pytest.org/en/latest/contents.html">http://doc.pytest.org/en/latest/contents.html</a></p>
+<p>Don’t get lost in the docs if you don’t need to, follow existing examples instead.</p>
+<section id="installing-build-dependencies">
+<span id="contributing-build-deps"></span><h2>Installing build dependencies<a class="headerlink" href="#installing-build-dependencies" title="Link to this heading"></a></h2>
+<p>Some of BuildStream’s dependencies have non-python build dependencies. When
+running tests with <code class="docutils literal notranslate"><span class="pre">tox</span></code>, you will first need to install these dependencies.
+Exact steps to install these will depend on your operating system. Commands
+for installing them for some common distributions are listed below.</p>
+<p>For Fedora-based systems:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dnf</span> <span class="n">install</span> <span class="n">gcc</span> <span class="n">python3</span><span class="o">-</span><span class="n">devel</span>
+</pre></div>
+</div>
+<p>For Debian-based systems:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">apt</span> <span class="n">install</span> <span class="n">gcc</span> <span class="n">python3</span><span class="o">-</span><span class="n">dev</span>
+</pre></div>
+</div>
+</section>
+<section id="installing-runtime-dependencies">
+<h2>Installing runtime dependencies<a class="headerlink" href="#installing-runtime-dependencies" title="Link to this heading"></a></h2>
+<p>To be able to run BuildStream as part of the test suite, BuildStream’s runtime
+dependencies must also be installed. Instructions on how to do so can be found
+in <a class="reference internal" href="../main_install.html#install-dependencies"><span class="std std-ref">Installing Dependencies</span></a>.</p>
+<p>If you are not interested in running the integration tests, you can skip the
+installation of <code class="docutils literal notranslate"><span class="pre">buildbox-run</span></code>.</p>
+</section>
+<section id="running-tests">
+<h2>Running tests<a class="headerlink" href="#running-tests" title="Link to this heading"></a></h2>
+<p>To run the tests, simply navigate to the toplevel directory of your BuildStream
+checkout and run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span>
+</pre></div>
+</div>
+<p>By default, the test suite will be run against every supported python version
+found on your host. If you have multiple python versions installed, you may
+want to run tests against only one version and you can do that using the <code class="docutils literal notranslate"><span class="pre">-e</span></code>
+option when running tox:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">-</span><span class="n">e</span> <span class="n">py312</span>
+</pre></div>
+</div>
+<p>If you would like to test and lint at the same time, or if you do have multiple
+python versions installed and would like to test against multiple versions, then
+we recommend using <a class="reference external" href="https://github.com/tox-dev/detox">detox</a>, just run it with
+the same arguments you would give <cite>tox</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">detox</span> <span class="o">-</span><span class="n">e</span> <span class="n">lint</span><span class="p">,</span><span class="n">py311</span><span class="p">,</span><span class="n">py312</span>
+</pre></div>
+</div>
+<p>The output of all failing tests will always be printed in the summary, but
+if you want to observe the stdout and stderr generated by a passing test,
+you can pass the <code class="docutils literal notranslate"><span class="pre">-s</span></code> option to pytest as such:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">--</span> <span class="o">-</span><span class="n">s</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">-s</span></code> option is <a class="reference external" href="https://docs.pytest.org/latest/usage.html">a pytest option</a>.</p>
+<p>Any options specified before the <code class="docutils literal notranslate"><span class="pre">--</span></code> separator are consumed by <code class="docutils literal notranslate"><span class="pre">tox</span></code>,
+and any options after the <code class="docutils literal notranslate"><span class="pre">--</span></code> separator will be passed along to pytest.</p>
+</div>
+<p>You can always abort on the first failure by running:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">--</span> <span class="o">-</span><span class="n">x</span>
+</pre></div>
+</div>
+<p>Similarly, you may also be interested in the <code class="docutils literal notranslate"><span class="pre">--last-failed</span></code> and
+<code class="docutils literal notranslate"><span class="pre">--failed-first</span></code> options as per the
+<a class="reference external" href="https://docs.pytest.org/en/latest/cache.html">pytest cache</a> documentation.</p>
+<p>If you want to run a specific test or a group of tests, you
+can specify a prefix to match. E.g. if you want to run all of
+the frontend tests you can do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">--</span> <span class="n">tests</span><span class="o">/</span><span class="n">frontend</span><span class="o">/</span>
+</pre></div>
+</div>
+<p>Specific tests can be chosen by using the :: delimiter after the test module.
+If you wanted to run the test_build_track test within frontend/buildtrack.py you could do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">--</span> <span class="n">tests</span><span class="o">/</span><span class="n">frontend</span><span class="o">/</span><span class="n">buildtrack</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">test_build_track</span>
+</pre></div>
+</div>
+<p>When running only a few tests, you may find the coverage and timing output
+excessive, there are options to trim them. Note that coverage step will fail.
+Here is an example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">--</span> <span class="o">--</span><span class="n">no</span><span class="o">-</span><span class="n">cov</span> <span class="o">--</span><span class="n">durations</span><span class="o">=</span><span class="mi">1</span> <span class="n">tests</span><span class="o">/</span><span class="n">frontend</span><span class="o">/</span><span class="n">buildtrack</span><span class="o">.</span><span class="n">py</span><span class="p">::</span><span class="n">test_build_track</span>
+</pre></div>
+</div>
+<p>We also have a set of slow integration tests that are disabled by
+default - you will notice most of them marked with SKIP in the pytest
+output. To run them, you can use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">--</span> <span class="o">--</span><span class="n">integration</span>
+</pre></div>
+</div>
+<p>In case BuildStream’s dependencies were updated since you last ran the
+tests, you might see some errors like
+<code class="docutils literal notranslate"><span class="pre">pytest:</span> <span class="pre">error:</span> <span class="pre">unrecognized</span> <span class="pre">arguments:</span> <span class="pre">--codestyle</span></code>. If this happens, you
+will need to force <code class="docutils literal notranslate"><span class="pre">tox</span></code> to recreate the test environment(s). To do so, you
+can run <code class="docutils literal notranslate"><span class="pre">tox</span></code> with <code class="docutils literal notranslate"><span class="pre">-r</span></code> or  <code class="docutils literal notranslate"><span class="pre">--recreate</span></code> option.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, we do not allow use of site packages in our <code class="docutils literal notranslate"><span class="pre">tox</span></code>
+configuration to enable running the tests in an isolated environment.
+If you need to enable use of site packages for whatever reason, you can
+do so by passing the <code class="docutils literal notranslate"><span class="pre">--sitepackages</span></code> option to <code class="docutils literal notranslate"><span class="pre">tox</span></code>. Also, you will
+not need to install any of the build dependencies mentioned above if you
+use this approach.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>While using <code class="docutils literal notranslate"><span class="pre">tox</span></code> is practical for developers running tests in
+more predictable execution environments, it is still possible to
+execute the test suite against a specific installation environment
+using pytest directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span>
+</pre></div>
+</div>
+<p>If you want to run coverage, you will need need to add <code class="docutils literal notranslate"><span class="pre">BST_CYTHON_TRACE=1</span></code>
+to your environment if you also want coverage on cython files. You could then
+get coverage by running:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">BST_CYTHON_TRACE</span><span class="o">=</span><span class="mi">1</span> <span class="n">coverage</span> <span class="n">run</span> <span class="n">pytest</span>
+</pre></div>
+</div>
+<p>Note that you will have to have all dependencies installed already, when
+running tests directly via <code class="docutils literal notranslate"><span class="pre">pytest</span></code>. This includes the following:</p>
+<ul class="simple">
+<li><p>Cython and Setuptools, as build dependencies</p></li>
+<li><p>Runtime dependencies and test dependencies are specified in requirements
+files, present in the <code class="docutils literal notranslate"><span class="pre">requirements</span></code> subdirectory. Refer to the <code class="docutils literal notranslate"><span class="pre">.in</span></code>
+files for loose dependencies and <code class="docutils literal notranslate"><span class="pre">.txt</span></code> files for fixed version of all
+dependencies that are known to work.</p></li>
+<li><p>Additionally, if you are running tests that involve external plugins, you
+will need to have those installed as well.</p></li>
+</ul>
+<p>You can also have a look at our tox configuration in <code class="docutils literal notranslate"><span class="pre">tox.ini</span></code> file if you
+are unsure about dependencies.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>We also have an environment called ‘venv’ which takes any arguments
+you give it and runs them inside the same virtualenv we use for our
+tests:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">-</span><span class="n">e</span> <span class="n">venv</span> <span class="o">--</span> <span class="o">&lt;</span><span class="n">your</span> <span class="n">command</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="n">here</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Any commands after <code class="docutils literal notranslate"><span class="pre">--</span></code> will be run a virtualenv managed by tox.</p>
+</div>
+</section>
+<section id="running-linters">
+<h2>Running linters<a class="headerlink" href="#running-linters" title="Link to this heading"></a></h2>
+<p>Linting is performed separately from testing. In order to run the linting step which
+consists of running the <code class="docutils literal notranslate"><span class="pre">pylint</span></code> tool, run the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">-</span><span class="n">e</span> <span class="n">lint</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The project specific pylint configuration is stored in the toplevel
+buildstream directory in the <code class="docutils literal notranslate"><span class="pre">.pylintrc</span></code> file. This configuration can be
+interesting to use with IDEs and other developer tooling.</p>
+</div>
+</section>
+<section id="formatting-code">
+<span id="contributing-formatting-code"></span><h2>Formatting code<a class="headerlink" href="#formatting-code" title="Link to this heading"></a></h2>
+<p>Similar to linting, code formatting is also done via a <code class="docutils literal notranslate"><span class="pre">tox</span></code> environment. To
+format the code using the <code class="docutils literal notranslate"><span class="pre">black</span></code> tool, run the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">-</span><span class="n">e</span> <span class="nb">format</span>
+</pre></div>
+</div>
+</section>
+<section id="observing-coverage">
+<h2>Observing coverage<a class="headerlink" href="#observing-coverage" title="Link to this heading"></a></h2>
+<p>Once you have run the tests using <cite>tox</cite> (or <cite>detox</cite>), some coverage reports will
+have been left behind.</p>
+<p>To view the coverage report of the last test run, simply run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">-</span><span class="n">e</span> <span class="n">coverage</span>
+</pre></div>
+</div>
+<p>This will collate any reports from separate python environments that may be
+under test before displaying the combined coverage.</p>
+</section>
+<section id="adding-tests">
+<h2>Adding tests<a class="headerlink" href="#adding-tests" title="Link to this heading"></a></h2>
+<p>Tests are found in the tests subdirectory, inside of which
+there is a separate directory for each <em>domain</em> of tests.
+All tests are collected as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tests</span><span class="o">/*/*.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>If the new test is not appropriate for the existing test domains,
+then simply create a new directory for it under the tests subdirectory.</p>
+<p>Various tests may include data files to test on, there are examples
+of this in the existing tests. When adding data for a test, create
+a subdirectory beside your test in which to store data.</p>
+<p>When creating a test that needs data, use the datafiles extension
+to decorate your test case (again, examples exist in the existing
+tests for this), documentation on the datafiles extension can
+be found here: <a class="reference external" href="https://pypi.python.org/pypi/pytest-datafiles">https://pypi.python.org/pypi/pytest-datafiles</a>.</p>
+<p>Tests that run a sandbox should be decorated with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">integration</span>
+</pre></div>
+</div>
+<p>and use the integration cli helper.</p>
+<p>You must test your changes in an end-to-end fashion. Consider the first end to
+be the appropriate user interface, and the other end to be the change you have
+made.</p>
+<p>The aim for our tests is to make assertions about how you impact and define the
+outward user experience. You should be able to exercise all code paths via the
+user interface, just as one can test the strength of rivets by sailing dozens
+of ocean liners. Keep in mind that your ocean liners could be sailing properly
+<em>because</em> of a malfunctioning rivet. End-to-end testing will warn you that
+fixing the rivet will sink the ships.</p>
+<p>The primary user interface is the cli, so that should be the first target ‘end’
+for testing. Most of the value of BuildStream comes from what you can achieve
+with the cli.</p>
+<p>We also have what we call a <em>“Public API Surface”</em>, as previously mentioned in
+<a class="reference internal" href="coding_guidelines.html#contributing-documenting-symbols"><span class="std std-ref">Documenting symbols</span></a>. You should consider this a secondary
+target. This is mainly for advanced users to implement their plugins against.</p>
+<p>Note that both of these targets for testing are guaranteed to continue working
+in the same way across versions. This means that tests written in terms of them
+will be robust to large changes to the code. This important property means that
+BuildStream developers can make large refactorings without needing to rewrite
+fragile tests.</p>
+<p>Another user to consider is the BuildStream developer, therefore internal API
+surfaces are also targets for testing. For example the YAML loading code, and
+the CasCache. Remember that these surfaces are still just a means to the end of
+providing value through the cli and the <em>“Public API Surface”</em>.</p>
+<p>It may be impractical to sufficiently examine some changes in an end-to-end
+fashion. The number of cases to test, and the running time of each test, may be
+too high. Such typically low-level things, e.g. parsers, may also be tested
+with unit tests; alongside the mandatory end-to-end tests.</p>
+<p>It is important to write unit tests that are not fragile, i.e. in such a way
+that they do not break due to changes unrelated to what they are meant to test.
+For example, if the test relies on a lot of BuildStream internals, a large
+refactoring will likely require the test to be rewritten. Pure functions that
+only rely on the Python Standard Library are excellent candidates for unit
+testing.</p>
+<p>Unit tests only make it easier to implement things correctly, end-to-end tests
+make it easier to implement the right thing.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="coding_guidelines.html" class="btn btn-neutral float-left" title="Coding guidelines" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="writing_documentation.html" class="btn btn-neutral float-right" title="Writing documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
