@@ -18,6 +18,13 @@ config:
   #
   integrate: True
 
+
+  # Apply filers based on `include`, `exclude` and `include-orphans` whilst
+  # staging dependencies rather than when assembling the artifact. This is
+  # useful to avoid overlapping files errors.
+  #
+  filter-whilst-staging: False
+
   # A list of domains to include from each artifact, as
   # they were defined in the element's 'split-rules'.
   #
