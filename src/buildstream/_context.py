@@ -164,6 +164,9 @@ class Context:
         # What to do when a build fails in non interactive mode
         self.sched_error_action: Optional[str] = None
 
+        # Whether speculative actions are enabled
+        self.speculative_actions: bool = False
+
         # Maximum jobs per build
         self.build_max_jobs: Optional[int] = None
 
@@ -451,12 +454,15 @@ class Context:
 
         # Load scheduler config
         scheduler = defaults.get_mapping("scheduler")
-        scheduler.validate_keys(["on-error", "fetchers", "builders", "pushers", "network-retries"])
+        scheduler.validate_keys(["on-error", "fetchers", "builders", "pushers", "network-retries", "speculative-actions"])
         self.sched_error_action = scheduler.get_enum("on-error", _SchedulerErrorAction)
         self.sched_fetchers = scheduler.get_int("fetchers")
         self.sched_builders = scheduler.get_int("builders")
         self.sched_pushers = scheduler.get_int("pushers")
         self.sched_network_retries = scheduler.get_int("network-retries")
+
+        # Load speculative actions config
+        self.speculative_actions = scheduler.get_bool("speculative-actions")
 
         # Load build config
         build = defaults.get_mapping("build")

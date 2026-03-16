@@ -473,3 +473,83 @@ class ArtifactCache(AssetCache):
             return bool(response)
         except AssetCacheError as e:
             raise ArtifactError("{}".format(e), temporary=True) from e
+
+    # store_speculative_actions():
+    #
+    # Store SpeculativeActions for an element's artifact.
+    #
+    # Stores using both the artifact proto field (backward compat) and
+    # a weak key reference (stable across dependency version changes).
+    #
+    # Args:
+    #     artifact (Artifact): The artifact to attach speculative actions to
+    #     spec_actions (SpeculativeActions): The speculative actions proto
+    #     weak_key (str): Optional weak cache key for stable lookup
+    #
+    def store_speculative_actions(self, artifact, spec_actions, weak_key=None):
+
+        # Store the speculative actions proto in CAS
+        spec_actions_digest = self.cas.store_proto(spec_actions)
+
+        # Load the artifact proto
+        artifact_proto = artifact._get_proto()
+
+        # Set the speculative_actions field (backward compat)
+        artifact_proto.speculative_actions.CopyFrom(spec_actions_digest)
+
+        # Save the updated artifact proto
+        ref = artifact._element.get_artifact_name(artifact.get_extract_key())
+        proto_path = os.path.join(self._basedir, ref)
+        with open(proto_path, mode="w+b") as f:
+            f.write(artifact_proto.SerializeToString())
+
+        # Store a weak key reference for stable lookup
+        if weak_key:
+            element = artifact._element
+            project = element._get_project()
+            sa_ref = "{}/{}/speculative-{}".format(project.name, element.name, weak_key)
+            sa_ref_path = os.path.join(self._basedir, sa_ref)
+            os.makedirs(os.path.dirname(sa_ref_path), exist_ok=True)
+            with open(sa_ref_path, mode="w+b") as f:
+                f.write(spec_actions.SerializeToString())
+
+    # get_speculative_actions():
+    #
+    # Retrieve SpeculativeActions for an element's artifact.
+    #
+    # First tries the weak key path (stable across dependency version
+    # changes), then falls back to the artifact proto field.
+    #
+    # Args:
+    #     artifact (Artifact): The artifact to get speculative actions from
+    #     weak_key (str): Optional weak cache key for stable lookup
+    #
+    # Returns:
+    #     SpeculativeActions proto or None if not available
+    #
+    def get_speculative_actions(self, artifact, weak_key=None):
+        from ._protos.buildstream.v2 import speculative_actions_pb2
+
+        # Try weak key lookup first (stable across dependency version changes)
+        if weak_key:
+            element = artifact._element
+            project = element._get_project()
+            sa_ref = "{}/{}/speculative-{}".format(project.name, element.name, weak_key)
+            sa_ref_path = os.path.join(self._basedir, sa_ref)
+            if os.path.exists(sa_ref_path):
+                spec_actions = speculative_actions_pb2.SpeculativeActions()
+                with open(sa_ref_path, mode="r+b") as f:
+                    spec_actions.ParseFromString(f.read())
+                return spec_actions
+
+        # Fallback: load from artifact proto field
+        artifact_proto = artifact._get_proto()
+        if not artifact_proto:
+            return None
+
+        # Check if speculative_actions field is set
+        if not artifact_proto.HasField("speculative_actions"):
+            return None
+
+        # Fetch the speculative actions from CAS
+        return self.cas.fetch_proto(artifact_proto.speculative_actions, speculative_actions_pb2.SpeculativeActions)

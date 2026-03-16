@@ -307,6 +307,9 @@ class Element(Plugin):
         self.__variables: Optional[Variables] = None
         self.__dynamic_public_guard = Lock()
 
+        # Speculative actions support
+        self.__subaction_digests = []  # Subaction digests from the build's ActionResult
+
         if artifact_key:
             self.__initialize_from_artifact_key(artifact_key)
         else:
@@ -1725,6 +1728,9 @@ class Element(Plugin):
                     collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
 
                     self.__set_build_result(success=True, description="succeeded")
+
+                    # Collect subaction digests recorded during the build
+                    self._set_subaction_digests(sandbox._get_subaction_digests())
                 except (ElementError, SandboxCommandError) as e:
                     # Shelling into a sandbox is useful to debug this error
                     e.sandbox = True
@@ -1802,6 +1808,43 @@ class Element(Plugin):
                 "Directory '{}' was not found inside the sandbox, "
                 "unable to collect artifact contents".format(collect)
             )
+
+    # _set_subaction_digests():
+    #
+    # Set the subaction digests captured from the build's ActionResult.
+    # This is called after a successful build to store compiler invocations.
+    #
+    # Args:
+    #     subaction_digests: List of Digest protos from ActionResult.subactions
+    #
+    def _set_subaction_digests(self, subaction_digests):
+        self.__subaction_digests = list(subaction_digests) if subaction_digests else []
+
+    # _get_subaction_digests():
+    #
+    # Get the subaction digests from the build's ActionResult.
+    #
+    # Returns:
+    #     List of Digest protos, or empty list if none
+    #
+    def _get_subaction_digests(self):
+        return self.__subaction_digests
+
+    # _get_weak_cache_key():
+    #
+    # Get the weak cache key for this element.
+    #
+    # Used by speculative actions for stable lookup: the weak key includes
+    # everything about the element itself (sources, env, commands, sandbox)
+    # but only dependency *names* (not their cache keys), making it stable
+    # across dependency version changes while still changing when the
+    # element's own sources or configuration change.
+    #
+    # Returns:
+    #     (str): The weak cache key, or None if not yet computed
+    #
+    def _get_weak_cache_key(self):
+        return self.__weak_cache_key
 
     # _fetch_done()
     #
@@ -3337,6 +3380,7 @@ class Element(Plugin):
                 for e in self._dependencies(_Scope.BUILD)
             ]
             self.__weak_cache_key = self._calculate_cache_key(dependencies)
+
 
         context = self._get_context()
 
