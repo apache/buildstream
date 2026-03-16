@@ -1,0 +1,62 @@
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package buildstream.v2;
+
+import "build/bazel/remote/execution/v2/remote_execution.proto";
+
+// SpeculativeActions: Metadata for cache priming via speculative execution
+// 
+// This message stores overlay information that allows BuildStream to:
+// 1. Instantiate previously-recorded Actions with current dependency versions
+// 2. Submit these adapted Actions to prime the Remote Execution ActionCache
+// 3. Speed up builds when dependencies change but not the element itself
+message SpeculativeActions {
+  // Speculative actions for this element's build
+  repeated SpeculativeAction actions = 1;
+  
+  // Overlays mapping artifact file digests to their sources
+  // Enables downstream elements to resolve dependencies without fetching sources
+  repeated Overlay artifact_overlays = 2;
+  
+  message SpeculativeAction {
+    // Original action digest from the recorded build
+    build.bazel.remote.execution.v2.Digest base_action_digest = 1;
+    
+    // Overlays to apply when instantiating this action
+    repeated Overlay overlays = 2;
+  }
+  
+  message Overlay {
+    enum OverlayType {
+      SOURCE = 0;    // From element's source tree
+      ARTIFACT = 1;  // From dependency element's artifact output
+    }
+    
+    OverlayType type = 1;
+    
+    // Element name providing the source
+    // Empty string means the element itself (self-reference)
+    string source_element = 2;
+    
+    // Path within source (source tree or artifact)
+    string source_path = 4;
+    
+    // The digest that should be replaced in the action's input tree
+    // When instantiating, find all occurrences of this digest and replace
+    // with the current digest of the file at source_path
+    build.bazel.remote.execution.v2.Digest target_digest = 5;
+  }
+}

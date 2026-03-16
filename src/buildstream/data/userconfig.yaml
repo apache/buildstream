@@ -74,6 +74,12 @@ scheduler:
   #
   on-error: quit
 
+  # Enable speculative actions for cache priming.
+  # When enabled, subactions from builds are recorded and used to
+  # speculatively prime the remote ActionCache in future builds.
+  #
+  speculative-actions: False
+
 
 #
 # Build related configuration
