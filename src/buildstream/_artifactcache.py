@@ -456,6 +456,69 @@ class ArtifactCache(AssetCache):
 
         return True
 
+    # pull_artifact_proto():
+    #
+    # Pull only the artifact proto (metadata) for an element by key.
+    #
+    # This is a lightweight pull that fetches just the artifact proto
+    # from the remote, without fetching files, buildtrees, or other
+    # large blobs. Used by the speculative actions priming path to
+    # retrieve the SA digest reference from a previous build's artifact.
+    #
+    # Args:
+    #     element (Element): The element whose artifact proto to pull
+    #     key (str): The cache key to pull by (typically the weak key)
+    #
+    # Returns:
+    #     (bool): True if the proto was pulled, False if not found
+    #
+    def pull_artifact_proto(self, element, key):
+        project = element._get_project()
+
+        artifact_name = element.get_artifact_name(key=key)
+        uri = REMOTE_ASSET_ARTIFACT_URN_TEMPLATE.format(artifact_name)
+
+        index_remotes, storage_remotes = self.get_remotes(project.name, False)
+
+        # Resolve the artifact name to a digest via index remotes
+        artifact_digest = None
+        for remote in index_remotes:
+            remote.init()
+            try:
+                response = remote.fetch_blob([uri])
+                if response:
+                    artifact_digest = response.blob_digest
+                    break
+            except AssetCacheError:
+                continue
+
+        if not artifact_digest:
+            return False
+
+        # Fetch the artifact blob via casd (handles remote fetching)
+        try:
+            if storage_remotes:
+                self.cas.fetch_blobs(storage_remotes[0], [artifact_digest])
+            else:
+                return False
+        except (BlobNotFound, CASRemoteError):
+            return False
+
+        # Parse and write the artifact proto to local cache
+        try:
+            artifact = artifact_pb2.Artifact()
+            with self.cas.open(artifact_digest, "rb") as f:
+                artifact.ParseFromString(f.read())
+
+            artifact_path = os.path.join(self._basedir, artifact_name)
+            os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
+            with utils.save_file_atomic(artifact_path, mode="wb") as f:
+                f.write(artifact.SerializeToString())
+
+            return True
+        except (FileNotFoundError, OSError):
+            return False
+
     # _query_remote()
     #
     # Args:
@@ -491,27 +554,67 @@ class ArtifactCache(AssetCache):
         # Store the speculative actions proto in CAS
         spec_actions_digest = self.cas.store_proto(spec_actions)
 
-        # Load the artifact proto
+        # Set the speculative_actions field on the artifact proto
         artifact_proto = artifact._get_proto()
-
-        # Set the speculative_actions field (backward compat)
         artifact_proto.speculative_actions.CopyFrom(spec_actions_digest)
 
-        # Save the updated artifact proto
-        ref = artifact._element.get_artifact_name(artifact.get_extract_key())
-        proto_path = os.path.join(self._basedir, ref)
-        with open(proto_path, mode="w+b") as f:
-            f.write(artifact_proto.SerializeToString())
+        # Save the updated artifact proto under all keys (strong + weak).
+        # The artifact was originally stored under both keys; we must update
+        # both so that lookup_speculative_actions_by_weak_key() can find the
+        # SA when the strong key changes but the weak key remains stable.
+        element = artifact._element
+        keys = set()
+        keys.add(artifact.get_extract_key())
+        if artifact.weak_key:
+            keys.add(artifact.weak_key)
+        serialized = artifact_proto.SerializeToString()
+        for key in keys:
+            ref = element.get_artifact_name(key)
+            proto_path = os.path.join(self._basedir, ref)
+            with open(proto_path, mode="w+b") as f:
+                f.write(serialized)
 
-        # Store a weak key reference for stable lookup
-        if weak_key:
-            element = artifact._element
-            project = element._get_project()
-            sa_ref = "{}/{}/speculative-{}".format(project.name, element.name, weak_key)
-            sa_ref_path = os.path.join(self._basedir, sa_ref)
-            os.makedirs(os.path.dirname(sa_ref_path), exist_ok=True)
-            with open(sa_ref_path, mode="w+b") as f:
-                f.write(spec_actions.SerializeToString())
+    # lookup_speculative_actions_by_weak_key():
+    #
+    # Look up SpeculativeActions by element and weak key.
+    #
+    # Loads the artifact proto stored under the weak key ref and reads
+    # its speculative_actions digest. This works even when the element
+    # is not cached under its strong key (the common priming scenario:
+    # dependency changed, strong key differs, but weak key is stable
+    # so the artifact from the previous build is still reachable).
+    #
+    # Args:
+    #     element (Element): The element to look up SA for
+    #     weak_key (str): The weak cache key
+    #
+    # Returns:
+    #     SpeculativeActions proto or None if not available
+    #
+    def lookup_speculative_actions_by_weak_key(self, element, weak_key):
+        from ._protos.buildstream.v2 import speculative_actions_pb2
+        from ._protos.buildstream.v2 import artifact_pb2
+
+        if not weak_key:
+            return None
+
+        # Load the artifact proto stored under the weak key ref
+        artifact_ref = element.get_artifact_name(key=weak_key)
+        proto_path = os.path.join(self._basedir, artifact_ref)
+        try:
+            with open(proto_path, mode="r+b") as f:
+                artifact_proto = artifact_pb2.Artifact()
+                artifact_proto.ParseFromString(f.read())
+        except FileNotFoundError:
+            return None
+
+        # Read the speculative_actions digest from the artifact proto
+        if not artifact_proto.HasField("speculative_actions"):
+            return None
+
+        return self.cas.fetch_proto(
+            artifact_proto.speculative_actions, speculative_actions_pb2.SpeculativeActions
+        )
 
     # get_speculative_actions():
     #
@@ -527,22 +630,10 @@ class ArtifactCache(AssetCache):
     # Returns:
     #     SpeculativeActions proto or None if not available
     #
-    def get_speculative_actions(self, artifact, weak_key=None):
+    def get_speculative_actions(self, artifact):
         from ._protos.buildstream.v2 import speculative_actions_pb2
 
-        # Try weak key lookup first (stable across dependency version changes)
-        if weak_key:
-            element = artifact._element
-            project = element._get_project()
-            sa_ref = "{}/{}/speculative-{}".format(project.name, element.name, weak_key)
-            sa_ref_path = os.path.join(self._basedir, sa_ref)
-            if os.path.exists(sa_ref_path):
-                spec_actions = speculative_actions_pb2.SpeculativeActions()
-                with open(sa_ref_path, mode="r+b") as f:
-                    spec_actions.ParseFromString(f.read())
-                return spec_actions
-
-        # Fallback: load from artifact proto field
+        # Load from artifact proto's speculative_actions digest field
         artifact_proto = artifact._get_proto()
         if not artifact_proto:
             return None

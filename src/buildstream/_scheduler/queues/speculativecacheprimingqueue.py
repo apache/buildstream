@@ -17,15 +17,16 @@
 SpeculativeCachePrimingQueue
 =============================
 
-Queue for priming the remote ActionCache with speculative actions.
+Queue for priming the ActionCache with speculative actions.
 
-This queue runs after PullQueue (in parallel with BuildQueue) to:
-1. Retrieve SpeculativeActions from pulled artifacts
-2. Instantiate actions by applying overlays
-3. Submit to execution via buildbox-casd to prime the ActionCache
-
-This enables parallelism: while elements build normally, we're priming
-the cache for other elements that will build later.
+This queue runs BEFORE BuildQueue to aggressively front-run builds:
+1. For each element that needs building, check if SpeculativeActions
+   from a previous build are stored under the element's weak key
+2. Ensure all needed CAS blobs are local (single FetchMissingBlobs call)
+3. Instantiate actions by applying overlays with current dependency digests
+4. Submit to execution via buildbox-casd to produce verified ActionResults
+5. The results are cached so when recc (or the build) later needs the
+   same action, it gets an ActionCache hit instead of rebuilding
 """
 
 # Local imports
@@ -34,30 +35,28 @@ from ..jobs import JobStatus
 from ..resources import ResourceType
 
 
-# A queue which primes the ActionCache with speculative actions
-#
 class SpeculativeCachePrimingQueue(Queue):
 
     action_name = "Priming cache"
     complete_name = "Cache primed"
-    resources = [ResourceType.UPLOAD]  # Uses network to submit actions
+    resources = [ResourceType.UPLOAD]
 
     def get_process_func(self):
         return SpeculativeCachePrimingQueue._prime_cache
 
     def status(self, element):
-        # Only process elements that were pulled (not built locally)
-        # and are cached with SpeculativeActions
-        if not element._cached():
+        # Prime elements that are NOT cached (will need building) and
+        # have stored SpeculativeActions from a previous build.
+        if element._cached():
             return QueueStatus.SKIP
 
-        # Check if element has SpeculativeActions (try weak key first)
+        weak_key = element._get_weak_cache_key()
+        if not weak_key:
+            return QueueStatus.SKIP
+
         context = element._get_context()
         artifactcache = context.artifactcache
-        artifact = element._get_artifact()
-        weak_key = element._get_weak_cache_key()
-
-        spec_actions = artifactcache.get_speculative_actions(artifact, weak_key=weak_key)
+        spec_actions = artifactcache.lookup_speculative_actions_by_weak_key(element, weak_key)
         if not spec_actions or not spec_actions.actions:
             return QueueStatus.SKIP
 
@@ -65,83 +64,91 @@ class SpeculativeCachePrimingQueue(Queue):
 
     def done(self, _, element, result, status):
         if status is JobStatus.FAIL:
-            # Priming is best-effort, don't fail the build
             return
 
-        # Result contains number of actions submitted
         if result:
             primed_count, total_count = result
             element.info(f"Primed {primed_count}/{total_count} actions")
 
     @staticmethod
     def _prime_cache(element):
-        """
-        Prime the ActionCache for an element.
-
-        Retrieves stored SpeculativeActions, instantiates them with
-        current dependency digests, and submits each adapted action
-        to buildbox-casd's execution service. The execution produces
-        verified ActionResults that get cached, so subsequent builds
-        can hit the action cache instead of rebuilding.
-
-        Args:
-            element: The element to prime cache for
-
-        Returns:
-            Tuple of (primed_count, total_count) or None if skipped
-        """
         from ..._speculative_actions.instantiator import SpeculativeActionInstantiator
 
-        # Get the context and caches
         context = element._get_context()
         cas = context.get_cascache()
         artifactcache = context.artifactcache
 
-        # Get SpeculativeActions (try weak key first)
-        artifact = element._get_artifact()
+        # Get SpeculativeActions by weak key
         weak_key = element._get_weak_cache_key()
-        spec_actions = artifactcache.get_speculative_actions(artifact, weak_key=weak_key)
+        spec_actions = artifactcache.lookup_speculative_actions_by_weak_key(element, weak_key)
         if not spec_actions or not spec_actions.actions:
             return None
+
+        # Pre-fetch all CAS blobs needed for instantiation so the
+        # instantiator runs entirely from local CAS without round-trips.
+        #
+        # Phase 1: Fetch all base Action protos in one FetchMissingBlobs batch
+        # Phase 2: For each action, fetch its entire input tree via FetchTree
+        project = element._get_project()
+        _, storage_remotes = artifactcache.get_remotes(project.name, False)
+        remote = storage_remotes[0] if storage_remotes else None
+
+        if remote:
+            from ..._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+
+            # Phase 1: batch-fetch all base Action protos
+            base_action_digests = [
+                sa.base_action_digest
+                for sa in spec_actions.actions
+                if sa.base_action_digest.hash
+            ]
+            if base_action_digests:
+                try:
+                    cas.fetch_blobs(remote, base_action_digests, allow_partial=True)
+                except Exception:
+                    pass  # Best-effort
+
+            # Phase 2: fetch input trees for each base action
+            for digest in base_action_digests:
+                try:
+                    action = cas.fetch_action(digest)
+                    if action and action.HasField("input_root_digest"):
+                        cas.fetch_directory(remote, action.input_root_digest)
+                except Exception:
+                    pass  # Best-effort; instantiator skips actions it can't resolve
 
         # Build element lookup for dependency resolution
         from ...types import _Scope
 
         dependencies = list(element._dependencies(_Scope.BUILD, recurse=True))
         element_lookup = {dep.name: dep for dep in dependencies}
-        element_lookup[element.name] = element  # Include self
+        element_lookup[element.name] = element
+
+        # Get execution service
+        casd = context.get_casd()
+        exec_service = casd.get_exec_service()
+        if not exec_service:
+            element.warn("No execution service available for speculative action priming")
+            return None
 
         # Instantiate and submit each action
         instantiator = SpeculativeActionInstantiator(cas, artifactcache)
         primed_count = 0
         total_count = len(spec_actions.actions)
 
-        # Get the execution service from buildbox-casd
-        casd = context.get_casd()
-        exec_service = casd._exec_service
-        if not exec_service:
-            element.warn("No execution service available for speculative action priming")
-            return None
-
         for spec_action in spec_actions.actions:
             try:
-                # Instantiate action by applying overlays
                 action_digest = instantiator.instantiate_action(spec_action, element, element_lookup)
 
                 if not action_digest:
                     continue
 
-                # Submit to buildbox-casd's execution service.
-                # casd runs the action via its local execution scheduler
-                # (buildbox-run), producing a verified ActionResult that
-                # gets stored in the action cache.
                 if SpeculativeCachePrimingQueue._submit_action(
                     exec_service, action_digest, element
                 ):
                     primed_count += 1
 
             except Exception as e:
-                # Best-effort: log but continue with other actions
                 element.warn(f"Failed to prime action: {e}")
                 continue
 
@@ -149,37 +156,17 @@ class SpeculativeCachePrimingQueue(Queue):
 
     @staticmethod
     def _submit_action(exec_service, action_digest, element):
-        """
-        Submit an action to buildbox-casd's execution service.
-
-        This sends an Execute request to the local buildbox-casd, which
-        runs the action via its local execution scheduler (using
-        buildbox-run). The resulting ActionResult is stored in the
-        action cache, making it available for future builds.
-
-        Args:
-            exec_service: The gRPC ExecutionStub for buildbox-casd
-            action_digest: The Action digest to execute
-            element: The element (for logging)
-
-        Returns:
-            bool: True if submitted successfully
-        """
         try:
             from ..._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 
             request = remote_execution_pb2.ExecuteRequest(
                 action_digest=action_digest,
-                skip_cache_lookup=False,  # Check ActionCache first
+                skip_cache_lookup=False,
             )
 
-            # Submit Execute request. The response is a stream of
-            # Operation messages. We consume the stream to ensure the
-            # action completes and the result is cached.
             operation_stream = exec_service.Execute(request)
             for operation in operation_stream:
                 if operation.done:
-                    # Check if the operation completed successfully
                     if operation.HasField("error"):
                         element.warn(
                             f"Priming action failed: {operation.error.message}"
@@ -187,7 +174,6 @@ class SpeculativeCachePrimingQueue(Queue):
                         return False
                     return True
 
-            # Stream ended without a done operation
             return False
 
         except Exception as e:

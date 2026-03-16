@@ -1962,6 +1962,21 @@ class Element(Plugin):
                     artifact._cached = False
                     pulled = False
 
+            # For speculative actions: if the element is not cached (will need
+            # building), pull the weak key artifact proto so the priming queue
+            # can retrieve stored SpeculativeActions from a previous build.
+            # This is a lightweight pull — only the artifact proto metadata,
+            # not the full artifact files. The SA data itself and the base
+            # Actions will be fetched lazily by casd when needed.
+            if (
+                pull
+                and not artifact.cached()
+                and context.speculative_actions
+                and self.__weak_cache_key
+                and not self.__artifacts.contains(self, self.__weak_cache_key)
+            ):
+                self.__artifacts.pull_artifact_proto(self, self.__weak_cache_key)
+
             self.__artifact = artifact
             return pulled
         elif self.__pull_pending:
