@@ -77,12 +77,28 @@ element with subaction digests:
    input tree to find all file digests. Each digest that matches the
    cache produces an ``Overlay`` recording:
 
-   - The overlay type (SOURCE or ARTIFACT)
-   - The source element name
+   - The overlay type (SOURCE, ARTIFACT, or ACTION)
+   - The source element name (or producing action's base digest hash
+     for ACTION overlays)
    - The file path within the source/artifact tree
    - The target digest to replace
 
-3. Stores the ``SpeculativeActions`` proto on the artifact, which is
+3. Generates **ACTION overlays** for inter-subaction dependencies, both
+   within the element and across dependency elements:
+
+   - **Intra-element**: subactions are processed in order; after each,
+     the generator fetches its ``ActionResult`` to learn what it produced.
+     Later subactions whose input digests match get ACTION overlays
+     (e.g., link's ``main.o`` linked to the compile that produced it).
+   - **Cross-element**: for each dependency with stored ``SpeculativeActions``,
+     the generator fetches ActionResults of the dependency's subactions
+     and seeds the output map.  If the current element's subaction input
+     contains an intermediate file produced by a dependency's subaction
+     (not in the artifact — those are ARTIFACT overlays), a cross-element
+     ACTION overlay is created with ``source_element`` set to the
+     dependency name.
+
+4. Stores the ``SpeculativeActions`` proto on the artifact, which is
    saved under both the strong and weak cache keys.
 
 
@@ -101,6 +117,32 @@ environment, build commands, sandbox config) but only dependency **names**
   changes, correctly **invalidating** stale speculative actions
 
 
+Overlay Fallback Resolution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When the same file digest appears in both a dependency's source tree
+and its artifact (e.g. a header file), both SOURCE and ARTIFACT
+overlays are generated. At instantiation time, they are tried in
+priority order: SOURCE first, then ARTIFACT, then ACTION.
+
+This enables parallelism: if a dependency is rebuilding, its SOURCE
+overlay can resolve as soon as the dependency's sources are fetched
+(before its full build completes), while the ARTIFACT overlay serves
+as a fallback if the sources are not available (dependency not
+rebuilding this invocation — its artifact is already cached).
+
+Overlay data availability at priming time:
+
+- If a referenced element is **not rebuilding**: its sources/artifacts
+  haven't changed, so the overlay's target digest remains valid and
+  ARTIFACT resolution succeeds from the cached artifact.
+- If a referenced element **is rebuilding**: its old artifact is
+  invalidated (new strong key), so ARTIFACT resolution returns None.
+  SOURCE resolution may succeed if the Fetch queue has already run.
+  If neither resolves, the subaction is deferred until the dependency
+  completes.
+
+
 Action Instantiation
 --------------------
 
@@ -108,12 +150,17 @@ The ``SpeculativeActionInstantiator`` adapts stored actions for the
 current dependency versions:
 
 1. Fetches the base action from CAS
-2. Resolves each overlay:
+2. Resolves each overlay with fallback (first resolved wins per target
+   digest):
 
    - **SOURCE** overlays: finds the current file digest in the element's
      source tree by path
    - **ARTIFACT** overlays: finds the current file digest in the
      dependency's artifact tree by path
+   - **ACTION** overlays: finds the current output file digest from the
+     producing subaction's ``ActionResult`` by path — looked up in
+     ``action_outputs`` (intra-element) or via the action cache
+     (cross-element)
 
 3. Builds a digest replacement map (old hash → new digest)
 4. Recursively traverses the action's input tree, replacing file digests
@@ -130,18 +177,36 @@ The scheduler queue order with speculative actions enabled::
 
 **Pull Queue**: For elements not cached by strong key, also pulls the
 weak key artifact proto from remotes. This is a lightweight pull — just
-the metadata, not the full artifact files. The SA proto and base action
-CAS objects are fetched on-demand by casd.
+the metadata, not the full artifact files.
 
 **Priming Queue** (``SpeculativeCachePrimingQueue``): Runs before the
-build queue. For each uncached element with stored SA:
+build queue. Uses the PENDING state to hold elements while their
+dependencies build, running background priming concurrently.
 
-1. Pre-fetches base action protos (``FetchMissingBlobs``) and their
-   input trees (``FetchTree``) from CAS
-2. Instantiates each action with current dependency digests
-3. Submits ``Execute`` to buildbox-casd, which runs the action through
-   its local execution scheduler or forwards to remote execution
-4. The resulting ``ActionResult`` is cached in the action cache
+Elements without stored SpeculativeActions skip this queue entirely.
+Elements that are already buildable (all deps cached) get a single
+priming pass as a job. Elements with unbuilt dependencies enter as
+PENDING:
+
+1. ``register_pending_element``: sets a per-dep callback
+   (``_set_build_dep_cached_callback``) and launches background
+   priming in the scheduler's thread pool
+2. **Background priming**: pre-fetches CAS blobs, instantiates
+   subactions whose overlays are resolvable from already-cached deps,
+   submits them fire-and-forget (reads first stream response to
+   confirm acceptance, then drops the stream)
+3. **Per-dep callback**: as each dependency becomes cached, the
+   callback triggers incremental priming — newly resolvable ARTIFACT
+   and ACTION overlays are resolved and submitted
+4. **Final pass** (element becomes buildable): all dependencies are
+   built, all ``ActionResults`` are in the action cache. Remaining
+   ACTION overlays are resolved using adapted digests from earlier
+   submissions. Remaining subactions are submitted fire-and-forget.
+5. Element proceeds to BuildQueue with all actions primed
+
+Unchanged actions (instantiated digest equals base digest) skip
+submission — they are already in the action cache from the previous
+build.
 
 **Build Queue**: Builds elements as usual. When recc runs a compile or
 link command, it checks the action cache first. If priming succeeded,
@@ -155,27 +220,15 @@ stores them for future priming.
 Scaling Considerations
 ----------------------
 
-Priming blocks the build pipeline
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The priming queue runs before the build queue. Elements cannot start
-building until they pass through priming. If priming takes longer than
-the build itself (e.g., because Execute calls are slow), it adds latency.
-
-**Mitigation**: Make priming fire-and-forget — submit Execute without
-waiting for completion. The build queue proceeds immediately. If the
-Execute completes before recc needs the action, it's a cache hit.
-
 Execute calls are full builds
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Each adapted action runs a full build command (e.g., ``gcc -c``) through
+Each adapted action runs a full build command (e.g. ``gcc -c``) through
 buildbox-run. For N elements with M subactions each, that's N×M Execute
 calls competing for CPU with the actual build queue.
 
 **Mitigation**: With remote execution, priming fans out across a cluster.
-Locally, casd's ``--jobs`` flag limits concurrent executions. Prioritize
-elements near the build frontier.
+Locally, casd's ``--jobs`` flag limits concurrent executions.
 
 FetchTree calls are sequential
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -186,14 +239,6 @@ element with many subactions, this is many sequential calls.
 **Mitigation**: Batch ``FetchTree`` calls or parallelize them. Could
 also collect all directory digests and issue a single
 ``FetchMissingBlobs``.
-
-Race between priming and building
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The current design prevents races by running priming before building.
-But this means priming adds to the critical path. A concurrent design
-would allow priming and building to overlap, accepting that some priming
-work may be redundant.
 
 CAS storage growth
 ~~~~~~~~~~~~~~~~~~
@@ -214,17 +259,11 @@ changed — in which case the SA is correctly invalidated.
 Future Optimizations
 --------------------
 
-1. **Fire-and-forget Execute**: Submit adapted actions without waiting.
-   The build queue proceeds immediately; cache hits happen opportunistically.
-
-2. **Concurrent priming**: Run priming in parallel with the build queue.
-   Elements enter both queues simultaneously.
-
-3. **Topological prioritization**: Prime elements in build order (leaves
+1. **Topological prioritization**: Prime elements in build order (leaves
    first) to maximize the chance priming completes before building starts.
 
-4. **Selective priming**: Skip cheap actions (fast link steps), prioritize
+2. **Selective priming**: Skip cheap actions (fast link steps), prioritize
    expensive ones (long compilations).
 
-5. **Batch FetchTree**: Collect all input root digests and fetch in
+3. **Batch FetchTree**: Collect all input root digests and fetch in
    parallel or in a single batch.

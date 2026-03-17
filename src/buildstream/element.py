@@ -300,6 +300,7 @@ class Element(Plugin):
         self.__required_callback = None  # Callback to Queues
         self.__can_query_cache_callback = None  # Callback to PullQueue/FetchQueue
         self.__buildable_callback = None  # Callback to BuildQueue
+        self.__build_dep_cached_callback = None  # Callback to PrimingQueue (per-dep)
 
         self.__resolved_initial_state = False  # Whether the initial state of the Element has been resolved
 
@@ -2489,6 +2490,23 @@ class Element(Plugin):
     def _set_buildable_callback(self, callback):
         self.__buildable_callback = callback
 
+    # _set_build_dep_cached_callback()
+    #
+    # Set a callback invoked each time a build dependency becomes cached.
+    # Unlike _set_buildable_callback (which fires only when ALL deps are
+    # cached), this fires incrementally — once per completed dep.
+    #
+    # Used by SpeculativeCachePrimingQueue for incremental overlay
+    # resolution: each completed dep may unlock ARTIFACT overlays or
+    # ACTION overlays whose producing subactions just finished.
+    #
+    # Args:
+    #    callback (callable) - Called with (element, dep) where dep is
+    #        the just-cached dependency
+    #
+    def _set_build_dep_cached_callback(self, callback):
+        self.__build_dep_cached_callback = callback
+
     # _set_depth()
     #
     # Set the depth of the Element.
@@ -2533,6 +2551,11 @@ class Element(Plugin):
                 for rdep in self.__reverse_build_deps:
                     rdep.__build_deps_uncached -= 1
                     assert not rdep.__build_deps_uncached < 0
+
+                    # Notify priming queue of each completed dep for
+                    # incremental overlay resolution
+                    if rdep.__build_dep_cached_callback is not None:
+                        rdep.__build_dep_cached_callback(rdep, self)
 
                     if rdep._buildable():
                         rdep.__update_cache_key_non_strict()

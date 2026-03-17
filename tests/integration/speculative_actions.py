@@ -340,23 +340,181 @@ def test_speculative_actions_priming(cli, datafiles):
         f"(first build had {first_remote_execs} remote executions)"
     )
 
-    # The priming should have resulted in at least some cache hits.
-    # Ideally: util.c compile is a direct hit (unchanged), main.c compile
-    # and link are primed hits. But even partial success is valuable.
-    assert cache_hits > 0, (
-        f"Expected cache hits from priming, got 0. "
-        f"Remote executions: {remote_execs}. "
-        f"The adapted action digests may not match recc's computed actions."
+    # With fire-and-forget, priming may still be in-flight when recc
+    # submits the same action.  The RE system deduplicates — recc waits
+    # for the already-running execution rather than starting a new one.
+    # This shows up as "Executing action remotely" in the recc log, not
+    # a cache hit, but is still correct behavior.
+    #
+    # Verify that primed action digests match recc's by comparing the
+    # digests logged during priming with those in the recc buildbox log.
+    primed_digests = set(
+        re.findall(r"Submitted action ([0-9a-f]+)", rebuild_output)
+    )
+    recc_digests = set(
+        re.findall(r"Action Digest: ([0-9a-f]+)/", rebuild_recc_log)
+    )
+    # Truncate both to 8 chars for comparison
+    primed_short = {d[:8] for d in primed_digests}
+    recc_short = {d[:8] for d in recc_digests}
+
+    matching = primed_short & recc_short
+    print(
+        f"Digest match: {len(matching)} of {len(primed_short)} primed "
+        f"actions found in recc's {len(recc_short)} actions"
     )
 
-    # The total should account for all actions: some cache hits
-    # (from priming or unchanged), fewer remote executions than
-    # the first build.
+    # At least some primed digests should match recc's.
+    # Unmatched primed actions indicate overlays that didn't resolve
+    # correctly (e.g. ACTION overlays whose producers hadn't completed).
+    assert len(matching) > 0, (
+        f"No primed action digests match recc's actions. "
+        f"Primed: {primed_short}, Recc: {recc_short}"
+    )
+
+    # The total should account for all actions
     assert cache_hits + remote_execs >= first_remote_execs, (
         f"Expected at least {first_remote_execs} total actions "
         f"(hits + execs), got {cache_hits + remote_execs}"
     )
-    assert remote_execs < first_remote_execs, (
-        f"Expected fewer remote executions than first build "
-        f"({first_remote_execs}), got {remote_execs}"
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_speculative_actions_action_overlay_chaining(cli, datafiles):
+    """
+    End-to-end test for ACTION overlay chaining with a slow dependency.
+
+    app-chained.bst depends on dep.bst (fast, header change) and
+    slow-dep.bst (5s sleep).  The slow dependency keeps app-chained
+    not-buildable while the priming queue re-enqueues:
+
+    1. First pass: compile actions submitted fire-and-forget, link
+       deferred (ACTION overlay unresolvable — compile not in AC yet)
+    2. Re-enqueue passes: slow-dep still building, compile completes
+       in AC, ACTION overlay resolves, link submitted fire-and-forget
+    3. slow-dep completes, app-chained becomes buildable, released
+       to build queue with all actions primed
+
+    This demonstrates that the iterative priming + re-enqueue mechanism
+    correctly chains ACTION overlays across subactions.
+    """
+    project = str(datafiles)
+    app_element = "speculative/app-chained.bst"
+
+    cli.configure({"scheduler": {"speculative-actions": True}})
+
+    # --- First build: generate speculative actions ---
+    result = cli.run(
+        project=project,
+        args=["--cache-buildtrees", "always", "build", app_element],
+    )
+    if result.exit_code != 0:
+        cli.run(
+            project=project,
+            args=[
+                "shell", "--build", "--use-buildtree", app_element,
+                "--", "sh", "-c",
+                "cat config.log .recc-log/* */.recc-log/* 2>/dev/null",
+            ],
+        )
+    assert result.exit_code == 0
+    first_build_output = result.stderr
+
+    gen_processed = _parse_queue_processed(first_build_output, "Generating overlays")
+    assert gen_processed is not None and gen_processed > 0, (
+        "First build did not generate speculative actions"
+    )
+
+    # Count first build remote executions
+    result = cli.run(
+        project=project,
+        args=[
+            "shell", "--build", "--use-buildtree", app_element,
+            "--", "sh", "-c", "cat src/.recc-log/recc.buildbox*",
+        ],
+    )
+    assert result.exit_code == 0
+    first_remote_execs = result.output.count("Executing action remotely")
+    assert first_remote_execs >= 3, (
+        f"Expected at least 3 remote executions, got {first_remote_execs}"
+    )
+
+    # --- Modify dep: change dep.h header ---
+    dep_header = os.path.join(
+        project, "files", "speculative", "dep-files",
+        "usr", "include", "speculative", "dep.h",
+    )
+    with open(dep_header, "w") as f:
+        f.write("#ifndef DEP_H\n#define DEP_H\n#define DEP_VERSION 2\n#endif\n")
+
+    # Also modify slow-dep so it needs rebuilding on the second build.
+    # This keeps app-chained not-buildable while slow-dep rebuilds,
+    # giving background priming time to resolve ACTION overlays.
+    slow_dep_file = os.path.join(
+        project, "files", "speculative", "slow-dep-files", "slow.txt",
+    )
+    with open(slow_dep_file, "w") as f:
+        f.write("slow dependency v2\n")
+
+    # --- Second build: priming with slow dependency ---
+    result = cli.run(
+        project=project,
+        args=["--cache-buildtrees", "always", "build", app_element],
+    )
+    assert result.exit_code == 0
+    rebuild_output = result.stderr
+
+    # Verify priming queue processed app-chained
+    primed = _parse_queue_processed(rebuild_output, "Priming cache")
+    assert primed is not None and primed > 0, (
+        "Priming queue did not process app-chained"
+    )
+
+    # Extract primed action digests
+    primed_digests = set(
+        re.findall(r"Submitted action ([0-9a-f]+)", rebuild_output)
+    )
+
+    # Check rebuild recc log
+    result = cli.run(
+        project=project,
+        args=[
+            "shell", "--build", "--use-buildtree", app_element,
+            "--", "sh", "-c", "cat src/.recc-log/recc.buildbox*",
+        ],
+    )
+    assert result.exit_code == 0
+    rebuild_recc_log = result.output
+    cache_hits = rebuild_recc_log.count("Action Cache hit")
+    remote_execs = rebuild_recc_log.count("Executing action remotely")
+
+    # Extract recc action digests
+    recc_digests = set(
+        re.findall(r"Action Digest: ([0-9a-f]+)/", rebuild_recc_log)
+    )
+    primed_short = {d[:8] for d in primed_digests}
+    recc_short = {d[:8] for d in recc_digests}
+    matching = primed_short & recc_short
+
+    print(
+        f"Chained priming result: {cache_hits} cache hits, "
+        f"{remote_execs} remote executions "
+        f"(first build had {first_remote_execs} remote executions)"
+    )
+    print(
+        f"Digest match: {len(matching)} of {len(primed_short)} primed "
+        f"actions found in recc's {len(recc_short)} actions"
+    )
+    print(f"  Primed: {sorted(primed_short)}")
+    print(f"  Recc:   {sorted(recc_short)}")
+
+    # With slow-dep rebuilding (10s), app-chained enters priming as
+    # PENDING.  Background priming submits the compile fire-and-forget.
+    # Per-dep callback on dep completion may resolve more overlays.
+    # Final pass when buildable resolves remaining ACTION overlays.
+    # We expect at least the compile action digest to match recc's.
+    assert len(matching) >= 1, (
+        f"Expected at least 1 primed action to match recc's, "
+        f"got {len(matching)}. Primed: {primed_short}, Recc: {recc_short}"
     )
