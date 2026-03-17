@@ -90,8 +90,12 @@ class SpeculativeActionGenerationQueue(Queue):
 
         dependencies = list(element._dependencies(_Scope.BUILD, recurse=False))
 
+        # Get action cache service for ACTION overlay generation
+        casd = context.get_casd()
+        ac_service = casd.get_ac_service() if casd else None
+
         # Generate overlays
-        generator = SpeculativeActionsGenerator(cas)
+        generator = SpeculativeActionsGenerator(cas, ac_service=ac_service, artifactcache=artifactcache)
         spec_actions = generator.generate_speculative_actions(element, subaction_digests, dependencies)
 
         if not spec_actions or not spec_actions.actions:

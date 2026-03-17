@@ -285,12 +285,14 @@ class TestGeneratorOverlayProduction:
         assert speculative_actions_pb2.SpeculativeActions.Overlay.ARTIFACT in overlay_types
 
     def test_source_priority_over_artifact(self):
-        """When same digest exists in both source and artifact, SOURCE wins."""
+        """When same digest exists in both source and artifact, both overlays
+        are generated with SOURCE first for fallback resolution."""
         from buildstream._speculative_actions.generator import SpeculativeActionsGenerator
 
         cas = FakeCAS()
 
         shared_content = b'shared-file-content'
+        shared_hash = _make_digest(shared_content).hash
 
         # Create element sources with the shared file
         source_root = _build_source_tree(cas, {
@@ -318,10 +320,12 @@ class TestGeneratorOverlayProduction:
 
         assert len(spec_actions.actions) == 1
         action = spec_actions.actions[0]
-        # The overlay should be SOURCE (higher priority)
-        for overlay in action.overlays:
-            if overlay.target_digest.hash == _make_digest(shared_content).hash:
-                assert overlay.type == speculative_actions_pb2.SpeculativeActions.Overlay.SOURCE
+        # Both SOURCE and ARTIFACT overlays should be generated for the
+        # same target digest, with SOURCE first for priority resolution
+        matching = [o for o in action.overlays if o.target_digest.hash == shared_hash]
+        assert len(matching) >= 2
+        assert matching[0].type == speculative_actions_pb2.SpeculativeActions.Overlay.SOURCE
+        assert matching[1].type == speculative_actions_pb2.SpeculativeActions.Overlay.ARTIFACT
 
     def test_no_overlays_for_unknown_digests(self):
         """Digests not found in sources or artifacts should produce no overlays."""

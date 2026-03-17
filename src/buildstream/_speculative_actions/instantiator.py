@@ -37,18 +37,21 @@ class SpeculativeActionInstantiator:
     dependency versions by replacing file digests according to overlays.
     """
 
-    def __init__(self, cas, artifactcache):
+    def __init__(self, cas, artifactcache, ac_service=None):
         """
         Initialize the instantiator.
 
         Args:
             cas: The CAS cache
             artifactcache: The artifact cache
+            ac_service: Optional ActionCache service stub for resolving
+                cross-element ACTION overlays
         """
         self._cas = cas
         self._artifactcache = artifactcache
+        self._ac_service = ac_service
 
-    def instantiate_action(self, spec_action, element, element_lookup):
+    def instantiate_action(self, spec_action, element, element_lookup, action_outputs=None):
         """
         Instantiate a SpeculativeAction by applying overlays.
 
@@ -56,6 +59,8 @@ class SpeculativeActionInstantiator:
             spec_action: SpeculativeAction proto
             element: Element being primed
             element_lookup: Dict mapping element names to Element objects
+            action_outputs: Optional dict of (subaction_index_str, output_path) -> new_digest
+                for resolving ACTION overlays from prior subaction executions
 
         Returns:
             Digest of instantiated action, or None if overlays cannot be applied
@@ -81,14 +86,22 @@ class SpeculativeActionInstantiator:
         skipped_count = 0
         applied_count = 0
 
-        # Resolve all overlays first
+        # Resolve overlays with fallback.  Multiple overlays may target
+        # the same digest (e.g. SOURCE + ARTIFACT for the same dep file).
+        # They are stored in priority order (SOURCE first); once a target
+        # is resolved, subsequent overlays for it are skipped.
         for overlay in spec_action.overlays:
+            # Skip if this target was already resolved by a higher-priority overlay
+            if overlay.target_digest.hash in digest_replacements:
+                continue
+
             # Optimization: Skip overlays for dependencies with unchanged cache keys
+            # (only applies to SOURCE/ARTIFACT overlays with a source_element)
             if overlay.source_element and self._should_skip_overlay(overlay, element, cached_dep_keys):
                 skipped_count += 1
                 continue
 
-            replacement = self._resolve_overlay(overlay, element, element_lookup)
+            replacement = self._resolve_overlay(overlay, element, element_lookup, action_outputs=action_outputs)
             if replacement:
                 # replacement is (old_digest, new_digest)
                 digest_replacements[replacement[0].hash] = replacement[1]
@@ -156,6 +169,13 @@ class SpeculativeActionInstantiator:
         Returns:
             bool: True if overlay can be skipped
         """
+        from .._protos.buildstream.v2 import speculative_actions_pb2
+
+        # Never skip ACTION overlays via this optimization — they use
+        # subaction indices, not element names
+        if overlay.type == speculative_actions_pb2.SpeculativeActions.Overlay.ACTION:
+            return False
+
         # Only skip for dependency overlays (source_element is not empty and not self)
         if not overlay.source_element or overlay.source_element == element.name:
             return False
@@ -178,7 +198,7 @@ class SpeculativeActionInstantiator:
 
         return False
 
-    def _resolve_overlay(self, overlay, element, element_lookup):
+    def _resolve_overlay(self, overlay, element, element_lookup, action_outputs=None):
         """
         Resolve an overlay to get current file digest.
 
@@ -186,6 +206,8 @@ class SpeculativeActionInstantiator:
             overlay: Overlay proto
             element: Current element
             element_lookup: Dict mapping element names to Element objects
+            action_outputs: Optional dict of (subaction_index_str, output_path) -> new_digest
+                for resolving ACTION overlays
 
         Returns:
             Tuple of (old_digest, new_digest) or None
@@ -196,6 +218,8 @@ class SpeculativeActionInstantiator:
             return self._resolve_source_overlay(overlay, element, element_lookup)
         elif overlay.type == speculative_actions_pb2.SpeculativeActions.Overlay.ARTIFACT:
             return self._resolve_artifact_overlay(overlay, element, element_lookup)
+        elif overlay.type == speculative_actions_pb2.SpeculativeActions.Overlay.ACTION:
+            return self._resolve_action_overlay(overlay, action_outputs)
 
         return None
 
@@ -293,6 +317,51 @@ class SpeculativeActionInstantiator:
 
         except Exception as e:
             pass
+
+        return None
+
+    def _resolve_action_overlay(self, overlay, action_outputs):
+        """
+        Resolve an ACTION overlay using outputs from prior subaction executions.
+
+        For intra-element overlays (source_element == ""), uses the
+        action_outputs dict populated during sequential priming.
+
+        For cross-element overlays (source_element set), falls back to
+        the action cache — the dependency's subaction may have been
+        executed during the dependency's own priming or build.
+
+        Args:
+            overlay: Overlay proto with type ACTION
+            action_outputs: Dict of (base_action_digest_hash, output_path) -> new_digest
+
+        Returns:
+            Tuple of (old_digest, new_digest) or None
+        """
+        key = (overlay.source_action_digest.hash, overlay.source_path)
+
+        # Check action_outputs first (intra-element, populated during priming)
+        if action_outputs:
+            new_digest = action_outputs.get(key)
+            if new_digest:
+                return (overlay.target_digest, new_digest)
+
+        # For cross-element: look up the producing subaction's ActionResult
+        # from the action cache directly
+        if overlay.source_element and self._ac_service:
+            try:
+                from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+
+                request = remote_execution_pb2.GetActionResultRequest(
+                    action_digest=overlay.source_action_digest,
+                )
+                action_result = self._ac_service.GetActionResult(request)
+                if action_result:
+                    for output_file in action_result.output_files:
+                        if output_file.path == overlay.source_path:
+                            return (overlay.target_digest, output_file.digest)
+            except Exception:
+                pass
 
         return None
 
