@@ -769,3 +769,546 @@ class TestGenerateStoreRetrieveInstantiate:
             subpath = d.name if not prefix else "{}/{}".format(prefix, d.name)
             subdir = cas.fetch_directory_proto(d.digest)
             TestGenerateStoreRetrieveInstantiate._collect_files(cas, subdir, subpath, result)
+
+
+# ---------------------------------------------------------------------------
+# Fake ActionCache service for ACTION overlay tests
+# ---------------------------------------------------------------------------
+
+class FakeACService:
+    """Fake ActionCache service that returns stored ActionResults."""
+
+    def __init__(self):
+        self._results = {}  # action_digest_hash -> ActionResult proto
+
+    def store_action_result(self, action_digest, action_result):
+        self._results[action_digest.hash] = action_result
+
+    def GetActionResult(self, request):
+        return self._results.get(request.action_digest.hash)
+
+
+# ---------------------------------------------------------------------------
+# ACTION overlay tests
+# ---------------------------------------------------------------------------
+
+class TestActionOverlays:
+    """Tests for ACTION overlay generation and instantiation (cross-subaction output chaining)."""
+
+    def test_action_overlay_generated_for_prior_output(self, tmp_path):
+        """
+        Scenario: compile subaction produces main.o. Link subaction's input
+        tree contains main.o. Generator should create an ACTION overlay on
+        the link subaction pointing to the compile subaction's output.
+        """
+        cas = FakeCAS()
+        ac_service = FakeACService()
+
+        # --- Build phase ---
+        app_src = b'int main() { return 0; }'
+        main_o = b'compiled-object-code'
+        main_o_digest = _make_digest(main_o)
+
+        # Element sources
+        source_root = _build_source_tree(cas, {"main.c": app_src})
+        sources = FakeSources(FakeSourceDir(source_root))
+        element = FakeElement("app.bst", sources=sources)
+
+        # Compile subaction: input has main.c, output has main.o
+        compile_input = _build_source_tree(cas, {"main.c": app_src})
+        compile_action_digest = _build_action(cas, compile_input)
+
+        # Store compile's ActionResult with main.o as output
+        compile_result = remote_execution_pb2.ActionResult()
+        output_file = compile_result.output_files.add()
+        output_file.path = "main.o"
+        output_file.digest.CopyFrom(main_o_digest)
+        ac_service.store_action_result(compile_action_digest, compile_result)
+
+        # Link subaction: input has main.o (output of compile)
+        link_input = _build_source_tree(cas, {"main.o": main_o})
+        link_action_digest = _build_action(cas, link_input)
+
+        # --- Generate with ac_service ---
+        generator = SpeculativeActionsGenerator(cas, ac_service=ac_service)
+        spec_actions = generator.generate_speculative_actions(
+            element, [compile_action_digest, link_action_digest], []
+        )
+
+        # Compile should have SOURCE overlay for main.c
+        assert len(spec_actions.actions) >= 2
+        compile_sa = spec_actions.actions[0]
+        assert any(
+            o.type == speculative_actions_pb2.SpeculativeActions.Overlay.SOURCE
+            for o in compile_sa.overlays
+        )
+
+        # Link should have ACTION overlay for main.o
+        link_sa = spec_actions.actions[1]
+        action_overlays = [
+            o for o in link_sa.overlays
+            if o.type == speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
+        ]
+        assert len(action_overlays) == 1
+        ao = action_overlays[0]
+        assert ao.source_action_digest.hash == compile_action_digest.hash
+        assert ao.source_path == "main.o"
+        assert ao.target_digest.hash == main_o_digest.hash
+
+    def test_action_overlay_not_generated_when_covered_by_source(self, tmp_path):
+        """
+        If a file in the input tree is already resolved as a SOURCE overlay,
+        it should NOT get a duplicate ACTION overlay even if it matches a
+        prior subaction output.
+        """
+        cas = FakeCAS()
+        ac_service = FakeACService()
+
+        # main.c appears both in sources AND as output of subaction 0
+        src_content = b'int main() { return 0; }'
+        src_digest = _make_digest(src_content)
+
+        source_root = _build_source_tree(cas, {"main.c": src_content})
+        sources = FakeSources(FakeSourceDir(source_root))
+        element = FakeElement("app.bst", sources=sources)
+
+        # Subaction 0: some action that happens to output main.c
+        sub0_input = _build_source_tree(cas, {"other.c": b'other'})
+        sub0_digest = _build_action(cas, sub0_input)
+        sub0_result = remote_execution_pb2.ActionResult()
+        out = sub0_result.output_files.add()
+        out.path = "main.c"
+        out.digest.CopyFrom(src_digest)
+        ac_service.store_action_result(sub0_digest, sub0_result)
+
+        # Subaction 1: uses main.c
+        sub1_input = _build_source_tree(cas, {"main.c": src_content})
+        sub1_digest = _build_action(cas, sub1_input)
+
+        generator = SpeculativeActionsGenerator(cas, ac_service=ac_service)
+        spec_actions = generator.generate_speculative_actions(
+            element, [sub0_digest, sub1_digest], []
+        )
+
+        # The second subaction should only have a SOURCE overlay, not ACTION
+        sub1_sa = [sa for sa in spec_actions.actions if sa.base_action_digest.hash == sub1_digest.hash]
+        assert len(sub1_sa) == 1
+        for overlay in sub1_sa[0].overlays:
+            assert overlay.type != speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
+
+    def test_action_overlay_instantiation_with_action_outputs(self, tmp_path):
+        """
+        Instantiate an ACTION overlay using action_outputs from a prior
+        subaction's execution result.
+        """
+        cas = FakeCAS()
+        artifactcache = FakeArtifactCache(cas, str(tmp_path))
+
+        # Build an action whose input tree has main.o
+        old_main_o = b'old-object-code'
+        old_main_o_digest = _make_digest(old_main_o)
+        link_input = _build_source_tree(cas, {"main.o": old_main_o})
+        link_action_digest = _build_action(cas, link_input)
+
+        # Create a SpeculativeAction with an ACTION overlay
+        # Use a fake compile action digest as the producing action
+        compile_action_digest = _make_digest(b'fake-compile-action')
+        spec_action = speculative_actions_pb2.SpeculativeActions.SpeculativeAction()
+        spec_action.base_action_digest.CopyFrom(link_action_digest)
+        overlay = spec_action.overlays.add()
+        overlay.type = speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
+        overlay.source_action_digest.CopyFrom(compile_action_digest)
+        overlay.source_path = "main.o"
+        overlay.target_digest.CopyFrom(old_main_o_digest)
+
+        # Simulate: compile subaction executed and produced new main.o
+        new_main_o = b'new-object-code'
+        new_main_o_digest = _make_digest(new_main_o)
+        action_outputs = {(compile_action_digest.hash, "main.o"): new_main_o_digest}
+
+        element = FakeElement("app.bst")
+        instantiator = SpeculativeActionInstantiator(cas, artifactcache)
+        result_digest = instantiator.instantiate_action(
+            spec_action, element, {},
+            action_outputs=action_outputs,
+        )
+
+        assert result_digest is not None
+        assert result_digest.hash != link_action_digest.hash
+
+        # Verify the action's input tree has the new main.o digest
+        new_action = cas.fetch_action(result_digest)
+        new_root = cas.fetch_directory_proto(new_action.input_root_digest)
+        assert new_root.files[0].name == "main.o"
+        assert new_root.files[0].digest.hash == new_main_o_digest.hash
+
+    def test_action_overlay_full_roundtrip(self, tmp_path):
+        """
+        Full roundtrip: generate ACTION overlays, store, retrieve,
+        instantiate with action_outputs from sequential priming execution.
+
+        Models the compile→link scenario where dep.h changes, causing
+        main.o to change, which should be chained to the link action.
+        """
+        cas = FakeCAS()
+        ac_service = FakeACService()
+        artifactcache = FakeArtifactCache(cas, str(tmp_path))
+
+        # --- Build phase (v1) ---
+        app_src = b'#include "dep.h"\nint main() { return dep(); }'
+        dep_header_v1 = b'int dep(void); /* v1 */'
+        main_o_v1 = b'main-object-v1'
+        main_o_v1_digest = _make_digest(main_o_v1)
+
+        source_root = _build_source_tree(cas, {"main.c": app_src})
+        sources = FakeSources(FakeSourceDir(source_root))
+
+        dep_artifact_root = _build_source_tree(cas, {"include/dep.h": dep_header_v1})
+        dep_artifact = FakeArtifact(FakeSourceDir(dep_artifact_root))
+        dep_element_v1 = FakeElement("dep.bst", artifact=dep_artifact)
+
+        element = FakeElement("app.bst", sources=sources)
+
+        # Compile: uses main.c + dep.h, produces main.o
+        compile_input = _build_source_tree(cas, {
+            "main.c": app_src,
+            "include/dep.h": dep_header_v1,
+        })
+        compile_digest = _build_action(cas, compile_input)
+
+        compile_result = remote_execution_pb2.ActionResult()
+        out = compile_result.output_files.add()
+        out.path = "main.o"
+        out.digest.CopyFrom(main_o_v1_digest)
+        ac_service.store_action_result(compile_digest, compile_result)
+
+        # Link: uses main.o
+        link_input = _build_source_tree(cas, {"main.o": main_o_v1})
+        link_digest = _build_action(cas, link_input)
+
+        # --- Generate ---
+        generator = SpeculativeActionsGenerator(cas, ac_service=ac_service)
+        spec_actions = generator.generate_speculative_actions(
+            element, [compile_digest, link_digest], [dep_element_v1]
+        )
+
+        assert len(spec_actions.actions) == 2
+
+        # Verify link has ACTION overlay
+        link_sa = spec_actions.actions[1]
+        action_overlays = [
+            o for o in link_sa.overlays
+            if o.type == speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
+        ]
+        assert len(action_overlays) == 1
+
+        # --- Store ---
+        weak_key = "app-weak"
+        artifact = FakeArtifact(element=element)
+        artifactcache.store_speculative_actions(artifact, spec_actions, weak_key=weak_key)
+
+        # --- dep changes (v2) ---
+        dep_header_v2 = b'int dep(void); /* v2 */'
+        dep_artifact_root_v2 = _build_source_tree(cas, {"include/dep.h": dep_header_v2})
+        dep_artifact_v2 = FakeArtifact(FakeSourceDir(dep_artifact_root_v2))
+        dep_element_v2 = FakeElement("dep.bst", artifact=dep_artifact_v2)
+
+        element_v2 = FakeElement("app.bst", sources=sources)
+        artifact_v2 = FakeArtifact(element=element_v2)
+
+        # --- Retrieve ---
+        retrieved = artifactcache.get_speculative_actions(artifact_v2, weak_key=weak_key)
+        assert retrieved is not None
+
+        # --- Sequential instantiation (simulating priming queue) ---
+        element_lookup = {"dep.bst": dep_element_v2}
+        instantiator = SpeculativeActionInstantiator(cas, artifactcache)
+        action_outputs = {}
+
+        # 1) Instantiate compile action (SOURCE + ARTIFACT overlays)
+        compile_result_digest = instantiator.instantiate_action(
+            retrieved.actions[0], element_v2, element_lookup,
+            action_outputs=action_outputs,
+        )
+        assert compile_result_digest is not None
+
+        # Simulate compile execution producing new main.o
+        # Key by the compile's base_action_digest hash (as the priming queue would)
+        main_o_v2 = b'main-object-v2'
+        main_o_v2_digest = _make_digest(main_o_v2)
+        action_outputs[(compile_digest.hash, "main.o")] = main_o_v2_digest
+
+        # 2) Instantiate link action (ACTION overlay resolves from action_outputs)
+        link_result_digest = instantiator.instantiate_action(
+            retrieved.actions[1], element_v2, element_lookup,
+            action_outputs=action_outputs,
+        )
+        assert link_result_digest is not None
+        assert link_result_digest.hash != link_digest.hash
+
+        # Verify link action's input tree has new main.o
+        link_action = cas.fetch_action(link_result_digest)
+        link_root = cas.fetch_directory_proto(link_action.input_root_digest)
+        assert link_root.files[0].name == "main.o"
+        assert link_root.files[0].digest.hash == main_o_v2_digest.hash
+
+    def test_no_action_overlays_without_ac_service(self, tmp_path):
+        """
+        When ac_service is None, no ACTION overlays should be generated
+        (backward compatibility).
+        """
+        cas = FakeCAS()
+
+        src_content = b'int main() { return 0; }'
+        main_o = b'object-code'
+
+        source_root = _build_source_tree(cas, {"main.c": src_content})
+        sources = FakeSources(FakeSourceDir(source_root))
+        element = FakeElement("app.bst", sources=sources)
+
+        compile_input = _build_source_tree(cas, {"main.c": src_content})
+        compile_digest = _build_action(cas, compile_input)
+
+        link_input = _build_source_tree(cas, {"main.o": main_o})
+        link_digest = _build_action(cas, link_input)
+
+        # No ac_service — should behave exactly as before
+        generator = SpeculativeActionsGenerator(cas)
+        spec_actions = generator.generate_speculative_actions(
+            element, [compile_digest, link_digest], []
+        )
+
+        # Compile has SOURCE overlay, link has no overlays (main.o unresolved)
+        assert len(spec_actions.actions) == 1  # only compile
+        for sa in spec_actions.actions:
+            for o in sa.overlays:
+                assert o.type != speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
+
+
+class TestCrossElementActionOverlays:
+    """Tests for cross-element ACTION overlays (dependency subaction output chaining)."""
+
+    def test_cross_element_action_overlay_generated(self, tmp_path):
+        """
+        Scenario: dep.bst has a codegen subaction that produces gen.h.
+        app.bst's compile subaction uses gen.h in its input tree.
+        Generator should create a cross-element ACTION overlay pointing
+        to dep.bst's codegen subaction.
+        """
+        cas = FakeCAS()
+        ac_service = FakeACService()
+        artifactcache = FakeArtifactCache(cas, str(tmp_path))
+
+        # --- dep.bst was built, generated SAs ---
+        gen_h_content = b'/* generated header v1 */'
+        gen_h_digest = _make_digest(gen_h_content)
+
+        # dep's codegen subaction produced gen.h
+        dep_codegen_input = _build_source_tree(cas, {"schema.xml": b'<schema/>'})
+        dep_codegen_digest = _build_action(cas, dep_codegen_input)
+
+        dep_codegen_result = remote_execution_pb2.ActionResult()
+        out = dep_codegen_result.output_files.add()
+        out.path = "gen.h"
+        out.digest.CopyFrom(gen_h_digest)
+        ac_service.store_action_result(dep_codegen_digest, dep_codegen_result)
+
+        # dep's artifact contains gen.h (installed)
+        dep_artifact_root = _build_source_tree(cas, {"include/gen.h": gen_h_content})
+        dep_artifact = FakeArtifact(FakeSourceDir(dep_artifact_root))
+        dep_element = FakeElement("dep.bst", artifact=dep_artifact)
+
+        # dep's stored SpeculativeActions
+        dep_sa = speculative_actions_pb2.SpeculativeActions()
+        dep_spec_action = dep_sa.actions.add()
+        dep_spec_action.base_action_digest.CopyFrom(dep_codegen_digest)
+        dep_sa_artifact = FakeArtifact(element=dep_element)
+        artifactcache.store_speculative_actions(dep_sa_artifact, dep_sa, weak_key="dep-weak")
+
+        # Patch dep_artifact to return the stored SA
+        dep_artifact._sa = dep_sa
+        original_get_sa = artifactcache.get_speculative_actions
+        def get_sa_with_dep(artifact, weak_key=None):
+            if hasattr(artifact, '_sa'):
+                return artifact._sa
+            return original_get_sa(artifact, weak_key=weak_key)
+        artifactcache.get_speculative_actions = get_sa_with_dep
+
+        # --- app.bst build: compile uses gen.h from dep ---
+        app_src = b'#include "gen.h"\nint main() {}'
+        app_source_root = _build_source_tree(cas, {"main.c": app_src})
+        app_sources = FakeSources(FakeSourceDir(app_source_root))
+        app_element = FakeElement("app.bst", sources=app_sources)
+
+        # app's compile subaction input has main.c and gen.h
+        compile_input = _build_source_tree(cas, {
+            "main.c": app_src,
+            "include/gen.h": gen_h_content,
+        })
+        compile_digest = _build_action(cas, compile_input)
+
+        # --- Generate SAs for app ---
+        generator = SpeculativeActionsGenerator(
+            cas, ac_service=ac_service, artifactcache=artifactcache
+        )
+        spec_actions = generator.generate_speculative_actions(
+            app_element, [compile_digest], [dep_element]
+        )
+
+        assert len(spec_actions.actions) == 1
+        overlays = spec_actions.actions[0].overlays
+
+        # main.c should be SOURCE overlay
+        source_overlays = [
+            o for o in overlays
+            if o.type == speculative_actions_pb2.SpeculativeActions.Overlay.SOURCE
+        ]
+        assert len(source_overlays) == 1
+        assert source_overlays[0].source_path == "main.c"
+
+        # gen.h could be ARTIFACT (from dep's artifact tree) or ACTION
+        # (from dep's codegen subaction output).  ARTIFACT takes priority
+        # in the digest cache, but gen.h in the input tree at include/gen.h
+        # has the same content digest as dep's codegen output.
+        # Since SOURCE/ARTIFACT are checked first, gen.h at include/gen.h
+        # should be an ARTIFACT overlay (dep's artifact has it).
+        # But the gen.h digest also matches dep's codegen output — since
+        # ARTIFACT already covers it, no ACTION overlay should be created.
+        action_overlays = [
+            o for o in overlays
+            if o.type == speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
+        ]
+        artifact_overlays = [
+            o for o in overlays
+            if o.type == speculative_actions_pb2.SpeculativeActions.Overlay.ARTIFACT
+        ]
+        assert len(artifact_overlays) == 1
+        assert artifact_overlays[0].source_path == "include/gen.h"
+        assert len(action_overlays) == 0  # Covered by ARTIFACT
+
+    def test_cross_element_action_overlay_for_intermediate_file(self, tmp_path):
+        """
+        When a dependency subaction produces an intermediate file that is
+        NOT in the dependency's artifact but IS in the current element's
+        subaction input tree, a cross-element ACTION overlay should be
+        generated (since ARTIFACT can't cover it).
+        """
+        cas = FakeCAS()
+        ac_service = FakeACService()
+        artifactcache = FakeArtifactCache(cas, str(tmp_path))
+
+        # dep.bst: codegen produces intermediate.h but only installs final.h
+        intermediate_content = b'/* intermediate */'
+        intermediate_digest = _make_digest(intermediate_content)
+
+        dep_codegen_input = _build_source_tree(cas, {"schema.xml": b'<schema/>'})
+        dep_codegen_digest = _build_action(cas, dep_codegen_input)
+
+        dep_result = remote_execution_pb2.ActionResult()
+        out = dep_result.output_files.add()
+        out.path = "intermediate.h"
+        out.digest.CopyFrom(intermediate_digest)
+        ac_service.store_action_result(dep_codegen_digest, dep_result)
+
+        # dep's artifact only has final.h (intermediate.h not installed)
+        dep_artifact_root = _build_source_tree(cas, {"include/final.h": b'/* final */'})
+        dep_artifact = FakeArtifact(FakeSourceDir(dep_artifact_root))
+        dep_element = FakeElement("dep.bst", artifact=dep_artifact)
+
+        # dep's stored SA
+        dep_sa = speculative_actions_pb2.SpeculativeActions()
+        dep_spec = dep_sa.actions.add()
+        dep_spec.base_action_digest.CopyFrom(dep_codegen_digest)
+        dep_artifact._sa = dep_sa
+        def get_sa(artifact, weak_key=None):
+            if hasattr(artifact, '_sa'):
+                return artifact._sa
+            return None
+        artifactcache.get_speculative_actions = get_sa
+
+        # app.bst compile uses intermediate.h (somehow available in sandbox)
+        app_src = b'#include "intermediate.h"'
+        app_source_root = _build_source_tree(cas, {"main.c": app_src})
+        app_sources = FakeSources(FakeSourceDir(app_source_root))
+        app_element = FakeElement("app.bst", sources=app_sources)
+
+        compile_input = _build_source_tree(cas, {
+            "main.c": app_src,
+            "intermediate.h": intermediate_content,
+        })
+        compile_digest = _build_action(cas, compile_input)
+
+        # Generate
+        generator = SpeculativeActionsGenerator(
+            cas, ac_service=ac_service, artifactcache=artifactcache
+        )
+        spec_actions = generator.generate_speculative_actions(
+            app_element, [compile_digest], [dep_element]
+        )
+
+        assert len(spec_actions.actions) == 1
+        overlays = spec_actions.actions[0].overlays
+
+        # intermediate.h is not in sources or dep artifact → ACTION overlay
+        action_overlays = [
+            o for o in overlays
+            if o.type == speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
+        ]
+        assert len(action_overlays) == 1
+        ao = action_overlays[0]
+        assert ao.source_element == "dep.bst"
+        assert ao.source_action_digest.hash == dep_codegen_digest.hash
+        assert ao.source_path == "intermediate.h"
+        assert ao.target_digest.hash == intermediate_digest.hash
+
+    def test_cross_element_action_overlay_instantiation(self, tmp_path):
+        """
+        Instantiate a cross-element ACTION overlay by looking up the
+        producing subaction's ActionResult from the action cache.
+        """
+        cas = FakeCAS()
+        ac_service = FakeACService()
+        artifactcache = FakeArtifactCache(cas, str(tmp_path))
+
+        # Old intermediate file in the action's input tree
+        old_content = b'/* old intermediate */'
+        old_digest = _make_digest(old_content)
+        action_input = _build_source_tree(cas, {"intermediate.h": old_content})
+        action_digest = _build_action(cas, action_input)
+
+        # The producing subaction's new ActionResult (dep was rebuilt)
+        dep_codegen_digest = _make_digest(b'dep-codegen-action')
+        new_content = b'/* new intermediate */'
+        new_digest = _make_digest(new_content)
+        new_result = remote_execution_pb2.ActionResult()
+        out = new_result.output_files.add()
+        out.path = "intermediate.h"
+        out.digest.CopyFrom(new_digest)
+        ac_service.store_action_result(dep_codegen_digest, new_result)
+
+        # Build a SpeculativeAction with cross-element ACTION overlay
+        spec_action = speculative_actions_pb2.SpeculativeActions.SpeculativeAction()
+        spec_action.base_action_digest.CopyFrom(action_digest)
+        overlay = spec_action.overlays.add()
+        overlay.type = speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
+        overlay.source_element = "dep.bst"
+        overlay.source_action_digest.CopyFrom(dep_codegen_digest)
+        overlay.source_path = "intermediate.h"
+        overlay.target_digest.CopyFrom(old_digest)
+
+        element = FakeElement("app.bst")
+        instantiator = SpeculativeActionInstantiator(
+            cas, artifactcache, ac_service=ac_service
+        )
+        result_digest = instantiator.instantiate_action(
+            spec_action, element, {},
+            action_outputs={},  # Empty — cross-element resolves via AC
+        )
+
+        assert result_digest is not None
+        assert result_digest.hash != action_digest.hash
+
+        new_action = cas.fetch_action(result_digest)
+        new_root = cas.fetch_directory_proto(new_action.input_root_digest)
+        assert new_root.files[0].name == "intermediate.h"
+        assert new_root.files[0].digest.hash == new_digest.hash

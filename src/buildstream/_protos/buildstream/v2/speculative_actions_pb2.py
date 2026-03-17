@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2 as build_dot_bazel_dot_remote_dot_execution_dot_v2_dot_remote__execution__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n(buildstream/v2/speculative_actions.proto\x12\x0e\x62uildstream.v2\x1a\x36\x62uild/bazel/remote/execution/v2/remote_execution.proto\"\xa3\x04\n\x12SpeculativeActions\x12\x45\n\x07\x61\x63tions\x18\x01 \x03(\x0b\x32\x34.buildstream.v2.SpeculativeActions.SpeculativeAction\x12\x45\n\x11\x61rtifact_overlays\x18\x02 \x03(\x0b\x32*.buildstream.v2.SpeculativeActions.Overlay\x1a\x96\x01\n\x11SpeculativeAction\x12\x43\n\x12\x62\x61se_action_digest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12<\n\x08overlays\x18\x02 \x03(\x0b\x32*.buildstream.v2.SpeculativeActions.Overlay\x1a\xe5\x01\n\x07Overlay\x12\x44\n\x04type\x18\x01 \x01(\x0e\x32\x36.buildstream.v2.SpeculativeActions.Overlay.OverlayType\x12\x16\n\x0esource_element\x18\x02 \x01(\t\x12\x13\n\x0bsource_path\x18\x04 \x01(\t\x12>\n\rtarget_digest\x18\x05 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\'\n\x0bOverlayType\x12\n\n\x06SOURCE\x10\x00\x12\x0c\n\x08\x41RTIFACT\x10\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n(buildstream/v2/speculative_actions.proto\x12\x0e\x62uildstream.v2\x1a\x36\x62uild/bazel/remote/execution/v2/remote_execution.proto\"\xf6\x04\n\x12SpeculativeActions\x12\x45\n\x07\x61\x63tions\x18\x01 \x03(\x0b\x32\x34.buildstream.v2.SpeculativeActions.SpeculativeAction\x12\x45\n\x11\x61rtifact_overlays\x18\x02 \x03(\x0b\x32*.buildstream.v2.SpeculativeActions.Overlay\x1a\x96\x01\n\x11SpeculativeAction\x12\x43\n\x12\x62\x61se_action_digest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12<\n\x08overlays\x18\x02 \x03(\x0b\x32*.buildstream.v2.SpeculativeActions.Overlay\x1a\xb8\x02\n\x07Overlay\x12\x44\n\x04type\x18\x01 \x01(\x0e\x32\x36.buildstream.v2.SpeculativeActions.Overlay.OverlayType\x12\x16\n\x0esource_element\x18\x02 \x01(\t\x12\x13\n\x0bsource_path\x18\x04 \x01(\t\x12>\n\rtarget_digest\x18\x05 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x45\n\x14source_action_digest\x18\x03 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"3\n\x0bOverlayType\x12\n\n\x06SOURCE\x10\x00\x12\x0c\n\x08\x41RTIFACT\x10\x01\x12\n\n\x06\x41\x43TION\x10\x02\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,11 +33,11 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'buildstream.v2.speculative_
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_SPECULATIVEACTIONS']._serialized_start=117
-  _globals['_SPECULATIVEACTIONS']._serialized_end=664
+  _globals['_SPECULATIVEACTIONS']._serialized_end=747
   _globals['_SPECULATIVEACTIONS_SPECULATIVEACTION']._serialized_start=282
   _globals['_SPECULATIVEACTIONS_SPECULATIVEACTION']._serialized_end=432
   _globals['_SPECULATIVEACTIONS_OVERLAY']._serialized_start=435
-  _globals['_SPECULATIVEACTIONS_OVERLAY']._serialized_end=664
-  _globals['_SPECULATIVEACTIONS_OVERLAY_OVERLAYTYPE']._serialized_start=625
-  _globals['_SPECULATIVEACTIONS_OVERLAY_OVERLAYTYPE']._serialized_end=664
+  _globals['_SPECULATIVEACTIONS_OVERLAY']._serialized_end=747
+  _globals['_SPECULATIVEACTIONS_OVERLAY_OVERLAYTYPE']._serialized_start=696
+  _globals['_SPECULATIVEACTIONS_OVERLAY_OVERLAYTYPE']._serialized_end=747
 # @@protoc_insertion_point(module_scope)

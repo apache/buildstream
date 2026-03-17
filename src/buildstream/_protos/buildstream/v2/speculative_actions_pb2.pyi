@@ -17,22 +17,26 @@ class SpeculativeActions(_message.Message):
         overlays: _containers.RepeatedCompositeFieldContainer[SpeculativeActions.Overlay]
         def __init__(self, base_action_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., overlays: _Optional[_Iterable[_Union[SpeculativeActions.Overlay, _Mapping]]] = ...) -> None: ...
     class Overlay(_message.Message):
-        __slots__ = ("type", "source_element", "source_path", "target_digest")
+        __slots__ = ("type", "source_element", "source_path", "target_digest", "source_action_digest")
         class OverlayType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
             __slots__ = ()
             SOURCE: _ClassVar[SpeculativeActions.Overlay.OverlayType]
             ARTIFACT: _ClassVar[SpeculativeActions.Overlay.OverlayType]
+            ACTION: _ClassVar[SpeculativeActions.Overlay.OverlayType]
         SOURCE: SpeculativeActions.Overlay.OverlayType
         ARTIFACT: SpeculativeActions.Overlay.OverlayType
+        ACTION: SpeculativeActions.Overlay.OverlayType
         TYPE_FIELD_NUMBER: _ClassVar[int]
         SOURCE_ELEMENT_FIELD_NUMBER: _ClassVar[int]
         SOURCE_PATH_FIELD_NUMBER: _ClassVar[int]
         TARGET_DIGEST_FIELD_NUMBER: _ClassVar[int]
+        SOURCE_ACTION_DIGEST_FIELD_NUMBER: _ClassVar[int]
         type: SpeculativeActions.Overlay.OverlayType
         source_element: str
         source_path: str
         target_digest: _remote_execution_pb2.Digest
-        def __init__(self, type: _Optional[_Union[SpeculativeActions.Overlay.OverlayType, str]] = ..., source_element: _Optional[str] = ..., source_path: _Optional[str] = ..., target_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ...) -> None: ...
+        source_action_digest: _remote_execution_pb2.Digest
+        def __init__(self, type: _Optional[_Union[SpeculativeActions.Overlay.OverlayType, str]] = ..., source_element: _Optional[str] = ..., source_path: _Optional[str] = ..., target_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., source_action_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ...) -> None: ...
     ACTIONS_FIELD_NUMBER: _ClassVar[int]
     ARTIFACT_OVERLAYS_FIELD_NUMBER: _ClassVar[int]
     actions: _containers.RepeatedCompositeFieldContainer[SpeculativeActions.SpeculativeAction]

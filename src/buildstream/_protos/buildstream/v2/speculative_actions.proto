@@ -43,20 +43,27 @@ message SpeculativeActions {
     enum OverlayType {
       SOURCE = 0;    // From element's source tree
       ARTIFACT = 1;  // From dependency element's artifact output
+      ACTION = 2;    // Output of a prior subaction
     }
     
     OverlayType type = 1;
     
     // Element name providing the source
     // Empty string means the element itself (self-reference)
+    // For ACTION overlays: the element containing the producing subaction
+    //   (empty string = same element; populated for cross-element ACTION overlays)
     string source_element = 2;
-    
-    // Path within source (source tree or artifact)
+
+    // Path within source tree, artifact, or ActionResult output files
     string source_path = 4;
-    
+
     // The digest that should be replaced in the action's input tree
     // When instantiating, find all occurrences of this digest and replace
     // with the current digest of the file at source_path
     build.bazel.remote.execution.v2.Digest target_digest = 5;
+
+    // For ACTION overlays: base_action_digest of the producing subaction
+    // Used to look up the producing subaction's ActionResult during priming
+    build.bazel.remote.execution.v2.Digest source_action_digest = 3;
   }
 }
