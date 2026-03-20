@@ -22,7 +22,7 @@ Generates SpeculativeActions and artifact overlays after element builds.
 This module is responsible for:
 1. Extracting subaction digests from ActionResult
 2. Traversing action input trees to find all file digests
-3. Resolving digests to their source elements (SOURCE > ARTIFACT > ACTION priority)
+3. Resolving digests to their source elements (SOURCE > ACTION > ARTIFACT priority)
 4. Creating overlays for each digest
 5. Generating artifact_overlays for the element's output files
 6. Tracking inter-subaction output dependencies via ACTION overlays
@@ -56,7 +56,7 @@ class SpeculativeActionsGenerator:
         self._artifactcache = artifactcache
         # Cache for digest.hash -> list of (element, path, type) lookups
         # Multiple entries per digest enable fallback resolution:
-        # SOURCE overlays are tried first, then ARTIFACT, then ACTION.
+        # SOURCE overlays are tried first, then ACTION, then ARTIFACT.
         self._digest_cache: Dict[str, list] = {}
 
     def generate_speculative_actions(self, element, subaction_digests, dependencies):
@@ -128,7 +128,16 @@ class SpeculativeActionsGenerator:
                             overlay.target_digest.size_bytes = digest_size
                             spec_action.overlays.append(overlay)
 
+            # Sort overlays: SOURCE > ACTION > ARTIFACT
+            # This ensures the instantiator tries SOURCE first, then
+            # ACTION (intermediate files), then ARTIFACT as fallback.
             if spec_action:
+                type_priority = {
+                    speculative_actions_pb2.SpeculativeActions.Overlay.SOURCE: 0,
+                    speculative_actions_pb2.SpeculativeActions.Overlay.ACTION: 1,
+                    speculative_actions_pb2.SpeculativeActions.Overlay.ARTIFACT: 2,
+                }
+                spec_action.overlays.sort(key=lambda o: type_priority.get(o.type, 99))
                 spec_actions.actions.append(spec_action)
 
             # Fetch this subaction's ActionResult and record its outputs
@@ -209,7 +218,7 @@ class SpeculativeActionsGenerator:
         Build a cache mapping file digests to their source elements.
 
         Multiple entries per digest are stored to enable fallback
-        resolution at instantiation time (SOURCE > ARTIFACT > ACTION).
+        resolution at instantiation time (SOURCE > ACTION > ARTIFACT).
 
         Args:
             element: The element being processed
@@ -355,7 +364,7 @@ class SpeculativeActionsGenerator:
         input_digests = self._extract_digests_from_action(action)
 
         # Resolve each digest to overlays (may produce multiple per digest
-        # for fallback resolution: SOURCE > ARTIFACT)
+        # for fallback resolution: SOURCE > ACTION > ARTIFACT)
         for digest in input_digests:
             overlays = self._resolve_digest_to_overlays(digest, element)
             spec_action.overlays.extend(overlays)
@@ -448,10 +457,12 @@ class SpeculativeActionsGenerator:
 
             overlays.append(overlay)
 
-        # Sort: SOURCE first, then ARTIFACT — instantiator tries in order
+        # Sort: SOURCE first, then ARTIFACT — instantiator tries in order.
+        # ACTION overlays are added separately in generate_speculative_actions()
+        # and the final sort there establishes SOURCE > ACTION > ARTIFACT.
         type_priority = {
             speculative_actions_pb2.SpeculativeActions.Overlay.SOURCE: 0,
-            speculative_actions_pb2.SpeculativeActions.Overlay.ARTIFACT: 1,
+            speculative_actions_pb2.SpeculativeActions.Overlay.ARTIFACT: 2,
         }
         overlays.sort(key=lambda o: type_priority.get(o.type, 99))
 

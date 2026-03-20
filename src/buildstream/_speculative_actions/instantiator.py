@@ -20,10 +20,11 @@ SpeculativeActionInstantiator
 Instantiates SpeculativeActions by applying overlays.
 
 This module is responsible for:
-1. Fetching base actions from CAS
-2. Applying SOURCE and ARTIFACT overlays
-3. Replacing file digests in action input trees
-4. Storing modified actions back to CAS
+1. Checking if the action is already instantiated (via global instantiated_actions)
+2. Fetching base actions from CAS
+3. Applying SOURCE, ACTION, and ARTIFACT overlays (in that priority order)
+4. Replacing file digests in action input trees
+5. Storing modified actions back to CAS
 """
 
 
@@ -51,20 +52,34 @@ class SpeculativeActionInstantiator:
         self._artifactcache = artifactcache
         self._ac_service = ac_service
 
-    def instantiate_action(self, spec_action, element, element_lookup, action_outputs=None):
+    def instantiate_action(self, spec_action, element, element_lookup,
+                           instantiated_actions=None, resolved_cache=None):
         """
         Instantiate a SpeculativeAction by applying overlays.
 
+        Previously resolved overlays can be passed in via resolved_cache
+        to avoid re-resolving overlays that succeeded on a prior pass but
+        whose SA couldn't be fully instantiated yet (e.g. an ACTION
+        overlay was deferred).
+
         Args:
-            spec_action: SpeculativeAction proto
+            spec_action: SpeculativeAction proto (may be mutated: overlays
+                removed by the priming queue)
             element: Element being primed
             element_lookup: Dict mapping element names to Element objects
-            action_outputs: Optional dict of (subaction_index_str, output_path) -> new_digest
-                for resolving ACTION overlays from prior subaction executions
+            instantiated_actions: Optional dict mapping base_action_hash -> adapted_action_digest
+                (global across all elements, populated by the priming queue)
+            resolved_cache: Optional dict of {target_digest_hash -> new_digest}
+                from prior passes, updated in-place with new resolutions
 
         Returns:
             Digest of instantiated action, or None if overlays cannot be applied
         """
+        # Step 0: Check if already instantiated (e.g. by another element's priming)
+        base_hash = spec_action.base_action_digest.hash
+        if instantiated_actions is not None and base_hash in instantiated_actions:
+            return instantiated_actions[base_hash]
+
         # Fetch the base action
         base_action = self._cas.fetch_action(spec_action.base_action_digest)
         if not base_action:
@@ -80,9 +95,12 @@ class SpeculativeActionInstantiator:
         action = remote_execution_pb2.Action()
         action.CopyFrom(base_action)
 
-        # Track if we made any modifications
-        modified = False
-        digest_replacements = {}  # old_hash -> new_digest
+        # Seed digest_replacements from the resolution cache (if provided).
+        # This avoids re-resolving overlays that succeeded on a prior
+        # pass but whose SA couldn't be fully instantiated yet.
+        if resolved_cache is None:
+            resolved_cache = {}
+        digest_replacements = dict(resolved_cache)
         skipped_count = 0
         applied_count = 0
 
@@ -91,7 +109,8 @@ class SpeculativeActionInstantiator:
         # They are stored in priority order (SOURCE first); once a target
         # is resolved, subsequent overlays for it are skipped.
         for overlay in spec_action.overlays:
-            # Skip if this target was already resolved by a higher-priority overlay
+            # Skip if this target was already resolved (by a higher-priority
+            # overlay or from the resolution cache)
             if overlay.target_digest.hash in digest_replacements:
                 continue
 
@@ -101,13 +120,20 @@ class SpeculativeActionInstantiator:
                 skipped_count += 1
                 continue
 
-            replacement = self._resolve_overlay(overlay, element, element_lookup, action_outputs=action_outputs)
+            replacement = self._resolve_overlay(overlay, element, element_lookup, instantiated_actions=instantiated_actions)
             if replacement:
                 # replacement is (old_digest, new_digest)
                 digest_replacements[replacement[0].hash] = replacement[1]
-                if replacement[0].hash != replacement[1].hash:
-                    modified = True
-                    applied_count += 1
+                applied_count += 1
+
+        # Update the resolution cache in-place for the next pass
+        resolved_cache.update(digest_replacements)
+
+        # Check if any replacements actually change a digest
+        modified = any(
+            old_hash != new_digest.hash
+            for old_hash, new_digest in digest_replacements.items()
+        )
 
         # Log optimization results
         if skipped_count > 0:
@@ -198,7 +224,7 @@ class SpeculativeActionInstantiator:
 
         return False
 
-    def _resolve_overlay(self, overlay, element, element_lookup, action_outputs=None):
+    def _resolve_overlay(self, overlay, element, element_lookup, instantiated_actions=None):
         """
         Resolve an overlay to get current file digest.
 
@@ -206,8 +232,7 @@ class SpeculativeActionInstantiator:
             overlay: Overlay proto
             element: Current element
             element_lookup: Dict mapping element names to Element objects
-            action_outputs: Optional dict of (subaction_index_str, output_path) -> new_digest
-                for resolving ACTION overlays
+            instantiated_actions: Optional dict mapping base_action_hash -> adapted_action_digest
 
         Returns:
             Tuple of (old_digest, new_digest) or None
@@ -216,10 +241,10 @@ class SpeculativeActionInstantiator:
 
         if overlay.type == speculative_actions_pb2.SpeculativeActions.Overlay.SOURCE:
             return self._resolve_source_overlay(overlay, element, element_lookup)
+        elif overlay.type == speculative_actions_pb2.SpeculativeActions.Overlay.ACTION:
+            return self._resolve_action_overlay(overlay, instantiated_actions)
         elif overlay.type == speculative_actions_pb2.SpeculativeActions.Overlay.ARTIFACT:
             return self._resolve_artifact_overlay(overlay, element, element_lookup)
-        elif overlay.type == speculative_actions_pb2.SpeculativeActions.Overlay.ACTION:
-            return self._resolve_action_overlay(overlay, action_outputs)
 
         return None
 
@@ -320,40 +345,42 @@ class SpeculativeActionInstantiator:
 
         return None
 
-    def _resolve_action_overlay(self, overlay, action_outputs):
+    def _resolve_action_overlay(self, overlay, instantiated_actions):
         """
-        Resolve an ACTION overlay using outputs from prior subaction executions.
+        Resolve an ACTION overlay using the global instantiated_actions map.
 
-        For intra-element overlays (source_element == ""), uses the
-        action_outputs dict populated during sequential priming.
+        Looks up the producing subaction's adapted digest in
+        instantiated_actions, then fetches the ActionResult from the
+        action cache to find the output file's current digest.
 
-        For cross-element overlays (source_element set), falls back to
-        the action cache — the dependency's subaction may have been
-        executed during the dependency's own priming or build.
+        Works for both intra-element and cross-element ACTION overlays,
+        since instantiated_actions is global across all elements.
 
         Args:
             overlay: Overlay proto with type ACTION
-            action_outputs: Dict of (base_action_digest_hash, output_path) -> new_digest
+            instantiated_actions: Dict mapping base_action_hash -> adapted_action_digest
 
         Returns:
             Tuple of (old_digest, new_digest) or None
         """
-        key = (overlay.source_action_digest.hash, overlay.source_path)
+        source_hash = overlay.source_action_digest.hash
 
-        # Check action_outputs first (intra-element, populated during priming)
-        if action_outputs:
-            new_digest = action_outputs.get(key)
-            if new_digest:
-                return (overlay.target_digest, new_digest)
+        # Step 1: Look up the adapted digest for the producing action
+        adapted_digest = None
+        if instantiated_actions:
+            adapted_digest = instantiated_actions.get(source_hash)
 
-        # For cross-element: look up the producing subaction's ActionResult
-        # from the action cache directly
-        if overlay.source_element and self._ac_service:
+        if adapted_digest is None:
+            # Producing action was never instantiated — drop this overlay
+            return None
+
+        # Step 2: Fetch ActionResult using the adapted digest from AC
+        if self._ac_service:
             try:
                 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 
                 request = remote_execution_pb2.GetActionResultRequest(
-                    action_digest=overlay.source_action_digest,
+                    action_digest=adapted_digest,
                 )
                 action_result = self._ac_service.GetActionResult(request)
                 if action_result:

@@ -896,12 +896,13 @@ class TestActionOverlays:
         for overlay in sub1_sa[0].overlays:
             assert overlay.type != speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
 
-    def test_action_overlay_instantiation_with_action_outputs(self, tmp_path):
+    def test_action_overlay_instantiation_with_instantiated_actions(self, tmp_path):
         """
-        Instantiate an ACTION overlay using action_outputs from a prior
-        subaction's execution result.
+        Instantiate an ACTION overlay using instantiated_actions from a prior
+        subaction's priming, with the ActionResult in the AC.
         """
         cas = FakeCAS()
+        ac_service = FakeACService()
         artifactcache = FakeArtifactCache(cas, str(tmp_path))
 
         # Build an action whose input tree has main.o
@@ -911,26 +912,36 @@ class TestActionOverlays:
         link_action_digest = _build_action(cas, link_input)
 
         # Create a SpeculativeAction with an ACTION overlay
-        # Use a fake compile action digest as the producing action
-        compile_action_digest = _make_digest(b'fake-compile-action')
+        # Use a fake compile action digest as the producing action's base
+        compile_base_digest = _make_digest(b'fake-compile-action-base')
+        # The adapted digest (what was actually executed after priming)
+        compile_adapted_digest = _make_digest(b'fake-compile-action-adapted')
         spec_action = speculative_actions_pb2.SpeculativeActions.SpeculativeAction()
         spec_action.base_action_digest.CopyFrom(link_action_digest)
         overlay = spec_action.overlays.add()
         overlay.type = speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
-        overlay.source_action_digest.CopyFrom(compile_action_digest)
+        overlay.source_action_digest.CopyFrom(compile_base_digest)
         overlay.source_path = "main.o"
         overlay.target_digest.CopyFrom(old_main_o_digest)
 
-        # Simulate: compile subaction executed and produced new main.o
+        # Simulate: compile subaction was instantiated and executed,
+        # producing new main.o — result is in AC under adapted digest
         new_main_o = b'new-object-code'
         new_main_o_digest = _make_digest(new_main_o)
-        action_outputs = {(compile_action_digest.hash, "main.o"): new_main_o_digest}
+        compile_result = remote_execution_pb2.ActionResult()
+        out = compile_result.output_files.add()
+        out.path = "main.o"
+        out.digest.CopyFrom(new_main_o_digest)
+        ac_service.store_action_result(compile_adapted_digest, compile_result)
+
+        # Global instantiated_actions: base -> adapted
+        instantiated_actions = {compile_base_digest.hash: compile_adapted_digest}
 
         element = FakeElement("app.bst")
-        instantiator = SpeculativeActionInstantiator(cas, artifactcache)
+        instantiator = SpeculativeActionInstantiator(cas, artifactcache, ac_service=ac_service)
         result_digest = instantiator.instantiate_action(
             spec_action, element, {},
-            action_outputs=action_outputs,
+            instantiated_actions=instantiated_actions,
         )
 
         assert result_digest is not None
@@ -945,7 +956,7 @@ class TestActionOverlays:
     def test_action_overlay_full_roundtrip(self, tmp_path):
         """
         Full roundtrip: generate ACTION overlays, store, retrieve,
-        instantiate with action_outputs from sequential priming execution.
+        instantiate with instantiated_actions from sequential priming execution.
 
         Models the compile→link scenario where dep.h changes, causing
         main.o to change, which should be chained to the link action.
@@ -1022,26 +1033,34 @@ class TestActionOverlays:
 
         # --- Sequential instantiation (simulating priming queue) ---
         element_lookup = {"dep.bst": dep_element_v2}
-        instantiator = SpeculativeActionInstantiator(cas, artifactcache)
-        action_outputs = {}
+        instantiator = SpeculativeActionInstantiator(cas, artifactcache, ac_service=ac_service)
+        instantiated_actions = {}
 
         # 1) Instantiate compile action (SOURCE + ARTIFACT overlays)
         compile_result_digest = instantiator.instantiate_action(
             retrieved.actions[0], element_v2, element_lookup,
-            action_outputs=action_outputs,
+            instantiated_actions=instantiated_actions,
         )
         assert compile_result_digest is not None
 
+        # Record in instantiated_actions (as the priming queue would)
+        instantiated_actions[compile_digest.hash] = compile_result_digest
+
         # Simulate compile execution producing new main.o
-        # Key by the compile's base_action_digest hash (as the priming queue would)
+        # Store the result in the AC under the adapted digest
         main_o_v2 = b'main-object-v2'
         main_o_v2_digest = _make_digest(main_o_v2)
-        action_outputs[(compile_digest.hash, "main.o")] = main_o_v2_digest
+        compile_v2_result = remote_execution_pb2.ActionResult()
+        out = compile_v2_result.output_files.add()
+        out.path = "main.o"
+        out.digest.CopyFrom(main_o_v2_digest)
+        ac_service.store_action_result(compile_result_digest, compile_v2_result)
 
-        # 2) Instantiate link action (ACTION overlay resolves from action_outputs)
+        # 2) Instantiate link action (ACTION overlay resolves via
+        #    instantiated_actions + AC lookup)
         link_result_digest = instantiator.instantiate_action(
             retrieved.actions[1], element_v2, element_lookup,
-            action_outputs=action_outputs,
+            instantiated_actions=instantiated_actions,
         )
         assert link_result_digest is not None
         assert link_result_digest.hash != link_digest.hash
@@ -1300,9 +1319,13 @@ class TestCrossElementActionOverlays:
         instantiator = SpeculativeActionInstantiator(
             cas, artifactcache, ac_service=ac_service
         )
+        # Cross-element: the dep's codegen action was instantiated and
+        # its result is in AC.  instantiated_actions maps base -> adapted
+        # (in this case, same digest since we stored under dep_codegen_digest).
+        instantiated_actions = {dep_codegen_digest.hash: dep_codegen_digest}
         result_digest = instantiator.instantiate_action(
             spec_action, element, {},
-            action_outputs={},  # Empty — cross-element resolves via AC
+            instantiated_actions=instantiated_actions,
         )
 
         assert result_digest is not None

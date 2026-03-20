@@ -300,7 +300,8 @@ class Element(Plugin):
         self.__required_callback = None  # Callback to Queues
         self.__can_query_cache_callback = None  # Callback to PullQueue/FetchQueue
         self.__buildable_callback = None  # Callback to BuildQueue
-        self.__build_dep_cached_callback = None  # Callback to PrimingQueue (per-dep)
+        self.__build_dep_cached_callback = None  # Callback to PrimingQueue (per-dep, on cached)
+        self.__build_dep_primed_callback = None  # Callback to PrimingQueue (per-dep, on primed)
 
         self.__resolved_initial_state = False  # Whether the initial state of the Element has been resolved
 
@@ -2506,6 +2507,36 @@ class Element(Plugin):
     #
     def _set_build_dep_cached_callback(self, callback):
         self.__build_dep_cached_callback = callback
+
+    # _set_build_dep_primed_callback()
+    #
+    # Set a callback invoked each time a build dependency finishes
+    # priming (its speculative actions have been instantiated and
+    # submitted to the action cache).
+    #
+    # Unlike _set_build_dep_cached_callback (which fires when a dep
+    # becomes cached after building), this fires earlier — when a
+    # dep's priming completes.  This enables downstream elements to
+    # re-evaluate cross-element ACTION overlays sooner, since the
+    # dep's adapted action digests are now in instantiated_actions.
+    #
+    # Args:
+    #    callback (callable) - Called with (element, dep) where dep is
+    #        the just-primed dependency
+    #
+    def _set_build_dep_primed_callback(self, callback):
+        self.__build_dep_primed_callback = callback
+
+    # _notify_build_deps_primed()
+    #
+    # Notify reverse build dependencies that this element has finished
+    # priming.  Called by SpeculativeCachePrimingQueue.done() after an
+    # element's priming completes.
+    #
+    def _notify_build_deps_primed(self):
+        for rdep in self.__reverse_build_deps:
+            if rdep.__build_dep_primed_callback is not None:
+                rdep.__build_dep_primed_callback(rdep, self)
 
     # _set_depth()
     #
