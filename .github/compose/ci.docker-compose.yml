@@ -51,7 +51,7 @@ services:
   plugins-master:
     <<: *tests-template
     environment:
-      BST_PLUGINS_EXPERIMENTAL_VERSION: master
+      BST_PLUGINS_COMMUNITY_VERSION: master
 
   buildgrid:
     <<: *tests-template
