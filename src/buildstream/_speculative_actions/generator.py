@@ -58,6 +58,11 @@ class SpeculativeActionsGenerator:
         # Multiple entries per digest enable fallback resolution:
         # SOURCE overlays are tried first, then ACTION, then ARTIFACT.
         self._digest_cache: Dict[str, list] = {}
+        # Artifact file entries for the element being processed,
+        # collected during _build_digest_cache to avoid re-traversal
+        # in _generate_artifact_overlays.
+        # List of (digest_hash, digest_size) tuples.
+        self._own_artifact_entries: list = []
 
     def generate_speculative_actions(self, element, subaction_digests, dependencies, mode=None):
         """
@@ -97,43 +102,45 @@ class SpeculativeActionsGenerator:
 
         # Seed prior_outputs with dependency subaction outputs for
         # cross-element ACTION overlays (full mode only).
+        # These enable earlier resolution than ARTIFACT overlays: an
+        # ACTION overlay resolves when the dep is primed (via
+        # instantiated_actions), while an ARTIFACT overlay only resolves
+        # when the dep is fully built.  This parallelism is the core
+        # benefit of speculative actions.
         if mode == _SpeculativeActionMode.FULL:
             if self._ac_service and self._artifactcache:
                 self._seed_dependency_outputs(dependencies, prior_outputs)
 
         # Generate overlays for each subaction
         for subaction_digest in subaction_digests:
-            spec_action = self._generate_action_overlays(element, subaction_digest)
+            spec_action, input_digests = self._generate_action_overlays(element, subaction_digest)
 
             # Generate ACTION overlays for digests that match prior subaction outputs
             # but weren't already resolved as SOURCE or ARTIFACT.
             # Requires intra-element or full mode.
             if mode in (_SpeculativeActionMode.INTRA_ELEMENT, _SpeculativeActionMode.FULL):
-                if self._ac_service and prior_outputs:
-                    action = self._cas.fetch_action(subaction_digest)
-                    if action:
-                        input_digests = self._extract_digests_from_action(action)
-                        # Collect hashes already covered by SOURCE/ARTIFACT overlays
-                        already_overlaid = set()
-                        if spec_action:
-                            for overlay in spec_action.overlays:
-                                already_overlaid.add(overlay.target_digest.hash)
+                if self._ac_service and prior_outputs and input_digests:
+                    # Collect hashes already covered by SOURCE/ARTIFACT overlays
+                    already_overlaid = set()
+                    if spec_action:
+                        for overlay in spec_action.overlays:
+                            already_overlaid.add(overlay.target_digest.hash)
 
-                        for digest_hash, digest_size in input_digests:
-                            if digest_hash in prior_outputs and digest_hash not in already_overlaid:
-                                source_element, producing_action_digest, output_path = prior_outputs[digest_hash]
-                                # Create ACTION overlay
-                                if spec_action is None:
-                                    spec_action = speculative_actions_pb2.SpeculativeActions.SpeculativeAction()
-                                    spec_action.base_action_digest.CopyFrom(subaction_digest)
-                                overlay = speculative_actions_pb2.SpeculativeActions.Overlay()
-                                overlay.type = speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
-                                overlay.source_element = source_element
-                                overlay.source_action_digest.CopyFrom(producing_action_digest)
-                                overlay.source_path = output_path
-                                overlay.target_digest.hash = digest_hash
-                                overlay.target_digest.size_bytes = digest_size
-                                spec_action.overlays.append(overlay)
+                    for digest_hash, digest_size in input_digests:
+                        if digest_hash in prior_outputs and digest_hash not in already_overlaid:
+                            source_element, producing_action_digest, output_path = prior_outputs[digest_hash]
+                            # Create ACTION overlay
+                            if spec_action is None:
+                                spec_action = speculative_actions_pb2.SpeculativeActions.SpeculativeAction()
+                                spec_action.base_action_digest.CopyFrom(subaction_digest)
+                            overlay = speculative_actions_pb2.SpeculativeActions.Overlay()
+                            overlay.type = speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
+                            overlay.source_element = source_element
+                            overlay.source_action_digest.CopyFrom(producing_action_digest)
+                            overlay.source_path = output_path
+                            overlay.target_digest.hash = digest_hash
+                            overlay.target_digest.size_bytes = digest_size
+                            spec_action.overlays.append(overlay)
 
             # Sort overlays: SOURCE > ACTION > ARTIFACT
             # This ensures the instantiator tries SOURCE first, then
@@ -194,6 +201,11 @@ class SpeculativeActionsGenerator:
         subaction input tree contains a file that was produced by a
         dependency's subaction, the overlay will reference it.
 
+        Cross-element ACTION overlays enable earlier resolution than
+        ARTIFACT overlays: they resolve when the dep is primed (via
+        instantiated_actions), while ARTIFACT overlays only resolve
+        when the dep is fully built.
+
         Args:
             dependencies: List of dependency elements
             prior_outputs: Dict to seed with file_digest_hash ->
@@ -233,6 +245,7 @@ class SpeculativeActionsGenerator:
             dependencies: List of dependency elements
         """
         self._digest_cache.clear()
+        self._own_artifact_entries.clear()
 
         # Index element's own sources (highest priority)
         self._index_element_sources(element, element)
@@ -247,6 +260,10 @@ class SpeculativeActionsGenerator:
         # Index dependency artifacts
         for dep in dependencies:
             self._index_element_artifact(dep)
+
+        # Index element's own artifact and collect entries for
+        # artifact_overlays generation (avoids re-traversal later)
+        self._index_element_artifact(element, collect_entries=True)
 
     def _index_element_sources(self, element, source_element):
         """
@@ -279,12 +296,14 @@ class SpeculativeActionsGenerator:
             # Gracefully handle missing sources
             pass
 
-    def _index_element_artifact(self, element):
+    def _index_element_artifact(self, element, collect_entries=False):
         """
         Index all file digests in an element's artifact output.
 
         Args:
             element: The element whose artifact to index
+            collect_entries: If True, also collect (digest_hash, digest_size)
+                tuples in self._own_artifact_entries for artifact_overlays
         """
         try:
             # Check if element is cached
@@ -303,13 +322,15 @@ class SpeculativeActionsGenerator:
 
             # Traverse the artifact files directory with full paths
             self._traverse_directory_with_paths(
-                files_dir._get_digest(), element.name, "ARTIFACT", ""  # Start with empty path
+                files_dir._get_digest(), element.name, "ARTIFACT", "",
+                collect_entries=collect_entries,
             )
         except Exception as e:
             # Gracefully handle missing artifacts
             pass
 
-    def _traverse_directory_with_paths(self, directory_digest, element_name, overlay_type, current_path):
+    def _traverse_directory_with_paths(self, directory_digest, element_name, overlay_type, current_path,
+                                       collect_entries=False):
         """
         Recursively traverse a Directory tree and index all file digests with full paths.
 
@@ -318,6 +339,7 @@ class SpeculativeActionsGenerator:
             element_name: The element name to associate with found files
             overlay_type: Either "SOURCE" or "ARTIFACT"
             current_path: Current relative path from root (e.g., "src/foo")
+            collect_entries: If True, also append to self._own_artifact_entries
         """
         try:
             directory = self._cas.fetch_directory_proto(directory_digest)
@@ -338,11 +360,19 @@ class SpeculativeActionsGenerator:
                     if entry not in self._digest_cache[digest_hash]:
                         self._digest_cache[digest_hash].append(entry)
 
+                if collect_entries:
+                    self._own_artifact_entries.append(
+                        (digest_hash, file_node.digest.size_bytes)
+                    )
+
             # Recursively traverse subdirectories
             for dir_node in directory.directories:
                 # Build path for subdirectory
                 subdir_path = dir_node.name if not current_path else f"{current_path}/{dir_node.name}"
-                self._traverse_directory_with_paths(dir_node.digest, element_name, overlay_type, subdir_path)
+                self._traverse_directory_with_paths(
+                    dir_node.digest, element_name, overlay_type, subdir_path,
+                    collect_entries=collect_entries,
+                )
         except Exception as e:
             # Gracefully handle errors
             pass
@@ -356,14 +386,14 @@ class SpeculativeActionsGenerator:
             action_digest: The Action digest to generate overlays for
 
         Returns:
-            SpeculativeAction proto or None if action not found
+            Tuple of (SpeculativeAction proto or None, input_digests set)
         """
         from .._protos.buildstream.v2 import speculative_actions_pb2
 
         # Fetch the action from CAS
         action = self._cas.fetch_action(action_digest)
         if not action:
-            return None
+            return None, set()
 
         spec_action = speculative_actions_pb2.SpeculativeActions.SpeculativeAction()
         spec_action.base_action_digest.CopyFrom(action_digest)
@@ -377,7 +407,7 @@ class SpeculativeActionsGenerator:
             overlays = self._resolve_digest_to_overlays(digest, element)
             spec_action.overlays.extend(overlays)
 
-        return spec_action if spec_action.overlays else None
+        return (spec_action if spec_action.overlays else None), input_digests
 
     def _extract_digests_from_action(self, action):
         """
@@ -480,8 +510,8 @@ class SpeculativeActionsGenerator:
         """
         Generate artifact_overlays for the element's output files.
 
-        This creates a mapping from artifact file digests back to their
-        sources, enabling downstream elements to trace dependencies.
+        Uses _own_artifact_entries collected during _build_digest_cache
+        to avoid re-traversing the artifact tree.
 
         Args:
             element: The element with the artifact
@@ -490,59 +520,11 @@ class SpeculativeActionsGenerator:
             List of Overlay protos
         """
         overlays = []
-
-        try:
-            # Check if element is cached
-            if not element._cached():
-                return overlays
-
-            # Get the artifact object
-            artifact = element._get_artifact()
-            if not artifact or not artifact.cached():
-                return overlays
-
-            # Get the artifact files directory
-            files_dir = artifact.get_files()
-            if not files_dir:
-                return overlays
-
-            # Traverse artifact files and create overlays for each
-            self._generate_overlays_for_directory(
-                files_dir._get_digest(), element, overlays, ""  # Start with empty path
+        for digest_hash, digest_size in self._own_artifact_entries:
+            resolved = self._resolve_digest_to_overlays(
+                (digest_hash, digest_size), element
             )
-        except Exception as e:
-            pass
-
+            # For artifact_overlays, take the highest-priority overlay
+            if resolved:
+                overlays.append(resolved[0])
         return overlays
-
-    def _generate_overlays_for_directory(self, directory_digest, element, overlays, current_path):
-        """
-        Recursively generate overlays for files in a directory.
-
-        Args:
-            directory_digest: Directory to process
-            element: The element being processed
-            overlays: List to append overlays to
-            current_path: Current relative path from root
-        """
-        try:
-            directory = self._cas.fetch_directory_proto(directory_digest)
-            if not directory:
-                return
-
-            # Process each file with full path
-            for file_node in directory.files:
-                file_path = file_node.name if not current_path else f"{current_path}/{file_node.name}"
-                resolved = self._resolve_digest_to_overlays(
-                    (file_node.digest.hash, file_node.digest.size_bytes), element
-                )
-                # For artifact_overlays, take the highest-priority overlay
-                if resolved:
-                    overlays.append(resolved[0])
-
-            # Recursively process subdirectories
-            for dir_node in directory.directories:
-                subdir_path = dir_node.name if not current_path else f"{current_path}/{dir_node.name}"
-                self._generate_overlays_for_directory(dir_node.digest, element, overlays, subdir_path)
-        except Exception as e:
-            pass
