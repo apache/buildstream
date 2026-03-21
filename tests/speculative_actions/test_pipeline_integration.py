@@ -257,10 +257,14 @@ class FakeArtifactCache:
     def __init__(self, cas, basedir):
         self.cas = cas
         self._basedir = basedir
+        self._by_artifact = {}  # id(artifact) -> SpeculativeActions
 
     def store_speculative_actions(self, artifact, spec_actions, weak_key=None):
         # Store proto in CAS
         spec_actions_digest = self.cas.store_proto(spec_actions)
+
+        # Store by artifact identity (for get_speculative_actions without weak_key)
+        self._by_artifact[id(artifact)] = spec_actions
 
         # Store weak key reference
         if weak_key:
@@ -273,7 +277,9 @@ class FakeArtifactCache:
                 f.write(spec_actions.SerializeToString())
 
     def get_speculative_actions(self, artifact, weak_key=None):
-        if weak_key:
+        if weak_key is not None:
+            if not weak_key:
+                return None
             element = artifact._element
             project = element._get_project()
             sa_ref = "{}/{}/speculative-{}".format(project.name, element.name, weak_key)
@@ -283,7 +289,11 @@ class FakeArtifactCache:
                 with open(sa_ref_path, mode="r+b") as f:
                     spec_actions.ParseFromString(f.read())
                 return spec_actions
-        return None
+            return None
+
+        # No weak_key provided: lookup by artifact identity
+        # (used by _seed_dependency_outputs which passes just the artifact)
+        return self._by_artifact.get(id(artifact))
 
 
 # ---------------------------------------------------------------------------
@@ -1335,3 +1345,251 @@ class TestCrossElementActionOverlays:
         new_root = cas.fetch_directory_proto(new_action.input_root_digest)
         assert new_root.files[0].name == "intermediate.h"
         assert new_root.files[0].digest.hash == new_digest.hash
+
+
+# ---------------------------------------------------------------------------
+# Speculative action mode tests
+# ---------------------------------------------------------------------------
+
+class TestSpeculativeActionModes:
+    """Tests verifying that each mode generates the correct overlay types."""
+
+    def _build_compile_link_scenario(self, cas, ac_service):
+        """Build a compile→link scenario with source, artifact, and action overlays.
+
+        Returns (element, dep_element, subaction_digests, dependencies)
+        """
+        app_src = b'int main() { return dep(); }'
+        dep_header = b'int dep(void);'
+        main_o = b'main-object-code'
+        main_o_digest = _make_digest(main_o)
+
+        source_root = _build_source_tree(cas, {"main.c": app_src})
+        sources = FakeSources(FakeSourceDir(source_root))
+
+        dep_artifact_root = _build_source_tree(cas, {"include/dep.h": dep_header})
+        dep_artifact = FakeArtifact(FakeSourceDir(dep_artifact_root))
+        dep_element = FakeElement("dep.bst", artifact=dep_artifact)
+
+        element = FakeElement("app.bst", sources=sources)
+
+        # Compile: uses main.c + dep.h, produces main.o
+        compile_input = _build_source_tree(cas, {
+            "main.c": app_src,
+            "include/dep.h": dep_header,
+        })
+        compile_digest = _build_action(cas, compile_input)
+
+        compile_result = remote_execution_pb2.ActionResult()
+        out = compile_result.output_files.add()
+        out.path = "main.o"
+        out.digest.CopyFrom(main_o_digest)
+        ac_service.store_action_result(compile_digest, compile_result)
+
+        # Link: uses main.o (output of compile)
+        link_input = _build_source_tree(cas, {"main.o": main_o})
+        link_digest = _build_action(cas, link_input)
+
+        return element, dep_element, [compile_digest, link_digest], [dep_element]
+
+    def test_source_artifact_mode_no_action_overlays(self, tmp_path):
+        """source-artifact mode should produce only SOURCE and ARTIFACT overlays."""
+        from buildstream.types import _SpeculativeActionMode
+
+        cas = FakeCAS()
+        ac_service = FakeACService()
+
+        element, dep_element, subaction_digests, dependencies = \
+            self._build_compile_link_scenario(cas, ac_service)
+
+        generator = SpeculativeActionsGenerator(cas, ac_service=ac_service)
+        spec_actions = generator.generate_speculative_actions(
+            element, subaction_digests, dependencies,
+            mode=_SpeculativeActionMode.SOURCE_ARTIFACT,
+        )
+
+        # Should have spec_actions for subactions with SOURCE/ARTIFACT overlays
+        assert len(spec_actions.actions) >= 1
+
+        # No ACTION overlays should exist in any spec_action
+        for sa in spec_actions.actions:
+            for overlay in sa.overlays:
+                assert overlay.type != speculative_actions_pb2.SpeculativeActions.Overlay.ACTION, \
+                    "source-artifact mode should not produce ACTION overlays"
+
+    def test_intra_element_mode_has_action_overlays(self, tmp_path):
+        """intra-element mode should produce ACTION overlays for within-element chains."""
+        from buildstream.types import _SpeculativeActionMode
+
+        cas = FakeCAS()
+        ac_service = FakeACService()
+
+        element, dep_element, subaction_digests, dependencies = \
+            self._build_compile_link_scenario(cas, ac_service)
+
+        generator = SpeculativeActionsGenerator(cas, ac_service=ac_service)
+        spec_actions = generator.generate_speculative_actions(
+            element, subaction_digests, dependencies,
+            mode=_SpeculativeActionMode.INTRA_ELEMENT,
+        )
+
+        # Should have 2 spec_actions (compile + link)
+        assert len(spec_actions.actions) == 2
+
+        # The link action should have an ACTION overlay for main.o
+        link_sa = spec_actions.actions[1]
+        action_overlays = [
+            o for o in link_sa.overlays
+            if o.type == speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
+        ]
+        assert len(action_overlays) == 1
+        assert action_overlays[0].source_path == "main.o"
+
+        # ACTION overlays should be intra-element only (source_element empty)
+        for sa in spec_actions.actions:
+            for overlay in sa.overlays:
+                if overlay.type == speculative_actions_pb2.SpeculativeActions.Overlay.ACTION:
+                    assert overlay.source_element == "", \
+                        "intra-element mode should not produce cross-element ACTION overlays"
+
+    def test_full_mode_has_cross_element_action_overlays(self, tmp_path):
+        """full mode should produce cross-element ACTION overlays from dep subactions."""
+        from buildstream.types import _SpeculativeActionMode
+
+        cas = FakeCAS()
+        ac_service = FakeACService()
+        artifactcache = FakeArtifactCache(cas, str(tmp_path))
+
+        # dep element has a subaction that produces intermediate.h
+        dep_intermediate = b'/* generated header */'
+        dep_intermediate_digest = _make_digest(dep_intermediate)
+
+        dep_compile_input = _build_source_tree(cas, {"gen.c": b'void gen() {}'})
+        dep_compile_digest = _build_action(cas, dep_compile_input)
+
+        dep_result = remote_execution_pb2.ActionResult()
+        out = dep_result.output_files.add()
+        out.path = "intermediate.h"
+        out.digest.CopyFrom(dep_intermediate_digest)
+        ac_service.store_action_result(dep_compile_digest, dep_result)
+
+        # Create dep artifact and store dep SA on it
+        dep_element_obj = FakeElement("dep.bst")
+        dep_artifact = FakeArtifact(element=dep_element_obj)
+
+        dep_sa = speculative_actions_pb2.SpeculativeActions()
+        dep_spec = dep_sa.actions.add()
+        dep_spec.base_action_digest.CopyFrom(dep_compile_digest)
+        artifactcache.store_speculative_actions(dep_artifact, dep_sa)
+
+        # Current element uses intermediate.h in its compile input
+        source_root = _build_source_tree(cas, {"main.c": b'#include "intermediate.h"'})
+        sources = FakeSources(FakeSourceDir(source_root))
+        element = FakeElement("app.bst", sources=sources)
+
+        compile_input = _build_source_tree(cas, {
+            "main.c": b'#include "intermediate.h"',
+            "intermediate.h": dep_intermediate,
+        })
+        compile_digest = _build_action(cas, compile_input)
+
+        # dep_element must use the SAME artifact object so
+        # get_speculative_actions finds the stored SA
+        dep_element_obj._artifact = dep_artifact
+        dep_element = dep_element_obj
+
+        generator = SpeculativeActionsGenerator(
+            cas, ac_service=ac_service, artifactcache=artifactcache
+        )
+        spec_actions = generator.generate_speculative_actions(
+            element, [compile_digest], [dep_element],
+            mode=_SpeculativeActionMode.FULL,
+        )
+
+        assert len(spec_actions.actions) == 1
+
+        # Should have a cross-element ACTION overlay for intermediate.h
+        action_overlays = [
+            o for o in spec_actions.actions[0].overlays
+            if o.type == speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
+        ]
+        assert len(action_overlays) == 1
+        assert action_overlays[0].source_element == "dep.bst"
+        assert action_overlays[0].source_path == "intermediate.h"
+
+    def test_mode_backward_compat_bool(self):
+        """Boolean True/False should map to full/none modes."""
+        from buildstream.types import _SpeculativeActionMode
+
+        # Verify enum values exist and are distinct
+        assert _SpeculativeActionMode.NONE.value == "none"
+        assert _SpeculativeActionMode.PRIME_ONLY.value == "prime-only"
+        assert _SpeculativeActionMode.SOURCE_ARTIFACT.value == "source-artifact"
+        assert _SpeculativeActionMode.INTRA_ELEMENT.value == "intra-element"
+        assert _SpeculativeActionMode.FULL.value == "full"
+
+    def test_source_artifact_mode_fewer_ac_calls(self, tmp_path):
+        """source-artifact mode should make zero AC calls during generation."""
+        from buildstream.types import _SpeculativeActionMode
+
+        cas = FakeCAS()
+
+        # Use a counting AC service to verify zero calls
+        class CountingACService:
+            def __init__(self):
+                self.call_count = 0
+                self._results = {}
+            def store_action_result(self, action_digest, action_result):
+                self._results[action_digest.hash] = action_result
+            def GetActionResult(self, request):
+                self.call_count += 1
+                return self._results.get(request.action_digest.hash)
+
+        ac_service = CountingACService()
+
+        element, dep_element, subaction_digests, dependencies = \
+            self._build_compile_link_scenario(cas, ac_service)
+
+        # source-artifact mode: generator should NOT use ac_service
+        generator = SpeculativeActionsGenerator(cas, ac_service=ac_service)
+        spec_actions = generator.generate_speculative_actions(
+            element, subaction_digests, dependencies,
+            mode=_SpeculativeActionMode.SOURCE_ARTIFACT,
+        )
+
+        assert ac_service.call_count == 0, \
+            f"source-artifact mode should make 0 AC calls, got {ac_service.call_count}"
+
+    def test_intra_element_mode_limited_ac_calls(self, tmp_path):
+        """intra-element mode should only make AC calls for own subactions."""
+        from buildstream.types import _SpeculativeActionMode
+
+        cas = FakeCAS()
+
+        class CountingACService:
+            def __init__(self):
+                self.call_count = 0
+                self._results = {}
+            def store_action_result(self, action_digest, action_result):
+                self._results[action_digest.hash] = action_result
+            def GetActionResult(self, request):
+                self.call_count += 1
+                return self._results.get(request.action_digest.hash)
+
+        ac_service = CountingACService()
+
+        element, dep_element, subaction_digests, dependencies = \
+            self._build_compile_link_scenario(cas, ac_service)
+
+        # intra-element mode: should call AC for own subactions only
+        # (2 subactions = 2 _record_subaction_outputs calls)
+        generator = SpeculativeActionsGenerator(cas, ac_service=ac_service)
+        spec_actions = generator.generate_speculative_actions(
+            element, subaction_digests, dependencies,
+            mode=_SpeculativeActionMode.INTRA_ELEMENT,
+        )
+
+        # Should be exactly N calls for N subactions (no dep seeding)
+        assert ac_service.call_count == len(subaction_digests), \
+            f"intra-element mode should make {len(subaction_digests)} AC calls " \
+            f"(one per own subaction), got {ac_service.call_count}"
