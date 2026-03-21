@@ -91,12 +91,20 @@ class SpeculativeActionGenerationQueue(Queue):
         dependencies = list(element._dependencies(_Scope.BUILD, recurse=False))
 
         # Get action cache service for ACTION overlay generation
+        # (only needed for intra-element and full modes)
+        from ...types import _SpeculativeActionMode
+
+        mode = context.speculative_actions_mode
         casd = context.get_casd()
-        ac_service = casd.get_ac_service() if casd else None
+        ac_service = None
+        if mode in (_SpeculativeActionMode.INTRA_ELEMENT, _SpeculativeActionMode.FULL):
+            ac_service = casd.get_ac_service() if casd else None
 
         # Generate overlays
         generator = SpeculativeActionsGenerator(cas, ac_service=ac_service, artifactcache=artifactcache)
-        spec_actions = generator.generate_speculative_actions(element, subaction_digests, dependencies)
+        spec_actions = generator.generate_speculative_actions(
+            element, subaction_digests, dependencies, mode=mode
+        )
 
         if not spec_actions or not spec_actions.actions:
             return 0

@@ -90,7 +90,7 @@ from .plugin import Plugin
 from .sandbox import _SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey
+from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey, _SpeculativeActionMode
 from ._artifact import Artifact
 from ._elementproxy import ElementProxy
 from ._elementsources import ElementSources
@@ -1973,7 +1973,7 @@ class Element(Plugin):
             if (
                 pull
                 and not artifact.cached()
-                and context.speculative_actions
+                and context.speculative_actions_mode != _SpeculativeActionMode.NONE
                 and self.__weak_cache_key
                 and not self.__artifacts.contains(self, self.__weak_cache_key)
             ):

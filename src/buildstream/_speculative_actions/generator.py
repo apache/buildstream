@@ -59,7 +59,7 @@ class SpeculativeActionsGenerator:
         # SOURCE overlays are tried first, then ACTION, then ARTIFACT.
         self._digest_cache: Dict[str, list] = {}
 
-    def generate_speculative_actions(self, element, subaction_digests, dependencies):
+    def generate_speculative_actions(self, element, subaction_digests, dependencies, mode=None):
         """
         Generate SpeculativeActions for an element build.
 
@@ -71,6 +71,8 @@ class SpeculativeActionsGenerator:
             element: The element that was built
             subaction_digests: List of Action digests from the build (from ActionResult.subactions)
             dependencies: List of dependency elements (for resolving artifact overlays)
+            mode: _SpeculativeActionMode controlling which overlay types to generate.
+                None defaults to FULL for backward compatibility.
 
         Returns:
             A SpeculativeActions message containing:
@@ -79,6 +81,10 @@ class SpeculativeActionsGenerator:
         """
         from .._protos.buildstream.v2 import speculative_actions_pb2
         from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+        from ..types import _SpeculativeActionMode
+
+        if mode is None:
+            mode = _SpeculativeActionMode.FULL
 
         spec_actions = speculative_actions_pb2.SpeculativeActions()
 
@@ -90,43 +96,44 @@ class SpeculativeActionsGenerator:
         prior_outputs = {}
 
         # Seed prior_outputs with dependency subaction outputs for
-        # cross-element ACTION overlays.  Dependencies have already been
-        # built and had their generation queue run, so their SAs and
-        # ActionResults are available.
-        if self._ac_service and self._artifactcache:
-            self._seed_dependency_outputs(dependencies, prior_outputs)
+        # cross-element ACTION overlays (full mode only).
+        if mode == _SpeculativeActionMode.FULL:
+            if self._ac_service and self._artifactcache:
+                self._seed_dependency_outputs(dependencies, prior_outputs)
 
         # Generate overlays for each subaction
         for subaction_digest in subaction_digests:
             spec_action = self._generate_action_overlays(element, subaction_digest)
 
             # Generate ACTION overlays for digests that match prior subaction outputs
-            # but weren't already resolved as SOURCE or ARTIFACT
-            if self._ac_service and prior_outputs:
-                action = self._cas.fetch_action(subaction_digest)
-                if action:
-                    input_digests = self._extract_digests_from_action(action)
-                    # Collect hashes already covered by SOURCE/ARTIFACT overlays
-                    already_overlaid = set()
-                    if spec_action:
-                        for overlay in spec_action.overlays:
-                            already_overlaid.add(overlay.target_digest.hash)
+            # but weren't already resolved as SOURCE or ARTIFACT.
+            # Requires intra-element or full mode.
+            if mode in (_SpeculativeActionMode.INTRA_ELEMENT, _SpeculativeActionMode.FULL):
+                if self._ac_service and prior_outputs:
+                    action = self._cas.fetch_action(subaction_digest)
+                    if action:
+                        input_digests = self._extract_digests_from_action(action)
+                        # Collect hashes already covered by SOURCE/ARTIFACT overlays
+                        already_overlaid = set()
+                        if spec_action:
+                            for overlay in spec_action.overlays:
+                                already_overlaid.add(overlay.target_digest.hash)
 
-                    for digest_hash, digest_size in input_digests:
-                        if digest_hash in prior_outputs and digest_hash not in already_overlaid:
-                            source_element, producing_action_digest, output_path = prior_outputs[digest_hash]
-                            # Create ACTION overlay
-                            if spec_action is None:
-                                spec_action = speculative_actions_pb2.SpeculativeActions.SpeculativeAction()
-                                spec_action.base_action_digest.CopyFrom(subaction_digest)
-                            overlay = speculative_actions_pb2.SpeculativeActions.Overlay()
-                            overlay.type = speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
-                            overlay.source_element = source_element
-                            overlay.source_action_digest.CopyFrom(producing_action_digest)
-                            overlay.source_path = output_path
-                            overlay.target_digest.hash = digest_hash
-                            overlay.target_digest.size_bytes = digest_size
-                            spec_action.overlays.append(overlay)
+                        for digest_hash, digest_size in input_digests:
+                            if digest_hash in prior_outputs and digest_hash not in already_overlaid:
+                                source_element, producing_action_digest, output_path = prior_outputs[digest_hash]
+                                # Create ACTION overlay
+                                if spec_action is None:
+                                    spec_action = speculative_actions_pb2.SpeculativeActions.SpeculativeAction()
+                                    spec_action.base_action_digest.CopyFrom(subaction_digest)
+                                overlay = speculative_actions_pb2.SpeculativeActions.Overlay()
+                                overlay.type = speculative_actions_pb2.SpeculativeActions.Overlay.ACTION
+                                overlay.source_element = source_element
+                                overlay.source_action_digest.CopyFrom(producing_action_digest)
+                                overlay.source_path = output_path
+                                overlay.target_digest.hash = digest_hash
+                                overlay.target_digest.size_bytes = digest_size
+                                spec_action.overlays.append(overlay)
 
             # Sort overlays: SOURCE > ACTION > ARTIFACT
             # This ensures the instantiator tries SOURCE first, then
@@ -141,9 +148,10 @@ class SpeculativeActionsGenerator:
                 spec_actions.actions.append(spec_action)
 
             # Fetch this subaction's ActionResult and record its outputs
-            # for subsequent subactions
-            if self._ac_service:
-                self._record_subaction_outputs(subaction_digest, prior_outputs)
+            # for subsequent subactions (intra-element and full modes)
+            if mode in (_SpeculativeActionMode.INTRA_ELEMENT, _SpeculativeActionMode.FULL):
+                if self._ac_service:
+                    self._record_subaction_outputs(subaction_digest, prior_outputs)
 
         # Generate artifact overlays for the element's output files
         artifact_overlays = self._generate_artifact_overlays(element)
