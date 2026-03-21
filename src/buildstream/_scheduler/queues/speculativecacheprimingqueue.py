@@ -412,7 +412,13 @@ class SpeculativeCachePrimingQueue(Queue):
 
     @staticmethod
     def _prefetch_cas_blobs(element, spec_actions, cas, artifactcache):
-        """Pre-fetch all CAS blobs needed for instantiation."""
+        """Pre-fetch all CAS blobs needed for instantiation.
+
+        Fetches base action blobs in a single batch, then deduplicates
+        input root digests and fetches directory trees concurrently.
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
         project = element._get_project()
         _, storage_remotes = artifactcache.get_remotes(project.name, False)
         remote = storage_remotes[0] if storage_remotes else None
@@ -431,13 +437,32 @@ class SpeculativeCachePrimingQueue(Queue):
             except Exception:
                 pass
 
+        # Collect and deduplicate input root digests
+        unique_roots = {}  # hash -> digest
         for digest in base_action_digests:
             try:
                 action = cas.fetch_action(digest)
                 if action and action.HasField("input_root_digest"):
-                    cas.fetch_directory(remote, action.input_root_digest)
+                    root = action.input_root_digest
+                    if root.hash not in unique_roots:
+                        unique_roots[root.hash] = root
             except Exception:
                 pass
+
+        if not unique_roots:
+            return
+
+        # Fetch directory trees concurrently
+        def _fetch_tree(root_digest):
+            try:
+                cas.fetch_directory(remote, root_digest)
+            except Exception:
+                pass
+
+        with ThreadPoolExecutor(max_workers=min(16, len(unique_roots))) as pool:
+            futures = [pool.submit(_fetch_tree, d) for d in unique_roots.values()]
+            for f in as_completed(futures):
+                pass  # Errors handled inside _fetch_tree
 
     @staticmethod
     def _submit_action_async(exec_service, action_digest, element):
