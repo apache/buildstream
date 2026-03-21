@@ -51,6 +51,10 @@ class SpeculativeActionInstantiator:
         self._cas = cas
         self._artifactcache = artifactcache
         self._ac_service = ac_service
+        # Cache parsed Directory protos to avoid redundant CAS reads.
+        # Many overlays reference files in the same directory trees,
+        # so intermediate Directory protos are fetched repeatedly.
+        self._dir_cache = {}  # type: dict[str, object]
 
     def instantiate_action(self, spec_action, element, element_lookup,
                            instantiated_actions=None, resolved_cache=None):
@@ -392,6 +396,16 @@ class SpeculativeActionInstantiator:
 
         return None
 
+    def _cached_fetch_directory(self, digest):
+        """Fetch a Directory proto, using the in-memory cache."""
+        cached = self._dir_cache.get(digest.hash)
+        if cached is not None:
+            return cached
+        directory = self._cas.fetch_directory_proto(digest)
+        if directory is not None:
+            self._dir_cache[digest.hash] = directory
+        return directory
+
     def _find_file_by_path(self, directory_digest, file_path):
         """
         Find a file in a directory tree by full relative path.
@@ -413,7 +427,7 @@ class SpeculativeActionInstantiator:
 
             # Navigate through directories
             for i, part in enumerate(parts[:-1]):  # All but the last (filename)
-                directory = self._cas.fetch_directory_proto(current_digest)
+                directory = self._cached_fetch_directory(current_digest)
                 if not directory:
                     return None
 
@@ -430,7 +444,7 @@ class SpeculativeActionInstantiator:
 
             # Now find the file
             filename = parts[-1]
-            directory = self._cas.fetch_directory_proto(current_digest)
+            directory = self._cached_fetch_directory(current_digest)
             if not directory:
                 return None
 
@@ -455,7 +469,7 @@ class SpeculativeActionInstantiator:
             New directory digest or None
         """
         try:
-            directory = self._cas.fetch_directory_proto(directory_digest)
+            directory = self._cached_fetch_directory(directory_digest)
             if not directory:
                 return None
 
