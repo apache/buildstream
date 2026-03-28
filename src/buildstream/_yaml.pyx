@@ -293,10 +293,10 @@ cpdef MappingNode load(str filename, str shortname, bint copy_tree=False, object
 cpdef MappingNode load_data(str data, int file_index=node._SYNTHETIC_FILE_INDEX, str file_name=None, bint copy_tree=False):
     cdef Representer rep
 
-    try:
-        rep = Representer(file_index)
-        parser = yaml.CParser(data)
+    rep = Representer(file_index)
+    parser = yaml.CParser(data)
 
+    try:
         try:
             while parser.check_event():
                 rep.handle_event(parser.get_event())
