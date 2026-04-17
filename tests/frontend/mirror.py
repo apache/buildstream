@@ -15,6 +15,7 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
+import copy
 import os
 import shutil
 
@@ -942,6 +943,7 @@ def test_source_mirror_plugin(cli, tmpdir, origin):
 @pytest.mark.parametrize("alias_override", [["foo"], ["foo", "bar"], "global"])
 @pytest.mark.parametrize("alias_mapping", ["identity", "project-prefix", "invalid"])
 @pytest.mark.parametrize("source_mirror", [True, False])
+@pytest.mark.parametrize("source_plugin_uses_sourcefetcher", [True, False])
 def test_mirror_subproject_aliases(
     cli,
     tmpdir,
@@ -952,6 +954,7 @@ def test_mirror_subproject_aliases(
     alias_override,
     alias_mapping,
     source_mirror,
+    source_plugin_uses_sourcefetcher,
 ):
     if alias_override == "global":
         if alias_mapping == "invalid":
@@ -984,7 +987,7 @@ def test_mirror_subproject_aliases(
             "bar": "RAB/" if subproject_bar_alias_succeed else "BAR/",
         },
         "plugins": [
-            {"origin": "local", "path": "sources", "sources": ["fetch_source"]},
+            {"origin": "local", "path": "sources", "sources": ["fetch_source", "fetch_source_nofetcher"]},
         ],
     }
 
@@ -998,6 +1001,17 @@ def test_mirror_subproject_aliases(
 
     if unaliased_sources:
         element["sources"][0]["urls"] = ["foo:repo1", "RAB/repo2"]
+
+    if not source_plugin_uses_sourcefetcher:
+        # Exercise code paths for source plugins that don't use SourceFetcher
+        # Instantiate two sources with one URL each
+        urls = element["sources"][0]["urls"]
+        element["sources"][0]["kind"] = "fetch_source_nofetcher"
+        del element["sources"][0]["urls"]
+        element["sources"].append(copy.deepcopy(element["sources"][0]))
+        element["sources"][0]["url"] = urls[0]
+        element["sources"][1]["url"] = urls[1]
+
     _yaml.roundtrip_dump(element, str(subproject_element_dir / element_name))
 
     # copy the source plugin to the subproject
