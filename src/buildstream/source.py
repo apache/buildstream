@@ -2036,11 +2036,7 @@ class Source(Plugin):
         #
         else:
             alias = self._get_alias()
-            if self.__first_pass:
-                mirrors = project.first_pass_config.mirrors
-            else:
-                mirrors = project.config.mirrors
-            if not mirrors or not alias:
+            if not alias:
                 self.fetch(**kwargs)
                 return
 
@@ -2066,12 +2062,8 @@ class Source(Plugin):
     def __do_track(self, **kwargs):
         project = self._get_project()
         alias = self._get_alias()
-        if self.__first_pass:
-            mirrors = project.first_pass_config.mirrors
-        else:
-            mirrors = project.config.mirrors
-        # If there are no mirrors, or no aliases to replace, there's nothing to do here.
-        if not mirrors or not alias:
+        # If there are no aliases to replace, there's nothing to do here.
+        if not alias:
             return self.track(**kwargs)
 
         # NOTE: We are assuming here that tracking only requires substituting the
