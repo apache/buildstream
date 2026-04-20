@@ -803,6 +803,13 @@ class Context:
 
         # If there are any project recommendations, append them at the end
         project_remotes = getattr(project, project_attribute)
+
+        junction = project.junction
+        while junction:
+            parent_project = junction._get_project()
+            project_remotes = getattr(parent_project, project_attribute) + project_remotes
+            junction = parent_project.junction
+
         remotes = list(utils._deduplicate(remotes + project_remotes))
 
         return remotes
