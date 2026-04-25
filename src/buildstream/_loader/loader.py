@@ -261,11 +261,12 @@ class Loader:
     # Args:
     #    filename (str): The element-path relative bst file
     #    provenance_node (Node): The location from where the file was referred to, or None
+    #    only_first_pass (bool): Only handle junctions and links, which don't require the project to be fully loaded
     #
     # Returns:
     #    (LoadElement): A partially-loaded LoadElement
     #
-    def _load_file_no_deps(self, filename, provenance_node=None):
+    def _load_file_no_deps(self, filename, provenance_node=None, only_first_pass=False):
 
         self._assert_element_name(filename, provenance_node)
 
@@ -305,6 +306,8 @@ class Loader:
         kind = node.get_str(Symbol.KIND)
         if kind in ("junction", "link"):
             self._first_pass_options.process_node(node)
+        elif only_first_pass:
+            return None
         else:
             self.project.ensure_fully_loaded()
 
@@ -979,9 +982,9 @@ class Loader:
             element = target_loader._elements[element_name]
         except KeyError:
             # Shallow load the the element.
-            element = target_loader._load_file_no_deps(element_name, provenance_node)
+            element = target_loader._load_file_no_deps(element_name, provenance_node, only_first_pass=True)
 
-        if element.link_target:
+        if element and element.link_target:
             link_target = element.link_target.as_str()
             if junction:
                 return "{}:{}".format(junction, link_target), element.link_target
