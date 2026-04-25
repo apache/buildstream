@@ -1,14 +1,14 @@
-click==8.3.0
-grpcio==1.76.0
+click==8.3.3
+grpcio==1.80.0
 Jinja2==3.1.6
-packaging==25.0
+packaging==26.2
 pluginbase==1.0.1
-protobuf==6.33.0
-psutil==7.1.3
-ruamel.yaml==0.18.16
-ruamel.yaml.clib==0.2.14
-pyroaring==1.0.3
-ujson==5.11.0
+protobuf==7.34.1
+psutil==7.2.2
+ruamel.yaml==0.19.1
+ruamel.yaml.clib==0.2.15
+pyroaring==1.1.0
+ujson==5.12.0
 ## The following requirements were added by pip freeze:
 MarkupSafe==3.0.3
 typing_extensions==4.15.0
