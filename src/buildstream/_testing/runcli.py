@@ -24,7 +24,6 @@ runcli - Test fixtures used for running BuildStream commands
 
 """
 
-
 import os
 import re
 import sys
@@ -122,16 +121,12 @@ class Result:
     #
     def assert_main_error(self, error_domain, error_reason, fail_message="", *, debug=False):
         if debug:
-            print(
-                """
+            print("""
                 Exit code: {}
                 Exception: {}
                 Domain:    {}
                 Reason:    {}
-                """.format(
-                    self.exit_code, self.exception, self.exception.domain, self.exception.reason
-                )
-            )
+                """.format(self.exit_code, self.exception, self.exception.domain, self.exception.reason))
         assert self.exit_code == -1, fail_message
         assert self.exc is not None, fail_message
         assert self.exception is not None, fail_message

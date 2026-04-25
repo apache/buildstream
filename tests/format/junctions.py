@@ -26,7 +26,6 @@ from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream._testing import create_repo
 from tests.testutils import generate_junction
 
-
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "junctions",

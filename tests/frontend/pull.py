@@ -30,7 +30,6 @@ from tests.testutils import (
     assert_not_shared,
 )
 
-
 # Project directory
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

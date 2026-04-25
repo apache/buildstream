@@ -28,7 +28,6 @@ from buildstream._testing._utils.site import have_subsecond_mtime
 
 from tests.testutils import casd_cache, create_element_size, wait_for_cache_granularity
 
-
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "expiry")
 
 

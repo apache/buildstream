@@ -160,6 +160,7 @@ _TXT = Union[bytes, str]
 _STR_BYTES_PATH = Union[str, bytes, "os.PathLike[str]", "os.PathLike[bytes]"]
 _CMD = Union[_STR_BYTES_PATH, Sequence[_STR_BYTES_PATH]]
 
+
 # _background_job_wrapper()
 #
 # Wrapper for running jobs in the background, transparently for users

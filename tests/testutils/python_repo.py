@@ -19,7 +19,6 @@ import sys
 
 import pytest
 
-
 SETUP_TEMPLATE = """\
 from setuptools import setup
 

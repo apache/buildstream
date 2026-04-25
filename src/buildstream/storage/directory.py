@@ -41,7 +41,6 @@ root boundary will be evaluated as the root directory. This behavior matches POS
 of filesystem root directories.
 """
 
-
 from contextlib import contextmanager
 from tarfile import TarFile
 from typing import Callable, Optional, Union, List, IO, Iterator

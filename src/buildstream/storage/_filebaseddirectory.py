@@ -27,6 +27,7 @@ from .. import utils
 from ..utils import BST_ARBITRARY_TIMESTAMP
 from ..utils import FileListResult
 
+
 # FileBasedDirectory intentionally doesn't call its superclass constuctor,
 # which is meant to be unimplemented.
 # pylint: disable=super-init-not-called

@@ -35,7 +35,6 @@ from .types import _CacheBuildTrees, _PipelineSelection, _SchedulerErrorAction, 
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .node import Node, MappingNode
 
-
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
     from ._project import Project

@@ -25,7 +25,6 @@ from .. import create_repo, ALL_REPO_KINDS
 from .. import cli  # pylint: disable=unused-import
 from .utils import add_plugins_conf
 
-
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = os.path.join(TOP_DIR, "project")

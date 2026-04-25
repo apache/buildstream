@@ -26,7 +26,6 @@ from tests.testutils import dummy_context
 
 from tests.testutils.artifactshare import create_dummy_artifact_share
 
-
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "project",

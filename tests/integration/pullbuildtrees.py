@@ -26,7 +26,6 @@ from buildstream.exceptions import ErrorDomain, LoadErrorReason
 
 from tests.testutils import create_artifact_share
 
-
 pytestmark = pytest.mark.integration
 
 

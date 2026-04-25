@@ -84,6 +84,7 @@ class RemoteSpecType(click.ParamType):
 #            Override of click's main entry point                #
 ##################################################################
 
+
 # search_command()
 #
 # Helper function to get a command and context object

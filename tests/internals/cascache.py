@@ -19,7 +19,6 @@ from buildstream._cas import casdprocessmanager
 from buildstream._messenger import Messenger
 from tests.testutils import casd_cache
 
-
 #
 # A dummy CASD script placeholder which supports the --version argument
 #

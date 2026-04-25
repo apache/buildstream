@@ -30,7 +30,6 @@ from buildstream._testing.runcli import cli  # pylint: disable=unused-import
 
 from tests.testutils import dummy_context
 
-
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 cache1 = RemoteSpec(RemoteType.ALL, url="https://example.com/cache1", push=True)
 cache2 = RemoteSpec(RemoteType.ALL, url="https://example.com/cache2", push=False)

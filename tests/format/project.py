@@ -24,7 +24,6 @@ from buildstream._testing import generate_project
 
 from tests.testutils import filetypegenerator
 
-
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 

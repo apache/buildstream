@@ -23,11 +23,11 @@ from buildstream import _yaml
 from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 
-
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "link",
 )
+
 
 #
 # Test links to elements, this tests both specifying the link as

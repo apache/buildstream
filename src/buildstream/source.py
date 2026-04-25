@@ -852,9 +852,9 @@ class Source(Plugin):
         self.__element_kind = meta.element_kind  # The kind of the element owning this source
         self._directory = meta.directory  # Staging relative directory
         self.__variables = variables  # The variables used to resolve the source's config
-        self.__provenance: Optional[
-            MappingNode
-        ] = meta.provenance  # The source provenance for general user provided SourceInfo
+        self.__provenance: Optional[MappingNode] = (
+            meta.provenance
+        )  # The source provenance for general user provided SourceInfo
 
         if self.__provenance is not None and self.BST_CUSTOM_SOURCE_PROVENANCE:
             raise SourceError(

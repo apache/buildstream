@@ -25,7 +25,6 @@ from buildstream._testing._utils.site import have_subsecond_mtime
 
 from tests.testutils import casd_cache
 
-
 # These are comparitive tests that check that FileBasedDirectory and
 # CasBasedDirectory act identically.
 
@@ -61,9 +60,9 @@ def generate_import_roots(rootno, directory):
 def generate_import_root(rootdir, filelist):
     if os.path.exists(rootdir):
         return
-    for (path, typesymbol, content) in filelist:
+    for path, typesymbol, content in filelist:
         if typesymbol == "F":
-            (dirnames, filename) = os.path.split(path)
+            dirnames, filename = os.path.split(path)
             os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
             fullpath = os.path.join(rootdir, dirnames, filename)
             with open(fullpath, "wt", encoding="utf-8") as f:
@@ -73,11 +72,11 @@ def generate_import_root(rootdir, filelist):
         elif typesymbol == "D":
             os.makedirs(os.path.join(rootdir, path), exist_ok=True)
         elif typesymbol == "S":
-            (dirnames, filename) = os.path.split(path)
+            dirnames, filename = os.path.split(path)
             os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
             os.symlink(content, os.path.join(rootdir, path))
     # Set deterministic mtime for all directories
-    for (dirpath, _, _) in os.walk(rootdir):
+    for dirpath, _, _ in os.walk(rootdir):
         _set_file_mtime(dirpath, MTIME)
 
 
@@ -120,7 +119,7 @@ def generate_random_root(rootno, directory):
                 os.symlink(relative_link, target)
         things.append(os.path.join(location, thingname))
     # Set deterministic mtime for all directories
-    for (dirpath, _, _) in os.walk(rootdir):
+    for dirpath, _, _ in os.walk(rootdir):
         _set_file_mtime(dirpath, MTIME)
 
 
@@ -217,7 +216,7 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
 
         if verify_contents:
             for item in root_filesets[overlay - 1]:
-                (path, typename, content) = item
+                path, typename, content = item
                 realpath = resolve_symlinks(path, export_dir)
                 if typename == "F":
                     if os.path.isdir(realpath) and directory_not_empty(realpath):

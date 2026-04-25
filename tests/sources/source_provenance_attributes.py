@@ -22,7 +22,6 @@ from buildstream._testing import generate_project, load_yaml
 from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 
-
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "source_provenance_attributes")
 
 

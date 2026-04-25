@@ -142,7 +142,6 @@ or overridden is explained above in the
 :ref:`built-in functionality documentation <core_downloadable_source_builtins>`.
 """
 
-
 import os
 import re
 import urllib.request

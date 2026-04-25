@@ -63,7 +63,6 @@ from buildstream._testing._utils.site import IS_LINUX, MACHINE_ARCH
 from buildstream.plugin import CoreWarnings
 from buildstream import _yaml
 
-
 # Project directory
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
