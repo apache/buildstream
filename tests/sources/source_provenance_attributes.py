@@ -54,7 +54,8 @@ def test_source_provenance_disallow_top_level(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_source_provenance_no_defined_attributes(cli, datafiles):
+@pytest.mark.parametrize("element", ["target", "junction"])
+def test_source_provenance_no_defined_attributes(cli, datafiles, element):
     project = str(datafiles)
 
     # Set the project_dir alias in project.conf to the path to the tested project
@@ -68,21 +69,22 @@ def test_source_provenance_no_defined_attributes(cli, datafiles):
     # Make sure a non-default attribute fails
     result = cli.run(
         project=project,
-        args=["show", "--format", "%{source-info}", "target_a.bst"],
+        args=["show", "--format", "%{source-info}", f"{element}_a.bst"],
     )
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE)
 
     # Make sure a default attribute fails
     result = cli.run(
         project=project,
-        args=["show", "--format", "%{source-info}", "target_b.bst"],
+        args=["show", "--format", "%{source-info}", f"{element}_b.bst"],
     )
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE)
 
 
 # Test that no defined source provenance attributes blocks all source provenance data
 @pytest.mark.datafiles(DATA_DIR)
-def test_source_provenance_default_attributes(cli, datafiles):
+@pytest.mark.parametrize("element", ["target", "junction"])
+def test_source_provenance_default_attributes(cli, datafiles, element):
     project = str(datafiles)
 
     # Set the project_dir alias in project.conf to the path to the tested project
@@ -99,7 +101,7 @@ def test_source_provenance_default_attributes(cli, datafiles):
     # Make sure defined attributes are available
     result = cli.run(
         project=project,
-        args=["show", "--format", "%{source-info}", "target_b.bst"],
+        args=["show", "--format", "%{source-info}", f"{element}_b.bst"],
     )
     result.assert_success()
 
@@ -113,14 +115,15 @@ def test_source_provenance_default_attributes(cli, datafiles):
     # Make sure undefined attributes fail
     result = cli.run(
         project=project,
-        args=["show", "--format", "%{source-info}", "target_a.bst"],
+        args=["show", "--format", "%{source-info}", f"{element}_a.bst"],
     )
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE)
 
 
 # Test that no defined source provenance attributes blocks all source provenance data
 @pytest.mark.datafiles(DATA_DIR)
-def test_source_provenance_project_defined_attributes(cli, datafiles):
+@pytest.mark.parametrize("element", ["target", "junction"])
+def test_source_provenance_project_defined_attributes(cli, datafiles, element):
     project = str(datafiles)
 
     # Set the project_dir alias in project.conf to the path to the tested project
@@ -139,7 +142,7 @@ def test_source_provenance_project_defined_attributes(cli, datafiles):
     # Make sure defined attributes are available
     result = cli.run(
         project=project,
-        args=["show", "--format", "%{source-info}", "target_a.bst"],
+        args=["show", "--format", "%{source-info}", f"{element}_a.bst"],
     )
     result.assert_success()
 
@@ -153,6 +156,6 @@ def test_source_provenance_project_defined_attributes(cli, datafiles):
     # Make sure undefined attributes fail
     result = cli.run(
         project=project,
-        args=["show", "--format", "%{source-info}", "target_b.bst"],
+        args=["show", "--format", "%{source-info}", f"{element}_b.bst"],
     )
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE)
