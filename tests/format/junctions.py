@@ -610,6 +610,34 @@ def test_override_self(cli, datafiles, target, expected_result):
     assert result_vars.get_str("animal") == expected_result
 
 
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target,expected_result",
+    [
+        ("subproject.bst:target.bst", "pony"),
+        ("subproject.bst:self-junction.bst:target.bst", "horsy"),
+        ("link.bst", "pony"),
+        ("nested-link.bst", "horsy"),
+    ],
+    ids=[
+        "direct-target",
+        "override-target",
+        "link-target",
+        "link-override-target",
+    ],
+)
+def test_override_self_link(cli, datafiles, target, expected_result):
+    project = os.path.join(str(datafiles), "override-self-link")
+    result = cli.run(
+        project=project,
+        silent=True,
+        args=["show", "--deps", "none", "--format", "%{vars}", target],
+    )
+    result.assert_success()
+    result_vars = _yaml.load_data(result.output)
+    assert result_vars.get_str("animal") == expected_result
+
+
 #
 # Test conflicting junction scenarios
 #
@@ -935,6 +963,42 @@ def test_include_vars_optional(cli, datafiles, use_species, expected_result):
 )
 def test_include_vars_cross_junction_element(cli, datafiles, target, animal, expected_result):
     project = os.path.join(str(datafiles), "include-complex")
+    result = cli.run(
+        project=project,
+        silent=True,
+        args=[
+            "--option",
+            "animal",
+            animal,
+            "show",
+            "--deps",
+            "none",
+            "--format",
+            "%{vars}",
+            target,
+        ],
+    )
+    result.assert_success()
+    result_vars = _yaml.load_data(result.output)
+    assert result_vars.get_str("target_animal_variable") == expected_result
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target",
+    ["target.bst", "subproject.bst:target.bst", "intermediate-project.bst:subproject.bst:target.bst"],
+    ids=["toplevel-target", "subproject-target", "nested-link-target"],
+)
+@pytest.mark.parametrize(
+    "animal,expected_result",
+    [
+        ("pony", "target pony"),
+        ("horsy", "target horsy"),
+    ],
+    ids=["branch1", "branch2"],
+)
+def test_include_vars_cross_junction_element_nested(cli, datafiles, target, animal, expected_result):
+    project = os.path.join(str(datafiles), "include-complex-nested")
     result = cli.run(
         project=project,
         silent=True,
