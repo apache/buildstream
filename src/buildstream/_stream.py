@@ -1684,6 +1684,7 @@ class Stream:
         elements, except_elements, artifacts = self._load_elements_from_targets(
             targets, except_targets, rewritable=False, valid_artifact_names=load_artifacts
         )
+        self._context.ensure_fully_loaded()
 
         if artifacts:
             if selection in (_PipelineSelection.ALL, _PipelineSelection.RUN):

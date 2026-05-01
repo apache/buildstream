@@ -565,6 +565,13 @@ class Context:
         #
         return self._projects[0]
 
+    # ensure_fully_loaded():
+    #
+    # Ensure all projects are fully loaded.
+    def ensure_fully_loaded(self) -> None:
+        for project in self._projects:
+            project.ensure_fully_loaded()
+
     # initialize_remotes()
     #
     # This will resolve what remotes each loaded project will interact
@@ -592,9 +599,7 @@ class Context:
         ignore_project_source_remotes: bool = False,
     ) -> None:
 
-        # Ensure all projects are fully loaded.
-        for project in self._projects:
-            project.ensure_fully_loaded()
+        self.ensure_fully_loaded()
 
         #
         # If the global remote execution specs have been overridden by the
