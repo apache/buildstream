@@ -26,7 +26,6 @@ from buildstream.utils import BST_ARBITRARY_TIMESTAMP
 
 from tests.testutils import wait_for_cache_granularity
 
-
 pytestmark = pytest.mark.integration
 
 

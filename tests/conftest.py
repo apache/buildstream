@@ -29,7 +29,6 @@ from buildstream._testing.integration import integration_cache  # pylint: disabl
 
 from tests.testutils.repo.tar import Tar
 
-
 #
 # This file is loaded by pytest, we use it to add a custom
 # `--integration` option to our test suite, and to install

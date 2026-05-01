@@ -37,7 +37,7 @@ SourceMirrors expose the following abstract methods. Unless explicitly mentioned
 these methods are mandatory to implement.
 
 * :func:`SourceMirror.translate_url() <buildstream.source.SourceMirror.translate_url>`
- 
+
   Produce an appropriate URL for the given URL and alias.
 
 

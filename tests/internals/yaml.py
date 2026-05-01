@@ -20,7 +20,6 @@ from buildstream import _yaml, Node, ProvenanceInformation, SequenceNode
 from buildstream.exceptions import LoadErrorReason
 from buildstream._exceptions import LoadError
 
-
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "yaml",

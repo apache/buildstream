@@ -28,7 +28,6 @@ from .optioneltmask import OptionEltMask
 from .optionarch import OptionArch
 from .optionos import OptionOS
 
-
 _OPTION_TYPES = {
     OptionBool.OPTION_TYPE: OptionBool,
     OptionEnum.OPTION_TYPE: OptionEnum,

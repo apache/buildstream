@@ -52,6 +52,7 @@ The remote source does not override any of the DownloadableFileSource reporting 
 as such, behaves as described in the :ref:`default reporting of SourceInfo <core_downloadable_source_info>`
 documentation.
 """
+
 import os
 from buildstream import DownloadableFileSource, SourceError, utils
 

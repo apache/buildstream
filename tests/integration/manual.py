@@ -24,7 +24,6 @@ from buildstream import _yaml
 from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream._testing._utils.site import HAVE_SANDBOX
 
-
 pytestmark = pytest.mark.integration
 
 
@@ -75,14 +74,11 @@ def test_manual_element(cli, datafiles):
     with open(os.path.join(checkout, "test"), encoding="utf-8") as f:
         text = f.read()
 
-    assert (
-        text
-        == """./configure
+    assert text == """./configure
 make
 make install
 strip
 """
-    )
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -134,12 +130,9 @@ def test_manual_element_noparallel(cli, datafiles):
     with open(os.path.join(checkout, "test"), encoding="utf-8") as f:
         text = f.read()
 
-    assert (
-        text
-        == """-j1 -Wall
+    assert text == """-j1 -Wall
 2
 """
-    )
 
 
 @pytest.mark.datafiles(DATA_DIR)

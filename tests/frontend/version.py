@@ -17,7 +17,6 @@
 
 from buildstream._testing.runcli import cli  # pylint: disable=unused-import
 
-
 # For utils.get_bst_version()
 from buildstream import utils
 

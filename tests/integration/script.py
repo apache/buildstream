@@ -22,7 +22,6 @@ from buildstream import _yaml
 from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream._testing._utils.site import HAVE_SANDBOX, BUILDBOX_RUN
 
-
 pytestmark = pytest.mark.integration
 
 

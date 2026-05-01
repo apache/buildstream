@@ -28,7 +28,6 @@ from buildstream import utils
 
 from tests.testutils import create_artifact_share
 
-
 pytestmark = pytest.mark.integration
 
 

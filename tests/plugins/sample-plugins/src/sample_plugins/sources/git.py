@@ -155,7 +155,6 @@ This plugin also utilises the following configurable
   The provided ref was not found in the provided track in the element's git repository.
 """
 
-
 import os
 import re
 import shutil

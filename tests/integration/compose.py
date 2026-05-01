@@ -24,7 +24,6 @@ from buildstream._testing import cli_integration as cli  # pylint: disable=unuse
 from buildstream._testing.integration import walk_dir
 from buildstream._testing._utils.site import HAVE_SANDBOX, BUILDBOX_RUN
 
-
 pytestmark = pytest.mark.integration
 
 

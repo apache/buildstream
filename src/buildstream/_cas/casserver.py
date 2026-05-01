@@ -33,7 +33,6 @@ from .._protos.build.bazel.remote.execution.v2 import (
 from .._protos.google.bytestream import bytestream_pb2_grpc
 from .casdprocessmanager import CASDProcessManager
 
-
 # The default limit for gRPC messages is 4 MiB.
 # Limit payload to 1 MiB to leave sufficient headroom for metadata.
 _MAX_PAYLOAD_BYTES = 1024 * 1024

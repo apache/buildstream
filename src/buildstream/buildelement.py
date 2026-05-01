@@ -218,7 +218,6 @@ import os
 
 from .element import Element
 
-
 _command_steps = ["configure-commands", "build-commands", "install-commands", "strip-commands"]
 
 

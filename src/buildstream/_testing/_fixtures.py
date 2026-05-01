@@ -18,7 +18,6 @@ import time
 import psutil
 import pytest
 
-
 # Number of seconds to wait for background threads to exit.
 _AWAIT_THREADS_TIMEOUT_SECONDS = 5
 

@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
     # pylint: enable=cyclic-import
 
+
 # An ElementSources object represents the combined sources of an element.
 class ElementSources:
     def __init__(self, context: Context, project: "Project", plugin: Plugin):

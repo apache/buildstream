@@ -33,7 +33,6 @@ from tests.testutils.repo.git import Git
 from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
 from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
 
-
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "loading")
 
 

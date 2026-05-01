@@ -27,7 +27,6 @@ from buildstream._testing.runcli import cli  # pylint: disable=unused-import
 from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
 from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
 
-
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "variables")
 

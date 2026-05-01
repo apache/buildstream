@@ -26,7 +26,6 @@ from buildstream._testing._utils.site import HAVE_SANDBOX
 
 from tests.testutils import ArtifactShare
 
-
 pytestmark = pytest.mark.integration
 
 

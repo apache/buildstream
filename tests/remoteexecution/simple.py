@@ -23,7 +23,6 @@ from buildstream._testing.integration import assert_contains
 from tests.testutils.site import pip_sample_packages  # pylint: disable=unused-import
 from tests.testutils.site import SAMPLE_PACKAGES_SKIP_REASON
 
-
 pytestmark = pytest.mark.remoteexecution
 
 

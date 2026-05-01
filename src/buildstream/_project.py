@@ -42,7 +42,6 @@ from ._remotespec import RemoteSpec
 from .sourcemirror import SourceMirror
 from .source import AliasSubstitution, SourceError
 
-
 if TYPE_CHECKING:
     from ._context import Context
     from .plugins.elements.junction import JunctionElement
@@ -125,9 +124,9 @@ class Project:
         self.sandbox: Optional[MappingNode] = None
         self.splits: Optional[MappingNode] = None
 
-        self.source_provenance_attributes: Optional[
-            MappingNode
-        ] = None  # Source provenance attributes and their description
+        self.source_provenance_attributes: Optional[MappingNode] = (
+            None  # Source provenance attributes and their description
+        )
 
         #
         # Private members

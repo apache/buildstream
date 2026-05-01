@@ -27,7 +27,6 @@ from buildstream._testing._utils.site import HAVE_SANDBOX
 
 from tests.testutils import create_artifact_share
 
-
 pytestmark = pytest.mark.integration
 
 
@@ -41,6 +40,7 @@ DATA_DIR = os.path.join(
 # A test to capture the integration of the cachebuildtrees
 # behaviour, which by default is to include the buildtree
 # content of an element on caching.
+
 
 # Dse this really need a sandbox?
 @pytest.mark.datafiles(DATA_DIR)

@@ -24,7 +24,6 @@ from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream._testing import create_repo
 from tests.testutils import generate_junction
 
-
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "include")
 
@@ -44,16 +43,12 @@ def test_include_missing_file(cli, tmpdir):
 
     # Normally we would use dicts and _yaml.roundtrip_dump to write such things, but here
     # we want to be sure of a stable line and column number.
-    element.write(
-        textwrap.dedent(
-            """
+    element.write(textwrap.dedent("""
         kind: manual
 
         "(@)":
           - nosuch.yaml
-    """
-        ).strip()
-    )
+    """).strip())
 
     result = cli.run(project=str(tmpdir), args=["show", str(element.basename)])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
@@ -68,16 +63,12 @@ def test_include_dir(cli, tmpdir):
 
     # Normally we would use dicts and _yaml.roundtrip_dump to write such things, but here
     # we want to be sure of a stable line and column number.
-    element.write(
-        textwrap.dedent(
-            """
+    element.write(textwrap.dedent("""
         kind: manual
 
         "(@)":
           - subdir/
-    """
-        ).strip()
-    )
+    """).strip())
 
     result = cli.run(project=str(tmpdir), args=["show", str(element.basename)])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.LOADING_DIRECTORY)

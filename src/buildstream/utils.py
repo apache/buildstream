@@ -188,7 +188,7 @@ def list_relative_paths(directory: str) -> Iterator[str]:
     Yields:
        Relative filenames in `directory`
     """
-    for (dirpath, dirnames, filenames) in os.walk(directory):
+    for dirpath, dirnames, filenames in os.walk(directory):
 
         # os.walk does not decend into symlink directories, which
         # makes sense because otherwise we might have redundant

@@ -23,7 +23,6 @@ from buildstream._testing import cli  # pylint: disable=unused-import
 from tests.testutils import create_artifact_share
 from . import configure_project
 
-
 # Project directory
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

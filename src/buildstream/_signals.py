@@ -22,7 +22,6 @@ from contextlib import contextmanager, ExitStack
 from collections import deque
 from typing import Callable, Deque
 
-
 # Global per process state for handling of sigterm/sigtstp/sigcont,
 # note that it is expected that this only ever be used by new processes
 # the scheduler starts, not the main process.

@@ -27,7 +27,6 @@ from ._message import Message, MessageType, unconditional_messages
 from ._state import State, Task
 from ._version import get_versions
 
-
 _RENDER_INTERVAL: datetime.timedelta = datetime.timedelta(seconds=1)
 
 

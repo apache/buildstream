@@ -24,7 +24,6 @@ from typing import Optional  # pylint: disable=unused-import
 from buildstream import utils, ProgramNotFoundError
 from buildstream._platform import Platform
 
-
 try:
     GIT = utils.get_host_tool("git")  # type: Optional[str]
     HAVE_GIT = True

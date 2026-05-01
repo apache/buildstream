@@ -21,7 +21,6 @@ from pathlib import Path
 import re
 import sys
 
-
 ###################################
 # Ensure we have a version number #
 ###################################

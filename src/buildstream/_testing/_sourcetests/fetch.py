@@ -25,7 +25,6 @@ from .. import cli  # pylint: disable=unused-import
 from .utils import update_project_configuration
 from .utils import kind  # pylint: disable=unused-import
 
-
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = os.path.join(TOP_DIR, "project")
