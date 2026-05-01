@@ -15,7 +15,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
-from typing import TYPE_CHECKING, Optional, Dict, Union, List, Sequence
+from typing import TYPE_CHECKING, Optional, Dict, Union, List, Sequence, Callable
 
 import os
 import urllib.parse
@@ -157,6 +157,8 @@ class Project:
         self._partially_loaded: bool = False
         self._fully_loaded: bool = False
         self._project_includes: Optional[Includes] = None
+
+        self._fully_loaded_callbacks: List[Callable[[], None]] = []
 
         #
         # Initialization body
@@ -692,6 +694,17 @@ class Project:
     def loaded_projects(self):
         yield from self.load_context.loaded_projects()
 
+    # register_fully_loaded_callback()
+    #
+    # Call the specified function once the project is fully loaded.
+    #
+    # Args:
+    #    callback (Callable[[], None]): A function to call once fully loaded
+    #
+    def register_fully_loaded_callback(self, callback: Callable[[], None]):
+        assert not self._fully_loaded
+        self._fully_loaded_callbacks.append(callback)
+
     ########################################################
     #                    Private Methods                   #
     ########################################################
@@ -1016,6 +1029,10 @@ class Project:
         self.source_provenance_attributes = project_conf_second_pass.get_mapping(
             "source-provenance-attributes", None
         ) or config.get_mapping("source-provenance-attributes")
+
+        for callback in self._fully_loaded_callbacks:
+            callback()
+        self._fully_loaded_callbacks = None
 
     # _load_pass():
     #
