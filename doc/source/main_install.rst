@@ -120,7 +120,7 @@ Build from source
 Buildbox components can be installed from their git repository.
 We recommend installing from the latest release tag.
 
-See the <"Installation" section here <https://gitlab.com/BuildGrid/buildbox/buildbox/-/blob/master/README.rst#installation>`_.
+See the `"Installation" section here <https://gitlab.com/BuildGrid/buildbox/buildbox/-/blob/master/README.rst#installation>`_.
 
 Buildbox contains many components, BuildStream needs only ``buildbox-casd``,
 ``buildbox-fuse`` and ``buildbox-run-bubblewrap``, which can be selected by
