@@ -981,8 +981,8 @@ message SymlinkNode {
 // serializing, but care should be taken to avoid shortcuts. For instance,
 // concatenating two messages to merge them may produce duplicate fields.
 message Digest {
-  // The hash, represented as a lowercase hexadecimal string, padded with
-  // leading zeroes up to the hash function length.
+  // The hash. In the case of SHA-256, it will always be a lowercase hex string
+  // exactly 64 characters long.
   string hash = 1;
 
   // The size of the blob, in bytes.
@@ -1220,6 +1220,13 @@ message ActionResult {
 
   // The details of the execution that originally produced this result.
   ExecutedActionMetadata execution_metadata = 9;
+
+  // The digests of Actions that were executed as nested executions during
+  // this action (e.g., compiler invocations via recc). Each digest references
+  // an Action that was stored in the CAS during execution. This allows clients
+  // to retrieve the full dependency tree of actions that contributed to this
+  // result.
+  repeated Digest subactions = 99;
 }
 
 // An `OutputFile` is similar to a
@@ -1433,20 +1440,6 @@ message ExecuteRequest {
   // length of the action digest hash and the digest functions announced
   // in the server's capabilities.
   DigestFunction.Value digest_function = 9;
-
-  // A hint to the server to request inlining stdout in the
-  // [ActionResult][build.bazel.remote.execution.v2.ActionResult] message.
-  bool inline_stdout = 10;
-
-  // A hint to the server to request inlining stderr in the
-  // [ActionResult][build.bazel.remote.execution.v2.ActionResult] message.
-  bool inline_stderr = 11;
-
-  // A hint to the server to inline the contents of the listed output files.
-  // Each path needs to exactly match one file path in either `output_paths` or
-  // `output_files` (DEPRECATED since v2.1) in the
-  // [Command][build.bazel.remote.execution.v2.Command] message.
-  repeated string inline_output_files = 12;
 }
 
 // A `LogFile` is a log stored in the CAS.
@@ -1682,7 +1675,7 @@ message BatchUpdateBlobsRequest {
     bytes data = 2;
 
     // The format of `data`. Must be `IDENTITY`/unspecified, or one of the
-    // compressors advertised by the 
+    // compressors advertised by the
     // [CacheCapabilities.supported_batch_compressors][build.bazel.remote.execution.v2.CacheCapabilities.supported_batch_compressors]
     // field.
     Compressor.Value compressor = 3;

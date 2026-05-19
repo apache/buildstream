@@ -41,13 +41,15 @@ from ._scheduler import (
     BuildQueue,
     PullQueue,
     ArtifactPushQueue,
+    SpeculativeActionGenerationQueue,
+    SpeculativeCachePrimingQueue,
 )
 from .element import Element
 from ._profile import Topics, PROFILER
 from ._project import ProjectRefStorage
 from ._remotespec import RemoteSpec
 from ._state import State
-from .types import _KeyStrength, _PipelineSelection, _Scope, _HostMount
+from .types import _KeyStrength, _PipelineSelection, _Scope, _HostMount, _SpeculativeActionMode
 from .plugin import Plugin
 from . import utils, node, _yaml, _site, _pipeline
 
@@ -429,7 +431,20 @@ class Stream:
 
         self._add_queue(FetchQueue(self._scheduler, skip_cached=True))
 
+        sa_mode = self._context.speculative_actions_mode
+
+        if sa_mode != _SpeculativeActionMode.NONE:
+            # Priming queue: For each element, instantiate and submit its speculative
+            # actions to warm the remote ActionCache BEFORE the element reaches BuildQueue.
+            # Must come after FetchQueue so sources are available for resolving SOURCE overlays.
+            self._add_queue(SpeculativeCachePrimingQueue(self._scheduler))
+
         self._add_queue(BuildQueue(self._scheduler, imperative=True))
+
+        if sa_mode not in (_SpeculativeActionMode.NONE, _SpeculativeActionMode.PRIME_ONLY):
+            # Generation queue: After each build, extract subactions and generate
+            # overlays so future builds can benefit from cache priming.
+            self._add_queue(SpeculativeActionGenerationQueue(self._scheduler))
 
         if self._artifacts.has_push_remotes():
             self._add_queue(ArtifactPushQueue(self._scheduler, skip_uncached=True))

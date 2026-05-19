@@ -177,7 +177,7 @@ class ExecutedActionMetadata(_message.Message):
     def __init__(self, worker: _Optional[str] = ..., queued_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., worker_start_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., worker_completed_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., input_fetch_start_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., input_fetch_completed_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., execution_start_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., execution_completed_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., virtual_execution_duration: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., output_upload_start_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., output_upload_completed_timestamp: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., auxiliary_metadata: _Optional[_Iterable[_Union[_any_pb2.Any, _Mapping]]] = ...) -> None: ...
 
 class ActionResult(_message.Message):
-    __slots__ = ("output_files", "output_file_symlinks", "output_symlinks", "output_directories", "output_directory_symlinks", "exit_code", "stdout_raw", "stdout_digest", "stderr_raw", "stderr_digest", "execution_metadata")
+    __slots__ = ("output_files", "output_file_symlinks", "output_symlinks", "output_directories", "output_directory_symlinks", "exit_code", "stdout_raw", "stdout_digest", "stderr_raw", "stderr_digest", "execution_metadata", "subactions")
     OUTPUT_FILES_FIELD_NUMBER: _ClassVar[int]
     OUTPUT_FILE_SYMLINKS_FIELD_NUMBER: _ClassVar[int]
     OUTPUT_SYMLINKS_FIELD_NUMBER: _ClassVar[int]
@@ -189,6 +189,7 @@ class ActionResult(_message.Message):
     STDERR_RAW_FIELD_NUMBER: _ClassVar[int]
     STDERR_DIGEST_FIELD_NUMBER: _ClassVar[int]
     EXECUTION_METADATA_FIELD_NUMBER: _ClassVar[int]
+    SUBACTIONS_FIELD_NUMBER: _ClassVar[int]
     output_files: _containers.RepeatedCompositeFieldContainer[OutputFile]
     output_file_symlinks: _containers.RepeatedCompositeFieldContainer[OutputSymlink]
     output_symlinks: _containers.RepeatedCompositeFieldContainer[OutputSymlink]
@@ -200,7 +201,8 @@ class ActionResult(_message.Message):
     stderr_raw: bytes
     stderr_digest: Digest
     execution_metadata: ExecutedActionMetadata
-    def __init__(self, output_files: _Optional[_Iterable[_Union[OutputFile, _Mapping]]] = ..., output_file_symlinks: _Optional[_Iterable[_Union[OutputSymlink, _Mapping]]] = ..., output_symlinks: _Optional[_Iterable[_Union[OutputSymlink, _Mapping]]] = ..., output_directories: _Optional[_Iterable[_Union[OutputDirectory, _Mapping]]] = ..., output_directory_symlinks: _Optional[_Iterable[_Union[OutputSymlink, _Mapping]]] = ..., exit_code: _Optional[int] = ..., stdout_raw: _Optional[bytes] = ..., stdout_digest: _Optional[_Union[Digest, _Mapping]] = ..., stderr_raw: _Optional[bytes] = ..., stderr_digest: _Optional[_Union[Digest, _Mapping]] = ..., execution_metadata: _Optional[_Union[ExecutedActionMetadata, _Mapping]] = ...) -> None: ...
+    subactions: _containers.RepeatedCompositeFieldContainer[Digest]
+    def __init__(self, output_files: _Optional[_Iterable[_Union[OutputFile, _Mapping]]] = ..., output_file_symlinks: _Optional[_Iterable[_Union[OutputSymlink, _Mapping]]] = ..., output_symlinks: _Optional[_Iterable[_Union[OutputSymlink, _Mapping]]] = ..., output_directories: _Optional[_Iterable[_Union[OutputDirectory, _Mapping]]] = ..., output_directory_symlinks: _Optional[_Iterable[_Union[OutputSymlink, _Mapping]]] = ..., exit_code: _Optional[int] = ..., stdout_raw: _Optional[bytes] = ..., stdout_digest: _Optional[_Union[Digest, _Mapping]] = ..., stderr_raw: _Optional[bytes] = ..., stderr_digest: _Optional[_Union[Digest, _Mapping]] = ..., execution_metadata: _Optional[_Union[ExecutedActionMetadata, _Mapping]] = ..., subactions: _Optional[_Iterable[_Union[Digest, _Mapping]]] = ...) -> None: ...
 
 class OutputFile(_message.Message):
     __slots__ = ("path", "digest", "is_executable", "contents", "node_properties")
@@ -259,26 +261,20 @@ class ResultsCachePolicy(_message.Message):
     def __init__(self, priority: _Optional[int] = ...) -> None: ...
 
 class ExecuteRequest(_message.Message):
-    __slots__ = ("instance_name", "skip_cache_lookup", "action_digest", "execution_policy", "results_cache_policy", "digest_function", "inline_stdout", "inline_stderr", "inline_output_files")
+    __slots__ = ("instance_name", "skip_cache_lookup", "action_digest", "execution_policy", "results_cache_policy", "digest_function")
     INSTANCE_NAME_FIELD_NUMBER: _ClassVar[int]
     SKIP_CACHE_LOOKUP_FIELD_NUMBER: _ClassVar[int]
     ACTION_DIGEST_FIELD_NUMBER: _ClassVar[int]
     EXECUTION_POLICY_FIELD_NUMBER: _ClassVar[int]
     RESULTS_CACHE_POLICY_FIELD_NUMBER: _ClassVar[int]
     DIGEST_FUNCTION_FIELD_NUMBER: _ClassVar[int]
-    INLINE_STDOUT_FIELD_NUMBER: _ClassVar[int]
-    INLINE_STDERR_FIELD_NUMBER: _ClassVar[int]
-    INLINE_OUTPUT_FILES_FIELD_NUMBER: _ClassVar[int]
     instance_name: str
     skip_cache_lookup: bool
     action_digest: Digest
     execution_policy: ExecutionPolicy
     results_cache_policy: ResultsCachePolicy
     digest_function: DigestFunction.Value
-    inline_stdout: bool
-    inline_stderr: bool
-    inline_output_files: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, instance_name: _Optional[str] = ..., skip_cache_lookup: bool = ..., action_digest: _Optional[_Union[Digest, _Mapping]] = ..., execution_policy: _Optional[_Union[ExecutionPolicy, _Mapping]] = ..., results_cache_policy: _Optional[_Union[ResultsCachePolicy, _Mapping]] = ..., digest_function: _Optional[_Union[DigestFunction.Value, str]] = ..., inline_stdout: bool = ..., inline_stderr: bool = ..., inline_output_files: _Optional[_Iterable[str]] = ...) -> None: ...
+    def __init__(self, instance_name: _Optional[str] = ..., skip_cache_lookup: bool = ..., action_digest: _Optional[_Union[Digest, _Mapping]] = ..., execution_policy: _Optional[_Union[ExecutionPolicy, _Mapping]] = ..., results_cache_policy: _Optional[_Union[ResultsCachePolicy, _Mapping]] = ..., digest_function: _Optional[_Union[DigestFunction.Value, str]] = ...) -> None: ...
 
 class LogFile(_message.Message):
     __slots__ = ("digest", "human_readable")

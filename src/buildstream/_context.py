@@ -31,7 +31,7 @@ from ._elementsourcescache import ElementSourcesCache
 from ._remotespec import RemoteSpec, RemoteExecutionSpec
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASDProcessManager, CASLogLevel
-from .types import _CacheBuildTrees, _PipelineSelection, _SchedulerErrorAction, _SourceUriPolicy
+from .types import _CacheBuildTrees, _PipelineSelection, _SchedulerErrorAction, _SourceUriPolicy, _SpeculativeActionMode
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .node import Node, MappingNode
 
@@ -162,6 +162,9 @@ class Context:
 
         # What to do when a build fails in non interactive mode
         self.sched_error_action: Optional[str] = None
+
+        # Speculative actions mode
+        self.speculative_actions_mode: _SpeculativeActionMode = _SpeculativeActionMode.NONE
 
         # Maximum jobs per build
         self.build_max_jobs: Optional[int] = None
@@ -450,12 +453,23 @@ class Context:
 
         # Load scheduler config
         scheduler = defaults.get_mapping("scheduler")
-        scheduler.validate_keys(["on-error", "fetchers", "builders", "pushers", "network-retries"])
+        scheduler.validate_keys(["on-error", "fetchers", "builders", "pushers", "network-retries", "speculative-actions"])
         self.sched_error_action = scheduler.get_enum("on-error", _SchedulerErrorAction)
         self.sched_fetchers = scheduler.get_int("fetchers")
         self.sched_builders = scheduler.get_int("builders")
         self.sched_pushers = scheduler.get_int("pushers")
         self.sched_network_retries = scheduler.get_int("network-retries")
+
+        # Load speculative actions config
+        # Accepts mode string (none/prime-only/source-artifact/intra-element/full)
+        # or boolean for backward compatibility (True → full, False → none)
+        try:
+            self.speculative_actions_mode = scheduler.get_enum("speculative-actions", _SpeculativeActionMode)
+        except Exception:
+            self.speculative_actions_mode = (
+                _SpeculativeActionMode.FULL if scheduler.get_bool("speculative-actions")
+                else _SpeculativeActionMode.NONE
+            )
 
         # Load build config
         build = defaults.get_mapping("build")
