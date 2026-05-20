@@ -11,6 +11,39 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
+Installation
+************
+
+.. contents::
+   :depth: 2
+   :local:
+
+Installing from Packages
+=====================================
+
+.. image::
+   https://repology.org/badge/vertical-allrepos/buildstream.svg?exclude_unsupported=1
+   :alt: Packaging Status
+   :align: right
+
+If your distribution has an up-to-date `buildstream` package >= 2.0, use that.
+Supported distributions can be seen on the right.
+
+Otherwise, try installing from `PyPI <https://pypi.org/project/BuildStream/>`_ into your home directory::
+
+    pip3 install --user 'BuildStream == 2.*'
+
+Note that:
+
+  * Some host packages are required which Pip cannot provide, see the list in
+    `Installing Dependencies`_.
+
+  * BuildStream 2 and its dependency **grpc** contain binary modules. The `pip
+    install` command will work differently depending on whether `prebuilt
+    'wheel' packages <https://pypi.org/project/BuildStream/#files>`_ are
+    available for your platform, and may fail if it can't build from source --
+    if this happens, follow the full build + install procedure linked below.
+
 Installing from Source
 ======================
 
@@ -284,3 +317,18 @@ You must then add ``bst`` to your plugins array in ``~/.zshrc``::
       bst
       ...
     )
+
+Container Images
+================
+
+BuildStream can run inside container tools such as Docker, Podman, and Toolbx.
+
+Prebuilt images containing `bst` are available at
+`docker.io/buildstream/buildstream <https://hub.docker.com/r/buildstream/buildstream>`_ via the
+`buildstream-docker-images <https://gitlab.com/BuildStream/buildstream-docker-images/>`_
+project. Please read that project's
+`USING.md file <https://gitlab.com/BuildStream/buildstream-docker-images/-/blob/master/USING.md>`_
+for usage instructions.
+
+Note that the Docker ``--privileged`` flag is usually needed, as BuildStream runs
+element build commands in a nested container.
