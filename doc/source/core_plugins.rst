@@ -27,8 +27,21 @@ given element specify their plugin specific configuration directly
 
 Elements
 --------
+
+ * :doc:`elements/stack`
+ * :doc:`elements/import`
+ * :doc:`elements/compose`
+ * :doc:`elements/script`
+ * :doc:`elements/link`
+ * :doc:`elements/junction`
+ * :doc:`elements/filter`
+ * :doc:`Build Elements <core_buildelement>`
+
+   * :doc:`elements/manual`
+
 .. toctree::
    :maxdepth: 1
+   :hidden:
 
    elements/stack
    elements/import
@@ -37,6 +50,7 @@ Elements
    elements/link
    elements/junction
    elements/filter
+   Build Elements <core_buildelement>
    elements/manual
 
 
