@@ -2638,13 +2638,21 @@ class Element(Plugin):
                 provenance_node: MappingNode = source.get_mapping(Symbol.PROVENANCE, default=None)
                 if provenance_node:
                     del source[Symbol.PROVENANCE]
-                    try:
-                        provenance_node.validate_keys(project.source_provenance_attributes.keys())
-                    except LoadError as E:
-                        raise LoadError(
-                            f"Specified source provenance attribute not defined in project config\n {E}",
-                            LoadErrorReason.UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE,
-                        )
+
+                    def source_provenance_attribute_check(provenance_node=provenance_node):
+                        try:
+                            provenance_node.validate_keys(project.source_provenance_attributes.keys())
+                        except LoadError as E:
+                            raise LoadError(
+                                f"Specified source provenance attribute not defined in project config\n {E}",
+                                LoadErrorReason.UNDEFINED_SOURCE_PROVENANCE_ATTRIBUTE,
+                            )
+
+                    # Source provenance attributes are available only after the project is fully loaded
+                    if project.source_provenance_attributes is None:
+                        project.register_fully_loaded_callback(source_provenance_attribute_check)
+                    else:
+                        source_provenance_attribute_check()
 
                     # make sure everything is a string
                     for key, value in provenance_node.items():
