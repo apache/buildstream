@@ -1152,8 +1152,9 @@ class Stream:
 
         nonexisting = []
         for element in elements:
-            if not self.workspace_exists(element.name):
-                nonexisting.append(element.name)
+            name = element._get_full_name()
+            if not self.workspace_exists(name):
+                nonexisting.append(name)
         if nonexisting:
             raise StreamError("Workspace does not exist", detail="\n".join(nonexisting))
 
