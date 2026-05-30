@@ -18,7 +18,7 @@
 Running commands
 ================
 In :ref:`the first chapter <tutorial_first_project>` we only imported
-a file to create an artifact, this time lets run some commands inside
+a file to create an artifact, this time let's run some commands inside
 the :ref:`isolated build sandbox <sandboxing>`.
 
 .. note::
