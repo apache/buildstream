@@ -23,7 +23,7 @@ which these integrations work.
 
 Run BuildStream inside Docker
 -----------------------------
-Refer to the `BuildStream inside Docker <https://buildstream.build/install.html#container-images>`_
+Refer to the `BuildStream inside Docker <main_install.html#container-images>`_
 documentation for instructions on how to run BuildStream as a Docker container.
 
 
