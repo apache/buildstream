@@ -47,9 +47,8 @@ Note that:
 Installing from Source
 ======================
 
-This page explains how to build and install this version of BuildStream from
-source. For general purpose installation instructions consult the
-`website <https://buildstream.build/install.html>`_.
+If you can not make use of currently supported packages or simply want to install from source, read the
+following sections.
 
 For full install instructions, read on:
 

@@ -106,7 +106,7 @@ BuildStream operates on a set of YAML files (.bst files), as follows:
 How can I get started?
 ======================
 To get started, first `install BuildStream by following the installation guide
-<https://buildstream.build/install.html>`_
+<https://docs.buildstream.build/master/main_install.html>`_
 and then follow our tutorial in the
 `user guide <https://docs.buildstream.build/master/main_using.html>`_.
 

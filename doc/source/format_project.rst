@@ -493,7 +493,7 @@ Here are a couple of examples:
    python package versions are available when using your project.
 
    Follow `these instructions
-   <https://buildstream.build/source_install.html#installing-in-virtual-environments>`_
+   <main_install.html#installing-in-virtual-environments>`_
    to install BuildStream in a virtual environment.
 
    **Possible junction conflicts**
