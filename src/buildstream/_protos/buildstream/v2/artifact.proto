@@ -93,4 +93,7 @@ message Artifact {
     repeated string marked_directories = 4;
   };
   SandboxState buildsandbox = 18;  // optional
+
+  // digest of a SpeculativeActions message (from speculative_actions.proto)
+  build.bazel.remote.execution.v2.Digest speculative_actions = 19;  // optional
 }

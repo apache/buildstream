@@ -74,6 +74,18 @@ scheduler:
   #
   on-error: quit
 
+  # Speculative actions mode for cache priming.
+  # Controls which overlay types are generated and whether priming is enabled.
+  # Modes (each includes capabilities of previous modes):
+  #   none            - Disabled entirely
+  #   prime-only      - Use existing SAs to prime, don't generate new ones
+  #   source-artifact - Generate SOURCE and ARTIFACT overlays (no AC calls)
+  #   intra-element   - Also generate intra-element ACTION overlays
+  #   full            - Also generate cross-element ACTION overlays
+  # Also accepts True (= full) or False (= none) for backward compatibility.
+  #
+  speculative-actions: none
+
 
 #
 # Build related configuration

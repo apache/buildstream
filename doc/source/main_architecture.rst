@@ -30,4 +30,5 @@ This section provides details on the overall BuildStream architecture.
    arch_caches
    arch_sandboxing
    arch_remote_execution
+   arch_speculative_actions
 

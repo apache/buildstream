@@ -23,6 +23,8 @@ from .queues.buildqueue import BuildQueue
 from .queues.artifactpushqueue import ArtifactPushQueue
 from .queues.pullqueue import PullQueue
 from .queues.cachequeryqueue import CacheQueryQueue
+from .queues.speculativeactiongenerationqueue import SpeculativeActionGenerationQueue
+from .queues.speculativecacheprimingqueue import SpeculativeCachePrimingQueue
 
 from .scheduler import Scheduler, SchedStatus
 from .jobs import ElementJob, JobStatus

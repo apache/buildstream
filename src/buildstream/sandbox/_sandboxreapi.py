@@ -105,6 +105,10 @@ class SandboxREAPI(Sandbox):
             cwd, action_result.output_directories, action_result.output_files, failure=action_result.exit_code != 0
         )
 
+        # Collect subaction digests recorded during nested execution (if any)
+        if action_result.subactions:
+            self._collect_subaction_digests(action_result.subactions)
+
         # Non-zero exit code means a normal error during the build:
         # the remote execution system has worked correctly but the command failed.
         return action_result.exit_code
