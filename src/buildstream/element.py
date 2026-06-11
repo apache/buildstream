@@ -424,7 +424,7 @@ class Element(Plugin):
         If the script fails, it is expected to return with an exit
         code != 0.
         """
-        raise ImplError("element plugin '{kind}' does not implement write_script()".format(kind=self.get_kind()))
+        raise ImplError("element plugin '{kind}' does not implement generate_script()".format(kind=self.get_kind()))
 
     #############################################################
     #                       Public Methods                      #
