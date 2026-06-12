@@ -55,6 +55,24 @@ def test_show(cli, datafiles, target, fmt, expected):
         raise AssertionError("Expected output:\n{}\nInstead received output:\n{}".format(expected, result.output))
 
 
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
+@pytest.mark.parametrize(
+    "canonical,dotted",
+    [
+        ("target.bst", "./target.bst"),
+        ("target.bst", "././target.bst"),
+        ("multiple_targets/dependency/pony.bst", "multiple_targets/./dependency/pony.bst"),
+        ("multiple_targets/dependency/pony.bst", "./multiple_targets/dependency/pony.bst"),
+        ("multiple_targets/dependency/pony.bst", "multiple_targets/dependency/./pony.bst"),
+    ],
+)
+def test_show_equivalent_target_spellings_use_same_identity(cli, datafiles, canonical, dotted):
+    project = str(datafiles)
+
+    assert cli.get_element_key(project, canonical) == cli.get_element_key(project, dotted)
+    assert cli.get_element_state(project, canonical) == cli.get_element_state(project, dotted)
+
+
 @pytest.mark.datafiles(
     os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
@@ -292,6 +310,25 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name, w
     # Assert successful bst show (requires implicit subproject fetching)
     result = cli.run(project=project, silent=True, args=["show", element_name])
     result.assert_success()
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
+def test_show_dot_slash_junction_uses_same_ref_lookup(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    subproject_path = os.path.join(project, "files", "sub-project")
+    junction_path = os.path.join(project, "elements", "junction.bst")
+
+    configure_project(project, {"ref-storage": "project.refs"})
+
+    ref = generate_junction(tmpdir, subproject_path, junction_path, store_ref=False)
+    project_refs = {"projects": {"test": {"junction.bst": [{"ref": ref}]}}}
+    _yaml.roundtrip_dump(project_refs, os.path.join(project, "junction.refs"))
+
+    state = cli.get_element_state(project, "junction.bst")
+    dot_state = cli.get_element_state(project, "./junction.bst")
+
+    assert state == dot_state
+    assert state != "no reference"
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
