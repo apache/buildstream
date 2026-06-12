@@ -24,15 +24,101 @@ This page will give a brief summary of how some of the common features work,
 some of them or the variables they use will be further detailed in the
 :doc:`API reference <buildstream.buildelement>`.
 
+.. contents::
+   :local:
 
-The `strip-binaries` variable
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The `strip-binaries` variable is by default **empty**. You need to use the
-appropiate commands depending of the system you are building.
+Build steps
+~~~~~~~~~~~
+
+The sandbox is prepared
+-----------------------
+
+The sandbox is prepared as a temporary filesystem, where build dependencies
+are staged, along with their own runtime dependencies. This happens in
+an abstract state, which can quickly spot repeated files and :ref:`overlaps <handling_files_overlaps>`.
+
+When a dependency is being staged, the produced artifact is added from the root
+(``/``). This can be changed using the ``location:`` attribute, as described in
+:ref:`location for staging dependencies <core_buildelement_dep_location>`.
+
+The sandbox root directory with the staged dependencies is read-only.
+
+After the dependencies are staged, BuildStream stages the sources in the
+``build-root`` location. The actual location of this differs slightly
+depending on the project file structure, which is why it is common to
+see elements use the variable ``%{build-root}`` which resolves to the
+correct location.
+
+Configure and build commands
+----------------------------
+
+Now that all dependencies and sources are staged in a temporary filesystem,
+BuildBox uses this filesystem as root filesystem for the build :ref:`sandbox <sandboxing>`.
+
+The first commands to be run are configure commands and it is
+recommended to include things like moving the sources about, generating
+config files and other “configure” related actions into this section.
+These should be the commands that can only be run once (for example a
+folder can only be moved once), this is due to BuildStream
+workspaces.
+
+.. note::
+
+   **Workspaces and configure commands**
+
+   When a :ref:`workspace <developing_workspaces>` is opened,
+   it stages all the sources for the indicated
+   element locally, then when doing a build of that element it uses these local
+   sources instead of pulling in fresh sources. Builds using workspaces only
+   run configure commands once, and any subsequent builds using the same
+   workspace will skip the configure commands step, therefore steps of the
+   build that can't be executed multiple times (without re-staging sources)
+   should be added to configure commands.
+
+After configure commands are run, then build commands are next. Build
+commands are intended to contain the actual build process, for example
+if the build uses ``make`` then this stage should run the
+``make target`` command.
+
+Install commands and caching artifacts
+--------------------------------------
+
+Install and strip commands are the final commands that are run before BuildStream
+collects the artifacts and closes the build sandbox. Install commands
+should mainly be comprised of moving the built artifacts from the
+``${build-root}`` to the ``${install-root}``.
+
+The `install-commands` should not clean up any of the sources, as they can be stored as a _buildtree_, which allows for introspection after the build.
+
+Directories can be created under the install location, for example
+``%{install-root}/example/``, and these will be maintained when another
+element depends on this one, for example this will become
+``/example/``.
+
+Strip commands are run after install commands to strip debugging symbols of
+binaries in the install root. Plugins are expected to use the ``strip-binaries``
+variable as strip command. That project variable is by default **empty**.
+You need to use the appropiate commands depending of the system you are building.
 If you are targeting Linux, ones known to work are the ones used by the
 `freedesktop-sdk <https://freedesktop-sdk.io/>`_, you can take a look to them in their
 `project.conf <https://gitlab.com/freedesktop-sdk/freedesktop-sdk/blob/freedesktop-sdk-18.08.21/project.conf#L74>`_
 
+The contents of the install root are cached. BuildStream caches the
+produced artifact to reduce the need to rebuild elements, instead it can
+pull from this artifact cache. It will only rebuild an element if the
+element file changes, or if the dependencies for an element changes.
+
+.. note::
+
+   BuildStream will also **cache build errors**, and if no file has changed
+   (including the dependencies) then BuildStream will display this cached error,
+   without attempting a rebuild. This is sometimes not the desired behaviour,
+   especially if the error was caused by a remote issue, like a source site
+   being temporarily unavailable. To force an attempted build use the
+   ``-r``/``--retry-failed`` option, documented :ref:`here <invoking_build>`.
+
+
+.. _core_buildelement_dep_location:
 
 Location for staging dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -119,7 +205,7 @@ files are expected to be found in ``command-subdir``.
 
 
 Separating source and build directories
-'''''''''''''''''''''''''''''''''''''''
+---------------------------------------
 A typical example of using ``conf-root`` is when performing
 `autotools <https://apache.github.io/buildstream-plugins/elements/autotools.html>`_ builds
 where your source directory is separate from your build directory.
