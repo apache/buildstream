@@ -438,10 +438,10 @@ cdef class ScalarNode(Node):
         cdef Node target_value = target.value.get(key)
 
         if target_value is not None and type(target_value) is not ScalarNode:
-            raise __CompositeError(path,
-                                   "{}: Cannot compose scalar on non-scalar at {}".format(
-                                       self.get_provenance(),
-                                       target_value.get_provenance()))
+            raise _CompositeError(path,
+                                  "{}: Cannot compose scalar on non-scalar at {}".format(
+                                      self.get_provenance(),
+                                      target_value.get_provenance()))
 
         target.value[key] = self.clone()
 
@@ -897,7 +897,7 @@ cdef class MappingNode(Node):
     cpdef void _composite(self, MappingNode target) except *:
         try:
             self.__composite(target, [])
-        except __CompositeError as e:
+        except _CompositeError as e:
             source_provenance = self.get_provenance()
             error_prefix = ""
             if source_provenance:
@@ -982,10 +982,10 @@ cdef class MappingNode(Node):
                     self._compose_on_composite_dict(target_value)
                 else:
                     # Else composing on top of normal dict or a scalar, so raise...
-                    raise __CompositeError(path,
-                                           "{}: Cannot compose lists onto {}".format(
-                                                self.get_provenance(),
-                                                target_value.get_provenance()))
+                    raise _CompositeError(path,
+                                          "{}: Cannot compose lists onto {}".format(
+                                               self.get_provenance(),
+                                               target_value.get_provenance()))
         else:
             # We're composing a dict into target now
             if key not in target.value:
@@ -1403,11 +1403,11 @@ cdef class SequenceNode(Node):
         if not (target_value is None or
                 type(target_value) is SequenceNode or
                 target_value._is_composite_list()):
-            raise __CompositeError(path,
-                                  "{}: List cannot overwrite {} at: {}"
-                                  .format(self.get_provenance(),
-                                          key,
-                                          target_value.get_provenance()))
+            raise _CompositeError(path,
+                                 "{}: List cannot overwrite {} at: {}"
+                                 .format(self.get_provenance(),
+                                         key,
+                                         target_value.get_provenance()))
 
         # If the target is a list of conditional statements, then we are
         # also conditional statements, and we need to append ourselves
@@ -1450,7 +1450,7 @@ cdef class ProvenanceInformation:
     """
 
     def __init__(self, Node nodeish):
-        cdef __FileInfo fileinfo
+        cdef _FileInfo fileinfo
 
         self._node = nodeish
         if (nodeish is None) or (nodeish.file_index == _SYNTHETIC_FILE_INDEX):
@@ -1462,7 +1462,7 @@ cdef class ProvenanceInformation:
             self._toplevel = None
             self._project = None
         else:
-            fileinfo = <__FileInfo> __FILE_LIST[nodeish.file_index]
+            fileinfo = <_FileInfo> __FILE_LIST[nodeish.file_index]
             self._filename = fileinfo.filename
             self._shortname = fileinfo.shortname
             self._displayname = fileinfo.displayname
@@ -1553,7 +1553,7 @@ def _assert_symbol_name(str symbol_name, str purpose, *, Node ref_node=None, bin
 #
 cdef Py_ssize_t _create_new_file(str filename, str shortname, str displayname, object project):
     cdef Py_ssize_t file_number = len(__FILE_LIST)
-    __FILE_LIST.append(__FileInfo(filename, shortname, displayname, None, project))
+    __FILE_LIST.append(_FileInfo(filename, shortname, displayname, None, project))
 
     return file_number
 
@@ -1567,10 +1567,10 @@ cdef Py_ssize_t _create_new_file(str filename, str shortname, str displayname, o
 #   contents (.MappingNode): node that should be the root for the file
 #
 cdef void _set_root_node_for_file(Py_ssize_t file_index, MappingNode contents) except *:
-    cdef __FileInfo f_info
+    cdef _FileInfo f_info
 
     if file_index != _SYNTHETIC_FILE_INDEX:
-        f_info = <__FileInfo> __FILE_LIST[file_index]
+        f_info = <_FileInfo> __FILE_LIST[file_index]
         f_info.toplevel = contents
 
 
@@ -1592,11 +1592,11 @@ def _new_synthetic_file(str filename, object project=None):
     cdef Py_ssize_t file_index = len(__FILE_LIST)
     cdef Node node = MappingNode.__new__(MappingNode, file_index, 0, 0, {})
 
-    __FILE_LIST.append(__FileInfo(filename,
-                                  filename,
-                                  "<synthetic {}>".format(filename),
-                                  node,
-                                  project))
+    __FILE_LIST.append(_FileInfo(filename,
+                                 filename,
+                                 "<synthetic {}>".format(filename),
+                                 node,
+                                 project))
     return node
 
 
@@ -1623,7 +1623,7 @@ cdef list __FILE_LIST = []
 cdef int __counter = 0
 
 
-class __CompositeError(Exception):
+class _CompositeError(Exception):
     def __init__(self, path, message):
         super().__init__(message)
         self.path = path
@@ -1635,7 +1635,7 @@ class __CompositeError(Exception):
 # This class contains metadata around a yaml node in order to be able
 # to trace back the provenance of a node to the file.
 #
-cdef class __FileInfo:
+cdef class _FileInfo:
 
     cdef str filename, shortname, displayname
     cdef MappingNode toplevel,
