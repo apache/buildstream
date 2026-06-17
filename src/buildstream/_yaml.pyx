@@ -296,7 +296,11 @@ cpdef MappingNode load_data(str data, int file_index=node._SYNTHETIC_FILE_INDEX,
     try:
         rep = Representer(file_index)
         parser = yaml.CParser(data)
+    except Exception as e:
+        raise LoadError("YAML parser initialization failed: {}".format(e),
+                        LoadErrorReason.INVALID_YAML) from e
 
+    try:
         try:
             while parser.check_event():
                 rep.handle_event(parser.get_event())
