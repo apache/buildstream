@@ -1687,3 +1687,124 @@ def artifact_delete(app, artifacts, deps):
     """Remove artifacts from the local cache"""
     with app.initialized():
         app.stream.artifact_delete(artifacts, selection=deps)
+
+
+#############################################################
+#                    Buildtree Commands                     #
+#############################################################
+@cli.group(short_help="Manipulate cached buildtree.")
+def buildtree():
+    """Manipulate cached buildtree"""
+
+
+#####################################################################
+#                    Buildtree Checkout Command                     #
+#####################################################################
+@buildtree.command(name="checkout", short_help="Checkout contents of an buildtree")
+@click.option("--buildroot", is_flag=True, help="Export full buildroot instead buildtree.")
+@click.option("--force", "-f", is_flag=True, help="Allow files to be overwritten")
+@click.option("--hardlinks", is_flag=True, help="Checkout hardlinks instead of copying if possible")
+@click.option(
+    "--tar",
+    default=None,
+    metavar="LOCATION",
+    type=click.Path(),
+    help="Create a tarball from the artifact contents instead "
+    "of a file tree. If LOCATION is '-', the tarball "
+    "will be dumped to the standard output.",
+)
+@click.option(
+    "--compression",
+    default=None,
+    type=click.Choice(["gz", "xz", "bz2"]),
+    help="The compression option of the tarball created.",
+)
+@click.option(
+    "--directory", default=None, type=click.Path(file_okay=False), help="The directory to checkout the artifact to"
+)
+@click.option(
+    "--artifact-remote",
+    "artifact_remotes",
+    type=RemoteSpecType(RemoteSpecPurpose.PULL),
+    multiple=True,
+    help="A remote for downloading artifacts",
+)
+@click.option(
+    "--ignore-project-artifact-remotes",
+    is_flag=True,
+    help="Ignore remote artifact cache servers recommended by projects",
+)
+@click.argument("target", required=False, type=click.Path(readable=False))
+@click.pass_obj
+def buildtree_checkout(
+    app,
+    buildroot,
+    force,
+    hardlinks,
+    tar,
+    compression,
+    directory,
+    artifact_remotes,
+    ignore_project_artifact_remotes,
+    target,
+):
+    """Checkout buildtree
+
+    When this command is executed from a workspace directory, the default
+    is to checkout the artifact of the workspace element.
+    """
+    from .. import utils
+
+    if hardlinks and tar:
+        click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
+        sys.exit(-1)
+
+    if tar and directory:
+        click.echo("ERROR: options --directory and --tar conflict", err=True)
+        sys.exit(-1)
+
+    if not tar:
+        if compression:
+            click.echo("ERROR: --compression can only be provided if --tar is provided", err=True)
+            sys.exit(-1)
+    else:
+        location = tar
+        try:
+            inferred_compression = utils._get_compression(tar)
+        except UtilError as e:
+            click.echo("ERROR: Invalid file extension given with '--tar': {}".format(e), err=True)
+            sys.exit(-1)
+        if compression and inferred_compression != "" and inferred_compression != compression:
+            click.echo(
+                "WARNING: File extension and compression differ."
+                "File extension has been overridden by --compression",
+                err=True,
+            )
+        if not compression:
+            compression = inferred_compression
+
+    with app.initialized():
+        if not target:
+            target = app.stream.get_default_target()
+            if not target:
+                raise AppError('Missing argument "ELEMENT".')
+
+        if not tar:
+            if directory is None:
+                location = os.path.abspath(os.path.join(os.getcwd(), target))
+                if location[-4:] == ".bst":
+                    location = location[:-4]
+            else:
+                location = directory
+
+        app.stream.buildtree_checkout(
+            target,
+            location=location,
+            buildroot=buildroot,
+            force=force,
+            hardlinks=hardlinks,
+            compression=compression,
+            tar=bool(tar),
+            artifact_remotes=artifact_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+        )

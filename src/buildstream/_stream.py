@@ -333,23 +333,8 @@ class Stream:
                     reason="shell-missing-deps",
                 )
 
-        # Check if we require a pull queue attempt, with given artifact state and context
         if usebuildtree:
-            if not element._cached_buildroot():
-                if not element._cached():
-                    message = "Artifact not cached locally or in available remotes"
-                    reason = "missing-buildtree-artifact-not-cached"
-                elif element._buildroot_exists():
-                    message = "Buildtree is not cached locally or in available remotes"
-                    reason = "missing-buildtree-artifact-buildtree-not-cached"
-                else:
-                    message = "Artifact was created without buildtree"
-                    reason = "missing-buildtree-artifact-created-without-buildtree"
-                raise StreamError(message, reason=reason)
-
-            # Raise warning if the element is cached in a failed state
-            if element._cached_failure():
-                self._context.messenger.warn("using a buildtree from a failed build.")
+            self._check_buildtree(element)
 
         # Ensure we have our sources if we are launching a build shell
         if scope == _Scope.BUILD and not usebuildtree:
@@ -915,6 +900,74 @@ class Stream:
 
         if not ref_removed:
             self._context.messenger.info("No artifacts were removed")
+
+
+    # buildtree_checkout()
+    #
+    # Checkout target buildtree artifact to the specified location
+    #
+    # Args:
+    #    target: Target to checkout
+    #    location: Location to checkout the artifact to
+    #    force: Whether files can be overwritten if necessary
+    #    hardlinks: Whether checking out files hardlinked to
+    #               their artifacts is acceptable
+    #    tar: If true, a tarball from the artifact contents will
+    #         be created, otherwise the file tree of the artifact
+    #         will be placed at the given location. If true and
+    #         location is '-', the tarball will be dumped on the
+    #         standard output.
+    #    artifact_remotes: Artifact cache remotes specified on the commmand line
+    #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
+    #
+    def buildtree_checkout(
+        self,
+        target: str,
+        *,
+        location: Optional[str] = None,
+        buildroot: bool = False,
+        force: bool = False,
+        hardlinks: bool = False,
+        compression: str = "",
+        tar: bool = False,
+        artifact_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_artifact_remotes: bool = False,
+    ):
+
+        elements = self._load(
+            (target,),
+            selection=_PipelineSelection.NONE,
+            load_artifacts=True,
+            attempt_artifact_metadata=True,
+            connect_artifact_cache=True,
+            artifact_remotes=artifact_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+        )
+
+        # self.targets contains a list of the loaded target objects
+        # if we specify --deps build, Stream._load() will return a list
+        # of build dependency objects, however, we need to prepare a sandbox
+        # with the target (which has had its appropriate dependencies loaded)
+        element: Element = self.targets[0]
+
+        self._check_location_writable(location, force=force, tar=tar)
+
+        # Check whether the required elements are cached, and then
+        # try to pull them if they are not already cached.
+        #
+        self.query_cache(elements)
+        self._pull_missing_artifacts(elements)
+
+        self._check_buildtree(element)
+
+        try:
+            artifact = element._get_artifact()
+            virdir = artifact.get_buildroot() if buildroot else artifact.get_buildtree()
+            self._export_artifact(tar, location, compression, element, hardlinks, virdir)
+        except BstError as e:
+            raise StreamError(
+                "Error while exporting buildtree artifacts" ": '{}'".format(e), detail=e.detail, reason=e.reason
+            ) from e
 
     # source_checkout()
     #
@@ -1906,6 +1959,33 @@ class Stream:
                 raise StreamError("Output file '{}' not writable".format(location))
             if not force and os.path.exists(location):
                 raise StreamError("Output file '{}' already exists".format(location))
+
+    # _check_buildtree()
+    #
+    # Check if we require a pull queue attempt, with given artifact state and context.
+    #
+    # Args:
+    #    element (Element): Destination path
+    #
+    # Raises:
+    #    (StreamError): If the no buildroot found
+    #
+    def _check_buildtree(self, element):
+        if not element._cached_buildroot():
+            if not element._cached():
+                message = "Artifact not cached locally or in available remotes"
+                reason = "missing-buildtree-artifact-not-cached"
+            elif element._buildroot_exists():
+                message = "Buildtree is not cached locally or in available remotes"
+                reason = "missing-buildtree-artifact-buildtree-not-cached"
+            else:
+                message = "Artifact was created without buildtree"
+                reason = "missing-buildtree-artifact-created-without-buildtree"
+            raise StreamError(message, reason=reason)
+
+        # Raise warning if the element is cached in a failed state
+        if element._cached_failure():
+            self._context.messenger.warn("using a buildtree from a failed build.")
 
     # Helper function for source_checkout()
     def _source_checkout(
