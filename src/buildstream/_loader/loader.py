@@ -168,6 +168,11 @@ class Loader:
 
         return target_elements
 
+    def _normalize_element_name(self, filename):
+        # Keep equivalent relative spellings on the same loader identity path,
+        # so ref lookup, cache keys and workspace handling stay consistent.
+        return os.path.normpath(filename)
+
     # get_loader():
     #
     # Obtains the appropriate loader for the specified junction
@@ -399,6 +404,8 @@ class Loader:
     #                   or None, if loading of the subproject is disabled.
     #
     def _load_one_file(self, filename, provenance_node, *, load_subprojects=True):
+
+        filename = self._normalize_element_name(filename)
 
         element = None
 
@@ -1013,10 +1020,10 @@ class Loader:
         # to create junctions on the top level project.
         junction_path = name.rsplit(":", 1)
         if len(junction_path) == 1:
-            return None, junction_path[-1], self
+            return None, self._normalize_element_name(junction_path[-1]), self
         else:
             loader = self.get_loader(junction_path[-2], provenance_node, load_subprojects=load_subprojects)
-            return junction_path[-2], junction_path[-1], loader
+            return junction_path[-2], self._normalize_element_name(junction_path[-1]), loader
 
     # _warn():
     #
