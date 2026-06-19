@@ -557,6 +557,32 @@ def test_reset_soft(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_reset_junction_workspace(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    workspace = os.path.join(str(tmpdir), "junction-workspace")
+    target = "nested.bst:import-etc.bst"
+
+    _yaml.roundtrip_dump(
+        {"kind": "junction", "sources": [{"kind": "local", "path": "files/sub-project"}]},
+        os.path.join(project, "elements", "nested.bst"),
+    )
+
+    result = cli.run(project=project, args=["workspace", "open", "--directory", workspace, target])
+    result.assert_success()
+
+    result = cli.run(project=project, args=["workspace", "reset", target])
+    result.assert_success()
+
+    result = cli.run(project=project, args=["workspace", "list"])
+    result.assert_success()
+    loaded = _yaml.load_data(result.output)
+    workspaces = loaded.get_sequence("workspaces")
+    assert len(workspaces) == 1
+    space = workspaces.mapping_at(0)
+    assert space.get_str("element") == target
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_reset_multiple(cli, tmpdir, datafiles):
     # Open the workspaces
     tmpdir_alpha = os.path.join(str(tmpdir), "alpha")
