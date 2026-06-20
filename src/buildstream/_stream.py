@@ -1816,7 +1816,7 @@ class Stream:
         if not track and not self.queues:
             # First non-track queue
             queue.set_required_element_check()
-
+            queue.set_session_elements(self.session_elements)
         self.queues.append(queue)
 
     # _enqueue_plan()
@@ -1830,7 +1830,6 @@ class Stream:
     def _enqueue_plan(self, plan, *, queue=None):
         queue = queue or self.queues[0]
         queue.enqueue(plan)
-        self.session_elements += plan
 
     # _run()
     #

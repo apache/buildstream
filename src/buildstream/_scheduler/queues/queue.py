@@ -62,6 +62,7 @@ class Queue:
     # Resources this queues' jobs want
     resources = []  # type: List[int]
     log_to_file = True
+    session_elements = None
 
     def __init__(self, scheduler, *, imperative=False):
 
@@ -171,6 +172,15 @@ class Queue:
     #####################################################
     #          Scheduler / Pipeline facing APIs         #
     #####################################################
+
+    # set_session_elements()
+    #
+    # Track elements enqueued
+    #
+    # Args:
+    #    session_elements (list): a list to put session elements
+    def set_session_elements(self, session_elements):
+        self.session_elements = session_elements
 
     # enqueue()
     #
@@ -381,6 +391,9 @@ class Queue:
     #    element (Element): The Element to enqueue
     #
     def _enqueue_element(self, element):
+        if self.session_elements is not None:
+            self.session_elements.append(element)
+
         status = self.status(element)
 
         if status == QueueStatus.SKIP:
