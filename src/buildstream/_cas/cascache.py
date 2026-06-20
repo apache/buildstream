@@ -703,6 +703,100 @@ class CASCache:
     def get_cache_usage(self):
         return self._cache_usage_monitor.get_cache_usage()
 
+    # fetch_proto():
+    #
+    # Fetch a protobuf message from CAS by digest and parse it.
+    #
+    # Args:
+    #     digest (Digest): The digest of the proto message
+    #     proto_class: The protobuf message class to parse into
+    #
+    # Returns:
+    #     The parsed protobuf message, or None if not found
+    #
+    def fetch_proto(self, digest, proto_class):
+        if not digest or not digest.hash:
+            return None
+
+        try:
+            with self.open(digest, mode="rb") as f:
+                proto_instance = proto_class()
+                proto_instance.ParseFromString(f.read())
+                return proto_instance
+        except FileNotFoundError:
+            return None
+        except Exception:
+            return None
+
+    # store_proto():
+    #
+    # Store a protobuf message in CAS.
+    #
+    # Args:
+    #     proto: The protobuf message instance
+    #     instance_name (str): Optional casd instance_name for remote CAS
+    #
+    # Returns:
+    #     (Digest): The digest of the stored proto
+    #
+    def store_proto(self, proto, instance_name=None):
+        buffer = proto.SerializeToString()
+        return self.add_object(buffer=buffer, instance_name=instance_name)
+
+    # fetch_action():
+    #
+    # Fetch an Action proto from CAS.
+    #
+    # Args:
+    #     action_digest (Digest): The digest of the Action
+    #
+    # Returns:
+    #     Action proto or None if not found
+    #
+    def fetch_action(self, action_digest):
+        return self.fetch_proto(action_digest, remote_execution_pb2.Action)
+
+    # store_action():
+    #
+    # Store an Action proto in CAS.
+    #
+    # Args:
+    #     action (Action): The Action proto
+    #     instance_name (str): Optional casd instance_name
+    #
+    # Returns:
+    #     (Digest): The digest of the stored action
+    #
+    def store_action(self, action, instance_name=None):
+        return self.store_proto(action, instance_name=instance_name)
+
+    # fetch_directory():
+    #
+    # Fetch a Directory proto from CAS (not the full tree).
+    #
+    # Args:
+    #     directory_digest (Digest): The digest of the Directory
+    #
+    # Returns:
+    #     Directory proto or None if not found
+    #
+    def fetch_directory_proto(self, directory_digest):
+        return self.fetch_proto(directory_digest, remote_execution_pb2.Directory)
+
+    # store_directory():
+    #
+    # Store a Directory proto in CAS.
+    #
+    # Args:
+    #     directory (Directory): The Directory proto
+    #     instance_name (str): Optional casd instance_name
+    #
+    # Returns:
+    #     (Digest): The digest of the stored directory
+    #
+    def store_directory_proto(self, directory, instance_name=None):
+        return self.store_proto(directory, instance_name=instance_name)
+
 
 # _CASCacheUsage
 #
