@@ -259,15 +259,16 @@ class App:
             self.stream.init()
 
             # Create our status printer, only available in interactive
-            self._status = Status(
-                self.context,
-                self._state,
-                self._content_profile,
-                self._format_profile,
-                self._success_profile,
-                self._error_profile,
-                self.stream,
-            )
+            if self.interactive:
+                self._status = Status(
+                    self.context,
+                    self._state,
+                    self._content_profile,
+                    self._format_profile,
+                    self._success_profile,
+                    self._error_profile,
+                    self.stream,
+                )
 
             # Mark the beginning of the session
             if session_name:
@@ -589,7 +590,6 @@ class App:
 
         # Only handle ^C interactively in interactive mode
         if not self.interactive:
-            self._status.clear()
             self.stream.terminate()
             return
 
@@ -660,7 +660,8 @@ class App:
                 # XXX This is dangerous, sometimes we get the job completed *before*
                 # the failure message reaches us ??
                 if not failure:
-                    self._status.clear()
+                    if self._status:
+                        self._status.clear()
                     click.echo(
                         "\n\n\nBUG: Message handling out of sync, "
                         + "unable to retrieve failure message for element {}\n\n\n\n\n".format(task.full_name),
@@ -853,7 +854,8 @@ class App:
 
     @contextmanager
     def _interrupted(self):
-        self._status.clear()
+        if self._status:
+            self._status.clear()
         try:
             with self.stream.suspend():
                 yield
