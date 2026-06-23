@@ -105,7 +105,8 @@ where build scripts automatically detect sources in it's configuration phase,
 so newly added sources you add might be ignored.
 
 In order to force the configuration step to be called again on the next build,
-you can use :ref:`bst workspace reset --soft <invoking_workspace_reset>`, like so:
+you can use :ref:`bst workspace reset <invoking_workspace_reset>` with the
+``--soft`` option, like so:
 
 In these cases, you can perform a hard reset on the workspace using
 :ref:`bst workspace reset <invoking_workspace_reset>`, like so:
@@ -147,4 +148,3 @@ To discard the workspace completely we can do:
 
 This will close the workspace and completely remove the workspace_hello
 directory.
-
