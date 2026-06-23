@@ -635,6 +635,49 @@ def test_reset_all(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_reset_all_with_elements_error(cli, tmpdir, datafiles):
+    # Open a workspace
+    tmpdir_alpha = os.path.join(str(tmpdir), "alpha")
+    element_name, project, workspace = open_workspace(cli, tmpdir_alpha, datafiles, "tar", suffix="-alpha")
+
+    # Modify workspace
+    shutil.rmtree(os.path.join(workspace, "usr", "bin"))
+    os.makedirs(os.path.join(workspace, "etc"))
+    with open(os.path.join(workspace, "etc", "pony.conf"), "w", encoding="utf-8") as f:
+        f.write("PONY='pink'")
+
+    # Reset with --all and elements should fail
+    result = cli.run(project=project, args=["workspace", "reset", "--all", element_name])
+    result.assert_main_error(ErrorDomain.APP, None)
+
+    # Verify workspace content was NOT modified
+    assert not os.path.exists(os.path.join(workspace, "usr", "bin", "hello"))
+    assert os.path.exists(os.path.join(workspace, "etc", "pony.conf"))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_reset_en_dash_soft_all_error(cli, tmpdir, datafiles):
+    # Open a workspace
+    tmpdir_alpha = os.path.join(str(tmpdir), "alpha")
+    element_name, project, workspace = open_workspace(cli, tmpdir_alpha, datafiles, "tar", suffix="-alpha")
+
+    # Modify workspace
+    shutil.rmtree(os.path.join(workspace, "usr", "bin"))
+    os.makedirs(os.path.join(workspace, "etc"))
+    with open(os.path.join(workspace, "etc", "pony.conf"), "w", encoding="utf-8") as f:
+        f.write("PONY='pink'")
+
+    # Reset with en-dash-soft (copy-pasted from docs) should be treated as element
+    # and combined with --all should error
+    result = cli.run(project=project, args=["workspace", "reset", "\u2013-soft", "--all"])
+    result.assert_main_error(ErrorDomain.APP, None)
+
+    # Verify workspace content was NOT modified
+    assert not os.path.exists(os.path.join(workspace, "usr", "bin", "hello"))
+    assert os.path.exists(os.path.join(workspace, "etc", "pony.conf"))
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_list(cli, tmpdir, datafiles):
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "tar")
 
