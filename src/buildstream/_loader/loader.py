@@ -21,7 +21,7 @@ from .._exceptions import LoadError
 from ..exceptions import LoadErrorReason
 from .. import _yaml
 from ..element import Element
-from ..node import Node
+from ..node import Node, MappingNode
 from .._profile import Topics, PROFILER
 from .._includes import Includes
 from .._utils import valid_chars_name
@@ -73,7 +73,7 @@ class Loader:
         self._links = {}  # Dict of link target target paths indexed by link element paths
         self._loaders = {}  # Dict of junction loaders
         self._loader_search_provenances = {}  # Dictionary of provenance nodes of ongoing child loader searches
-
+        self._fullpath_overrides: dict[str, str] = {}  # Dictionary: Original Path, Replacement Path
         self._includes = Includes(self, copy_tree=True)
 
         assert project.name is not None
@@ -255,6 +255,19 @@ class Loader:
     #            Private Methods              #
     ###########################################
 
+    # _set_fullpath_overrides()
+    #
+    # Set an fullpath override for a element-path relative bst file
+    #
+    # This enables runtime modified elements to be pulled from a temporary directory
+    #
+    # Args:
+    #    filename (str): The element-path relative bst file
+    #    fullpath (str): A fullpath to the bst file
+    #
+    def _set_fullpath_overrides(self, filename: str, fullpath: str):
+        self._fullpath_overrides[filename] = fullpath
+
     # _load_file_no_deps():
     #
     # Load a bst file as a LoadElement
@@ -275,8 +288,8 @@ class Loader:
 
         self._assert_element_name(filename, provenance_node)
 
-        # Load the data and process any conditional statements therein
-        fullpath = os.path.join(self._basedir, filename)
+        fullpath = self._fullpath_overrides.get(filename, os.path.join(self._basedir, filename))
+
         try:
             node = _yaml.load(
                 fullpath, shortname=filename, copy_tree=self.load_context.rewritable, project=self.project
@@ -1014,7 +1027,9 @@ class Loader:
     #            - (str): name of the element
     #            - (Loader): loader for sub-project
     #
-    def _parse_name(self, name, provenance_node, *, load_subprojects=True):
+    def _parse_name(
+        self, name: str, provenance_node: MappingNode, *, load_subprojects: bool = True
+    ) -> tuple[str | None, str, "Loader"]:
         # We allow to split only once since deep junctions names are forbidden.
         # Users who want to refer to elements in sub-sub-projects are required
         # to create junctions on the top level project.
