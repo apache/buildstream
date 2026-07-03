@@ -120,4 +120,6 @@ We also recommend exploring some existing BuildStream projects:
 * https://gitlab.com/freedesktop-sdk/freedesktop-sdk
 * https://gitlab.com/baserock/definitions
 
-If you have any questions please ask on our `#buildstream <irc://irc.gnome.org/buildstream>`_ channel in `irc.gnome.org <irc://irc.gnome.org>`_
+If you have any questions please ask on one of our communication channels:
+- Matrix: `#buildstream <https://matrix.to/#/#buildstream:matrix.org>`_ room on `matrix.org <https://matrix.org/>`_
+- Mailing List: `dev@buildstream.apache.org <https://lists.apache.org/list.html?dev@buildstream.apache.org>`_ on `lists.apache.org <https://lists.apache.org/>`_
