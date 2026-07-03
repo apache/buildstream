@@ -243,6 +243,7 @@ class Stream:
     #    target: The name of the element to run the shell for
     #    scope: The scope for the shell, only BUILD or RUN are valid (_Scope)
     #    prompt: A function to return the prompt to display in the shell
+    #    other_targets (Iterable[str]): The name of other elements to stage in the shell
     #    unique_id: (str): A unique_id to use to lookup an Element instance
     #    mounts: Additional directories to mount into the sandbox
     #    isolate (bool): Whether to isolate the environment like we do in builds
@@ -262,6 +263,7 @@ class Stream:
         scope: int,
         prompt: Callable[[Element], str],
         *,
+        other_targets: Iterable[str] = (),
         unique_id: Optional[str] = None,
         mounts: Optional[List[_HostMount]] = None,
         isolate: bool = False,
@@ -357,8 +359,46 @@ class Stream:
             self._fetch([element])
             _pipeline.assert_sources_cached(self._context, [element])
 
+        # Load the other targets
+        try:
+            other_elements = self.load_selection(
+                other_targets,
+                selection=_PipelineSelection.RUN,
+                load_artifacts=True,
+                connect_artifact_cache=True,
+                connect_source_cache=True,
+                artifact_remotes=artifact_remotes,
+                source_remotes=source_remotes,
+                ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+                ignore_project_source_remotes=ignore_project_source_remotes,
+            )
+        except StreamError as e:
+            if e.reason == "deps-not-supported":
+                raise StreamError(
+                    "Only buildtrees are supported with artifact names",
+                    detail="Use the --build and --use-buildtree options to shell into a cached build tree",
+                    reason="only-buildtrees-supported",
+                ) from e
+            raise
+
+        self.query_cache(other_elements)
+        self._pull_missing_artifacts(other_elements)
+        missing_deps = [dep for dep in _pipeline.dependencies(other_elements, _Scope.RUN) if not dep._cached()]
+        if missing_deps:
+            raise StreamError(
+                "Elements need to be built or downloaded before staging a shell environment",
+                detail="\n".join(list(map(lambda x: x._get_full_name(), missing_deps))),
+                reason="shell-missing-deps",
+            )
+
         return element._shell(
-            scope, mounts=mounts, isolate=isolate, prompt=prompt(element), command=command, usebuildtree=usebuildtree
+            scope,
+            mounts=mounts,
+            isolate=isolate,
+            prompt=prompt(element),
+            command=command,
+            usebuildtree=usebuildtree,
+            other_elements=other_elements,
         )
 
     # build()
