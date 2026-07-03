@@ -116,10 +116,10 @@ class OverlapAction(Enum):
     IGNORE: str
 
 class _Scope(Enum):
-    ALL: int
-    BUILD: int
-    RUN: int
-    NONE: int
+    ALL = 1
+    BUILD = 2
+    RUN = 3
+    NONE = 4
 
 class _KeyStrength(Enum):
     STRONG: int

@@ -16,12 +16,15 @@
 # pylint: disable=redefined-outer-name
 
 import os
+from typing import Dict, List, Tuple
 import uuid
+
 
 import pytest
 
 from buildstream import _yaml
 from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream._testing.runcli import CliIntegration
 from buildstream._testing._utils.site import HAVE_SANDBOX, BUILDBOX_RUN
 from buildstream.exceptions import ErrorDomain
 from buildstream import utils
@@ -46,11 +49,25 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 #    mount (tuple): A (host, target) tuple for the `--mount` option
 #    element (str): The element to build and run a shell with
 #    isolate (bool): Whether to pass --isolate to `bst shell`
-#
-def execute_shell(cli, project, command, *, config=None, mount=None, element="base.bst", isolate=False):
+#    other_elements (list(str)): Other elements to stage in the sandbox
+def execute_shell(
+    cli: CliIntegration,
+    project: str,
+    command: List[str],
+    *,
+    config: None | Dict = None,
+    mount: Tuple[str, str] | None = None,
+    element: str = "base.bst",
+    isolate: bool = False,
+    other_elements: List[str] | None = None
+):
     # Ensure the element is built
     result = cli.run_project_config(project=project, project_config=config, args=["build", element])
     assert result.exit_code == 0
+    if other_elements is not None:
+        for other_element in other_elements:
+            result = cli.run_project_config(project=project, project_config=config, args=["build", other_element])
+            assert result.exit_code == 0
 
     args = ["shell"]
     if isolate:
@@ -58,6 +75,9 @@ def execute_shell(cli, project, command, *, config=None, mount=None, element="ba
     if mount is not None:
         host_path, target_path = mount
         args += ["--mount", host_path, target_path]
+    if other_elements is not None:
+        for other_element in other_elements:
+            args += ["--with", other_element]
     args += [element, "--", *command]
 
     return cli.run_project_config(project=project, project_config=config, args=args)
@@ -84,6 +104,28 @@ def test_executable(cli, datafiles):
     result = execute_shell(cli, project, ["/bin/echo", "Horseys!"])
     assert result.exit_code == 0
     assert result.output == "Horseys!\n"
+
+
+# Test staging and running additional targets in the shell of the main target for debugging.
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_with_other_targets(cli, datafiles):
+    project = str(datafiles)
+
+    # Show we can't cat in a shell for manual/import-file.bst
+    result = execute_shell(cli, project, ["/bin/cat", "test.txt"], element="manual/import-file.bst")
+    assert (
+        result.exit_code == -1
+    ), "Shouldn't be able to read content of test.txt as manual/import-file.bst is a simple import element with no dependencies"
+
+    # Show we can now cat with base.bst in a shell for manual/import-file.bst
+    result = execute_shell(
+        cli, project, ["/bin/cat", "test.txt"], element="manual/import-file.bst", other_elements=["base.bst"]
+    )
+    assert (
+        result.exit_code == 0
+    ), "Should be able to read content of test.txt as we now stage in base.bst that provides /bin/cat"
+    assert result.output == "This is a test\n"
 
 
 # Test shell environment variable explicit assignments

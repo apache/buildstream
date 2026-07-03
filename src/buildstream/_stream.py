@@ -16,6 +16,7 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+
 import itertools
 import os
 import sys
@@ -27,7 +28,11 @@ import tempfile
 from contextlib import contextmanager, suppress
 from collections import deque
 from typing import List, Tuple, Optional, Iterable, Callable
+from ruamel.yaml import CommentedMap
 
+
+from ._context import Context
+from .node import MappingNode
 from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._artifactproject import ArtifactProject
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
@@ -44,7 +49,7 @@ from ._scheduler import (
 )
 from .element import Element
 from ._profile import Topics, PROFILER
-from ._project import ProjectRefStorage
+from ._project import ProjectRefStorage, Project
 from ._remotespec import RemoteSpec
 from ._state import State
 from .types import _KeyStrength, _PipelineSelection, _Scope, _HostMount
@@ -79,11 +84,11 @@ class Stream:
         #
         # Private members
         #
-        self._context = context
+        self._context: Context = context
         self._artifacts = None
         self._elementsourcescache = None
         self._sourcecache = None
-        self._project = None
+        self._project: Optional[Project] = None
         self._state = State(session_start)  # Owned by Stream, used by Core to set state
         self._notification_queue = deque()
 
@@ -163,7 +168,7 @@ class Stream:
         ignore_project_artifact_remotes: bool = False,
         ignore_project_source_remotes: bool = False,
         need_state: bool = True,
-    ):
+    ) -> list[Element]:
         with PROFILER.profile(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, "-") for t in targets)):
             target_objects = self._load(
                 targets,
@@ -235,6 +240,69 @@ class Stream:
 
                     task.add_current_progress()
 
+    # shell_with()
+    #
+    # Run a shell with other targets.
+    #
+    # Automatically creates a temporary target based on 'target' with 'other_targets' as runtime or build dependencies.
+    #
+    # Note: Method will build the temporary target, before entering into it's shell.
+    #
+    # Args:
+    #    target (str): The name of the element to run the shell for
+    #    other_targets: (Iterable[str]): The name of the other elements to run the shell with.
+    #    scope: _Scope: Either BUILD or RUN
+    #    *args, **kwargs:  Passed to shell() untouched.
+    #
+    # Returns:
+    #    (int): The exit code of the launched shell
+    #
+    def shell_with(self, target: str, other_targets: Iterable[str], scope: _Scope, *args, **kwargs):
+
+        assert self._project, "Must have a project"
+        assert self._project.loader, "Project must have loader"
+
+        target_junction, target_name, target_loader = self._project.loader._parse_name(
+            target, MappingNode.from_dict({})
+        )
+
+        target_path = os.path.join(target_loader._basedir, target_name)
+        target_node: CommentedMap = _yaml.roundtrip_load(target_path)
+
+        if scope == _Scope.RUN:
+            r_depends = target_node.get("runtime-depends", [])
+
+            for other_target in other_targets:
+                r_depends.append(other_target)
+
+            target_node["runtime-depends"] = r_depends
+        elif scope == _Scope.BUILD:
+            r_depends = target_node.get("build-depends", [])
+
+            for other_target in other_targets:
+                r_depends.append(other_target)
+
+            target_node["build-depends"] = r_depends
+        else:
+            raise StreamError(
+                "Only BUILD and RUN scopes are supported",
+                detail="Use the --build and --use-buildtree options to shell into a build tree",
+                reason="only-build-run-supported",
+            )
+
+        with tempfile.NamedTemporaryFile(
+            dir=target_loader._basedir, delete_on_close=False, prefix=f"{target_name}_temp", suffix=".bst"
+        ) as temp_target_file:
+            _yaml.roundtrip_dump(target_node, temp_target_file)
+            temp_target_file.close()  # delete_on_close is false so this doesn't remove the file, but delete is True(default) so we delete the file when we leave the context manager.
+
+            new_target = os.path.relpath(temp_target_file.name, target_loader._basedir)
+            if target_junction:
+                new_target = f"{target_junction}:{new_target}"
+
+            self.build([new_target])
+            return self.shell(new_target, scope, *args, **kwargs)
+
     # shell()
     #
     # Run a shell
@@ -243,6 +311,7 @@ class Stream:
     #    target: The name of the element to run the shell for
     #    scope: The scope for the shell, only BUILD or RUN are valid (_Scope)
     #    prompt: A function to return the prompt to display in the shell
+    #    other_targets (Iterable[str]): The name of other elements to stage in the shell
     #    unique_id: (str): A unique_id to use to lookup an Element instance
     #    mounts: Additional directories to mount into the sandbox
     #    isolate (bool): Whether to isolate the environment like we do in builds
@@ -1043,6 +1112,7 @@ class Stream:
                 self.workspace_close(target._get_full_name(), remove_dir=not no_checkout)
 
             if not custom_dir:
+                assert self._context.workspacedir, "Must have workspace dir"
                 directory = os.path.abspath(os.path.join(self._context.workspacedir, target.name))
                 if directory[-4:] == ".bst":
                     directory = directory[:-4]
@@ -2116,6 +2186,8 @@ class Stream:
             # project directory and element path prefix, to produce only element names.
             #
             all_elements = []
+            assert self._project, "Must have a project"
+            assert self._project.element_path, "Must have a project"
             element_path_length = len(self._project.element_path) + 1
             for dirpath, _, filenames in os.walk(self._project.element_path):
                 for filename in filenames:
@@ -2135,6 +2207,7 @@ class Stream:
 
         # Glob the artifact names and add the results to the set
         #
+        assert self._artifacts, "Must have artifacts"
         for glob in artifact_globs:
             glob_results = self._artifacts.list_artifacts(glob=glob)
             for artifact_name in glob_results:
