@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 import shutil
 import click
 from .. import _yaml
+from .._frontend.app import App
 from .._exceptions import BstError, LoadError, AppError, RemoteError
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection, _HostMount, _Scope
@@ -723,7 +724,7 @@ def show(app, elements, deps, except_, order, format_):
 @click.argument("command", type=click.STRING, nargs=-1)
 @click.pass_obj
 def shell(
-    app,
+    app: App,
     target,
     command,
     mount,
