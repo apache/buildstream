@@ -553,7 +553,7 @@ def build(
 @click.option(
     "--deps",
     "-d",
-    default=_PipelineSelection.ALL,
+    default=str(_PipelineSelection.ALL),
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
@@ -814,7 +814,7 @@ def source():
 @click.option(
     "--deps",
     "-d",
-    default=_PipelineSelection.NONE,
+    default=str(_PipelineSelection.NONE),
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
@@ -887,7 +887,7 @@ def source_fetch(app, elements, deps, except_, source_remotes, ignore_project_so
 @click.option(
     "--deps",
     "-d",
-    default=_PipelineSelection.NONE,
+    default=str(_PipelineSelection.NONE),
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
@@ -960,7 +960,7 @@ def source_push(app, elements, deps, except_, source_remotes, ignore_project_sou
 @click.option(
     "--deps",
     "-d",
-    default=_PipelineSelection.NONE,
+    default=str(_PipelineSelection.NONE),
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
@@ -1015,7 +1015,7 @@ def source_track(app, elements, deps, except_, cross_junctions):
 @click.option(
     "--deps",
     "-d",
-    default=_PipelineSelection.NONE,
+    default=str(_PipelineSelection.NONE),
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
@@ -1296,7 +1296,7 @@ def artifact():
 @click.option(
     "--deps",
     "-d",
-    default=_PipelineSelection.NONE,
+    default=str(_PipelineSelection.NONE),
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
@@ -1339,7 +1339,7 @@ def artifact_show(app, deps, artifact_remotes, ignore_project_artifact_remotes, 
 @click.option(
     "--deps",
     "-d",
-    default=_PipelineSelection.RUN,
+    default=str(_PipelineSelection.RUN),
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
@@ -1464,7 +1464,7 @@ def artifact_checkout(
 @click.option(
     "--deps",
     "-d",
-    default=_PipelineSelection.NONE,
+    default=str(_PipelineSelection.NONE),
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
@@ -1533,7 +1533,7 @@ def artifact_pull(app, deps, artifact_remotes, ignore_project_artifact_remotes, 
 @click.option(
     "--deps",
     "-d",
-    default=_PipelineSelection.NONE,
+    default=str(_PipelineSelection.NONE),
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
@@ -1673,7 +1673,7 @@ def artifact_list_contents(app, artifacts, long_):
 @click.option(
     "--deps",
     "-d",
-    default=_PipelineSelection.NONE,
+    default=str(_PipelineSelection.NONE),
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
