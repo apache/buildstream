@@ -81,10 +81,13 @@ class FastEnum(metaclass=MetaFastEnum):
         return hash(id(self))
 
     def __str__(self):
-        return "{}.{}".format(self.__class__.__name__, self.name)
+        return str(self.value)
 
     def __reduce__(self):
         return self.__class__, (self.value,)
+
+    def __repr__(self):
+        return "<{}.{}: {}>".format(self.__class__.__name__, self.name, self.value)
 
 
 class CoreWarnings:
@@ -306,9 +309,6 @@ class _PipelineSelection(FastEnum):
     # All direct runtime dependencies and their recursive runtime dependencies,
     # including the targets
     RUN = "run"
-
-    def __str__(self):
-        return str(self.value)
 
 
 # _ProjectInformation()
