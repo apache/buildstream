@@ -66,7 +66,7 @@ class OverlapCollector:
     #    location (str): The Sandbox relative location this session was created for
     #
     @contextmanager
-    def session(self, action: str, location: Optional[str]):
+    def session(self, action: OverlapAction, location: Optional[str]):
         assert self._session is None, "Stage session already started"
 
         if location is None:
@@ -108,13 +108,13 @@ class OverlapCollector:
 #    location (str): The Sandbox relative location this session was created for
 #
 class OverlapCollectorSession:
-    def __init__(self, element: "Element", action: str, location: str):
+    def __init__(self, element: "Element", action: OverlapAction, location: str):
 
         # The Element we are staging for, on which we'll issue warnings
         self._element = element  # type: Element
 
         # The OverlapAction for this session
-        self._action = action  # type: str
+        self._action = action  # type: OverlapAction
 
         # The Sandbox relative directory this session was created for
         self._location = location  # type: str

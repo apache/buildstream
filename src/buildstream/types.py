@@ -35,6 +35,9 @@ class FastEnum(metaclass=MetaFastEnum):
 
     :class:`enum.Enum` attributes accesses can be really slow, and slow down the execution noticeably.
     This reimplementation doesn't suffer the same problems, but also does not reimplement everything.
+
+    For mypy Enum static type checking support, all FastEnum should be stubbed as inheriting from enum.Enum.
+    Use `stubgen src/buildstream/types.py --include-docstrings` to generate the stubs, add `from enum import Enum` and replace all `(FastEnum)` with `(Enum)`
     """
 
     name = None
@@ -61,7 +64,7 @@ class FastEnum(metaclass=MetaFastEnum):
         try:
             return cls._value_to_entry[value]
         except KeyError:
-            if type(value) is cls:  # pylint: disable=unidiomatic-typecheck
+            if isinstance(value, cls):  # pylint: disable=unidiomatic-typecheck
                 return value
             raise ValueError("Unknown enum value: {}".format(value))
 
@@ -169,7 +172,6 @@ class OverlapAction(FastEnum):
 # Defines the scope of dependencies to include for a given element
 # when iterating over the dependency graph in APIs like
 # Element._dependencies().
-#
 class _Scope(FastEnum):
 
     # All elements which the given element depends on, following
@@ -384,7 +386,7 @@ class _SourceMirror:
         alias_node: MappingNode = node.get_mapping("aliases")
 
         for alias, uris in alias_node.items():
-            assert type(uris) is SequenceNode  # pylint: disable=unidiomatic-typecheck
+            assert isinstance(uris, SequenceNode)  # pylint: disable=unidiomatic-typecheck
             aliases[alias] = uris.as_str_list()
 
         return cls(name, aliases)

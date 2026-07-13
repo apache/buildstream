@@ -95,7 +95,7 @@ class ElementProxy(PluginProxy):
         sandbox: "Sandbox",
         *,
         path: Optional[str] = None,
-        action: str = OverlapAction.WARNING,
+        action: OverlapAction = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         orphans: bool = True
@@ -120,7 +120,7 @@ class ElementProxy(PluginProxy):
         selection: Optional[Sequence["Element"]] = None,
         *,
         path: Optional[str] = None,
-        action: str = OverlapAction.WARNING,
+        action: OverlapAction = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         orphans: bool = True
@@ -168,7 +168,7 @@ class ElementProxy(PluginProxy):
         sandbox: "Sandbox",
         *,
         path: Optional[str] = None,
-        action: str = OverlapAction.WARNING,
+        action: OverlapAction = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         orphans: bool = True,
