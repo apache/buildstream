@@ -46,8 +46,8 @@ _CASD_TIMEOUT = 300  # in seconds
 # Minimum required version of buildbox-casd
 #
 _REQUIRED_CASD_MAJOR = 1
-_REQUIRED_CASD_MINOR = 2
-_REQUIRED_CASD_MICRO = 6
+_REQUIRED_CASD_MINOR = 3
+_REQUIRED_CASD_MICRO = 41
 
 
 # CASDProcessManager
@@ -92,6 +92,7 @@ class CASDProcessManager:
         casd_args = [self.__buildbox_casd()]
         casd_args.append("--bind=" + self._connection_string)
         casd_args.append("--log-level=" + log_level.value)
+        casd_args.append("--cache-failures=false")
 
         if cache_quota is not None:
             casd_args.append("--quota-high={}".format(int(cache_quota)))
