@@ -1,0 +1,338 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BuildElement - Built-in functionality &mdash; BuildStream 2.7.0+50.g094a36df9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=a362a9a2"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="manual - Manual build element" href="elements/manual.html" />
+    <link rel="prev" title="filter - Extract a subset of files from another element" href="elements/filter.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            BuildStream
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="main_about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_using.html">Using</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="main_core.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core_format.html">Project format</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="core_plugins.html">Plugin specific documentation</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="core_plugins.html#elements">Elements</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="elements/stack.html">stack - Symbolic Element for dependency grouping</a></li>
+<li class="toctree-l4"><a class="reference internal" href="elements/import.html">import - Import sources directly</a></li>
+<li class="toctree-l4"><a class="reference internal" href="elements/compose.html">compose - Compose the output of multiple elements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="elements/script.html">script - Run scripts to create output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="elements/link.html">link - Link elements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="elements/junction.html">junction - Integrate subprojects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="elements/filter.html">filter - Extract a subset of files from another element</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Build Elements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="elements/manual.html">manual - Manual build element</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="core_plugins.html#sources">Sources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="core_plugins.html#external-plugins">External plugins</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_framework.html">Plugin API reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core_additional.html">Additional writings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="buildstream.html">buildstream package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main_porting.html">Porting guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="main_glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BuildStream</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="main_core.html">Reference</a></li>
+          <li class="breadcrumb-item"><a href="core_plugins.html">Plugin specific documentation</a></li>
+      <li class="breadcrumb-item active">BuildElement - Built-in functionality</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/core_buildelement.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="buildelement-built-in-functionality">
+<span id="core-buildelement-builtins"></span><h1>BuildElement - Built-in functionality<a class="headerlink" href="#buildelement-built-in-functionality" title="Link to this heading"></a></h1>
+<p>The <a class="reference internal" href="elements/manual.html"><span class="doc">manual</span></a> core plugin and various common element plugins
+available in other repositories are based on the <a class="reference internal" href="buildstream.buildelement.html#module-buildstream.buildelement" title="buildstream.buildelement"><code class="xref py py-mod docutils literal notranslate"><span class="pre">BuildElement</span></code></a> base class,
+which provides built in functionality that could be overridden by the individual plugins.</p>
+<p>This page will give a brief summary of how some of the common features work,
+some of them or the variables they use will be further detailed in the
+<a class="reference internal" href="buildstream.buildelement.html"><span class="doc">API reference</span></a>.</p>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#build-steps" id="id3">Build steps</a></p>
+<ul>
+<li><p><a class="reference internal" href="#the-sandbox-is-prepared" id="id4">The sandbox is prepared</a></p></li>
+<li><p><a class="reference internal" href="#configure-and-build-commands" id="id5">Configure and build commands</a></p></li>
+<li><p><a class="reference internal" href="#install-commands-and-caching-artifacts" id="id6">Install commands and caching artifacts</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#location-for-staging-dependencies" id="id7">Location for staging dependencies</a></p></li>
+<li><p><a class="reference internal" href="#digest-environment-for-dependencies" id="id8"><cite>digest-environment</cite> for dependencies</a></p></li>
+<li><p><a class="reference internal" href="#location-for-running-commands" id="id9">Location for running commands</a></p></li>
+<li><p><a class="reference internal" href="#location-for-configuring-the-project" id="id10">Location for configuring the project</a></p>
+<ul>
+<li><p><a class="reference internal" href="#separating-source-and-build-directories" id="id11">Separating source and build directories</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#install-location" id="id12">Install Location</a></p></li>
+</ul>
+</nav>
+<section id="build-steps">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Build steps</a><a class="headerlink" href="#build-steps" title="Link to this heading"></a></h2>
+<section id="the-sandbox-is-prepared">
+<h3><a class="toc-backref" href="#id4" role="doc-backlink">The sandbox is prepared</a><a class="headerlink" href="#the-sandbox-is-prepared" title="Link to this heading"></a></h3>
+<p>The sandbox is prepared as a temporary filesystem, where build dependencies
+are staged, along with their own runtime dependencies. This happens in
+an abstract state, which can quickly spot repeated files and <a class="reference internal" href="handling-files/overlaps.html#handling-files-overlaps"><span class="std std-ref">overlaps</span></a>.</p>
+<p>When a dependency is being staged, the produced artifact is added from the root
+(<code class="docutils literal notranslate"><span class="pre">/</span></code>). This can be changed using the <code class="docutils literal notranslate"><span class="pre">location:</span></code> attribute, as described in
+<a class="reference internal" href="#core-buildelement-dep-location"><span class="std std-ref">location for staging dependencies</span></a>.</p>
+<p>The sandbox root directory with the staged dependencies is read-only.</p>
+<p>After the dependencies are staged, BuildStream stages the sources in the
+<code class="docutils literal notranslate"><span class="pre">build-root</span></code> location. The actual location of this differs slightly
+depending on the project file structure, which is why it is common to
+see elements use the variable <code class="docutils literal notranslate"><span class="pre">%{build-root}</span></code> which resolves to the
+correct location.</p>
+</section>
+<section id="configure-and-build-commands">
+<h3><a class="toc-backref" href="#id5" role="doc-backlink">Configure and build commands</a><a class="headerlink" href="#configure-and-build-commands" title="Link to this heading"></a></h3>
+<p>Now that all dependencies and sources are staged in a temporary filesystem,
+BuildBox uses this filesystem as root filesystem for the build <a class="reference internal" href="arch_sandboxing.html#sandboxing"><span class="std std-ref">sandbox</span></a>.</p>
+<p>The first commands to be run are configure commands and it is
+recommended to include things like moving the sources about, generating
+config files and other “configure” related actions into this section.
+These should be the commands that can only be run once (for example a
+folder can only be moved once), this is due to BuildStream
+workspaces.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Workspaces and configure commands</strong></p>
+<p>When a <a class="reference internal" href="developing/workspaces.html#developing-workspaces"><span class="std std-ref">workspace</span></a> is opened,
+it stages all the sources for the indicated
+element locally, then when doing a build of that element it uses these local
+sources instead of pulling in fresh sources. Builds using workspaces only
+run configure commands once, and any subsequent builds using the same
+workspace will skip the configure commands step, therefore steps of the
+build that can’t be executed multiple times (without re-staging sources)
+should be added to configure commands.</p>
+</div>
+<p>After configure commands are run, then build commands are next. Build
+commands are intended to contain the actual build process, for example
+if the build uses <code class="docutils literal notranslate"><span class="pre">make</span></code> then this stage should run the
+<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">target</span></code> command.</p>
+</section>
+<section id="install-commands-and-caching-artifacts">
+<h3><a class="toc-backref" href="#id6" role="doc-backlink">Install commands and caching artifacts</a><a class="headerlink" href="#install-commands-and-caching-artifacts" title="Link to this heading"></a></h3>
+<p>Install and strip commands are the final commands that are run before BuildStream
+collects the artifacts and closes the build sandbox. Install commands
+should mainly be comprised of moving the built artifacts from the
+<code class="docutils literal notranslate"><span class="pre">${build-root}</span></code> to the <code class="docutils literal notranslate"><span class="pre">${install-root}</span></code>.</p>
+<p>The <cite>install-commands</cite> should not clean up any of the sources, as they can be stored as a _buildtree_, which allows for introspection after the build.</p>
+<p>Directories can be created under the install location, for example
+<code class="docutils literal notranslate"><span class="pre">%{install-root}/example/</span></code>, and these will be maintained when another
+element depends on this one, for example this will become
+<code class="docutils literal notranslate"><span class="pre">/example/</span></code>.</p>
+<p>Strip commands are run after install commands to strip debugging symbols of
+binaries in the install root. Plugins are expected to use the <code class="docutils literal notranslate"><span class="pre">strip-binaries</span></code>
+variable as strip command. That project variable is by default <strong>empty</strong>.
+You need to use the appropiate commands depending of the system you are building.
+If you are targeting Linux, ones known to work are the ones used by the
+<a class="reference external" href="https://freedesktop-sdk.io/">freedesktop-sdk</a>, you can take a look to them in their
+<a class="reference external" href="https://gitlab.com/freedesktop-sdk/freedesktop-sdk/blob/freedesktop-sdk-18.08.21/project.conf#L74">project.conf</a></p>
+<p>The contents of the install root are cached. BuildStream caches the
+produced artifact to reduce the need to rebuild elements, instead it can
+pull from this artifact cache. It will only rebuild an element if the
+element file changes, or if the dependencies for an element changes.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>BuildStream will also <strong>cache build errors</strong>, and if no file has changed
+(including the dependencies) then BuildStream will display this cached error,
+without attempting a rebuild. This is sometimes not the desired behaviour,
+especially if the error was caused by a remote issue, like a source site
+being temporarily unavailable. To force an attempted build use the
+<code class="docutils literal notranslate"><span class="pre">-r</span></code>/<code class="docutils literal notranslate"><span class="pre">--retry-failed</span></code> option, documented <a class="reference internal" href="using_commands.html#invoking-build"><span class="std std-ref">here</span></a>.</p>
+</div>
+</section>
+</section>
+<section id="location-for-staging-dependencies">
+<span id="core-buildelement-dep-location"></span><h2><a class="toc-backref" href="#id7" role="doc-backlink">Location for staging dependencies</a><a class="headerlink" href="#location-for-staging-dependencies" title="Link to this heading"></a></h2>
+<p>The BuildElement supports the “location” <a class="reference internal" href="main_glossary.html#term-Dependency-configuration"><span class="xref std std-term">dependency configuration</span></a>,
+which means you can use this configuration for any BuildElement class.</p>
+<p>The “location” configuration defines where the dependency will be staged in the
+build sandbox.</p>
+<p><strong>Example:</strong></p>
+<p>Here is an example of how one might stage some dependencies into
+an alternative location while staging some elements in the sandbox root.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Stage these build dependencies in /opt</span>
+<span class="c1">#</span>
+<span class="nt">build-depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">baseproject.bst:opt-dependencies.bst</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">config</span><span class="p p-Indicator">:</span>
+<span class="w">    </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt</span>
+
+<span class="c1"># Stage these tools in &quot;/&quot; and require them as</span>
+<span class="c1"># runtime dependencies.</span>
+<span class="nt">depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">baseproject.bst:base-tools.bst</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The order of dependencies specified is not significant.</p>
+<p>The staging locations will be sorted so that elements are staged in parent
+directories before subdirectories.</p>
+</div>
+</section>
+<section id="digest-environment-for-dependencies">
+<h2><a class="toc-backref" href="#id8" role="doc-backlink"><cite>digest-environment</cite> for dependencies</a><a class="headerlink" href="#digest-environment-for-dependencies" title="Link to this heading"></a></h2>
+<p>The BuildElement supports the <code class="docutils literal notranslate"><span class="pre">digest-environment</span></code> <a class="reference internal" href="main_glossary.html#term-Dependency-configuration"><span class="xref std std-term">dependency configuration</span></a>,
+which sets the specified environment variable in the build sandbox to the CAS digest
+corresponding to a directory that contains all dependencies that are configured
+with the same <code class="docutils literal notranslate"><span class="pre">digest-environment</span></code>.</p>
+<p>This is useful for REAPI clients in the sandbox such as <a class="reference external" href="https://buildgrid.gitlab.io/recc">recc</a>,
+see <code class="docutils literal notranslate"><span class="pre">remote-apis-socket</span></code> in the <a class="reference internal" href="format_declaring.html#format-sandbox"><span class="std std-ref">sandbox configuration</span></a>.</p>
+<p><strong>Example:</strong></p>
+<p>Here is an example of how to set the environment variable <cite>GCC_DIGEST</cite> to the
+CAS digest of a directory that contains <code class="docutils literal notranslate"><span class="pre">gcc.bst</span></code> and its runtime dependencies.
+The <code class="docutils literal notranslate"><span class="pre">libpony.bst</span></code> dependency will not be included in that CAS directory.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">build-depends</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">baseproject.bst:gcc.bst</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">config</span><span class="p p-Indicator">:</span>
+<span class="w">    </span><span class="nt">digest-environment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCC_DIGEST</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">libpony.bst</span>
+</pre></div>
+</div>
+</section>
+<section id="location-for-running-commands">
+<h2><a class="toc-backref" href="#id9" role="doc-backlink">Location for running commands</a><a class="headerlink" href="#location-for-running-commands" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">command-subdir</span></code> variable sets where commands will be executed,
+and the directory will be created automatically if it does not exist.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">command-subdir</span></code> is a relative path from <code class="docutils literal notranslate"><span class="pre">%{build-root}</span></code>, and
+cannot be a parent or adjacent directory, it must expand to a subdirectory
+of <code class="docutils literal notranslate"><span class="pre">${build-root}</span></code>.</p>
+</section>
+<section id="location-for-configuring-the-project">
+<h2><a class="toc-backref" href="#id10" role="doc-backlink">Location for configuring the project</a><a class="headerlink" href="#location-for-configuring-the-project" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">conf-root</span></code> is the location that specific build elements can use to look for build configuration files.
+This is used by elements such as <a class="reference external" href="https://apache.github.io/buildstream-plugins/elements/autotools.html">autotools</a>,
+<a class="reference external" href="https://apache.github.io/buildstream-plugins/elements/cmake.html">cmake</a>,
+<a class="reference external" href="https://apache.github.io/buildstream-plugins/elements/meson.html">meson</a>,
+<a class="reference external" href="https://apache.github.io/buildstream-plugins/elements/setuptools.html">setuptools</a> and
+<a class="reference external" href="https://apache.github.io/buildstream-plugins/elements/pip.html">pip</a>.</p>
+<p>The default value of <code class="docutils literal notranslate"><span class="pre">conf-root</span></code> is defined by default as <code class="docutils literal notranslate"><span class="pre">.</span></code>. This means that if
+the <code class="docutils literal notranslate"><span class="pre">conf-root</span></code> is not explicitly set to another directory, the configuration
+files are expected to be found in <code class="docutils literal notranslate"><span class="pre">command-subdir</span></code>.</p>
+<section id="separating-source-and-build-directories">
+<h3><a class="toc-backref" href="#id11" role="doc-backlink">Separating source and build directories</a><a class="headerlink" href="#separating-source-and-build-directories" title="Link to this heading"></a></h3>
+<p>A typical example of using <code class="docutils literal notranslate"><span class="pre">conf-root</span></code> is when performing
+<a class="reference external" href="https://apache.github.io/buildstream-plugins/elements/autotools.html">autotools</a> builds
+where your source directory is separate from your build directory.</p>
+<p>This can be achieved in build elements which use <code class="docutils literal notranslate"><span class="pre">conf-root</span></code> as follows:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Specify that build configuration scripts are found in %{build-root}</span>
+<span class="w">  </span><span class="nt">conf-root</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;%{build-root}&quot;</span>
+
+<span class="w">  </span><span class="c1"># The build will run in the `_build` subdirectory</span>
+<span class="w">  </span><span class="nt">command-subdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">_build</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="install-location">
+<h2><a class="toc-backref" href="#id12" role="doc-backlink">Install Location</a><a class="headerlink" href="#install-location" title="Link to this heading"></a></h2>
+<p>Build elements must install the build output to the directory defined by <code class="docutils literal notranslate"><span class="pre">install-root</span></code>.</p>
+<p>You need not set or change the <code class="docutils literal notranslate"><span class="pre">install-root</span></code> variable as it will be defined
+automatically on your behalf, and it is used to collect build output when creating
+the resulting artifacts.</p>
+<p>It is important to know about <code class="docutils literal notranslate"><span class="pre">install-root</span></code> in order to write your own
+custom install instructions, for example the
+<a class="reference external" href="https://apache.github.io/buildstream-plugins/elements/cmake.html">cmake</a>
+element will use it to specify the <code class="docutils literal notranslate"><span class="pre">DESTDIR</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="elements/filter.html" class="btn btn-neutral float-left" title="filter - Extract a subset of files from another element" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="elements/manual.html" class="btn btn-neutral float-right" title="manual - Manual build element" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2022, The Apache Software Foundation.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
