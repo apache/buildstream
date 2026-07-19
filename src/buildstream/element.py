@@ -62,6 +62,9 @@ Class Reference
 ---------------
 """
 
+# For 3.7+ support, not necessary and deprecated in 3.14+
+from __future__ import annotations
+
 import os
 import re
 import stat
@@ -73,6 +76,7 @@ from itertools import chain
 import string
 from threading import Lock
 from typing import cast, TYPE_CHECKING, Dict, Iterator, Iterable, List, Optional, Set, Sequence
+
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
@@ -90,7 +94,7 @@ from .plugin import Plugin
 from .sandbox import _SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey
+from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey, _HostMount
 from ._artifact import Artifact
 from ._elementproxy import ElementProxy
 from ._elementsources import ElementSources
@@ -2058,9 +2062,20 @@ class Element(Plugin):
     #    prompt (str): A suitable prompt string for PS1
     #    command (list): An argv to launch in the sandbox
     #    usebuildtree (bool): Use the buildtree as its source
+    #    other_elements (List[Element]): Optional list of other runtime elements to stage in the sandbox
     #
     # Returns: Exit code
-    def _shell(self, scope=None, *, mounts=None, isolate=False, prompt=None, command=None, usebuildtree=False):
+    def _shell(
+        self,
+        scope: int | None = None,
+        *,
+        mounts: List[_HostMount] | None = None,
+        isolate: bool = False,
+        prompt: str | None = None,
+        command: List[str] | None = None,
+        usebuildtree: bool = False,
+        other_elements: List[Element] | None = None,
+    ):
 
         with self._prepare_sandbox(scope, shell=True, usebuildtree=usebuildtree) as sandbox:
             environment = sandbox._get_configured_environment() or self.get_environment()
@@ -2075,6 +2090,17 @@ class Element(Plugin):
 
             if prompt is not None:
                 environment["PS1"] = prompt
+
+            with self.timed_activity("Staging other_targets", silent_nested=True), self.__collect_overlaps(sandbox):
+                self.stage_dependency_artifacts(sandbox, other_elements)
+
+            if other_elements:
+                # Stage artifacts from other_elements into the sandbox.
+                for element in other_elements:
+                    # Stage deps in the sandbox root
+                    with element.timed_activity("Integrating sandbox"), sandbox.batch():
+                        for dep in element._dependencies(_Scope.RUN):
+                            dep.integrate(sandbox)
 
             # Special configurations for non-isolated sandboxes
             if not isolate:

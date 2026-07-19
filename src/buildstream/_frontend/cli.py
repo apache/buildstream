@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 import shutil
 import click
 from .. import _yaml
+from .._frontend.app import App
 from .._exceptions import BstError, LoadError, AppError, RemoteError
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection, _HostMount, _Scope
@@ -377,8 +378,6 @@ def cli(context, **kwargs):
     user preferences configuration file.
     """
 
-    from .app import App
-
     # Create the App, giving it the main arguments
     context.obj = App.create(dict(kwargs))
     context.call_on_close(context.obj.cleanup)
@@ -686,6 +685,13 @@ def show(app, elements, deps, except_, order, format_):
     metavar="HOSTPATH PATH",
     help="Mount a file or directory into the sandbox",
 )
+@click.option(
+    "--with",
+    "other_targets",
+    type=click.Path(readable=False),
+    multiple=True,
+    help="A additional target to stage into an element's sandbox environment",
+)
 @click.option("--isolate", is_flag=True, help="Create an isolated build sandbox")
 @click.option(
     "--use-buildtree",
@@ -723,8 +729,9 @@ def show(app, elements, deps, except_, order, format_):
 @click.argument("command", type=click.STRING, nargs=-1)
 @click.pass_obj
 def shell(
-    app,
+    app: App,
     target,
+    other_targets,
     command,
     mount,
     isolate,
@@ -748,13 +755,38 @@ def shell(
     otherwise bst may respond to them instead. e.g.
 
     \b
-        bst shell example.bst -- df -h
+        bst shell base.bst -- df -h
 
     Use the --build option to create a temporary sysroot for
     building the element instead.
 
+    Use the --with option to stage the artifacts of other elements
+    into the temporary sysroot to make them available to run e.g.
+
+    \b
+        bst shell --with base.bst example.bst -- cat example.txt
+
     If no COMMAND is specified, the default is to attempt
     to run an interactive shell.
+
+    # Examples:
+
+    \b
+        # Attempt to run an interactive shell with example.bst
+        bst shell example.bst
+        # Attempt to run an df -h with example.bst
+        bst shell example.bst -- df h
+        # In a workspace directory, attempt to shell into the workspace element
+        bst shell
+        # Attempt to run cat from base.bst to read example.txt from example.bst
+        bst shell --with base.bst example.bst -- cat example.txt
+        # Attempt to run an interactive shell with the sources and all dependencies of example.bst
+        bst shell --build example.bst
+
+    For all examples on this page:
+    - example.bst is a simple import element with no dependencies
+       that imports a file called example.txt
+    - base.bst provides a basic alpine sysroot with a standard set of unix tooling (sh, df, cat etc).
     """
 
     # Buildtree can only be used with build shells
@@ -776,6 +808,7 @@ def shell(
                 target,
                 scope,
                 app.shell_prompt,
+                other_targets=other_targets,
                 mounts=mounts,
                 isolate=isolate,
                 command=command,
