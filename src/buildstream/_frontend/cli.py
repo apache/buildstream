@@ -1211,14 +1211,21 @@ def workspace_close(app, remove_dir, all_, elements):
     is_flag=True,
     help="Mark workspace to re-execute configuration steps (if any) on next build. Does not alter workspace contents.",
 )
-@click.option("--all", "-a", "all_", is_flag=True, help="Reset all open workspaces")
+@click.option("--all", "-a", "all_", is_flag=True, help="Reset all open workspaces. Cannot be combined with ELEMENTS.")
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
 def workspace_reset(app, soft, all_, elements):
-    """Reset a workspace to its original state"""
+    """Reset a workspace to its original state.
+
+    Specify either one or more ELEMENTS, or use ``--all`` to target all
+    workspaces at once. These options are mutually exclusive.
+    """
 
     # Check that the workspaces in question exist
     with app.initialized():
+
+        if all_ and elements:
+            raise AppError("Specify either --all or elements, not both")
 
         if not (all_ or elements):
             element = app.stream.get_default_target()
