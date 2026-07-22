@@ -86,6 +86,7 @@ class Sandbox:
         self.__mount_sources = {}  # type: Dict[str, str]
         self.__allow_run = True
         self.__subsandboxes = []  # type: List[Sandbox]
+        self.__subaction_digests = []  # Subaction digests collected from ActionResults
 
         # Plugin element full name for logging
         plugin = kwargs.get("plugin", None)
@@ -561,6 +562,29 @@ class Sandbox:
     #
     def _get_element_name(self):
         return self.__element_name
+
+    # _collect_subaction_digests()
+    #
+    # Store subaction digests from an ActionResult.
+    #
+    # Called by sandbox implementations after executing an action
+    # to collect subaction digests recorded by trexe.
+    #
+    # Args:
+    #    subactions: Iterable of Digest protos from ActionResult.subactions
+    #
+    def _collect_subaction_digests(self, subactions):
+        self.__subaction_digests.extend(subactions)
+
+    # _get_subaction_digests()
+    #
+    # Get subaction digests collected during sandbox execution.
+    #
+    # Returns:
+    #    (list): List of Digest protos
+    #
+    def _get_subaction_digests(self):
+        return self.__subaction_digests
 
     # _disable_run()
     #

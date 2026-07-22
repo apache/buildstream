@@ -244,6 +244,30 @@ class _SchedulerErrorAction(FastEnum):
     TERMINATE = "terminate"
 
 
+# _SpeculativeActionMode()
+#
+# Graduated modes for speculative actions, controlling which overlay
+# types are generated and whether priming is enabled.  Each mode
+# includes all capabilities of the previous modes.
+#
+class _SpeculativeActionMode(FastEnum):
+
+    # Speculative actions disabled entirely
+    NONE = "none"
+
+    # Use existing SAs to prime the cache, but don't generate new ones
+    PRIME_ONLY = "prime-only"
+
+    # Generate SOURCE and ARTIFACT overlays only (no AC calls during generation)
+    SOURCE_ARTIFACT = "source-artifact"
+
+    # Also generate intra-element ACTION overlays (AC calls for own subactions)
+    INTRA_ELEMENT = "intra-element"
+
+    # Full mode: also generate cross-element ACTION overlays
+    FULL = "full"
+
+
 # _CacheBuildTrees()
 #
 # When to cache build trees

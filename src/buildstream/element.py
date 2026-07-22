@@ -90,7 +90,7 @@ from .plugin import Plugin
 from .sandbox import _SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey
+from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey, _SpeculativeActionMode
 from ._artifact import Artifact
 from ._elementproxy import ElementProxy
 from ._elementsources import ElementSources
@@ -300,12 +300,17 @@ class Element(Plugin):
         self.__required_callback = None  # Callback to Queues
         self.__can_query_cache_callback = None  # Callback to PullQueue/FetchQueue
         self.__buildable_callback = None  # Callback to BuildQueue
+        self.__build_dep_cached_callback = None  # Callback to PrimingQueue (per-dep, on cached)
+        self.__build_dep_primed_callback = None  # Callback to PrimingQueue (per-dep, on primed)
 
         self.__resolved_initial_state = False  # Whether the initial state of the Element has been resolved
 
         self.__environment: Dict[str, str] = {}
         self.__variables: Optional[Variables] = None
         self.__dynamic_public_guard = Lock()
+
+        # Speculative actions support
+        self.__subaction_digests = []  # Subaction digests from the build's ActionResult
 
         if artifact_key:
             self.__initialize_from_artifact_key(artifact_key)
@@ -1725,6 +1730,9 @@ class Element(Plugin):
                     collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
 
                     self.__set_build_result(success=True, description="succeeded")
+
+                    # Collect subaction digests recorded during the build
+                    self._set_subaction_digests(sandbox._get_subaction_digests())
                 except (ElementError, SandboxCommandError) as e:
                     # Shelling into a sandbox is useful to debug this error
                     e.sandbox = True
@@ -1802,6 +1810,43 @@ class Element(Plugin):
                 "Directory '{}' was not found inside the sandbox, "
                 "unable to collect artifact contents".format(collect)
             )
+
+    # _set_subaction_digests():
+    #
+    # Set the subaction digests captured from the build's ActionResult.
+    # This is called after a successful build to store compiler invocations.
+    #
+    # Args:
+    #     subaction_digests: List of Digest protos from ActionResult.subactions
+    #
+    def _set_subaction_digests(self, subaction_digests):
+        self.__subaction_digests = list(subaction_digests) if subaction_digests else []
+
+    # _get_subaction_digests():
+    #
+    # Get the subaction digests from the build's ActionResult.
+    #
+    # Returns:
+    #     List of Digest protos, or empty list if none
+    #
+    def _get_subaction_digests(self):
+        return self.__subaction_digests
+
+    # _get_weak_cache_key():
+    #
+    # Get the weak cache key for this element.
+    #
+    # Used by speculative actions for stable lookup: the weak key includes
+    # everything about the element itself (sources, env, commands, sandbox)
+    # but only dependency *names* (not their cache keys), making it stable
+    # across dependency version changes while still changing when the
+    # element's own sources or configuration change.
+    #
+    # Returns:
+    #     (str): The weak cache key, or None if not yet computed
+    #
+    def _get_weak_cache_key(self):
+        return self.__weak_cache_key
 
     # _fetch_done()
     #
@@ -1918,6 +1963,21 @@ class Element(Plugin):
                     )
                     artifact._cached = False
                     pulled = False
+
+            # For speculative actions: if the element is not cached (will need
+            # building), pull the weak key artifact proto so the priming queue
+            # can retrieve stored SpeculativeActions from a previous build.
+            # This is a lightweight pull — only the artifact proto metadata,
+            # not the full artifact files. The SA data itself and the base
+            # Actions will be fetched lazily by casd when needed.
+            if (
+                pull
+                and not artifact.cached()
+                and context.speculative_actions_mode != _SpeculativeActionMode.NONE
+                and self.__weak_cache_key
+                and not self.__artifacts.contains(self, self.__weak_cache_key)
+            ):
+                self.__artifacts.pull_artifact_proto(self, self.__weak_cache_key)
 
             self.__artifact = artifact
             return pulled
@@ -2431,6 +2491,53 @@ class Element(Plugin):
     def _set_buildable_callback(self, callback):
         self.__buildable_callback = callback
 
+    # _set_build_dep_cached_callback()
+    #
+    # Set a callback invoked each time a build dependency becomes cached.
+    # Unlike _set_buildable_callback (which fires only when ALL deps are
+    # cached), this fires incrementally — once per completed dep.
+    #
+    # Used by SpeculativeCachePrimingQueue for incremental overlay
+    # resolution: each completed dep may unlock ARTIFACT overlays or
+    # ACTION overlays whose producing subactions just finished.
+    #
+    # Args:
+    #    callback (callable) - Called with (element, dep) where dep is
+    #        the just-cached dependency
+    #
+    def _set_build_dep_cached_callback(self, callback):
+        self.__build_dep_cached_callback = callback
+
+    # _set_build_dep_primed_callback()
+    #
+    # Set a callback invoked each time a build dependency finishes
+    # priming (its speculative actions have been instantiated and
+    # submitted to the action cache).
+    #
+    # Unlike _set_build_dep_cached_callback (which fires when a dep
+    # becomes cached after building), this fires earlier — when a
+    # dep's priming completes.  This enables downstream elements to
+    # re-evaluate cross-element ACTION overlays sooner, since the
+    # dep's adapted action digests are now in instantiated_actions.
+    #
+    # Args:
+    #    callback (callable) - Called with (element, dep) where dep is
+    #        the just-primed dependency
+    #
+    def _set_build_dep_primed_callback(self, callback):
+        self.__build_dep_primed_callback = callback
+
+    # _notify_build_deps_primed()
+    #
+    # Notify reverse build dependencies that this element has finished
+    # priming.  Called by SpeculativeCachePrimingQueue.done() after an
+    # element's priming completes.
+    #
+    def _notify_build_deps_primed(self):
+        for rdep in self.__reverse_build_deps:
+            if rdep.__build_dep_primed_callback is not None:
+                rdep.__build_dep_primed_callback(rdep, self)
+
     # _set_depth()
     #
     # Set the depth of the Element.
@@ -2475,6 +2582,11 @@ class Element(Plugin):
                 for rdep in self.__reverse_build_deps:
                     rdep.__build_deps_uncached -= 1
                     assert not rdep.__build_deps_uncached < 0
+
+                    # Notify priming queue of each completed dep for
+                    # incremental overlay resolution
+                    if rdep.__build_dep_cached_callback is not None:
+                        rdep.__build_dep_cached_callback(rdep, self)
 
                     if rdep._buildable():
                         rdep.__update_cache_key_non_strict()
@@ -3347,6 +3459,7 @@ class Element(Plugin):
                 for e in self._dependencies(_Scope.BUILD)
             ]
             self.__weak_cache_key = self._calculate_cache_key(dependencies)
+
 
         context = self._get_context()
 
