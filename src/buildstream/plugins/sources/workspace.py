@@ -39,7 +39,7 @@ The *guess_version* of a workspace source is meaningless and omitted.
 .. attention::
 
    Observing a SourceInfo with the ``SourceInfoMedium.WORKSPACE`` in the output of
-   :ref:`bst show --format %{source-info} <invoking_show>` is most likely undesirable, given
+   :ref:`bst show \\\\\\\\-\\\\\\\\-format %{source-info} <invoking_show>` is most likely undesirable, given
    that you are likely interested in observing the source provenance information of the
    project in a clean state rather than in a state with open workspaces.
 """

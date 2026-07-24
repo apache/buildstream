@@ -76,7 +76,7 @@ artifact collection purposes.
 
    In the case that the element is currently workspaced, the ``configure-commands``
    will only be run in subsequent builds until they succeed at least once, unless
-   :ref:`bst workspace reset --soft <invoking_workspace_reset>` is called on the
+   :ref:`bst workspace reset \\\\\\\\-\\\\\\\\-soft <invoking_workspace_reset>` is called on the
    workspace to explicitly avoid an incremental build.
 
 """

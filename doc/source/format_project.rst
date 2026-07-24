@@ -159,7 +159,7 @@ following to your ``project.conf``:
 
    When using the ``project.refs`` file, it is possible to override the
    references in subprojects by editing the ``project.refs`` file directly
-   or by using :ref:`bst source track --cross-junctions <invoking_source_track>`,
+   or by using :ref:`bst source track \\\\-\\\\-cross-junctions <invoking_source_track>`,
    this can be practical to try out fresher versions of components which
    are maintained in a subproject.
 
@@ -320,7 +320,7 @@ they are defined when fetching, and in reverse-order when tracking.
 The mirrors can be overridden on a per project basis using
 :ref:`user configuration <config_mirrors>`. One can also specify which mirror should
 be used first in the :ref:`user configuration <config_default_mirror>`, or using
-the  :ref:`--default-mirror <invoking_bst>` command-line argument.
+the  :ref:`\\\\-\\\\-default-mirror <invoking_bst>` command-line argument.
 
 If you want this project's mirrors to also be used for subprojects,
 see :ref:`Mapping source aliases of subprojects <project_junctions_source_aliases>`.
@@ -635,7 +635,7 @@ dictionary.
        default: False
 
 Project options can be specified on the command line using
-:ref:`bst --option ... <invoking_bst>`
+:ref:`bst \\\\-\\\\-option ... <invoking_bst>`
 
 .. note::
 
