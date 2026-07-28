@@ -190,12 +190,21 @@ consists of running the ``pylint`` tool, run the following::
 
 .. _contributing_formatting_code:
 
+Running Static Type Checkers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Static Type Checking is performed separately from testing. In order to run the static type checking step which
+consists of running the ``mypy`` tool, run the following::
+
+  tox -e mypy
+
 Formatting code
 ~~~~~~~~~~~~~~~
 Similar to linting, code formatting is also done via a ``tox`` environment. To
 format the code using the ``black`` tool, run the following::
 
    tox -e format
+
+In CI `tox -e format-check` is used to ensure formatting has been run.
 
 Observing coverage
 ~~~~~~~~~~~~~~~~~~

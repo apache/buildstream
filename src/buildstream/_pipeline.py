@@ -44,7 +44,7 @@ from ._exceptions import PipelineError
 # Yields:
 #    Elements in the scope of the specified target elements
 #
-def dependencies(targets: List[Element], scope: int, *, recurse: bool = True) -> Iterator[Element]:
+def dependencies(targets: List[Element], scope: _Scope, *, recurse: bool = True) -> Iterator[Element]:
     # Keep track of 'visited' in this scope, so that all targets
     # share the same context.
     visited = (BitMap(), BitMap())
@@ -73,7 +73,12 @@ def dependencies(targets: List[Element], scope: int, *, recurse: bool = True) ->
 #    A list of Elements appropriate for the specified selection mode
 #
 def get_selection(
-    context: Context, targets: List[Element], mode: str, *, silent: bool = True, depth_sort: bool = False
+    context: Context,
+    targets: List[Element],
+    mode: _PipelineSelection,
+    *,
+    silent: bool = True,
+    depth_sort: bool = False
 ) -> List[Element]:
     def redirect_and_log() -> List[Element]:
         # Redirect and log if permitted

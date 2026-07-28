@@ -90,7 +90,7 @@ from .plugin import Plugin
 from .sandbox import _SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey
+from .types import _HostMount, _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey
 from ._artifact import Artifact
 from ._elementproxy import ElementProxy
 from ._elementsources import ElementSources
@@ -604,7 +604,7 @@ class Element(Plugin):
         sandbox: "Sandbox",
         *,
         path: Optional[str] = None,
-        action: str = OverlapAction.WARNING,
+        action: OverlapAction = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         orphans: bool = True,
@@ -664,7 +664,7 @@ class Element(Plugin):
         selection: Optional[Sequence["Element"]] = None,
         *,
         path: Optional[str] = None,
-        action: str = OverlapAction.WARNING,
+        action: OverlapAction = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         orphans: bool = True,
@@ -864,7 +864,7 @@ class Element(Plugin):
     # Yields:
     #    (Element): The dependencies in `scope`, in deterministic staging order
     #
-    def _dependencies(self, scope, *, recurse=True, visited=None):
+    def _dependencies(self, scope: _Scope, *, recurse=True, visited=None):
 
         # The format of visited is (BitMap(), BitMap()), with the first BitMap
         # containing element that have been visited for the `_Scope.BUILD` case
@@ -971,7 +971,7 @@ class Element(Plugin):
         sandbox: "Sandbox",
         *,
         path: Optional[str] = None,
-        action: str = OverlapAction.WARNING,
+        action: OverlapAction = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         orphans: bool = True,
@@ -2060,7 +2060,16 @@ class Element(Plugin):
     #    usebuildtree (bool): Use the buildtree as its source
     #
     # Returns: Exit code
-    def _shell(self, scope=None, *, mounts=None, isolate=False, prompt=None, command=None, usebuildtree=False):
+    def _shell(
+        self,
+        scope: _Scope | None = None,
+        *,
+        mounts: List[_HostMount] | None = None,
+        isolate: bool = False,
+        prompt: str | None = None,
+        command: List[str] | None = None,
+        usebuildtree: bool = False,
+    ):
 
         with self._prepare_sandbox(scope, shell=True, usebuildtree=usebuildtree) as sandbox:
             environment = sandbox._get_configured_environment() or self.get_environment()
