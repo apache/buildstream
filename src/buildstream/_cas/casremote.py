@@ -92,7 +92,13 @@ class _CASBatchRead:
         local_cas = self._remote.casd.get_local_cas()
 
         for request in self._requests:
-            batch_response = local_cas.FetchMissingBlobs(request)
+            batch_response_future = local_cas.FetchMissingBlobs.future(request)
+
+            try:
+                batch_response = batch_response_future.result()
+            except:
+                batch_response_future.cancel()
+                raise
 
             for response in batch_response.responses:
                 if response.status.code == code_pb2.NOT_FOUND:
@@ -146,7 +152,13 @@ class _CASBatchUpdate:
         local_cas = self._remote.casd.get_local_cas()
 
         for request in self._requests:
-            batch_response = local_cas.UploadMissingBlobs(request)
+            batch_response_future = local_cas.UploadMissingBlobs.future(request)
+
+            try:
+                batch_response = batch_response_future.result()
+            except:
+                batch_response_future.cancel()
+                raise
 
             for response in batch_response.responses:
                 if response.status.code != code_pb2.OK:
