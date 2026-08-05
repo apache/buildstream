@@ -216,12 +216,6 @@ def get_cmdclass():
 with open("requirements/requirements.in", encoding="utf-8") as install_reqs:
     install_requires = install_reqs.read().splitlines()
 
-#####################################################
-#     Prepare package description from README       #
-#####################################################
-with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "README.rst"), encoding="utf-8") as readme:
-    long_description = readme.read()
-
 
 #####################################################
 #            Setup Cython and extensions            #
@@ -310,36 +304,10 @@ register_cython_module("buildstream._variables", dependencies=["buildstream.node
 #             Main setup() Invocation               #
 #####################################################
 setup(
-    name="BuildStream",
+    # Static metadata now lives in pyproject.toml [project] table.
+    # Only dynamic values and build-time logic remain here.
     version=version,
     cmdclass=get_cmdclass(),
-    author="The Apache Software Foundation",
-    author_email="dev@buildstream.apache.org",
-    classifiers=[
-        "Environment :: Console",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: Apache Software License",
-        "Operating System :: POSIX",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
-        "Programming Language :: Python :: 3.13",
-        "Programming Language :: Python :: 3.14",
-        "Topic :: Software Development :: Build Tools",
-    ],
-    description="A framework for modelling build pipelines in YAML",
-    license="Apache License Version 2.0",
-    long_description=long_description,
-    long_description_content_type="text/x-rst; charset=UTF-8",
-    url="https://buildstream.build",
-    project_urls={
-        "Source": "https://github.com/apache/buildstream",
-        "Documentation": "https://docs.buildstream.build",
-        "Tracker": "https://github.com/apache/buildstream/issues",
-        "Mailing List": "https://lists.apache.org/list.html?dev@buildstream.apache.org",
-    },
-    python_requires="~={}.{}".format(REQUIRED_PYTHON_MAJOR, REQUIRED_PYTHON_MINOR),
     package_dir={"": "src"},
     packages=find_packages(where="src", exclude=("subprojects", "tests", "tests.*")),
     package_data={
@@ -369,7 +337,6 @@ setup(
         ("share/bash-completion/completions", [os.path.join("src", "buildstream", "data", "bst")]),
     ],
     install_requires=install_requires,
-    entry_points={"console_scripts": ["bst = buildstream._frontend:cli"]},
     ext_modules=cythonize(
         BUILD_EXTENSIONS,
         compiler_directives={
