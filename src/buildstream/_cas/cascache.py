@@ -127,7 +127,13 @@ class CASCache:
         request.fetch_file_blobs = not self._remote_cache
 
         try:
-            local_cas.FetchTree(request)
+            response_future = local_cas.FetchTree.future(request)
+            try:
+                response_future.result()
+            except:
+                response_future.cancel()
+                raise
+
             if not self._remote_cache:
                 return True
         except grpc.RpcError as e:
@@ -141,7 +147,13 @@ class CASCache:
         request = local_cas_pb2.UploadTreeRequest()
         request.root_digest.CopyFrom(digest)
         try:
-            local_cas.UploadTree(request)
+            response_future = local_cas.UploadTree.future(request)
+            try:
+                response_future.result()
+            except:
+                response_future.cancel()
+                raise
+
             return True
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.NOT_FOUND:
@@ -231,7 +243,12 @@ class CASCache:
             request.root_digest.CopyFrom(tree)
             request.fetch_file_blobs = True
 
-            local_cas.FetchTree(request)
+            response_future = local_cas.FetchTree.future(request)
+            try:
+                response_future.result()
+            except:
+                response_future.cancel()
+                raise
 
     # fetch_directory():
     #
@@ -252,7 +269,13 @@ class CASCache:
         request.fetch_file_blobs = False
 
         try:
-            local_cas.FetchTree(request)
+            response_future = local_cas.FetchTree.future(request)
+            try:
+                response_future.result()
+            except:
+                response_future.cancel()
+                raise
+
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 raise BlobNotFound(
@@ -536,7 +559,13 @@ class CASCache:
                 d.CopyFrom(required_digest)
 
             try:
-                response = cas.FindMissingBlobs(request)
+                response_future = cas.FindMissingBlobs.future(request)
+                try:
+                    response = response_future.result()
+                except:
+                    response_future.cancel()
+                    raise
+
             except grpc.RpcError as e:
                 if e.code() == grpc.StatusCode.INVALID_ARGUMENT and e.details().startswith("Invalid instance name"):
                     raise CASCacheError("Unsupported buildbox-casd version: FindMissingBlobs failed") from e
@@ -566,7 +595,12 @@ class CASCache:
             request.root_digest.CopyFrom(directory_digest)
             request.fetch_file_blobs = False
 
-            local_cas.FetchTree(request)
+            response_future = local_cas.FetchTree.future(request)
+            try:
+                response_future.result()
+            except:
+                response_future.cancel()
+                raise
 
         # parse directory, and recursively add blobs
 
