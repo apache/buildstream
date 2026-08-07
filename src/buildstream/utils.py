@@ -440,7 +440,7 @@ def copy_files(
     *,
     filter_callback: Optional[Callable[[str], bool]] = None,
     ignore_missing: bool = False,
-    report_written: bool = False
+    report_written: bool = False,
 ) -> FileListResult:
     """Copy files from source to destination.
 
@@ -490,7 +490,7 @@ def link_files(
     *,
     filter_callback: Optional[Callable[[str], bool]] = None,
     ignore_missing: bool = False,
-    report_written: bool = False
+    report_written: bool = False,
 ) -> FileListResult:
     """Hardlink files from source to destination.
 
@@ -630,7 +630,7 @@ def save_file_atomic(
     newline: Optional[str] = None,
     closefd: bool = True,
     opener: Optional[Callable[[str, int], int]] = None,
-    tempdir: Optional[str] = None
+    tempdir: Optional[str] = None,
 ) -> Iterator[IO]:
     """Save a file with a temporary name and rename it into place when ready.
 
@@ -1275,9 +1275,10 @@ def _tempnamedfile(mode="w+b", encoding=None, suffix="", prefix="tmp", dir=None)
         if temp is not None:
             temp.close()
 
-    with _signals.terminator(close_tempfile), tempfile.NamedTemporaryFile(
-        mode=mode, encoding=encoding, suffix=suffix, prefix=prefix, dir=dir
-    ) as temp:
+    with (
+        _signals.terminator(close_tempfile),
+        tempfile.NamedTemporaryFile(mode=mode, encoding=encoding, suffix=suffix, prefix=prefix, dir=dir) as temp,
+    ):
         yield temp
 
 
@@ -1375,9 +1376,11 @@ def _call(*popenargs, terminate=False, **kwargs):
             group_id = os.getpgid(process.pid)
             os.killpg(group_id, signal.SIGCONT)
 
-    with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc), subprocess.Popen(
-        *popenargs, universal_newlines=True, **kwargs
-    ) as process:
+    with (
+        _signals.suspendable(suspend_proc, resume_proc),
+        _signals.terminator(kill_proc),
+        subprocess.Popen(*popenargs, universal_newlines=True, **kwargs) as process,
+    ):
         # Here, we don't use `process.communicate()` directly without a timeout
         # This is because, if we were to do that, and the process would never
         # output anything, the control would never be given back to the python

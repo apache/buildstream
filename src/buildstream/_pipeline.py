@@ -78,7 +78,7 @@ def get_selection(
     mode: _PipelineSelection,
     *,
     silent: bool = True,
-    depth_sort: bool = False
+    depth_sort: bool = False,
 ) -> List[Element]:
     def redirect_and_log() -> List[Element]:
         # Redirect and log if permitted

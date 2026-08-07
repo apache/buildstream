@@ -77,7 +77,7 @@ class CASDProcessManager:
         *,
         reserved=None,
         low_watermark=None,
-        local_jobs=None
+        local_jobs=None,
     ):
         os.makedirs(path, exist_ok=True)
 
@@ -160,7 +160,7 @@ class CASDProcessManager:
                 stdout=logfile_fp,
                 stderr=subprocess.STDOUT,
                 env=self.__buildbox_casd_env(),
-                **process_group_kwargs
+                **process_group_kwargs,
             )
 
         self._casd_channel = None
