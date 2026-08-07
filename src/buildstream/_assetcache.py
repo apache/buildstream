@@ -56,6 +56,9 @@ class AssetRemote(BaseRemote):
     #     RemoteError: If the upstream has a problem
     #
     def _check(self):
+        if self.spec.protocol != "grpc":
+            raise RemoteError("Index servers are supported only with the 'grpc' protocol")
+
         request = remote_asset_pb2.FetchBlobRequest()
         if self.instance_name:
             request.instance_name = self.instance_name
