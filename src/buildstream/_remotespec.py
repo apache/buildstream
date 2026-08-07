@@ -64,6 +64,7 @@ class RemoteSpec:
         remote_type: str,
         url: str,
         *,
+        protocol: bool = "grpc",
         push: bool = False,
         server_cert: Optional[str] = None,
         client_key: Optional[str] = None,
@@ -87,6 +88,11 @@ class RemoteSpec:
 
         # The url of the remote, this may contain a port number
         self.url: str = url
+
+        # The protocol to use
+        if protocol not in ["grpc", "http"]:
+            raise RemoteError(f"Value for 'protocol' must be 'grpc' or 'http', got: {protocol}")
+        self.protocol: str = protocol
 
         # The name of the grpc service to talk to at this remote url
         self.instance_name: Optional[str] = instance_name
@@ -127,6 +133,7 @@ class RemoteSpec:
                 self.remote_type,
                 self.push,
                 self.url,
+                self.protocol,
                 self.instance_name,
                 self.server_cert_file,
                 self.client_key_file,
@@ -141,7 +148,7 @@ class RemoteSpec:
         )
 
     def __str__(self) -> str:
-        string = self.url + "\n"
+        string = f"{self.url} ({self.protocol})\n"
         string += "push: {} type: {} instance: {}\n".format(self.push, self.remote_type, self.instance_name)
         if self._spec_node:
             provenance = str(self._spec_node.get_provenance())
@@ -210,6 +217,7 @@ class RemoteSpec:
     #
     def to_localcas_remote(self, remote):
         remote.url = self.url
+        remote.protocol = self.protocol
         if self.instance_name:
             remote.instance_name = self.instance_name
         if self.server_cert:
@@ -264,7 +272,7 @@ class RemoteSpec:
         push: bool = False
         remote_type: str = RemoteType.ENDPOINT
 
-        valid_keys: List[str] = ["url", "instance-name", "auth", "connection-config"]
+        valid_keys: List[str] = ["url", "protocol", "instance-name", "auth", "connection-config"]
         if not remote_execution:
             remote_type = cast(str, spec_node.get_enum("type", RemoteType, default=RemoteType.ALL))
             valid_keys += ["type"]
@@ -283,6 +291,8 @@ class RemoteSpec:
             provenance = spec_node.get_node("url").get_provenance()
             raise LoadError("{}: empty artifact cache URL".format(provenance), LoadErrorReason.INVALID_DATA)
 
+        protocol = spec_node.get_str("protocol", default="grpc")
+
         instance_name = spec_node.get_str("instance-name", default=None)
 
         auth_node = spec_node.get_mapping("auth", None)
@@ -296,6 +306,7 @@ class RemoteSpec:
         return cls(
             remote_type,
             url,
+            protocol=protocol,
             push=push,
             server_cert=server_cert,
             client_key=client_key,
@@ -353,6 +364,8 @@ class RemoteSpec:
 
                 if key == "url":
                     url = val
+                elif key == "protocol":
+                    protocol = val
                 elif key == "instance-name":
                     instance_name = val
                 elif key == "type":
@@ -396,6 +409,7 @@ class RemoteSpec:
         return cls(
             remote_type,
             url,
+            protocol=protocol,
             push=push,
             server_cert=server_cert,
             client_key=client_key,
