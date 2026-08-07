@@ -166,7 +166,7 @@ class Directory:
         external_pathspec: Union["Directory", str],
         *,
         filter_callback: Optional[Callable[[str], bool]] = None,
-        collect_result: bool = True
+        collect_result: bool = True,
     ) -> Optional[FileListResult]:
         """Imports some or all files from external_path into this directory.
 
@@ -405,7 +405,7 @@ class Directory:
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
         properties: Optional[List[str]] = None,
-        collect_result: bool = True
+        collect_result: bool = True,
     ) -> Optional[FileListResult]:
         return self._import_files(
             external_pathspec,
@@ -444,7 +444,7 @@ class Directory:
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
         properties: Optional[List[str]] = None,
-        collect_result: bool = True
+        collect_result: bool = True,
     ) -> Optional[FileListResult]:
         raise NotImplementedError()
 

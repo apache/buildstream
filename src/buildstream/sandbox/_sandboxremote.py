@@ -112,9 +112,12 @@ class SandboxRemote(SandboxREAPI):
 
         # Set up signal handler to trigger cancel_operation on SIGTERM
         operation = None
-        with self._get_context().messenger.timed_activity(
-            "Waiting for the remote build to complete", element_name=self._get_element_name()
-        ), _signals.terminator(self.cancel_operation):
+        with (
+            self._get_context().messenger.timed_activity(
+                "Waiting for the remote build to complete", element_name=self._get_element_name()
+            ),
+            _signals.terminator(self.cancel_operation),
+        ):
             operation = __run_remote_command(stub, execute_request=request)
             if operation is None:
                 return None

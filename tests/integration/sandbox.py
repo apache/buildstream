@@ -144,9 +144,10 @@ def test_remote_apis_socket_with_two_storage_services_and_action_cache(cli, tmpd
     project = str(datafiles)
     element_name = "sandbox/remote-apis-socket.bst"
 
-    with create_artifact_share(os.path.join(str(tmpdir), "remote1")) as share1, create_artifact_share(
-        os.path.join(str(tmpdir), "remote2")
-    ) as share2:
+    with (
+        create_artifact_share(os.path.join(str(tmpdir), "remote1")) as share1,
+        create_artifact_share(os.path.join(str(tmpdir), "remote2")) as share2,
+    ):
         cli.configure(
             {
                 "cache": {

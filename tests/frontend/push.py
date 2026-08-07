@@ -399,9 +399,10 @@ def test_push_after_pull(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     # Set up two artifact shares.
-    with create_artifact_share(os.path.join(str(tmpdir), "artifactshare1")) as share1, create_artifact_share(
-        os.path.join(str(tmpdir), "artifactshare2")
-    ) as share2:
+    with (
+        create_artifact_share(os.path.join(str(tmpdir), "artifactshare1")) as share1,
+        create_artifact_share(os.path.join(str(tmpdir), "artifactshare2")) as share2,
+    ):
 
         # Set the scene: share1 has the artifact, share2 does not.
         #
@@ -690,9 +691,11 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles, use_remote, ignore_
     project = str(datafiles)
     caplog.set_level(1)
 
-    with create_artifact_share(os.path.join(str(tmpdir), "artifactshare1")) as shareuser, create_artifact_share(
-        os.path.join(str(tmpdir), "artifactshare2")
-    ) as shareproject, create_artifact_share(os.path.join(str(tmpdir), "artifactshare3")) as sharecli:
+    with (
+        create_artifact_share(os.path.join(str(tmpdir), "artifactshare1")) as shareuser,
+        create_artifact_share(os.path.join(str(tmpdir), "artifactshare2")) as shareproject,
+        create_artifact_share(os.path.join(str(tmpdir), "artifactshare3")) as sharecli,
+    ):
 
         # Add shareproject repo url to project.conf
         with open(os.path.join(project, "project.conf"), "a", encoding="utf-8") as projconf:

@@ -89,7 +89,7 @@ class Project:
         parent_loader: Optional[Loader] = None,
         provenance_node: Optional[ProvenanceInformation] = None,
         search_for_project: bool = True,
-        fetch_subprojects=None
+        fetch_subprojects=None,
     ):
         #
         # Public members
