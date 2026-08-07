@@ -23,6 +23,40 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "BuildStream"
+dynamic = ["version", "dependencies"]
+description = "A framework for modelling build pipelines in YAML"
+readme = { file = "README.rst", content-type = "text/x-rst" }
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [
+    { name = "The Apache Software Foundation", email = "dev@buildstream.apache.org" },
+]
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Build Tools",
+]
+
+[project.urls]
+Homepage = "https://buildstream.build"
+Documentation = "https://docs.buildstream.build"
+Source = "https://github.com/apache/buildstream"
+Tracker = "https://github.com/apache/buildstream/issues"
+"Mailing List" = "https://lists.apache.org/list.html?dev@buildstream.apache.org"
+
+[project.scripts]
+bst = "buildstream._frontend:cli"
+
 [tool.black]
 line-length = 119
 exclude = '''
