@@ -1,4 +1,30 @@
 =================
+buildstream 2.8.0
+=================
+
+  o Fix for overriding mirrors by parent project if the subproject doesn't
+    have mirrors (#2112)
+
+  o Fix circular reference errors with junction overrides (#2114)
+
+  o Defer source provenance check until the project is fully loaded (#2119)
+
+  o Fix using full element names in workspace reset (#2125)
+
+  o Disable status printer in non-interactive mode (#2135)
+
+  o Don't cache failed actions in the action cache (#2152) (This raises the
+    minimum supported version of buildbox to 1.3.41)
+
+  o Use artifact caches from the parent project for junctions (#1941)
+
+  o Fix hangs when trying to terminate pull and push jobs (#2160)
+
+  o Correctly track the number of session elements (#2104)
+
+  o Documentation improvements
+
+=================
 buildstream 2.7.0
 =================
 
