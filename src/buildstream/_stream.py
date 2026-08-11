@@ -1168,6 +1168,7 @@ class Stream:
                 self._context.messenger.info(
                     "Reset workspace state for {} at: {}".format(element.name, workspace_path)
                 )
+                workspaces.save_config()
                 continue
 
             self.workspace_close(element._get_full_name(), remove_dir=True)
