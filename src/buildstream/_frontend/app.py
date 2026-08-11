@@ -14,17 +14,23 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from contextlib import contextmanager
+
+from typing import Optional, Any
+
 import os
 import sys
 import threading
 import traceback
 import datetime
 from textwrap import TextWrapper
+from threading import Lock
+
+from contextlib import contextmanager
 import click
 from click import UsageError
 
 # Import various buildstream internals
+from ..element import Element
 from .._context import Context
 from .._project import Project
 from .._exceptions import BstError, StreamError, LoadError, AppError
@@ -54,29 +60,29 @@ INDENT = 4
 #                         command, before any subcommand
 #
 class App:
-    def __init__(self, main_options):
+    def __init__(self, main_options: dict[str, Any]):
 
         #
         # Public members
         #
-        self.context = None  # The Context object
-        self.stream = None  # The Stream object
-        self.project = None  # The toplevel Project object
-        self.logger = None  # The LogLine object
-        self.interactive = None  # Whether we are running in interactive mode
-        self.colors = None  # Whether to use colors in logging
+        self.context: Optional[Context] = None  # The Context object
+        self.stream: Optional[Stream] = None  # The Stream object
+        self.project: Optional[Project] = None  # The toplevel Project object
+        self.logger: Optional[LogLine] = None  # The LogLine object
+        self.interactive: Optional[bool] = None  # Whether we are running in interactive mode
+        self.colors: Optional[bool] = None  # Whether to use colors in logging
 
         #
         # Private members
         #
-        self._session_start = datetime.datetime.now()
-        self._session_name = None
-        self._main_options = main_options  # Main CLI options, before any command
-        self._status = None  # The Status object
-        self._fail_messages = {}  # Failure messages by unique plugin id
-        self._interactive_failures = None  # Whether to handle failures interactively
-        self._started = False  # Whether a session has started
-        self._set_project_dir = False  # Whether -C option was used
+        self._session_start: datetime.datetime = datetime.datetime.now()
+        self._session_name: Optional[str] = None
+        self._main_options: dict[str, Any] = main_options  # Main CLI options, before any command
+        self._status: Optional[Status] = None  # The Status object
+        self._fail_messages: dict[str, Message] = {}  # Failure messages by unique plugin id
+        self._interactive_failures: Optional[bool] = None  # Whether to handle failures interactively
+        self._started: bool = False  # Whether a session has started
+        self._set_project_dir: bool = False  # Whether -C option was used
         self._state = None  # Frontend reads this and registers callbacks
 
         # UI Colors Profiles
@@ -87,9 +93,9 @@ class App:
         self._detail_profile = Profile(dim=True)
 
         # Cached messages
-        self._cached_message_lock = threading.Lock()
-        self._cached_message_text = ""
-        self._cache_messages = None
+        self._cached_message_lock: Lock = Lock()
+        self._cached_message_text: str = ""
+        self._cache_messages: Optional[int] = None
 
         #
         # Early initialization
@@ -363,11 +369,11 @@ class App:
     #
     def init_project(
         self,
-        project_name,
-        min_version,
-        element_path,
-        force=False,
-        target_directory=None,
+        project_name: str,
+        min_version: str,
+        element_path: str,
+        force: bool = False,
+        target_directory: Optional[str] = None,
     ):
         if target_directory:
             directory = os.path.abspath(target_directory)
@@ -517,6 +523,7 @@ class App:
     # Local message propagator
     #
     def _message(self, message_type, message, **kwargs):
+        assert self.context, "App should have a loaded context here"
         self.context.messenger.message(Message(message_type, message, **kwargs))
 
         # Flush any potentially cached messages immediately
@@ -535,6 +542,7 @@ class App:
 
         # If the scheduler has started, try to terminate all jobs gracefully,
         # otherwise exit immediately.
+        assert self.stream, "App must have a stream here"
         if self.stream.running:
             self.stream.terminate()
         else:
@@ -549,7 +557,8 @@ class App:
     # Returns:
     #    (str): The rendered text of only this message
     #
-    def _cache_message(self, message):
+    def _cache_message(self, message: str):
+        assert self.logger, "App must have a logger for this"
         text = self.logger.render(message)
 
         with self._cached_message_lock:
@@ -587,7 +596,7 @@ class App:
     # Handle ^C SIGINT interruptions in the scheduling main loop
     #
     def _interrupt_handler(self):
-
+        assert self.stream, "Must have a Stream in App for this"
         # Only handle ^C interactively in interactive mode
         if not self.interactive:
             self.stream.terminate()
@@ -644,7 +653,9 @@ class App:
     #    task_id (str): The unique identifier of the task
     #    element (tuple): If an element job failed a tuple of Element instance unique_id & display key
     #
-    def _job_failed(self, task_id, element=None):
+    def _job_failed(self, task_id: str, element: Optional[tuple[Element, str, str]] = None):
+        assert self._state, "App must have a state for this"
+        assert self.stream, "App must have a stream for this"
         task = self._state.tasks[task_id]
 
         # Flush any pending messages when handling a failure
@@ -680,6 +691,7 @@ class App:
 
         # Handle non interactive mode setting of what to do when a job fails.
         if not self._interactive_failures:
+            assert self.context, "App must have a context for this"
 
             if self.context.sched_error_action == _SchedulerErrorAction.TERMINATE:
                 self.stream.terminate()
@@ -713,6 +725,7 @@ class App:
             if failure.sandbox:
                 choices += ["shell"]
 
+            assert self.stream, "App must have a stream for this"
             choice = ""
             while choice not in ["continue", "quit", "terminate", "retry"]:
                 click.echo(summary, err=True)

@@ -337,7 +337,7 @@ class Context:
                 raise LoadError("{} must be an absolute path".format(directory), LoadErrorReason.INVALID_DATA)
 
         # add directories not set by users
-        assert self.cachedir
+        assert self.cachedir, "Need a cache dir at this stage"
         self.tmpdir = os.path.join(self.cachedir, "tmp")
         self.casdir = os.path.join(self.cachedir, "cas")
         self.builddir = os.path.join(self.cachedir, "build")
@@ -671,7 +671,7 @@ class Context:
         # It is an error to call this early on before the Workspaces
         # has been instantiated
         #
-        assert self._workspaces
+        assert self._workspaces, "Must have workspaces before calling this"
         return self._workspaces
 
     # get_workspace_project_cache():

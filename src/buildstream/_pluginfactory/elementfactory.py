@@ -54,5 +54,5 @@ class ElementFactory(PluginFactory):
     def create(self, context: "Context", project: "Project", load_element: LoadElement) -> Element:
         plugin_type, default_config = self.lookup(context.messenger, load_element.kind, load_element.node)
         element_type = cast(Type[Element], plugin_type)
-        element = element_type(context, project, load_element, default_config)
+        element: Element = element_type(context, project, load_element, default_config)
         return element

@@ -14,22 +14,32 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-import os
-from contextlib import suppress
 
-from .._exceptions import LoadError
-from ..exceptions import LoadErrorReason
+import os
+from typing import Optional, Self, TYPE_CHECKING, Iterable, cast
+
 from .. import _yaml
 from ..element import Element
-from ..node import Node
-from .._profile import Topics, PROFILER
-from .._includes import Includes
-from .._utils import valid_chars_name
-from ..types import _KeyStrength
 
-from .types import Symbol
+from .._exceptions import LoadError
+from .._includes import Includes
+from .._profile import PROFILER, Topics
+from .._utils import valid_chars_name
+from ..exceptions import LoadErrorReason
+from ..node import Node, ScalarNode
+from ..types import _KeyStrength
 from . import loadelement
-from .loadelement import LoadElement, Dependency, DependencyType, extract_depends_from_node
+from .loadelement import (
+    Dependency,
+    DependencyType,
+    LoadElement,
+    extract_depends_from_node,
+)
+from .types import Symbol
+
+if TYPE_CHECKING:
+    from .._project import Project
+    from .._loader.loadcontext import LoadContext
 
 
 # Loader():
@@ -44,20 +54,21 @@ from .loadelement import LoadElement, Dependency, DependencyType, extract_depend
 #    provenance_node (Node): The provenance of the reference to this project's junction
 #
 class Loader:
-    def __init__(self, project, *, parent=None, provenance_node=None):
+    def __init__(self, project: "Project", *, parent: Optional[Self] = None, provenance_node: Optional[Node] = None):
 
         # Ensure we have an absolute path for the base directory
         basedir = project.element_path
+        assert basedir is not None, "Must have a base directory"
         if not os.path.isabs(basedir):
             basedir = os.path.abspath(basedir)
 
         #
         # Public members
         #
-        self.load_context = project.load_context  # The LoadContext
+        self.load_context: LoadContext = project.load_context  # The LoadContext
         self.project = project  # The associated Project
         self.provenance_node = provenance_node  # The provenance of whence this loader was instantiated
-        self.loaded = None  # The number of loaded Elements
+        self.loaded: int | None = None  # The number of loaded Elements
 
         #
         # Private members
@@ -66,13 +77,14 @@ class Loader:
         self._basedir = basedir  # Base project directory
         self._first_pass_options = project.first_pass_config.options  # Project options (OptionPool)
         self._parent = parent  # The parent loader
-        self._alternative_parents = []  # Overridden parent loaders
+        self._alternative_parents: list["Loader"] = []  # Overridden parent loaders
 
-        self._meta_elements = {}  # Dict of resolved meta elements by name
-        self._elements = {}  # Dict of elements
-        self._links = {}  # Dict of link target target paths indexed by link element paths
-        self._loaders = {}  # Dict of junction loaders
-        self._loader_search_provenances = {}  # Dictionary of provenance nodes of ongoing child loader searches
+        self._elements: dict[str, LoadElement] = {}  # Dict of elements
+        self._links: dict[str, str] = {}  # Dict of link target target paths indexed by link element paths
+        self._loaders: dict[str, "Loader"] = {}  # Dict of junction loaders
+        self._loader_search_provenances: dict[str, Node] = (
+            {}
+        )  # Dictionary of provenance nodes of ongoing child loader searches
 
         self._includes = Includes(self, copy_tree=True)
 
@@ -110,7 +122,7 @@ class Loader:
     # Returns:
     #    (list): The corresponding LoadElement instances matching the `targets`
     #
-    def load(self, targets):
+    def load(self, targets: list[str]) -> list[LoadElement]:
 
         for filename in targets:
             if os.path.isabs(filename):
@@ -124,12 +136,14 @@ class Loader:
 
         # First pass, recursively load files and populate our table of LoadElements
         #
-        target_elements = []
+        target_elements: list[LoadElement] = []
 
         for target in targets:
             with PROFILER.profile(Topics.LOAD_PROJECT, target):
                 _junction, name, loader = self._parse_name(target, None)
+                assert loader, "Must have a loader"
                 element = loader._load_file(name, None)
+                assert element, "Must get an element back here"
                 target_elements.append(element)
 
         #
@@ -153,10 +167,9 @@ class Loader:
         #
 
         # Keep a list of all visited elements, to not sort twice the same
-        visited_elements = set()
+        visited_elements: set[LoadElement] = set()
 
         for element in target_elements:
-            loader = element._loader
             with PROFILER.profile(Topics.SORT_DEPENDENCIES, element.name):
                 loadelement.sort_dependencies(element, visited_elements)
 
@@ -168,7 +181,7 @@ class Loader:
 
         return target_elements
 
-    def _normalize_element_name(self, filename):
+    def _normalize_element_name(self, filename) -> str:
         # Keep equivalent relative spellings on the same loader identity path,
         # so ref lookup, cache keys and workspace handling stay consistent.
         return os.path.normpath(filename)
@@ -191,7 +204,7 @@ class Loader:
     # Returns:
     #   (Loader): loader for sub-project
     #
-    def get_loader(self, name, provenance_node, *, load_subprojects=True):
+    def get_loader(self, name: str, provenance_node: Node, *, load_subprojects=True) -> "Loader | None":
         junction_path = name.split(":")
         loader = self
 
@@ -213,11 +226,12 @@ class Loader:
             self._loader_search_provenances[name] = provenance_node
 
         for junction_name in junction_path:
-            loader = loader._get_loader(junction_name, provenance_node, load_subprojects=load_subprojects)
-            if not loader:
+            junction_loader = loader._get_loader(junction_name, provenance_node, load_subprojects=load_subprojects)
+            if not junction_loader:
                 # `loader` should never be None if `load_subprojects` is True
                 assert not load_subprojects
                 return None
+            loader = junction_loader
 
         if load_subprojects and provenance_node:
             del self._loader_search_provenances[name]
@@ -232,7 +246,7 @@ class Loader:
     # Yields:
     #     (Loader): Each loader in the ancestry
     #
-    def ancestors(self):
+    def ancestors(self) -> Iterable[Self]:
         traversed = {}
 
         def foreach_parent(parent):
@@ -271,7 +285,9 @@ class Loader:
     # Returns:
     #    (LoadElement): A partially-loaded LoadElement
     #
-    def _load_file_no_deps(self, filename, provenance_node=None, only_first_pass=False):
+    def _load_file_no_deps(
+        self, filename: str, provenance_node: Optional[Node] = None, only_first_pass=False
+    ) -> Optional[LoadElement]:
 
         self._assert_element_name(filename, provenance_node)
 
@@ -310,6 +326,7 @@ class Loader:
 
         kind = node.get_str(Symbol.KIND)
         if kind in ("junction", "link"):
+            assert self._first_pass_options, "Must have first pass options"
             self._first_pass_options.process_node(node)
         elif only_first_pass:
             return None
@@ -319,7 +336,7 @@ class Loader:
             self._includes.process(node)
 
         element = LoadElement(node, filename, self)
-
+        assert self._elements is not None, "elements area must be initialised in loader, (can be empty)"
         self._elements[filename] = element
 
         #
@@ -338,6 +355,7 @@ class Loader:
             loader = self
             while loader._parent:
                 junction = loader.project.junction
+                assert junction, "Must have a junction element for loaders that have a parent"
                 link_path = junction.name + ":" + link_path
                 target_path = junction.name + ":" + target_path
 
@@ -360,7 +378,7 @@ class Loader:
     #    link_path (str): The local project relative real path to a link
     #    target_path (str): The new target for this link
     #
-    def _resolve_link(self, link_path, target_path):
+    def _resolve_link(self, link_path: str, target_path: str):
         self._links[link_path] = target_path
 
         for cached_link_path, cached_target_path in self._links.items():
@@ -378,7 +396,7 @@ class Loader:
     # Returns:
     #    (str): The same path with any links expanded
     #
-    def _expand_link(self, path):
+    def _expand_link(self, path: str) -> str:
 
         # FIXME: This simply returns the first link, maybe
         #        this needs to be more iterative, or sorted by
@@ -403,7 +421,9 @@ class Loader:
     #    (LoadElement): A LoadElement, which might be shallow loaded or fully loaded,
     #                   or None, if loading of the subproject is disabled.
     #
-    def _load_one_file(self, filename, provenance_node, *, load_subprojects=True):
+    def _load_one_file(
+        self, filename: str, provenance_node: Optional[Node], *, load_subprojects=True
+    ) -> Optional[LoadElement]:
 
         filename = self._normalize_element_name(filename)
 
@@ -427,6 +447,7 @@ class Loader:
             # Shallow load if it's not yet loaded.
             element = self._load_file_no_deps(filename, provenance_node)
 
+        assert element, "Should have an element by this point"
         # Check if there was an override for this element
         #
         override = self._search_for_override_element(filename)
@@ -473,7 +494,9 @@ class Loader:
     # Returns:
     #    (LoadElement): A loaded LoadElementor None, if loading of the subproject is disabled.
     #
-    def _load_file(self, filename, provenance_node, *, load_subprojects=True):
+    def _load_file(
+        self, filename: str, provenance_node: Optional[Node], *, load_subprojects=True
+    ) -> Optional[LoadElement]:
 
         top_element = self._load_one_file(filename, provenance_node, load_subprojects=load_subprojects)
 
@@ -498,7 +521,9 @@ class Loader:
         # [0] is the LoadElement instance
         # [1] is a stack of Dependency objects to load
         # [2] is a Dict[LoadElement, Dependency] of loaded dependencies
-        loader_queue = [(top_element, list(reversed(dependencies)), {})]
+        loader_queue: list[tuple[LoadElement, list[Dependency], dict[LoadElement, Dependency]]] = [
+            (top_element, list(reversed(dependencies)), {})
+        ]
 
         # Load all dependency files for the new LoadElement
         while loader_queue:
@@ -510,7 +535,9 @@ class Loader:
 
                 if dep.junction:
                     loader = self.get_loader(dep.junction, dep.node)
+                    assert loader, "Must have a loader for this junction"
                     dep_element = loader._load_file(dep.name, dep.node)
+                    assert dep_element, "Should have a dependant element"
 
                 else:
 
@@ -564,13 +591,13 @@ class Loader:
     # dependencies already resolved.
     #
     # Args:
-    #    element (str): The element to check
+    #    top_element (LoadElement): The element to check
     #
     # Raises:
     #    (LoadError): In case there was a circular dependency error
     #
     @staticmethod
-    def _check_circular_deps(top_element):
+    def _check_circular_deps(top_element: LoadElement) -> None:
 
         sequence = [top_element]
         sequence_indices = [0]
@@ -622,14 +649,14 @@ class Loader:
     # Returns:
     #    (ScalarNode): The overridding node from this project's junction, or None
     #
-    def _search_for_local_override(self, override_path):
+    def _search_for_local_override(self, override_path: str) -> Optional[ScalarNode]:
         junction = self.project.junction
         if junction is None:
             return None
 
         # Try the override without any link substitutions first
-        with suppress(KeyError):
-            return junction.overrides[override_path]
+        if (override_node := junction.overrides.get(override_path)) is not None:
+            return override_node
 
         #
         # If we did not get an exact match here, we might still have
@@ -663,6 +690,7 @@ class Loader:
         overriding_loaders = []
         while loader._parent:
             junction = loader.project.junction
+            assert junction, "loader with parent must have a junction element"
             override_node = loader._search_for_local_override(override_path)
             if override_node:
                 overriding_loaders.append((loader._parent, override_node))
@@ -764,7 +792,7 @@ class Loader:
     #
     # Returns: A Loader or None if specified junction does not exist
     #
-    def _get_loader(self, filename, provenance_node, *, load_subprojects=True):
+    def _get_loader(self, filename: str, provenance_node: Node, *, load_subprojects=True) -> Optional["Loader"]:
         loader = None
 
         # return previously determined result
@@ -841,6 +869,10 @@ class Loader:
 
         element = Element._new_from_load_element(load_element)
 
+        from ..plugins.elements.junction import JunctionElement
+
+        element = cast(JunctionElement, element)
+
         # Handle the case where a subproject has no ref
         #
         if not element._has_all_sources_resolved():
@@ -854,6 +886,7 @@ class Loader:
         # Handle the case where a subproject needs to be fetched
         #
         element._query_source_cache()
+        assert self.load_context.fetch_subprojects, "fetch subprojects should be available in load_context"
         if element._should_fetch():
             self.load_context.fetch_subprojects([element])
 
@@ -875,9 +908,10 @@ class Loader:
             # we haven't yet for this element),
             # element._get_cache_key() can fail if used with the
             # default _KeyStrength.STRONG.
-            basedir = os.path.join(
-                self.project.directory, ".bst", "staged-junctions", filename, element._get_cache_key(_KeyStrength.WEAK)
-            )
+            assert self.project.directory, "The loaders project must have a project directory"
+            key = element._get_cache_key(_KeyStrength.WEAK)
+            assert key, "We expect a weak key is always available"
+            basedir = os.path.join(self.project.directory, ".bst", "staged-junctions", filename, key)
             if not os.path.exists(basedir):
                 os.makedirs(basedir, exist_ok=True)
                 element._stage_sources_at(basedir)
@@ -909,6 +943,7 @@ class Loader:
             raise
 
         loader = project.loader
+        assert loader, "There must be a project loader by this point"
         self._loaders[filename] = loader
 
         # Now we've loaded a junction and it's project, we need to try to shallow
@@ -1014,7 +1049,9 @@ class Loader:
     #            - (str): name of the element
     #            - (Loader): loader for sub-project
     #
-    def _parse_name(self, name, provenance_node, *, load_subprojects=True):
+    def _parse_name(
+        self, name, provenance_node, *, load_subprojects=True
+    ) -> tuple[Optional[str], str, "Loader | None"]:
         # We allow to split only once since deep junctions names are forbidden.
         # Users who want to refer to elements in sub-sub-projects are required
         # to create junctions on the top level project.
@@ -1087,5 +1124,4 @@ class Loader:
             if loader is not None:
                 loader._clean_caches()
 
-        self._meta_elements = {}
         self._elements = {}

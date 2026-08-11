@@ -14,9 +14,17 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+
+from typing import Callable, Optional, TYPE_CHECKING
+
+
 from .._exceptions import LoadError
 from ..exceptions import LoadErrorReason
 from ..types import _ProjectInformation
+
+if TYPE_CHECKING:
+    from .._context import Context
+    from .._loader.loader import Loader
 
 
 # ProjectLoaders()
@@ -24,13 +32,13 @@ from ..types import _ProjectInformation
 # An object representing all of the loaders for a given project.
 #
 class ProjectLoaders:
-    def __init__(self, project_name):
+    def __init__(self, project_name: str):
 
         # The project name
         self._name = project_name
 
         # A list of all loaded loaders for this project
-        self._collect = []
+        self._collect: list["Loader"] = []
 
     # register_loader()
     #
@@ -39,7 +47,7 @@ class ProjectLoaders:
     # Args:
     #    loader (Loader): The loader to register
     #
-    def register_loader(self, loader):
+    def register_loader(self, loader: "Loader"):
         assert loader.project.name == self._name
 
         self._collect.append(loader)
@@ -101,9 +109,9 @@ class ProjectLoaders:
     #    (list): A list of Loader objects who's project has marked
     #            this junction as internal
     #
-    def _search_project_relationships(self, loader):
-        duplicates = []
-        internal = []
+    def _search_project_relationships(self, loader: "Loader"):
+        duplicates: list[Loader] = []
+        internal: list[Loader] = []
         for parent in loader.ancestors():
             if parent.project.junction_is_duplicated(self._name, loader):
                 duplicates.append(parent)
@@ -179,16 +187,16 @@ class ProjectLoaders:
 #    context (Context): The invocation context
 #
 class LoadContext:
-    def __init__(self, context):
+    def __init__(self, context: "Context"):
 
         # Keep track of global context required throughout the recursive load
         self.context = context
         self.rewritable = False
-        self.fetch_subprojects = None
+        self.fetch_subprojects: Optional[Callable] = None
         self.task = None
 
         # A table of all Loaders, indexed by project name
-        self._loaders = {}
+        self._loaders: dict[str, ProjectLoaders] = {}
 
     # set_rewritable()
     #
@@ -257,7 +265,7 @@ class LoadContext:
 
     # loaded_projects()
     #
-    # A generator which yeilds all of the loaded projects
+    # A generator which yields all of the loaded projects
     #
     # Yields:
     #    (_ProjectInformation): A descriptive project information object

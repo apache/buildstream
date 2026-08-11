@@ -13,15 +13,15 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
-from typing import TYPE_CHECKING, cast, Optional, Iterator, Dict, List, Sequence
+
+from typing import TYPE_CHECKING, cast, Optional, Iterator, Dict, List, Sequence, Iterable
 
 from .types import _Scope, OverlapAction
 from .utils import FileListResult
 from ._pluginproxy import PluginProxy
+from .node import MappingNode, ScalarNode, SequenceNode
 
 if TYPE_CHECKING:
-    from typing import Any
-    from .node import MappingNode, ScalarNode, SequenceNode
     from .sandbox import Sandbox
     from .source import Source
     from .element import Element  # pylint: disable=cyclic-import
@@ -84,7 +84,7 @@ class ElementProxy(PluginProxy):
 
     def compute_manifest(
         self, *, include: Optional[List[str]] = None, exclude: Optional[List[str]] = None, orphans: bool = True
-    ) -> str:
+    ) -> Iterable[str]:
         return cast("Element", self._plugin).compute_manifest(include=include, exclude=exclude, orphans=orphans)
 
     def get_artifact_name(self, key: Optional[str] = None) -> str:
@@ -137,7 +137,7 @@ class ElementProxy(PluginProxy):
     def integrate(self, sandbox: "Sandbox") -> None:
         cast("Element", self._plugin).integrate(sandbox)
 
-    def get_public_data(self, domain: str) -> "MappingNode[Any]":
+    def get_public_data(self, domain: str) -> MappingNode | None:
         return cast("Element", self._plugin).get_public_data(domain)
 
     def get_environment(self) -> Dict[str, str]:

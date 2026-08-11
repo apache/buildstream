@@ -22,7 +22,7 @@ class CacheKeyTestError(Exception):
     pass
 
 
-def check_cache_key_stability(project_path: os.PathLike, cli: Cli) -> None:
+def check_cache_key_stability(project_path: str, cli: Cli) -> None:
     """
     Check that the cache key of various elements has not changed.
 

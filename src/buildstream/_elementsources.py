@@ -11,15 +11,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+
 import os
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING, Iterator, Optional
 
 from . import _cachekey
 from ._exceptions import SkipJob
 from ._context import Context
 from ._protos.buildstream.v2 import source_pb2
 from .plugin import Plugin
+from ._sourcecache import SourceCache
+from ._elementsourcescache import ElementSourcesCache
 
 from .storage._casbaseddirectory import CasBasedDirectory
 
@@ -37,16 +40,16 @@ if TYPE_CHECKING:
 class ElementSources:
     def __init__(self, context: Context, project: "Project", plugin: Plugin):
 
-        self._context = context
-        self._project = project
-        self._plugin = plugin
-        self._sources = []  # type: List[Source]
-        self._sourcecache = context.sourcecache  # Source cache
-        self._elementsourcescache = context.elementsourcescache  # Cache of staged element sources
+        self._context: Context = context
+        self._project: Project = project
+        self._plugin: Plugin = plugin
+        self._sources: list[Source] = []
+        self._sourcecache: SourceCache = context.sourcecache  # Source cache
+        self._elementsourcescache: ElementSourcesCache = context.elementsourcescache  # Cache of staged element sources
         self._is_resolved = False  # Whether the source is fully resolved or not
-        self._cached = None  # If the sources are known to be successfully cached in CAS
-        self._cache_key = None  # Our cached cache key
-        self._proto = None  # The cached Source proto
+        self._cached: Optional[bool] = None  # If the sources are known to be successfully cached in CAS
+        self._cache_key: Optional[str] = None  # Our cached cache key
+        self._proto: Optional[source_pb2.Source] = None  # The cached Source proto
 
     # get_project():
     #
@@ -138,7 +141,8 @@ class ElementSources:
     #
     def get_files(self):
         # Assert sources are cached
-        assert self.cached()
+        assert self.cached(), "Must be cached to get files"
+        assert self._proto, "Must have proto"
 
         cas = self._context.get_cascache()
         return CasBasedDirectory(cas, digest=self._proto.files)
@@ -288,6 +292,8 @@ class ElementSources:
     def get_brief_display_key(self):
         context = self._context
         key = self._cache_key
+        assert key, "Must have key for this"
+        assert context.log_key_length, "Must have log key length for this"
 
         length = min(len(key), context.log_key_length)
         return key[:length]
