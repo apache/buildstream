@@ -211,6 +211,10 @@ class _KeyStrength(FastEnum):
     # cache keys of dependencies.
     WEAK = 2
 
+    # The strict cache key is a cache key that changes if any dependencies
+    # in Scope.BUILD has changed in any way.
+    STRICT = 3
+
 
 # _DisplayKey():
 #

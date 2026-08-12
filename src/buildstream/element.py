@@ -90,7 +90,8 @@ from typing import (
     Union,
     TextIO,
     Generator,
-    Any, overload, Literal,
+    Any,
+    TypeAlias,
 )
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
@@ -1053,7 +1054,16 @@ class Element(Plugin):
     #                              yet produced artifacts, or if forbidden overlaps
     #                              occur.
     #
-    def _stage_dependency_artifacts(self, sandbox:Sandbox, scope:_Scope, *, path: Optional[str]=None, include: Optional[list[str]]=None, exclude: Optional[list[str]]=None, orphans:bool=True):
+    def _stage_dependency_artifacts(
+        self,
+        sandbox: Sandbox,
+        scope: _Scope,
+        *,
+        path: Optional[str] = None,
+        include: Optional[list[str]] = None,
+        exclude: Optional[list[str]] = None,
+        orphans: bool = True,
+    ):
         with self._overlap_collectors[sandbox].session(OverlapAction.WARNING, path):
             for dep in self._dependencies(scope):
                 dep._stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans, owner=self)
@@ -1314,6 +1324,8 @@ class Element(Plugin):
     def _get_cache_key(self, strength=_KeyStrength.STRONG) -> str | None:
         if strength == _KeyStrength.STRONG:
             return self.__cache_key
+        elif strength == _KeyStrength.STRICT:
+            return self.__strict_cache_key
         else:
             return self.__weak_cache_key
 
@@ -1657,7 +1669,7 @@ class Element(Plugin):
     # Args:
     #     successful (bool): Whether the build was successful
     #
-    def _assemble_done(self, successful:bool):
+    def _assemble_done(self, successful: bool):
         assert self.__assemble_scheduled, "Assembly should be scheduled before calling this method on element"
         assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
@@ -2336,8 +2348,7 @@ class Element(Plugin):
     #
     #
     # Args:
-    #    dependencies (List[List[str]]): list of dependencies with project name,
-    #                                    element name and optional cache key
+    #    key_strength (_KeyStrength): The stength of the key to calculate
     #    weak_cache_key (Optional[str]): the weak cache key, required for calculating the
     #                                    strict and strong cache keys
     #
@@ -2346,13 +2357,33 @@ class Element(Plugin):
     #
     # None is returned if information for the cache key is missing.
     #
-    def _calculate_cache_key(self, dependencies: list[tuple[str,str,str|None] | tuple[str,str]] , weak_cache_key: Optional[str] = None) -> str | None:
+    def _calculate_cache_key(
+        self, key_strength: _KeyStrength = _KeyStrength.STRONG, weak_cache_key: Optional[str] = None, scope: _Scope = _Scope.BUILD
+    ) -> str | None:
         assert self.__sandbox_config, "Element should have a sandbox config to calculate cache key"
         assert self.__public, "Element should have public data to calculate cache key"
 
-        # No cache keys for dependencies which have no cache keys
-        if any(not all(dep) for dep in dependencies):
-            return None
+        # Strict or Strong Dependency must have: Project Name, element name and cache key
+        StrictOrStrongDep: TypeAlias = tuple[str, str, str]
+        # Weak Dependency must have: Project Name, element name
+        WeakDep: TypeAlias = tuple[str, str]
+
+        dependencies: list[StrictOrStrongDep | WeakDep] = []
+        strict_or_strong: bool = key_strength in [_KeyStrength.STRONG, _KeyStrength.STRICT] or self.BST_STRICT_REBUILD
+        for dep_element in self._dependencies(scope):
+            # We need a key for the dependency if we are calculating a strong or strict key
+            # or we are calculating a weak key and it is a strict rebuild dependency.
+            if strict_or_strong or dep_element in self.__strict_dependencies:
+                dep_key = dep_element._get_cache_key(key_strength)
+                if dep_key is None:
+                    # Abort calculating a key for this element as a dependency doesn't have a required key of correct strength
+                    return None
+                dependencies.append((dep_element.project_name, dep_element.name, dep_key))
+            else:
+                # This case should only be triggered where key_strength is _KeyStrength.WEAK
+                # and it is not a strict build dependency
+                # so we don't need a key for the dependency
+                dependencies.append((dep_element.project_name, dep_element.name))
 
         # Generate dict that is used as base for all cache keys
         if self.__cache_key_dict is None:
@@ -2750,9 +2781,14 @@ class Element(Plugin):
     def __get_dependency_artifact_names(self) -> list[str]:
         refs = []
         for dep in self._dependencies(_Scope.BUILD):
-            key =  dep._get_cache_key()
+            key = dep._get_cache_key()
             assert key, f"Must have cache key for {_get_normal_name(dep.name)}"
-            refs.append(os.path.join(dep.project_name, _get_normal_name(dep.name), ))
+            refs.append(
+                os.path.join(
+                    dep.project_name,
+                    _get_normal_name(dep.name),
+                )
+            )
         return refs
 
     # __get_last_build_artifact()
@@ -3421,30 +3457,12 @@ class Element(Plugin):
         # so let's ensure we only ever calculate the weak key once, even though we need
         # to resolve it before we can resolve the strict key.
         if self.__weak_cache_key is None:
-            # Weak cache key includes names of direct build dependencies
-            # so as to only trigger rebuilds when the shape of the
-            # dependencies change.
-            #
-            # Some conditions cause dependencies to be strict, such
-            # that this element will be rebuilt anyway if the dependency
-            # changes even in non strict mode, for these cases we just
-            # encode the dependency's weak cache key instead of it's name.
-            #
-            dependencies: list[tuple[str, str, str | None] | tuple[str, str]]  = [
-                (
-                    (e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK))
-                    if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
-                    else (e.project_name, e.name)
-                )
-                for e in self._dependencies(_Scope.BUILD)
-            ]
-            self.__weak_cache_key = self._calculate_cache_key(dependencies)
+            self.__weak_cache_key = self._calculate_cache_key(_KeyStrength.WEAK)
 
         context = self._get_context()
 
         # Calculate the strict cache key
-        dependencies = [(e.project_name, e.name, e.__strict_cache_key) for e in self._dependencies(_Scope.BUILD)]
-        self.__strict_cache_key = self._calculate_cache_key(dependencies, self.__weak_cache_key)
+        self.__strict_cache_key = self._calculate_cache_key(_KeyStrength.STRICT, self.__weak_cache_key)
 
         if self.__strict_cache_key is None:
             # Cache keys cannot be calculated yet as a build dependency doesn't
@@ -3490,9 +3508,7 @@ class Element(Plugin):
             elif self.__assemble_scheduled or self.__assemble_done:
                 # Artifact will or has been built, not downloaded
                 assert self.__weak_cache_key is not None
-
-                dependencies: list[tuple[str, str, str | None] | tuple[str,str]] = [(e.project_name, e.name, e._get_cache_key()) for e in self._dependencies(_Scope.BUILD)]
-                self.__cache_key = self._calculate_cache_key(dependencies, self.__weak_cache_key)
+                self.__cache_key = self._calculate_cache_key(_KeyStrength.STRONG, self.__weak_cache_key)
 
             if self.__cache_key is None:
                 # Strong cache key could not be calculated yet

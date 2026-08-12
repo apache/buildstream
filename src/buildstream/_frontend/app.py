@@ -19,7 +19,6 @@ from typing import Optional, Any
 
 import os
 import sys
-import threading
 import traceback
 import datetime
 from textwrap import TextWrapper
