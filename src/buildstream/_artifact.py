@@ -220,7 +220,6 @@ class Artifact:
 
         context = self._context
         element = self._element
-        size = 0
 
         filesvdir = None
         buildtreevdir = None
@@ -247,7 +246,6 @@ class Artifact:
             filesvdir = CasBasedDirectory(cas_cache=self._cas)
             filesvdir._import_files_internal(collectvdir, properties=properties, collect_result=False)
             artifact.files.CopyFrom(filesvdir._get_digest())
-            size += filesvdir._get_size()
 
         with tempfile.TemporaryDirectory() as tmpdir:
             files_to_capture = []
