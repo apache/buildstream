@@ -90,7 +90,7 @@ from typing import (
     Union,
     TextIO,
     Generator,
-    Any,
+    Any, overload, Literal,
 )
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
@@ -169,7 +169,7 @@ class DependencyConfiguration:
     :func:`Element.configure_dependencies() <buildstream.element.Element.configure_dependencies>`
     """
 
-    def __init__(self, element: "Element", path: str, config: Optional["MappingNode"]):
+    def __init__(self, element: Element, path: str, config: Optional[MappingNode]):
 
         self.element: Element = element
         """The dependency Element"""
@@ -235,9 +235,9 @@ class Element(Plugin):
 
     def __init__(
         self,
-        context: "Context",
-        project: "Project",
-        load_element: "LoadElement",
+        context: Context,
+        project: Project,
+        load_element: LoadElement,
         plugin_conf: Optional[str],
         *,
         artifact_key: Optional[str] = None,
@@ -386,7 +386,7 @@ class Element(Plugin):
         #
         assert False, "Code should not be reached"
 
-    def configure_sandbox(self, sandbox: "Sandbox") -> None:
+    def configure_sandbox(self, sandbox: Sandbox) -> None:
         """Configures the the sandbox for execution
 
         Args:
@@ -400,7 +400,7 @@ class Element(Plugin):
         """
         raise ImplError("element plugin '{kind}' does not implement configure_sandbox()".format(kind=self.get_kind()))
 
-    def stage(self, sandbox: "Sandbox") -> None:
+    def stage(self, sandbox: Sandbox) -> None:
         """Stage inputs into the sandbox directories
 
         Args:
@@ -416,7 +416,7 @@ class Element(Plugin):
         """
         raise ImplError("element plugin '{kind}' does not implement stage()".format(kind=self.get_kind()))
 
-    def assemble(self, sandbox: "Sandbox") -> str:
+    def assemble(self, sandbox: Sandbox) -> str:
         """Assemble the output artifact
 
         Args:
@@ -457,7 +457,7 @@ class Element(Plugin):
     #############################################################
     #                       Public Methods                      #
     #############################################################
-    def sources(self) -> Iterator["Source"]:
+    def sources(self) -> Iterator[Source]:
         """A generator function to enumerate the element sources
 
         Yields:
@@ -466,8 +466,8 @@ class Element(Plugin):
         return self.__sources.sources()
 
     def dependencies(
-        self, selection: Optional[Sequence["Element"]] = None, *, recurse: bool = True
-    ) -> Iterator["Element"]:
+        self, selection: Optional[Sequence[Element]] = None, *, recurse: bool = True
+    ) -> Iterator[Element]:
         """A generator function which yields the build dependencies of the given element.
 
         This generator gives the Element access to all of the dependencies which it is has
@@ -511,9 +511,9 @@ class Element(Plugin):
             # methods.
             #
             for dep in element._dependencies(scope, recurse=recurse, visited=visited):
-                yield cast("Element", dep.__get_proxy(self))
+                yield cast(Element, dep.__get_proxy(self))
 
-    def search(self, name: str) -> Optional["Element"]:
+    def search(self, name: str) -> Optional[Element]:
         """Search for a dependency by name
 
         Args:
@@ -526,7 +526,7 @@ class Element(Plugin):
         if search is self:
             return self
         elif search:
-            return cast("Element", search.__get_proxy(self))
+            return cast(Element, search.__get_proxy(self))
 
         return None
 
@@ -558,7 +558,7 @@ class Element(Plugin):
         )
         return node.as_str()
 
-    def node_subst_sequence_vars(self, node: "SequenceNode[ScalarNode]") -> List[str]:
+    def node_subst_sequence_vars(self, node: SequenceNode[ScalarNode]) -> List[str]:
         """Substitute any variables in the given sequence
 
         **Warning**: The method is deprecated and will get removed in the next version
@@ -626,7 +626,7 @@ class Element(Plugin):
 
     def stage_artifact(
         self,
-        sandbox: "Sandbox",
+        sandbox: Sandbox,
         *,
         path: Optional[str] = None,
         action: OverlapAction = OverlapAction.WARNING,
@@ -685,8 +685,8 @@ class Element(Plugin):
 
     def stage_dependency_artifacts(
         self,
-        sandbox: "Sandbox",
-        selection: Optional[Sequence["Element"]] = None,
+        sandbox: Sandbox,
+        selection: Optional[Sequence[Element]] = None,
         *,
         path: Optional[str] = None,
         action: OverlapAction = OverlapAction.WARNING,
@@ -725,7 +725,7 @@ class Element(Plugin):
             for dep in self.dependencies(selection):
                 dep._stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans, owner=self)
 
-    def integrate(self, sandbox: "Sandbox") -> None:
+    def integrate(self, sandbox: Sandbox) -> None:
         """Integrate currently staged filesystem against this artifact.
 
         Args:
@@ -745,7 +745,7 @@ class Element(Plugin):
                 for command in bstdata.get_str_list("integration-commands", []):
                     sandbox.run(["sh", "-e", "-c", command], env=environment, cwd="/", label=command)
 
-    def stage_sources(self, sandbox: "Sandbox", directory: str) -> None:
+    def stage_sources(self, sandbox: Sandbox, directory: str) -> None:
         """Stage this element's sources to a directory in the sandbox
 
         Args:
@@ -754,7 +754,7 @@ class Element(Plugin):
         """
         self._stage_sources_in_sandbox(sandbox, directory)
 
-    def get_public_data(self, domain: str) -> "MappingNode[Node]" | None:
+    def get_public_data(self, domain: str) -> MappingNode[Node] | None:
         """Fetch public data on this element
 
         Args:
@@ -779,7 +779,7 @@ class Element(Plugin):
 
         return data
 
-    def set_public_data(self, domain: str, data: "MappingNode[Node]") -> None:
+    def set_public_data(self, domain: str, data: MappingNode[Node]) -> None:
         """Set public data on this element
 
         Args:
@@ -823,7 +823,7 @@ class Element(Plugin):
         assert self.__variables, "{}: has no Variables object".format(self.name)
         return self.__variables.get(varname)
 
-    def run_cleanup_commands(self, sandbox: "Sandbox") -> None:
+    def run_cleanup_commands(self, sandbox: Sandbox) -> None:
         """Run commands to cleanup the build directory.
 
         Args:
@@ -854,7 +854,7 @@ class Element(Plugin):
         sandbox._clean_directory(build_root)
 
     @contextmanager
-    def subsandbox(self, sandbox: "Sandbox") -> Iterator["Sandbox"]:
+    def subsandbox(self, sandbox: Sandbox) -> Iterator[Sandbox]:
         """A context manager for a subsandbox.
 
         Args:
@@ -889,13 +889,13 @@ class Element(Plugin):
     # Yields:
     #    (Element): The dependencies in `scope`, in deterministic staging order
     #
-    def _dependencies(self, scope: _Scope, *, recurse=True, visited=None):
+    def _dependencies(self, scope: _Scope, *, recurse=True, visited=None) -> Generator[Element]:
 
         # The format of visited is (BitMap(), BitMap()), with the first BitMap
         # containing element that have been visited for the `_Scope.BUILD` case
         # and the second one relating to the `_Scope.RUN` case.
         if not recurse:
-            result: Set["Element"] = set()
+            result: Set[Element] = set()
             if scope in (_Scope.BUILD, _Scope.ALL):
                 for dep in self.__build_dependencies:
                     if dep not in result:
@@ -993,14 +993,14 @@ class Element(Plugin):
     #
     def _stage_artifact(
         self,
-        sandbox: "Sandbox",
+        sandbox: Sandbox,
         *,
         path: Optional[str] = None,
         action: OverlapAction = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         orphans: bool = True,
-        owner: Optional["Element"] = None,
+        owner: Optional[Element] = None,
     ) -> FileListResult:
 
         owner = owner or self
@@ -1053,7 +1053,7 @@ class Element(Plugin):
     #                              yet produced artifacts, or if forbidden overlaps
     #                              occur.
     #
-    def _stage_dependency_artifacts(self, sandbox, scope, *, path=None, include=None, exclude=None, orphans=True):
+    def _stage_dependency_artifacts(self, sandbox:Sandbox, scope:_Scope, *, path: Optional[str]=None, include: Optional[list[str]]=None, exclude: Optional[list[str]]=None, orphans:bool=True):
         with self._overlap_collectors[sandbox].session(OverlapAction.WARNING, path):
             for dep in self._dependencies(scope):
                 dep._stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans, owner=self)
@@ -1657,7 +1657,7 @@ class Element(Plugin):
     # Args:
     #     successful (bool): Whether the build was successful
     #
-    def _assemble_done(self, successful):
+    def _assemble_done(self, successful:bool):
         assert self.__assemble_scheduled, "Assembly should be scheduled before calling this method on element"
         assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
@@ -1769,7 +1769,7 @@ class Element(Plugin):
                 else:
                     self._cache_artifact(sandbox, collect)
 
-    def _cache_artifact(self, sandbox: Sandbox, collect):
+    def _cache_artifact(self, sandbox: Sandbox, collect: str | None):
 
         context = self._get_context()
         assert self.__build_result, "Build result should be present at this stage"
@@ -2334,6 +2334,7 @@ class Element(Plugin):
     #
     # Calculates the cache key
     #
+    #
     # Args:
     #    dependencies (List[List[str]]): list of dependencies with project name,
     #                                    element name and optional cache key
@@ -2345,7 +2346,7 @@ class Element(Plugin):
     #
     # None is returned if information for the cache key is missing.
     #
-    def _calculate_cache_key(self, dependencies: list[list[str]], weak_cache_key: Optional[str] = None) -> str | None:
+    def _calculate_cache_key(self, dependencies: list[tuple[str,str,str|None] | tuple[str,str]] , weak_cache_key: Optional[str] = None) -> str | None:
         assert self.__sandbox_config, "Element should have a sandbox config to calculate cache key"
         assert self.__public, "Element should have public data to calculate cache key"
 
@@ -2747,10 +2748,12 @@ class Element(Plugin):
     #    (list [str]): A list of refs of all dependencies in staging order.
     #
     def __get_dependency_artifact_names(self) -> list[str]:
-        return [
-            os.path.join(dep.project_name, _get_normal_name(dep.name), dep._get_cache_key())
-            for dep in self._dependencies(_Scope.BUILD)
-        ]
+        refs = []
+        for dep in self._dependencies(_Scope.BUILD):
+            key =  dep._get_cache_key()
+            assert key, f"Must have cache key for {_get_normal_name(dep.name)}"
+            refs.append(os.path.join(dep.project_name, _get_normal_name(dep.name), ))
+        return refs
 
     # __get_last_build_artifact()
     #
@@ -2979,7 +2982,7 @@ class Element(Plugin):
     #
     # Normal element initialization procedure.
     #
-    def __initialize_from_yaml(self, load_element: "LoadElement", plugin_conf: Optional[str]) -> None:
+    def __initialize_from_yaml(self, load_element: LoadElement, plugin_conf: Optional[str]) -> None:
 
         context = self._get_context()
         project = self._get_project()
@@ -3427,11 +3430,11 @@ class Element(Plugin):
             # changes even in non strict mode, for these cases we just
             # encode the dependency's weak cache key instead of it's name.
             #
-            dependencies = [
+            dependencies: list[tuple[str, str, str | None] | tuple[str, str]]  = [
                 (
-                    [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
+                    (e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK))
                     if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
-                    else [e.project_name, e.name]
+                    else (e.project_name, e.name)
                 )
                 for e in self._dependencies(_Scope.BUILD)
             ]
@@ -3440,7 +3443,7 @@ class Element(Plugin):
         context = self._get_context()
 
         # Calculate the strict cache key
-        dependencies = [[e.project_name, e.name, e.__strict_cache_key] for e in self._dependencies(_Scope.BUILD)]
+        dependencies = [(e.project_name, e.name, e.__strict_cache_key) for e in self._dependencies(_Scope.BUILD)]
         self.__strict_cache_key = self._calculate_cache_key(dependencies, self.__weak_cache_key)
 
         if self.__strict_cache_key is None:
@@ -3488,7 +3491,7 @@ class Element(Plugin):
                 # Artifact will or has been built, not downloaded
                 assert self.__weak_cache_key is not None
 
-                dependencies = [[e.project_name, e.name, e._get_cache_key()] for e in self._dependencies(_Scope.BUILD)]
+                dependencies: list[tuple[str, str, str | None] | tuple[str,str]] = [(e.project_name, e.name, e._get_cache_key()) for e in self._dependencies(_Scope.BUILD)]
                 self.__cache_key = self._calculate_cache_key(dependencies, self.__weak_cache_key)
 
             if self.__cache_key is None:
