@@ -864,7 +864,7 @@ class Element(Plugin):
     # Yields:
     #    (Element): The dependencies in `scope`, in deterministic staging order
     #
-    def _dependencies(self, scope: _Scope, *, recurse=True, visited=None):
+    def _dependencies(self, scope: _Scope, *, recurse=True, visited=None) -> Iterator["Element"]:
 
         # The format of visited is (BitMap(), BitMap()), with the first BitMap
         # containing element that have been visited for the `_Scope.BUILD` case
@@ -883,8 +883,8 @@ class Element(Plugin):
                         yield dep
         else:
 
-            def visit(element, scope, visited):
-                if scope == _Scope.ALL:
+            def visit(element: Element, scope: _Scope, visited: tuple[BitMap, BitMap]) -> Iterator[Element]:
+                if scope == _Scope.ALL:  # The element, its runtime and build dependencies
                     visited[0].add(element._unique_id)
                     visited[1].add(element._unique_id)
 
@@ -893,14 +893,14 @@ class Element(Plugin):
                             yield from visit(dep, _Scope.ALL, visited)
 
                     yield element
-                elif scope == _Scope.BUILD:
+                elif scope == _Scope.BUILD:  # The element's build dependencies only
                     visited[0].add(element._unique_id)
 
                     for dep in element.__build_dependencies:
                         if dep._unique_id not in visited[1]:
                             yield from visit(dep, _Scope.RUN, visited)
-
-                elif scope == _Scope.RUN:
+                    # _Scope.BUILD intentionally excludes yielding the element itself.
+                elif scope == _Scope.RUN:  # The element and its runtime dependencies
                     visited[1].add(element._unique_id)
 
                     for dep in element.__runtime_dependencies:
@@ -908,7 +908,7 @@ class Element(Plugin):
                             yield from visit(dep, _Scope.RUN, visited)
 
                     yield element
-                else:
+                else:  # _Scope.NONE: Only the element
                     yield element
 
             if visited is None:
