@@ -2782,11 +2782,13 @@ class Element(Plugin):
         refs = []
         for dep in self._dependencies(_Scope.BUILD):
             key = dep._get_cache_key()
-            assert key, f"Must have cache key for {_get_normal_name(dep.name)}"
+            if key is None:
+               key = ""
             refs.append(
                 os.path.join(
                     dep.project_name,
                     _get_normal_name(dep.name),
+                    key,
                 )
             )
         return refs
