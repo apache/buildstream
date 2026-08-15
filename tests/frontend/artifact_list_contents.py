@@ -21,10 +21,19 @@ import pytest
 from buildstream._testing import cli  # pylint: disable=unused-import
 from buildstream.exceptions import ErrorDomain
 
+from tests.testutils import generate_junction
+
 # Project directory
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "artifact_list_contents",
+)
+
+# Shared project directory, used for cross junction tests since it already
+# has a subproject set up
+CROSS_JUNCTION_DATA_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "project",
 )
 
 
@@ -158,3 +167,32 @@ def test_artifact_list_exact_contents_glob(cli, datafiles):
 
     for artifact in expected_artifacts:
         assert artifact in result.output
+
+
+@pytest.mark.datafiles(CROSS_JUNCTION_DATA_DIR)
+def test_artifact_list_contents_cross_junction(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    subproject_path = os.path.join(project, "files", "sub-project")
+    junction_path = os.path.join(project, "elements", "junction.bst")
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    generate_junction(tmpdir, subproject_path, junction_path)
+
+    # Ensure we have artifacts to read
+    result = cli.run(project=project, args=["build", "import-bin.bst", "junction.bst:import-etc.bst"])
+    result.assert_success()
+
+    # List the contents of the cross junction element, alongside a regular
+    # top-level element which happens to share a basename with it.
+    result = cli.run(
+        project=project, args=["artifact", "list-contents", "import-bin.bst", "junction.bst:import-etc.bst"]
+    )
+    result.assert_success()
+
+    # The full element name, including the owning junction prefix, must be
+    # used as the header for the cross junction element's contents -- using
+    # only the bare element name would make it indistinguishable from an
+    # element of the same name in the top level project or another junction.
+    assert "import-bin.bst:\n" in result.output
+    assert "junction.bst:import-etc.bst:\n" in result.output
+    assert "etc/animal.conf" in result.output
