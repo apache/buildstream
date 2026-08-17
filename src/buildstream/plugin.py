@@ -135,7 +135,7 @@ from weakref import WeakValueDictionary
 from . import utils, _signals
 from ._exceptions import PluginError, ImplError
 from ._message import Message, MessageType
-from .node import Node, MappingNode
+from .node import Node, MappingNode, ProvenanceInformation
 from .types import CoreWarnings, SourceRef
 
 if TYPE_CHECKING:
@@ -322,7 +322,7 @@ class Plugin:
         # reference to the Project, it keeps the plugin factory alive. If the
         # factory were to be GC'd then we would see undefined behaviour. Make
         # sure to test plugin pickling if this reference is to be removed.
-        self.__project = project  # The Project object
+        self.__project: Project = project  # The Project object
 
         self.__provenance_node = provenance_node  # The originating YAML node
         self.__type_tag = type_tag  # The type of plugin (element or source)
@@ -838,21 +838,21 @@ class Plugin:
     #
     # Fetches the invocation context
     #
-    def _get_context(self):
+    def _get_context(self) -> "Context":
         return self.__context
 
     # _get_project()
     #
     # Fetches the project object associated with this plugin
     #
-    def _get_project(self):
+    def _get_project(self) -> "Project":
         return self.__project
 
     # _get_provenance():
     #
     # Fetch bst file, line and column of the entity
     #
-    def _get_provenance(self):
+    def _get_provenance(self) -> ProvenanceInformation:
         return self.__provenance_node.get_provenance()
 
     # Context manager for getting the open file handle to this

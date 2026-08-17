@@ -67,6 +67,19 @@ def assert_contains(directory, expected, strict=False):
 
 
 class IntegrationCache:
+    root: str
+    """
+    local path to the root of the cache
+    """
+    sources: str
+    """
+    local path to the sources directory of the cache
+    """
+    cachedir: str
+    """
+    path to the temporary directory containing the root of the cache
+    """
+
     def __init__(self, cache):
         self.root = os.path.abspath(cache)
         os.makedirs(cache, exist_ok=True)

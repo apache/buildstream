@@ -26,16 +26,23 @@ artifact composite interaction away from Element class
 
 import os
 import tempfile
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional, TYPE_CHECKING
 
+from ._cas.cascache import CASCache
+from .sandbox.sandbox import Sandbox
+from .storage.directory import Directory
 from ._protos.buildstream.v2.artifact_pb2 import Artifact as ArtifactProto
 from . import _yaml
 from . import utils
-from .node import Node
+from .node import Node, MappingNode
 from .types import _Scope
 from .storage._casbaseddirectory import CasBasedDirectory
 from .sandbox._config import SandboxConfig
 from ._variables import Variables
+
+if TYPE_CHECKING:
+    from .element import Element
+    from ._context import Context
 
 
 # An Artifact class to abstract artifact operations
@@ -52,22 +59,33 @@ class Artifact:
 
     version = 2
 
-    def __init__(self, element, context, *, strong_key=None, strict_key=None, weak_key=None):
-        self._element = element
-        self._context = context
-        self._cache_key = strong_key
-        self._strict_key = strict_key
-        self._weak_cache_key = weak_key
-        self._artifactdir = context.artifactdir
-        self._cas = context.get_cascache()
-        self._tmpdir = context.tmpdir
-        self._proto = None
+    def __init__(
+        self,
+        element: "Element",
+        context: "Context",
+        *,
+        strong_key: Optional[str] = None,
+        strict_key: Optional[str] = None,
+        weak_key: Optional[str] = None,
+    ):
+        self._element: "Element" = element
+        self._context: "Context" = context
+        self._cache_key: Optional[str] = strong_key
+        self._strict_key: Optional[str] = strict_key
+        self._weak_cache_key: Optional[str] = weak_key
+        self._artifactdir: Optional[str] = context.artifactdir
+        self._cas: CASCache = context.get_cascache()
+        self._tmpdir: Optional[str] = context.tmpdir
+        self._proto: Optional[ArtifactProto] = None
 
-        self._metadata_keys = None  # Strong, strict and weak key tuple extracted from the artifact
-        self._metadata_dependencies = None  # Dictionary of dependency strong keys from the artifact
-        self._metadata_workspaced = None  # Boolean of whether it's a workspaced artifact
-        self._metadata_workspaced_dependencies = None  # List of which dependencies are workspaced from the artifact
-        self._cached = None  # Boolean of whether the artifact is cached
+        self._metadata_keys: Optional[tuple[str, str, str]] = (
+            None  # Strong, strict and weak key tuple extracted from the artifact
+        )
+        self._metadata_workspaced: Optional[bool] = None  # Boolean of whether it's a workspaced artifact
+        self._metadata_workspaced_dependencies: Optional[list[str]] = (
+            None  # List of which dependencies are workspaced from the artifact
+        )
+        self._cached: Optional[bool] = None  # Boolean of whether the artifact is cached
 
     # strong_key():
     #
@@ -76,7 +94,8 @@ class Artifact:
     # or whether it was the strong key loaded from artifact metadata.
     #
     @property
-    def strong_key(self) -> str:
+    def strong_key(self) -> Optional[str]:
+        key: str | None
         if self.cached():
             key, _, _ = self.get_metadata_keys()
         else:
@@ -91,7 +110,8 @@ class Artifact:
     # or whether it was the strict key loaded from artifact metadata.
     #
     @property
-    def strict_key(self) -> str:
+    def strict_key(self) -> Optional[str]:
+        key: str | None
         if self.cached():
             _, key, _ = self.get_metadata_keys()
         else:
@@ -106,7 +126,8 @@ class Artifact:
     # or whether it was the weak key loaded from artifact metadata.
     #
     @property
-    def weak_key(self) -> str:
+    def weak_key(self) -> Optional[str]:
+        key: str | None
         if self.cached():
             _, _, key = self.get_metadata_keys()
         else:
@@ -121,7 +142,7 @@ class Artifact:
     # Returns:
     #    (Directory): The virtual directory object
     #
-    def get_files(self):
+    def get_files(self) -> Directory:
         files_digest = self._get_field_digest("files")
         return CasBasedDirectory(self._cas, digest=files_digest)
 
@@ -235,6 +256,9 @@ class Artifact:
         artifact.build_error_details = "" if not buildresult[2] else buildresult[2]
 
         # Store keys
+        assert self._cache_key, "Key should be ready by now"
+        assert self._strict_key, "Key should be ready by now"
+        assert self._weak_cache_key, "Key should be ready by now"
         artifact.strong_key = self._cache_key
         artifact.strict_key = self._strict_key
         artifact.weak_key = self._weak_cache_key
@@ -292,7 +316,7 @@ class Artifact:
             digests = self._cas.add_objects(paths=[entry[0] for entry in files_to_capture])
             # add_objects() should guarantee this.
             # `zip(..., strict=True)` could be used in Python 3.10+
-            assert len(files_to_capture) == len(digests)
+            assert len(files_to_capture) == len(digests), "files_to_capture and digests should be the same length"
             for entry, digest in zip(files_to_capture, digests):
                 entry[1].CopyFrom(digest)
 
@@ -336,6 +360,7 @@ class Artifact:
                 digest = artifact.buildsandbox.subsandbox_digests.add()
                 digest.CopyFrom(vdir._get_digest())
 
+        assert self._artifactdir, "An artifact dir is required at this point"
         os.makedirs(os.path.dirname(os.path.join(self._artifactdir, element.get_artifact_name())), exist_ok=True)
         keys = utils._deduplicate([self._cache_key, self._weak_cache_key])
         for key in keys:
@@ -370,7 +395,7 @@ class Artifact:
     # Returns:
     #     (bool): True if artifact was created with buildroot
     #
-    def buildroot_exists(self):
+    def buildroot_exists(self) -> bool:
 
         artifact = self._get_proto()
         return bool(str(artifact.buildroot))
@@ -386,7 +411,7 @@ class Artifact:
     #             missing expected buildtree. Note this only confirms
     #             if a buildtree is present, not its contents.
     #
-    def cached_buildtree(self):
+    def cached_buildtree(self) -> bool:
 
         buildtree_digest = self._get_field_digest("buildtree")
         if buildtree_digest:
@@ -430,7 +455,7 @@ class Artifact:
     # Returns:
     #    (dict): The artifacts cached public data
     #
-    def load_public_data(self):
+    def load_public_data(self) -> MappingNode:
 
         # Load the public data from the artifact
         artifact = self._get_proto()
@@ -546,7 +571,7 @@ class Artifact:
     # Returns:
     #    (bool): Whether the given artifact was workspaced
     #
-    def get_metadata_workspaced(self):
+    def get_metadata_workspaced(self) -> bool:
 
         if self._metadata_workspaced is not None:
             return self._metadata_workspaced
@@ -565,7 +590,7 @@ class Artifact:
     # Returns:
     #    (list): List of which dependencies are workspaced
     #
-    def get_metadata_workspaced_dependencies(self):
+    def get_metadata_workspaced_dependencies(self) -> list[str]:
 
         if self._metadata_workspaced_dependencies is not None:
             return self._metadata_workspaced_dependencies
@@ -645,7 +670,7 @@ class Artifact:
     #     (bool): Whether artifact is in local cache
     #
     def cached(self, *, buildtree=False):
-        assert self._cached is not None
+        assert self._cached is not None, "_cached should have been initialised before calling this method"
         ret = self._cached
         if buildtree:
             ret = ret and (self.cached_buildtree() or not self.buildtree_exists())
@@ -671,7 +696,7 @@ class Artifact:
     #
     def set_cached(self):
         self._proto = self._load_proto()
-        assert self._proto
+        assert self._proto, "We expect a value is returned by _load_proto()"
         self._cached = True
 
     # pull()
@@ -700,7 +725,7 @@ class Artifact:
 
         return True
 
-    def configure_sandbox(self, sandbox):
+    def configure_sandbox(self, sandbox: Sandbox):
         artifact = self._get_proto()
 
         if artifact.HasField("buildsandbox") and artifact.buildsandbox.environment:
@@ -722,13 +747,13 @@ class Artifact:
     #  load_proto()
     #
     # Returns:
-    #     (Artifact): Artifact proto
+    #     (ArtifactProto): Artifact proto
     #
-    def _load_proto(self):
+    def _load_proto(self) -> Optional["ArtifactProto"]:
         key = self.get_extract_key()
-
+        assert self._artifactdir, "Must have and artifact dir to load proto"
         proto_path = os.path.join(self._artifactdir, self._element.get_artifact_name(key=key))
-        artifact = ArtifactProto()
+        artifact: ArtifactProto = ArtifactProto()
         try:
             with open(proto_path, mode="r+b") as f:
                 artifact.ParseFromString(f.read())

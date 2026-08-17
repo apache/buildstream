@@ -360,7 +360,7 @@ def test_incremental_configure_commands_run_only_once(cli, datafiles):
 
     files = res.output.splitlines()
     assert "./prepared" in files
-    assert not "./prepared-again" in files
+    assert "./prepared-again" not in files
 
 
 # Test that rebuilding an already built workspaced element does

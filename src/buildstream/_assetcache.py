@@ -14,9 +14,10 @@
 #  Authors:
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 #
+
 import os
 import re
-from typing import List, Dict, Tuple, Iterable, Optional
+from typing import List, Dict, Tuple, Iterable, Optional, TYPE_CHECKING
 import grpc
 
 from . import utils
@@ -27,6 +28,9 @@ from ._remote import BaseRemote
 from ._protos.build.bazel.remote.asset.v1 import remote_asset_pb2
 from ._protos.build.buildgrid import local_cas_pb2
 from ._protos.google.rpc import code_pb2
+
+if TYPE_CHECKING:
+    from buildstream._context import Context
 
 
 class AssetRemote(BaseRemote):
@@ -61,6 +65,7 @@ class AssetRemote(BaseRemote):
             request.instance_name = self.instance_name
 
         try:
+            assert self.fetch_service, "Can't fetch blob without a fetch service"
             self.fetch_service.FetchBlob(request)
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.INVALID_ARGUMENT:
@@ -80,6 +85,7 @@ class AssetRemote(BaseRemote):
                 request.instance_name = self.instance_name
 
             try:
+                assert self.push_service, "Can't push blob without a push service"
                 self.push_service.PushBlob(request)
             except grpc.RpcError as e:
                 if e.code() == grpc.StatusCode.INVALID_ARGUMENT:
@@ -121,6 +127,7 @@ class AssetRemote(BaseRemote):
             request.qualifiers.extend(qualifiers)
 
         try:
+            assert self.fetch_service, "Can't fetch blob without a fetch service"
             response = self.fetch_service.FetchBlob(request)
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.NOT_FOUND:
@@ -162,6 +169,7 @@ class AssetRemote(BaseRemote):
             request.qualifiers.extend(qualifiers)
 
         try:
+            assert self.fetch_service, "Can't fetch directory without a fetch service"
             response = self.fetch_service.FetchDirectory(request)
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.NOT_FOUND:
@@ -208,6 +216,7 @@ class AssetRemote(BaseRemote):
             request.references_directories.extend(references_directories)
 
         try:
+            assert self.push_service, "Can't push blob without a push service"
             self.push_service.PushBlob(request)
         except grpc.RpcError as e:
             raise AssetCacheError("PushBlob failed with status {}: {}".format(e.code().name, e.details())) from e
@@ -245,6 +254,7 @@ class AssetRemote(BaseRemote):
             request.references_directories.extend(references_directories)
 
         try:
+            assert self.push_service, "Can't push directory without a push service"
             self.push_service.PushDirectory(request)
         except grpc.RpcError as e:
             raise AssetCacheError("PushDirectory failed with status {}: {}".format(e.code().name, e.details())) from e
@@ -285,7 +295,7 @@ class RemotePair:
 # Base Asset Cache for Caches to derive from
 #
 class AssetCache:
-    def __init__(self, context):
+    def __init__(self, context: "Context"):
         self.context = context
         self.cas: CASCache = context.get_cascache()
 
@@ -298,7 +308,7 @@ class AssetCache:
         self._has_fetch_remotes: bool = False
         self._has_push_remotes: bool = False
 
-        self._basedir = None
+        self._basedir: Optional[str] = None
 
     # setup_remotes():
     #
@@ -466,6 +476,7 @@ class AssetCache:
     #
     def remove_ref(self, ref):
         try:
+            assert self._basedir, "Need a base directory"
             utils._remove_path_with_parents(self._basedir, ref)
         except FileNotFoundError as e:
             raise AssetCacheError("Could not find ref '{}'".format(ref)) from e

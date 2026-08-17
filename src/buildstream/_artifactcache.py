@@ -14,14 +14,19 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+
 import os
+from typing import TYPE_CHECKING
 
 from ._assetcache import AssetCache
 from ._cas.casremote import BlobNotFound
-from ._exceptions import ArtifactError, AssetCacheError, CASError, CASRemoteError
+from ._exceptions import ArtifactError, AssetCacheError, CASError, CASRemoteError, BstError
 from ._protos.buildstream.v2 import artifact_pb2
-
 from . import utils
+
+if TYPE_CHECKING:
+    from . import Element
+    from ._context import Context
 
 REMOTE_ASSET_ARTIFACT_URN_TEMPLATE = "urn:fdc:buildstream.build:2020:artifact:{}"
 
@@ -32,11 +37,12 @@ REMOTE_ASSET_ARTIFACT_URN_TEMPLATE = "urn:fdc:buildstream.build:2020:artifact:{}
 #     context (Context): The BuildStream context
 #
 class ArtifactCache(AssetCache):
-    def __init__(self, context):
+    def __init__(self, context: "Context"):
         super().__init__(context)
 
         # create artifact directory
         self._basedir = context.artifactdir
+        assert self._basedir is not None, "Must have a base dir"
         os.makedirs(self._basedir, exist_ok=True)
 
     # preflight():
@@ -57,9 +63,9 @@ class ArtifactCache(AssetCache):
     #
     # Returns: True if the artifact is in the cache, False otherwise
     #
-    def contains(self, element, key):
+    def contains(self, element: "Element", key: str):
         ref = element.get_artifact_name(key)
-
+        assert self._basedir is not None, "Must have a base directory"
         return os.path.exists(os.path.join(self._basedir, ref))
 
     # list_artifacts():
@@ -151,7 +157,7 @@ class ArtifactCache(AssetCache):
     # Returns:
     #   (bool): True if pull was successful, False if artifact was not available
     #
-    def pull(self, element, key, *, pull_buildtrees=False):
+    def pull(self, element: "Element", key: str, *, pull_buildtrees: bool = False) -> bool:
         artifact_digest = None
         display_key = key[: self.context.log_key_length]
         project = element._get_project()
@@ -161,7 +167,7 @@ class ArtifactCache(AssetCache):
 
         index_remotes, storage_remotes = self.get_remotes(project.name, False)
 
-        errors = []
+        errors: list[BstError] = []
         # Start by pulling our artifact proto, so that we know which
         # blobs to pull
         for remote in index_remotes:
@@ -192,22 +198,24 @@ class ArtifactCache(AssetCache):
 
         errors = []
         # If we do, we can pull it!
-        for remote in storage_remotes:
-            remote.init()
+        for storage_remote in storage_remotes:
+            storage_remote.init()
             try:
-                element.status("Pulling data for artifact {} <- {}".format(display_key, remote))
+                element.status("Pulling data for artifact {} <- {}".format(display_key, storage_remote))
 
-                if self._pull_artifact_storage(element, key, artifact_digest, remote, pull_buildtrees=pull_buildtrees):
-                    element.info("Pulled artifact {} <- {}".format(display_key, remote))
+                if self._pull_artifact_storage(
+                    element, key, artifact_digest, storage_remote, pull_buildtrees=pull_buildtrees
+                ):
+                    element.info("Pulled artifact {} <- {}".format(display_key, storage_remote))
                     return True
 
-                element.info("Remote ({}) does not have artifact {} cached".format(remote, display_key))
+                element.info("Remote ({}) does not have artifact {} cached".format(storage_remote, display_key))
             except BlobNotFound as e:
-                # Not all blobs are available on this remote
-                element.info("Remote cas ({}) does not have blob {} cached".format(remote, e.blob))
+                # Not all blobs are available on this storage_remote
+                element.info("Remote cas ({}) does not have blob {} cached".format(storage_remote, e.blob))
                 continue
             except CASError as e:
-                element.warn("Could not pull from remote {}: {}".format(remote, e))
+                element.warn("Could not pull from remote {}: {}".format(storage_remote, e))
                 errors.append(e)
 
         if errors:
@@ -235,7 +243,7 @@ class ArtifactCache(AssetCache):
         if oldref == newref:
             # The two refs are identical, nothing to do
             return
-
+        assert self._basedir, "base dir should be set"
         utils.safe_link(os.path.join(self._basedir, oldref), os.path.join(self._basedir, newref))
 
     # check_remotes_for_element()
@@ -248,7 +256,7 @@ class ArtifactCache(AssetCache):
     # Returns:
     #    (bool): True if the element is available remotely
     #
-    def check_remotes_for_element(self, element):
+    def check_remotes_for_element(self, element: "Element") -> bool:
         project = element._get_project()
         index_remotes, _ = self.get_remotes(project.name, False)
 
@@ -421,7 +429,8 @@ class ArtifactCache(AssetCache):
             with self.cas.open(artifact_digest, "rb") as f:
                 artifact.ParseFromString(f.read())
 
-            # Write the artifact proto to cache
+            # Write the artifact proto to cache#
+            assert self._basedir, "Must have a base directory"
             artifact_path = os.path.join(self._basedir, artifact_name)
             os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
             with utils.save_file_atomic(artifact_path, mode="wb") as f:

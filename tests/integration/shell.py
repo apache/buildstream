@@ -15,13 +15,17 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
+
 import os
+from typing import List, Tuple
 import uuid
 
 import pytest
 
 from buildstream import _yaml
+from buildstream.node import MappingNode
 from buildstream._testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream._testing.runcli import Result, CliIntegration
 from buildstream._testing._utils.site import HAVE_SANDBOX, BUILDBOX_RUN
 from buildstream.exceptions import ErrorDomain
 from buildstream import utils
@@ -46,8 +50,22 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 #    mount (tuple): A (host, target) tuple for the `--mount` option
 #    element (str): The element to build and run a shell with
 #    isolate (bool): Whether to pass --isolate to `bst shell`
-#
-def execute_shell(cli, project, command, *, config=None, mount=None, element="base.bst", isolate=False):
+#    other_elements (list(str)): Other elements to stage in the sandbox
+def execute_shell(
+    cli: CliIntegration,
+    project: str,
+    command: List[str],
+    *,
+    config: dict | MappingNode | None = None,
+    mount: Tuple[str, str] | None = None,
+    element: str = "base.bst",
+    isolate: bool = False,
+    build: bool = False,
+) -> Result:
+    # Ensure config is a mapping node
+    if isinstance(config, dict):
+        config = MappingNode.from_dict(config)
+
     # Ensure the element is built
     result = cli.run_project_config(project=project, project_config=config, args=["build", element])
     assert result.exit_code == 0
@@ -55,11 +73,13 @@ def execute_shell(cli, project, command, *, config=None, mount=None, element="ba
     args = ["shell"]
     if isolate:
         args += ["--isolate"]
+    if build:
+        args += ["--build"]
     if mount is not None:
         host_path, target_path = mount
         args += ["--mount", host_path, target_path]
     args += [element, "--", *command]
-
+    # cli.verbose = True
     return cli.run_project_config(project=project, project_config=config, args=args)
 
 
@@ -83,7 +103,14 @@ def test_executable(cli, datafiles):
 
     result = execute_shell(cli, project, ["/bin/echo", "Horseys!"])
     assert result.exit_code == 0
-    assert result.output == "Horseys!\n"
+    assert result.output == "Horseys!\n", "echo should be present and working from base.bst"
+
+    # Running executable directly from a build dependency
+    result = execute_shell(cli, project, ["/bin/echo", "Horseys!"], element="build-shell/buildtree.bst", build=True)
+    assert result.exit_code == 0
+    assert (
+        result.output == "Horseys!\n"
+    ), "echo should be present and working from base.bst as a dependency of build-shell/buildtree.bst"
 
 
 # Test shell environment variable explicit assignments
@@ -96,7 +123,10 @@ def test_env_assign(cli, datafiles, animal):
     expected = animal + "\n"
 
     result = execute_shell(
-        cli, project, ["/bin/sh", "-c", "echo ${ANIMAL}"], config={"shell": {"environment": {"ANIMAL": animal}}}
+        cli,
+        project,
+        ["/bin/sh", "-c", "echo ${ANIMAL}"],
+        config=MappingNode.from_dict({"shell": {"environment": {"ANIMAL": animal}}}),
     )
 
     assert result.exit_code == 0
@@ -237,6 +267,7 @@ def test_isolated_no_mount(cli, datafiles, path):
         config={"shell": {"host-files": [{"host_path": ponyfile, "path": path}]}},
     )
     assert result.exit_code != 0
+    assert result.stderr
     assert path in result.stderr
     assert "No such file or directory" in result.stderr
 
@@ -261,7 +292,7 @@ def test_host_files_missing(cli, datafiles, optional):
     )
     assert result.exit_code == 0
     assert result.output == "Hello\n"
-
+    assert result.stderr
     if option:
         # Assert that there was no warning about the mount
         assert ponyfile not in result.stderr

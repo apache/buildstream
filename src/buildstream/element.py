@@ -62,29 +62,51 @@ Class Reference
 ---------------
 """
 
+# For 3.7+ support, not necessary and deprecated in 3.14+
+from __future__ import annotations
+from collections.abc import Callable
+
 import os
 import re
 import stat
 import copy
 import warnings
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from functools import partial
 from itertools import chain
 import string
 from threading import Lock
-from typing import cast, TYPE_CHECKING, Dict, Iterator, Iterable, List, Optional, Set, Sequence
+from typing import (
+    cast,
+    TYPE_CHECKING,
+    Dict,
+    Iterator,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Sequence,
+    Pattern,
+    Union,
+    TextIO,
+    Generator,
+    Any,
+    TypeAlias,
+)
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
-from . import _yaml
+
+from ._workspaces import Workspace
+from ._sourcecache import SourceCache
+from ._artifactcache import ArtifactCache
+from ._state import Task
+from . import _yaml, utils, _cachekey, _site
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, ImplError, SourceCacheError, CachedFailure
 from .exceptions import ErrorDomain, LoadErrorReason
 from .utils import FileListResult, BST_ARBITRARY_TIMESTAMP
-from . import utils
-from . import _cachekey
-from . import _site
 from .node import Node, MappingNode, ScalarNode
 from .plugin import Plugin
 from .sandbox import _SandboxFlags, SandboxCommandError
@@ -148,15 +170,15 @@ class DependencyConfiguration:
     :func:`Element.configure_dependencies() <buildstream.element.Element.configure_dependencies>`
     """
 
-    def __init__(self, element: "Element", path: str, config: Optional["MappingNode"]):
+    def __init__(self, element: Element, path: str, config: Optional[MappingNode]):
 
-        self.element = element  # type: Element
+        self.element: Element = element
         """The dependency Element"""
 
-        self.path = path  # type: str
+        self.path: str = path
         """The path used to refer to this dependency"""
 
-        self.config = config  # type: Optional[MappingNode]
+        self.config: Optional[MappingNode] = config
         """The custom :term:`dependency configuration <Dependency configuration>`, or ``None``
         if no custom configuration was provided"""
 
@@ -171,11 +193,11 @@ class Element(Plugin):
     """
 
     # The defaults from the yaml file and project
-    __defaults = None
+    __defaults: Optional[MappingNode] = None
     # A hash of Element by LoadElement
-    __instantiated_elements = {}  # type: Dict[LoadElement, Element]
+    __instantiated_elements: Dict[LoadElement, Element] = {}
     # A list of (source, ref) tuples which were redundantly specified
-    __redundant_source_refs = []  # type: List[Tuple[Source, SourceRef]]
+    __redundant_source_refs: List[Tuple[Source, SourceRef]] = []
 
     BST_ARTIFACT_VERSION = 0
     """The element plugin's artifact version
@@ -214,15 +236,15 @@ class Element(Plugin):
 
     def __init__(
         self,
-        context: "Context",
-        project: "Project",
-        load_element: "LoadElement",
+        context: Context,
+        project: Project,
+        load_element: LoadElement,
         plugin_conf: Optional[str],
         *,
         artifact_key: Optional[str] = None,
     ):
 
-        self.__cache_key_dict = None  # Dict for cache key calculation
+        self.__cache_key_dict: Optional[dict[str, Any]] = None  # Dict for cache key calculation
         self.__cache_key: Optional[str] = None  # Our cached cache key
 
         super().__init__(load_element.name, context, project, load_element.node, "element")
@@ -253,59 +275,66 @@ class Element(Plugin):
         #
         # Internal instance properties
         #
-        self._depth = None  # Depth of Element in its current dependency graph
+        self._depth: int | None = None  # Depth of Element in its current dependency graph
         self._overlap_collectors: Dict[Sandbox, OverlapCollector] = {}  # Active overlap collector per sandbox
-        self._description = load_element.description or ""  # type: str
+        self._description: str = load_element.description or ""
 
         #
         # Private instance properties
         #
 
         # Cache of proxies instantiated, indexed by the proxy owner
-        self.__proxies = {}  # type: Dict[Element, ElementProxy]
+        self.__proxies: dict[Element, ElementProxy] = {}
         # Direct runtime dependency Elements
-        self.__runtime_dependencies = []  # type: List[Element]
+        self.__runtime_dependencies: list[Element] = []
         # Direct build dependency Elements
-        self.__build_dependencies = []  # type: List[Element]
+        self.__build_dependencies: list[Element] = []
         # Direct build dependency subset which require strict rebuilds
-        self.__strict_dependencies = []  # type: List[Element]
+        self.__strict_dependencies: list[Element] = []
         # Direct reverse build dependency Elements
-        self.__reverse_build_deps = set()  # type: Set[Element]
+        self.__reverse_build_deps: set[Element] = set()
         # Direct reverse runtime dependency Elements
-        self.__reverse_runtime_deps = set()  # type: Set[Element]
-        self.__build_deps_uncached = None  # Build dependencies which are not yet cached
-        self.__runtime_deps_uncached = None  # Runtime dependencies which are not yet cached
-        self.__ready_for_runtime_and_cached = False  # Whether all runtime deps are cached, as well as the element
-        self.__cached_remotely = None  # Whether the element is cached remotely
-        self.__sources = ElementSources(context, project, self)  # The element sources
+        self.__reverse_runtime_deps: set[Element] = set()
+        self.__build_deps_uncached: Optional[int] = None  # Build dependencies which are not yet cached
+        self.__runtime_deps_uncached: Optional[int] = None  # Runtime dependencies which are not yet cached
+        self.__ready_for_runtime_and_cached: bool = (
+            False  # Whether all runtime deps are cached, as well as the element
+        )
+        self.__cached_remotely: Optional[bool] = None  # Whether the element is cached remotely
+        self.__sources: ElementSources = ElementSources(context, project, self)  # The element sources
         self.__weak_cache_key: Optional[str] = None  # Our cached weak cache key
         self.__strict_cache_key: Optional[str] = None  # Our cached cache key for strict builds
-        self.__artifacts = context.artifactcache  # Artifact cache
-        self.__sourcecache = context.sourcecache  # Source cache
-        self.__assemble_scheduled = False  # Element is scheduled to be assembled
-        self.__assemble_done = False  # Element is assembled
-        self.__pull_pending = False  # Whether pull is pending
-        self.__cached_successfully = None  # If the Element is known to be successfully cached
-        self.__splits = None  # Resolved regex objects for computing split domains
-        self.__whitelist_regex = None  # Resolved regex object to check if file is allowed to overlap
-        self.__tainted = None  # Whether the artifact is tainted and should not be shared
-        self.__required = False  # Whether the artifact is required in the current session
-        self.__build_result = None  # The result of assembling this Element (success, description, detail)
+        self.__artifacts: ArtifactCache = context.artifactcache  # Artifact cache
+        self.__sourcecache: SourceCache = context.sourcecache  # Source cache
+        self.__assemble_scheduled: bool = False  # Element is scheduled to be assembled
+        self.__assemble_done: bool = False  # Element is assembled
+        self.__pull_pending: bool = False  # Whether pull is pending
+        self.__cached_successfully: Optional[bool] = None  # If the Element is known to be successfully cached
+        self.__splits: Optional[dict[str, Pattern]] = None  # Resolved regex objects for computing split domains
+        self.__whitelist_regex: Optional[Pattern] = (
+            None  # Resolved regex object to check if file is allowed to overlap
+        )
+        self.__tainted: Optional[bool] = None  # Whether the artifact is tainted and should not be shared
+        self.__required: bool = False  # Whether the artifact is required in the current session
+        self.__build_result: Optional[tuple[bool, str, str | None]] = (
+            None  # The result of assembling this Element (success, description, detail)
+        )
         # Artifact class for direct artifact composite interaction
-        self.__artifact = None  # type: Optional[Artifact]
-        self.__dynamic_public = None
-        self.__sandbox_config = None  # type: Optional[SandboxConfig]
+        self.__artifact: Optional[Artifact] = None
+        self.__dynamic_public: Optional[MappingNode] = None
+        self.__sandbox_config: Optional[SandboxConfig] = None
+        self.__public: Optional[MappingNode] = None
 
         # Callbacks
-        self.__required_callback = None  # Callback to Queues
-        self.__can_query_cache_callback = None  # Callback to PullQueue/FetchQueue
-        self.__buildable_callback = None  # Callback to BuildQueue
+        self.__required_callback: Optional[Callable] = None  # Callback to Queues
+        self.__can_query_cache_callback: Optional[Callable] = None  # Callback to PullQueue/FetchQueue
+        self.__buildable_callback: Optional[Callable] = None  # Callback to BuildQueue
 
-        self.__resolved_initial_state = False  # Whether the initial state of the Element has been resolved
+        self.__resolved_initial_state: bool = False  # Whether the initial state of the Element has been resolved
 
-        self.__environment: Dict[str, str] = {}
+        self.__environment: dict[str, str] = {}
         self.__variables: Optional[Variables] = None
-        self.__dynamic_public_guard = Lock()
+        self.__dynamic_public_guard: Lock = Lock()
 
         if artifact_key:
             self.__initialize_from_artifact_key(artifact_key)
@@ -358,7 +387,7 @@ class Element(Plugin):
         #
         assert False, "Code should not be reached"
 
-    def configure_sandbox(self, sandbox: "Sandbox") -> None:
+    def configure_sandbox(self, sandbox: Sandbox) -> None:
         """Configures the the sandbox for execution
 
         Args:
@@ -372,7 +401,7 @@ class Element(Plugin):
         """
         raise ImplError("element plugin '{kind}' does not implement configure_sandbox()".format(kind=self.get_kind()))
 
-    def stage(self, sandbox: "Sandbox") -> None:
+    def stage(self, sandbox: Sandbox) -> None:
         """Stage inputs into the sandbox directories
 
         Args:
@@ -388,7 +417,7 @@ class Element(Plugin):
         """
         raise ImplError("element plugin '{kind}' does not implement stage()".format(kind=self.get_kind()))
 
-    def assemble(self, sandbox: "Sandbox") -> str:
+    def assemble(self, sandbox: Sandbox) -> str:
         """Assemble the output artifact
 
         Args:
@@ -429,7 +458,7 @@ class Element(Plugin):
     #############################################################
     #                       Public Methods                      #
     #############################################################
-    def sources(self) -> Iterator["Source"]:
+    def sources(self) -> Iterator[Source]:
         """A generator function to enumerate the element sources
 
         Yields:
@@ -438,8 +467,8 @@ class Element(Plugin):
         return self.__sources.sources()
 
     def dependencies(
-        self, selection: Optional[Sequence["Element"]] = None, *, recurse: bool = True
-    ) -> Iterator["Element"]:
+        self, selection: Optional[Sequence[Element]] = None, *, recurse: bool = True
+    ) -> Iterator[Element]:
         """A generator function which yields the build dependencies of the given element.
 
         This generator gives the Element access to all of the dependencies which it is has
@@ -476,19 +505,16 @@ class Element(Plugin):
             selection = [self]
 
         for element in selection:
-            if element is self:
-                scope = _Scope.BUILD
-            else:
-                scope = _Scope.RUN
+            scope: _Scope = _Scope.BUILD if element is self else _Scope.RUN
 
             # Elements in the `selection` will actually be `ElementProxy` objects, but
             # those calls will be forwarded to their actual internal `_dependencies()`
             # methods.
             #
             for dep in element._dependencies(scope, recurse=recurse, visited=visited):
-                yield cast("Element", dep.__get_proxy(self))
+                yield cast(Element, dep.__get_proxy(self))
 
-    def search(self, name: str) -> Optional["Element"]:
+    def search(self, name: str) -> Optional[Element]:
         """Search for a dependency by name
 
         Args:
@@ -501,7 +527,7 @@ class Element(Plugin):
         if search is self:
             return self
         elif search:
-            return cast("Element", search.__get_proxy(self))
+            return cast(Element, search.__get_proxy(self))
 
         return None
 
@@ -533,7 +559,7 @@ class Element(Plugin):
         )
         return node.as_str()
 
-    def node_subst_sequence_vars(self, node: "SequenceNode[ScalarNode]") -> List[str]:
+    def node_subst_sequence_vars(self, node: SequenceNode[ScalarNode]) -> List[str]:
         """Substitute any variables in the given sequence
 
         **Warning**: The method is deprecated and will get removed in the next version
@@ -556,7 +582,7 @@ class Element(Plugin):
 
     def compute_manifest(
         self, *, include: Optional[List[str]] = None, exclude: Optional[List[str]] = None, orphans: bool = True
-    ) -> str:
+    ) -> Iterable[str]:
         """Compute and return this element's selective manifest
 
         The manifest consists on the list of file paths in the
@@ -601,7 +627,7 @@ class Element(Plugin):
 
     def stage_artifact(
         self,
-        sandbox: "Sandbox",
+        sandbox: Sandbox,
         *,
         path: Optional[str] = None,
         action: OverlapAction = OverlapAction.WARNING,
@@ -660,8 +686,8 @@ class Element(Plugin):
 
     def stage_dependency_artifacts(
         self,
-        sandbox: "Sandbox",
-        selection: Optional[Sequence["Element"]] = None,
+        sandbox: Sandbox,
+        selection: Optional[Sequence[Element]] = None,
         *,
         path: Optional[str] = None,
         action: OverlapAction = OverlapAction.WARNING,
@@ -700,7 +726,7 @@ class Element(Plugin):
             for dep in self.dependencies(selection):
                 dep._stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans, owner=self)
 
-    def integrate(self, sandbox: "Sandbox") -> None:
+    def integrate(self, sandbox: Sandbox) -> None:
         """Integrate currently staged filesystem against this artifact.
 
         Args:
@@ -720,7 +746,7 @@ class Element(Plugin):
                 for command in bstdata.get_str_list("integration-commands", []):
                     sandbox.run(["sh", "-e", "-c", command], env=environment, cwd="/", label=command)
 
-    def stage_sources(self, sandbox: "Sandbox", directory: str) -> None:
+    def stage_sources(self, sandbox: Sandbox, directory: str) -> None:
         """Stage this element's sources to a directory in the sandbox
 
         Args:
@@ -729,7 +755,7 @@ class Element(Plugin):
         """
         self._stage_sources_in_sandbox(sandbox, directory)
 
-    def get_public_data(self, domain: str) -> "MappingNode[Node]":
+    def get_public_data(self, domain: str) -> MappingNode[Node] | None:
         """Fetch public data on this element
 
         Args:
@@ -747,15 +773,14 @@ class Element(Plugin):
             if self.__dynamic_public is None:
                 self.__load_public_data()
 
-            # Disable type-checking since we can't easily tell mypy that
-            # `self.__dynamic_public` can't be None here.
-            data = self.__dynamic_public.get_mapping(domain, default=None)  # type: ignore
+            assert self.__dynamic_public is not None, "Element should have dynamic public data at this stage"
+            data = self.__dynamic_public.get_mapping(domain, default=None)
             if data is not None:
                 data = data.clone()
 
         return data
 
-    def set_public_data(self, domain: str, data: "MappingNode[Node]") -> None:
+    def set_public_data(self, domain: str, data: MappingNode[Node]) -> None:
         """Set public data on this element
 
         Args:
@@ -770,13 +795,14 @@ class Element(Plugin):
         with self.__dynamic_public_guard:
             if self.__dynamic_public is None:
                 self.__load_public_data()
+            assert self.__dynamic_public, "We have loaded public data by this point, so this should never happen"
 
             if data is not None:
                 data = data.clone()
 
-            self.__dynamic_public[domain] = data  # type: ignore
+            self.__dynamic_public[domain] = data
 
-    def get_environment(self) -> Dict[str, str]:
+    def get_environment(self) -> dict[str, str]:
         """Fetch the environment suitable for running in the sandbox
 
         Returns:
@@ -795,10 +821,10 @@ class Element(Plugin):
            The resolved value for *varname*, or None if no
            variable was declared with the given name.
         """
-        assert self.__variables
+        assert self.__variables, "{}: has no Variables object".format(self.name)
         return self.__variables.get(varname)
 
-    def run_cleanup_commands(self, sandbox: "Sandbox") -> None:
+    def run_cleanup_commands(self, sandbox: Sandbox) -> None:
         """Run commands to cleanup the build directory.
 
         Args:
@@ -821,7 +847,7 @@ class Element(Plugin):
         build_root = self.get_variable("build-root")
         install_root = self.get_variable("install-root")
 
-        assert build_root
+        assert build_root, "There should be a build root at this stage"
         if install_root and (build_root.startswith(install_root) or install_root.startswith(build_root)):
             # Preserve the build directory if cleaning would affect the install directory
             return
@@ -829,7 +855,7 @@ class Element(Plugin):
         sandbox._clean_directory(build_root)
 
     @contextmanager
-    def subsandbox(self, sandbox: "Sandbox") -> Iterator["Sandbox"]:
+    def subsandbox(self, sandbox: Sandbox) -> Iterator[Sandbox]:
         """A context manager for a subsandbox.
 
         Args:
@@ -864,13 +890,13 @@ class Element(Plugin):
     # Yields:
     #    (Element): The dependencies in `scope`, in deterministic staging order
     #
-    def _dependencies(self, scope: _Scope, *, recurse=True, visited=None):
+    def _dependencies(self, scope: _Scope, *, recurse=True, visited=None) -> Generator[Element]:
 
         # The format of visited is (BitMap(), BitMap()), with the first BitMap
         # containing element that have been visited for the `_Scope.BUILD` case
         # and the second one relating to the `_Scope.RUN` case.
         if not recurse:
-            result: Set["Element"] = set()
+            result: Set[Element] = set()
             if scope in (_Scope.BUILD, _Scope.ALL):
                 for dep in self.__build_dependencies:
                     if dep not in result:
@@ -968,14 +994,14 @@ class Element(Plugin):
     #
     def _stage_artifact(
         self,
-        sandbox: "Sandbox",
+        sandbox: Sandbox,
         *,
         path: Optional[str] = None,
         action: OverlapAction = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         orphans: bool = True,
-        owner: Optional["Element"] = None,
+        owner: Optional[Element] = None,
     ) -> FileListResult:
 
         owner = owner or self
@@ -993,9 +1019,7 @@ class Element(Plugin):
         self.__assert_cached()
 
         self.status("Staging {}/{}".format(self.name, self._get_display_key().brief))
-        # Disable type checking since we can't easily tell mypy that
-        # `self.__artifact` can't be None at this stage.
-        files_vdir = self.__artifact.get_files()  # type: ignore
+        files_vdir = self._get_artifact().get_files()
 
         # Import files into the staging area
         #
@@ -1030,7 +1054,16 @@ class Element(Plugin):
     #                              yet produced artifacts, or if forbidden overlaps
     #                              occur.
     #
-    def _stage_dependency_artifacts(self, sandbox, scope, *, path=None, include=None, exclude=None, orphans=True):
+    def _stage_dependency_artifacts(
+        self,
+        sandbox: Sandbox,
+        scope: _Scope,
+        *,
+        path: Optional[str] = None,
+        include: Optional[list[str]] = None,
+        exclude: Optional[list[str]] = None,
+        orphans: bool = True,
+    ):
         with self._overlap_collectors[sandbox].session(OverlapAction.WARNING, path):
             for dep in self._dependencies(scope):
                 dep._stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans, owner=self)
@@ -1051,25 +1084,26 @@ class Element(Plugin):
     #    (Element): A newly created Element instance
     #
     @classmethod
-    def _new_from_load_element(cls, load_element, task=None):
+    def _new_from_load_element(cls, load_element: LoadElement, task: Optional[Task] = None) -> Element:
 
         if not load_element.first_pass:
             load_element.project.ensure_fully_loaded()
 
-        with suppress(KeyError):
-            return cls.__instantiated_elements[load_element]
+        if (instantiated_element := cls.__instantiated_elements.get(load_element)) is not None:
+            return instantiated_element
 
-        element = load_element.project.create_element(load_element)
+        element: Element = load_element.project.create_element(load_element)
         cls.__instantiated_elements[load_element] = element
 
         # If the element implements configure_dependencies(), we will collect
         # the dependency configurations for it, otherwise we will consider
         # it an error to specify `config` on dependencies.
         #
-        if element.configure_dependencies.__func__ is not Element.configure_dependencies:
-            custom_configurations = []
-        else:
-            custom_configurations = None
+        custom_configurations: list[DependencyConfiguration] | None = (
+            []
+            if element.configure_dependencies.__func__ is not Element.configure_dependencies  # type: ignore[attr-defined]
+            else None
+        )
 
         # Load the sources from the LoadElement
         element.__load_sources(load_element)
@@ -1078,7 +1112,7 @@ class Element(Plugin):
         for dep in load_element.dependencies:
             dependency = Element._new_from_load_element(dep.element, task)
 
-            if dep.dep_type & DependencyType.BUILD:
+            if dep.dep_type & DependencyType.BUILD:  # type: ignore
                 element.__build_dependencies.append(dependency)
                 dependency.__reverse_build_deps.add(element)
 
@@ -1096,6 +1130,7 @@ class Element(Plugin):
 
                         # Ensure variables are substituted first
                         #
+                        assert element.__variables, "Variables should not be none at this stage in element"
                         for config in dep.config_nodes:
                             element.__variables.expand(config)
 
@@ -1115,7 +1150,7 @@ class Element(Plugin):
                         LoadErrorReason.INVALID_DEPENDENCY_CONFIG,
                     )
 
-            if dep.dep_type & DependencyType.RUNTIME:
+            if dep.dep_type & DependencyType.RUNTIME:  # type: ignore
                 element.__runtime_dependencies.append(dependency)
                 dependency.__reverse_runtime_deps.add(element)
 
@@ -1163,7 +1198,7 @@ class Element(Plugin):
     #
     # This is used to produce a warning
     @classmethod
-    def _get_redundant_source_refs(cls):
+    def _get_redundant_source_refs(cls) -> List[Tuple[Source, SourceRef]]:
         return cls.__redundant_source_refs
 
     # _reset_load_state()
@@ -1181,15 +1216,15 @@ class Element(Plugin):
     #    (bool): Whether this element is already present in
     #            the artifact cache
     #
-    def _cached(self):
-        return self.__artifact.cached()
+    def _cached(self) -> bool:
+        return self._get_artifact().cached()
 
     # _cached_remotely():
     #
     # Returns:
     #    (bool): Whether this element is present in a remote cache
     #
-    def _cached_remotely(self):
+    def _cached_remotely(self) -> bool:
         if self.__cached_remotely is None:
             self.__cached_remotely = self.__artifacts.check_remotes_for_element(self)
         return self.__cached_remotely
@@ -1201,9 +1236,11 @@ class Element(Plugin):
     #    (str): Short description of the result
     #    (str): Detailed description of the result
     #
-    def _get_build_result(self):
+    def _get_build_result(self) -> tuple[bool, str, str | None]:
         if self.__build_result is None:
             self.__load_build_result()
+
+        assert self.__build_result, "Build result should not be none after __load_build_result"
 
         return self.__build_result
 
@@ -1216,7 +1253,7 @@ class Element(Plugin):
     #    description (str): Short description of the result
     #    detail (str): Detailed description of the result
     #
-    def __set_build_result(self, success, description, detail=None):
+    def __set_build_result(self, success: bool, description: str, detail: str | None = None):
         self.__build_result = (success, description, detail)
 
     # _cached_success():
@@ -1225,7 +1262,7 @@ class Element(Plugin):
     #    (bool): Whether this element is already present in
     #            the artifact cache and the element assembled successfully
     #
-    def _cached_success(self):
+    def _cached_success(self) -> bool:
         # FIXME:  _cache() and _cached_success() should be converted to
         # push based functions where we only update __cached_successfully
         # once we know this has changed. This will allow us to cheaply check
@@ -1249,7 +1286,7 @@ class Element(Plugin):
     #    (bool): Whether this element is already present in
     #            the artifact cache and the element did not assemble successfully
     #
-    def _cached_failure(self):
+    def _cached_failure(self) -> bool:
         if not self._cached():
             return False
 
@@ -1261,7 +1298,7 @@ class Element(Plugin):
     # Returns:
     #    (bool): Whether this element can currently be built
     #
-    def _buildable(self):
+    def _buildable(self) -> bool:
         # This check must be before `_fetch_needed()` as source cache status
         # is not always available for non-build pipelines.
         if not self.__assemble_scheduled:
@@ -1284,9 +1321,11 @@ class Element(Plugin):
     #
     # None is returned if information for the cache key is missing.
     #
-    def _get_cache_key(self, strength=_KeyStrength.STRONG):
+    def _get_cache_key(self, strength=_KeyStrength.STRONG) -> str | None:
         if strength == _KeyStrength.STRONG:
             return self.__cache_key
+        elif strength == _KeyStrength.STRICT:
+            return self.__strict_cache_key
         else:
             return self.__weak_cache_key
 
@@ -1394,6 +1433,7 @@ class Element(Plugin):
             # that would be used in strict build mode
             strict = True
 
+        assert context.log_key_length, "log key length should be present"
         length = min(len(cache_key), context.log_key_length)
         return _DisplayKey(cache_key, cache_key[0:length], strict)
 
@@ -1426,7 +1466,9 @@ class Element(Plugin):
     # is used to stage things by the `bst artifact checkout` codepath
     #
     @contextmanager
-    def _prepare_sandbox(self, scope, shell=False, integrate=True, usebuildtree=False):
+    def _prepare_sandbox(
+        self, scope: _Scope, shell: bool = False, integrate: bool = True, usebuildtree: bool = False
+    ) -> Generator[Sandbox]:
 
         # Assert first that we have a sandbox configuration
         if not self.__sandbox_config:
@@ -1441,11 +1483,12 @@ class Element(Plugin):
         with self.__sandbox(config=self.__sandbox_config, allow_remote=False) as sandbox:
 
             if usebuildtree:
+                artifact = self._get_artifact()
                 # Configure the sandbox from artifact metadata
-                self.__artifact.configure_sandbox(sandbox)
+                artifact.configure_sandbox(sandbox)
 
                 # Use the cached buildroot directly
-                buildrootvdir = self.__artifact.get_buildroot()
+                buildrootvdir = artifact.get_buildroot()
                 sandbox_vroot = sandbox.get_virtual_directory()
                 sandbox_vroot._import_files_internal(buildrootvdir, collect_result=False)
             elif shell and scope == _Scope.BUILD:
@@ -1480,7 +1523,7 @@ class Element(Plugin):
     #     sandbox (:class:`.Sandbox`): The build sandbox
     #     directory (str): An absolute path to stage the sources at
     #
-    def _stage_sources_in_sandbox(self, sandbox, directory):
+    def _stage_sources_in_sandbox(self, sandbox: Sandbox, directory: str):
 
         # Stage all sources that need to be copied
         sandbox_vroot = sandbox.get_virtual_directory()
@@ -1494,7 +1537,7 @@ class Element(Plugin):
     # Args:
     #     vdirectory (Union[str, Directory]): A virtual directory object or local path to stage sources to.
     #
-    def _stage_sources_at(self, vdirectory):
+    def _stage_sources_at(self, vdirectory: Union[str, Directory]):
 
         # It's advantageous to have this temporary directory on
         # the same file system as the rest of our cache.
@@ -1532,7 +1575,7 @@ class Element(Plugin):
     # Args:
     #    scope (_Scope): The scope of dependencies to mark as required
     #
-    def _set_required(self, scope=_Scope.RUN):
+    def _set_required(self, scope: _Scope = _Scope.RUN):
         assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         if self.__required:
@@ -1561,7 +1604,7 @@ class Element(Plugin):
     #
     # Returns whether this element has been marked as required.
     #
-    def _is_required(self):
+    def _is_required(self) -> bool:
         return self.__required
 
     # __should_schedule()
@@ -1569,7 +1612,7 @@ class Element(Plugin):
     # Returns:
     #     bool - Whether the element can be scheduled for a build.
     #
-    def __should_schedule(self):
+    def __should_schedule(self) -> bool:
         # We're processing if we're already scheduled, we've
         # finished assembling or if we're waiting to pull.
         processing = self.__assemble_scheduled or self.__assemble_done or self._pull_pending()
@@ -1583,7 +1626,7 @@ class Element(Plugin):
             self._is_required()
             and
             # We have figured out the state of our artifact
-            self.__artifact
+            self.__artifact is not None
             and
             # And we're not cached yet
             not self._cached_success()
@@ -1626,19 +1669,20 @@ class Element(Plugin):
     # Args:
     #     successful (bool): Whether the build was successful
     #
-    def _assemble_done(self, successful):
-        assert self.__assemble_scheduled
+    def _assemble_done(self, successful: bool):
+        assert self.__assemble_scheduled, "Assembly should be scheduled before calling this method on element"
         assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
+        artifact = self._get_artifact()
         self.__assemble_done = True
 
         if successful:
             # Directly set known cached status as optimization to avoid
             # querying buildbox-casd and the filesystem.
-            self.__artifact.set_cached()
+            artifact.set_cached()
             self.__cached_successfully = True
         else:
-            self.__artifact.query_cache()
+            artifact.query_cache()
 
         # When we're building in non-strict mode, we may have
         # assembled everything to this point without a strong cache
@@ -1646,8 +1690,8 @@ class Element(Plugin):
         # can be set, so we do so.
         self.__update_cache_key_non_strict()
         self._update_ready_for_runtime_and_cached()
-
-        if self._get_workspace() and self._cached():
+        workspace = self._get_workspace()
+        if workspace and self._cached():
             # Note that this block can only happen in the
             # main process, since `self._cached_success()` cannot
             # be true when assembly is successful in the task.
@@ -1656,7 +1700,6 @@ class Element(Plugin):
             # save the workspaces configuration
             #
             key = self._get_cache_key()
-            workspace = self._get_workspace()
             workspace.last_build = key
             self._get_context().get_workspaces().save_config()
 
@@ -1675,11 +1718,11 @@ class Element(Plugin):
         # to allow for retrying the job
         if self._cached_failure() and not self.__assemble_done:
             with self._output_file() as output_file:
-                for log_path in self.__artifact.get_logs():
+                for log_path in self._get_logs():
                     with open(log_path, encoding="utf-8") as log_file:
                         output_file.write(log_file.read())
 
-            _, description, detail = self._get_build_result()
+            [_, description, detail] = self._get_build_result()
             e = CachedFailure(description, detail=detail)
             # Shelling into a sandbox is useful to debug this error
             e.sandbox = True
@@ -1692,6 +1735,7 @@ class Element(Plugin):
         with self._output_file() as output_file:
 
             # Explicitly clean it up, keep the build dir around if exceptions are raised
+            assert context.builddir, "A build dir should be present"
             os.makedirs(context.builddir, exist_ok=True)
 
             with self.__sandbox(output_file, output_file, self.__sandbox_config) as sandbox:
@@ -1707,6 +1751,7 @@ class Element(Plugin):
                 # By default, the dynamic public data is the same as the static public data.
                 # The plugin's assemble() method may modify this, though.
                 with self.__dynamic_public_guard:
+                    assert self.__public, "Public data should be present in Element"
                     self.__dynamic_public = self.__public.clone()
 
                 # Call the abstract plugin methods
@@ -1736,9 +1781,10 @@ class Element(Plugin):
                 else:
                     self._cache_artifact(sandbox, collect)
 
-    def _cache_artifact(self, sandbox, collect):
+    def _cache_artifact(self, sandbox: Sandbox, collect: str | None):
 
         context = self._get_context()
+        assert self.__build_result, "Build result should be present at this stage"
         buildresult = self.__build_result
         with self.__dynamic_public_guard:
             publicdata = self.__dynamic_public
@@ -1761,7 +1807,9 @@ class Element(Plugin):
             cache_buildtrees == _CacheBuildTrees.AUTO and (not build_success or self._get_workspace())
         ):
             try:
-                sandbox_build_dir = sandbox_vroot.open_directory(self.get_variable("build-root").lstrip(os.sep))
+                build_root = self.get_variable("build-root")
+                assert build_root, "Build root should be present at this stage"
+                sandbox_build_dir = sandbox_vroot.open_directory(build_root.lstrip(os.sep))
                 sandbox._fetch_missing_blobs(sandbox_build_dir)
             except DirectoryError:
                 # Directory could not be found. Pre-virtual
@@ -1779,12 +1827,12 @@ class Element(Plugin):
             except DirectoryError:
                 pass
 
-        # We should always have cache keys already set when caching an artifact
-        assert self.__cache_key is not None
-        assert self.__artifact._cache_key is not None
+        assert self.__cache_key is not None, "We should always have cache keys already set when caching an artifact"
+        artifact = self._get_artifact()
+        assert artifact._cache_key is not None, "Cache key should also be present in the artfact"
 
         with self.timed_activity("Caching artifact"):
-            self.__artifact.cache(
+            artifact.cache(
                 buildrootvdir=buildrootvdir,
                 sandbox_build_dir=sandbox_build_dir,
                 collectvdir=collectvdir,
@@ -1810,7 +1858,7 @@ class Element(Plugin):
     # Args:
     #   fetched_original (bool): Whether the original sources had been asked (and fetched) or not
     #
-    def _fetch_done(self, fetched_original):
+    def _fetch_done(self, fetched_original: bool) -> None:
         assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         self.__sources.fetch_done(fetched_original)
@@ -1824,7 +1872,7 @@ class Element(Plugin):
     # Returns:
     #   (bool): Whether a pull operation is pending
     #
-    def _pull_pending(self):
+    def _pull_pending(self) -> bool:
         return self.__pull_pending
 
     # _load_artifact_done()
@@ -1840,11 +1888,9 @@ class Element(Plugin):
     def _load_artifact_done(self):
         assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
-        assert self.__artifact
-
         context = self._get_context()
 
-        if not context.get_strict() and self.__artifact.cached():
+        if not context.get_strict() and self._get_artifact().cached():
             # In non-strict mode, strong cache key becomes available when
             # the artifact is cached
             self.__update_cache_key_non_strict()
@@ -1867,7 +1913,7 @@ class Element(Plugin):
     #
     # Returns: True if the artifact has been downloaded, False otherwise
     #
-    def _load_artifact(self, *, pull, strict=None):
+    def _load_artifact(self, *, pull: bool, strict: Optional[bool] = None) -> bool:
         context = self._get_context()
 
         if strict is None:
@@ -1976,15 +2022,15 @@ class Element(Plugin):
         self.__artifact = artifact
         return pulled
 
-    def _query_source_cache(self):
+    def _query_source_cache(self) -> None:
         self.__sources.query_cache()
 
-    def _skip_source_push(self):
+    def _skip_source_push(self) -> bool:
         if not self.sources() or self._get_workspace():
             return True
         return not (self.__sourcecache.has_push_remotes(plugin=self) and self._cached_sources())
 
-    def _source_push(self):
+    def _source_push(self) -> None:
         return self.__sources.push()
 
     # _skip_push():
@@ -1997,7 +2043,7 @@ class Element(Plugin):
     # Returns:
     #   (bool): True if this element does not need a push job to be created
     #
-    def _skip_push(self, *, skip_uncached):
+    def _skip_push(self, *, skip_uncached: bool) -> bool:
         if not self.__artifacts.has_push_remotes(plugin=self):
             # No push remotes for this element's project
             return True
@@ -2022,7 +2068,7 @@ class Element(Plugin):
     #   (bool): True if the remote was updated, False if it already existed
     #           and no updated was required
     #
-    def _push(self):
+    def _push(self) -> bool:
         if not self._cached():
             raise ElementError("Push failed: {} is not cached".format(self.name))
 
@@ -2039,7 +2085,7 @@ class Element(Plugin):
             return False
 
         # Push all keys used for local commit via the Artifact member
-        pushed = self.__artifacts.push(self, self.__artifact)
+        pushed = self.__artifacts.push(self, self._get_artifact())
         if not pushed:
             return False
 
@@ -2062,14 +2108,14 @@ class Element(Plugin):
     # Returns: Exit code
     def _shell(
         self,
-        scope: _Scope | None = None,
+        scope: _Scope = _Scope.NONE,
         *,
         mounts: List[_HostMount] | None = None,
         isolate: bool = False,
         prompt: str | None = None,
         command: List[str] | None = None,
         usebuildtree: bool = False,
-    ):
+    ) -> Optional[int]:
 
         with self._prepare_sandbox(scope, shell=True, usebuildtree=usebuildtree) as sandbox:
             environment = sandbox._get_configured_environment() or self.get_environment()
@@ -2125,7 +2171,7 @@ class Element(Plugin):
     # This requires that a workspace already be created in
     # the workspaces metadata first.
     #
-    def _open_workspace(self):
+    def _open_workspace(self) -> None:
         assert utils._is_in_main_thread(), "This writes to a global file and therefore must be run in the main thread"
 
         context = self._get_context()
@@ -2140,6 +2186,7 @@ class Element(Plugin):
         # files in the target directory actually works without any
         # additional support from Source implementations.
         #
+        assert context.builddir, "build dir is required for this"
         os.makedirs(context.builddir, exist_ok=True)
         with utils._tempdir(dir=context.builddir, prefix="workspace-{}".format(self.normal_name)) as temp:
             self.__sources.init_workspace(temp)
@@ -2152,7 +2199,7 @@ class Element(Plugin):
     # Returns:
     #    (Workspace|None): A workspace associated with this element
     #
-    def _get_workspace(self):
+    def _get_workspace(self) -> Workspace | None:
         workspaces = self._get_context().get_workspaces()
         return workspaces.get_workspace(self._get_full_name())
 
@@ -2193,7 +2240,7 @@ class Element(Plugin):
     # element B is a filter element that depends on element A. The source
     # element of B is A, since B depends on A, and A has sources.
     #
-    def _get_source_element(self):
+    def _get_source_element(self) -> Element:
         return self
 
     # _cached_buildtree()
@@ -2208,11 +2255,11 @@ class Element(Plugin):
     #             Note this only confirms if a buildtree is present,
     #             not its contents.
     #
-    def _cached_buildtree(self):
+    def _cached_buildtree(self) -> bool:
         if not self._cached():
             return False
 
-        return self.__artifact.cached_buildtree()
+        return self._get_artifact().cached_buildtree()
 
     # _buildtree_exists()
     #
@@ -2223,11 +2270,11 @@ class Element(Plugin):
     #     (bool): True if artifact was created with buildtree, False if
     #             element not cached or not created with a buildtree.
     #
-    def _buildtree_exists(self):
+    def _buildtree_exists(self) -> bool:
         if not self._cached():
             return False
 
-        return self.__artifact.buildtree_exists()
+        return self._get_artifact().buildtree_exists()
 
     # _cached_buildroot()
     #
@@ -2241,11 +2288,11 @@ class Element(Plugin):
     #             Note this only confirms if a buildroot is present,
     #             not its contents.
     #
-    def _cached_buildroot(self):
+    def _cached_buildroot(self) -> bool:
         if not self._cached():
             return False
 
-        return self.__artifact.cached_buildroot()
+        return self._get_artifact().cached_buildroot()
 
     # _buildroot_exists()
     #
@@ -2256,11 +2303,11 @@ class Element(Plugin):
     #     (bool): True if artifact was created with buildroot, False if
     #             element not cached or not created with a buildroot.
     #
-    def _buildroot_exists(self):
+    def _buildroot_exists(self) -> bool:
         if not self._cached():
             return False
 
-        return self.__artifact.buildroot_exists()
+        return self._get_artifact().buildroot_exists()
 
     # _cached_logs()
     #
@@ -2270,8 +2317,8 @@ class Element(Plugin):
     #     (bool): True if artifact is cached with logs, False if
     #             element not cached or missing logs.
     #
-    def _cached_logs(self):
-        return self.__artifact.cached_logs()
+    def _cached_logs(self) -> bool:
+        return self._get_artifact().cached_logs()
 
     # _fetch()
     #
@@ -2280,7 +2327,7 @@ class Element(Plugin):
     # Raises:
     #    SourceError: If one of the element sources has an error
     #
-    def _fetch(self, fetch_original=False):
+    def _fetch(self, fetch_original: bool = False) -> None:
         if fetch_original:
             self.__sources.fetch_sources(fetch_original=True)
 
@@ -2299,9 +2346,9 @@ class Element(Plugin):
     #
     # Calculates the cache key
     #
+    #
     # Args:
-    #    dependencies (List[List[str]]): list of dependencies with project name,
-    #                                    element name and optional cache key
+    #    key_strength (_KeyStrength): The stength of the key to calculate
     #    weak_cache_key (Optional[str]): the weak cache key, required for calculating the
     #                                    strict and strong cache keys
     #
@@ -2310,10 +2357,33 @@ class Element(Plugin):
     #
     # None is returned if information for the cache key is missing.
     #
-    def _calculate_cache_key(self, dependencies, weak_cache_key=None):
-        # No cache keys for dependencies which have no cache keys
-        if any(not all(dep) for dep in dependencies):
-            return None
+    def _calculate_cache_key(
+        self, key_strength: _KeyStrength = _KeyStrength.STRONG, weak_cache_key: Optional[str] = None, scope: _Scope = _Scope.BUILD
+    ) -> str | None:
+        assert self.__sandbox_config, "Element should have a sandbox config to calculate cache key"
+        assert self.__public, "Element should have public data to calculate cache key"
+
+        # Strict or Strong Dependency must have: Project Name, element name and cache key
+        StrictOrStrongDep: TypeAlias = tuple[str, str, str]
+        # Weak Dependency must have: Project Name, element name
+        WeakDep: TypeAlias = tuple[str, str]
+
+        dependencies: list[StrictOrStrongDep | WeakDep] = []
+        strict_or_strong: bool = key_strength in [_KeyStrength.STRONG, _KeyStrength.STRICT] or self.BST_STRICT_REBUILD
+        for dep_element in self._dependencies(scope):
+            # We need a key for the dependency if we are calculating a strong or strict key
+            # or we are calculating a weak key and it is a strict rebuild dependency.
+            if strict_or_strong or dep_element in self.__strict_dependencies:
+                dep_key = dep_element._get_cache_key(key_strength)
+                if dep_key is None:
+                    # Abort calculating a key for this element as a dependency doesn't have a required key of correct strength
+                    return None
+                dependencies.append((dep_element.project_name, dep_element.name, dep_key))
+            else:
+                # This case should only be triggered where key_strength is _KeyStrength.WEAK
+                # and it is not a strict build dependency
+                # so we don't need a key for the dependency
+                dependencies.append((dep_element.project_name, dep_element.name))
 
         # Generate dict that is used as base for all cache keys
         if self.__cache_key_dict is None:
@@ -2352,7 +2422,7 @@ class Element(Plugin):
     # Returns:
     #    (bool): True if the element sources are in CAS
     #
-    def _cached_sources(self):
+    def _cached_sources(self) -> bool:
         return self.__sources.cached()
 
     # _has_all_sources_resolved()
@@ -2362,7 +2432,7 @@ class Element(Plugin):
     # Returns:
     #    (bool): True if all element sources are resolved
     #
-    def _has_all_sources_resolved(self):
+    def _has_all_sources_resolved(self) -> bool:
         return self.__sources.is_resolved()
 
     # _fetch_needed():
@@ -2372,7 +2442,7 @@ class Element(Plugin):
     # Returns:
     #    (bool): True if one or more element sources need to be fetched
     #
-    def _fetch_needed(self):
+    def _fetch_needed(self) -> bool:
         return not self.__sources.cached() and not self.__sources.cached_original()
 
     # _should_fetch():
@@ -2385,7 +2455,7 @@ class Element(Plugin):
     # Returns:
     #    (bool): True if a fetch job is required
     #
-    def _should_fetch(self, fetch_original=False):
+    def _should_fetch(self, fetch_original: bool = False) -> bool:
         if fetch_original:
             return not self.__sources.cached_original()
         return not self.__sources.cached()
@@ -2403,7 +2473,7 @@ class Element(Plugin):
     # Args:
     #    callback (callable) - The callback function
     #
-    def _set_required_callback(self, callback):
+    def _set_required_callback(self, callback: Callable) -> None:
         self.__required_callback = callback
 
     # _set_can_query_cache_callback()
@@ -2421,7 +2491,7 @@ class Element(Plugin):
     # Args:
     #    callback (callable) - The callback function
     #
-    def _set_can_query_cache_callback(self, callback):
+    def _set_can_query_cache_callback(self, callback: Callable) -> None:
         self.__can_query_cache_callback = callback
 
     # _set_buildable_callback()
@@ -2437,7 +2507,7 @@ class Element(Plugin):
     # Args:
     #    callback (callable) - The callback function
     #
-    def _set_buildable_callback(self, callback):
+    def _set_buildable_callback(self, callback: Callable) -> None:
         self.__buildable_callback = callback
 
     # _set_depth()
@@ -2447,7 +2517,7 @@ class Element(Plugin):
     # The depth represents the position of the Element within the current
     # session's dependency graph. A depth of zero represents the bottommost element.
     #
-    def _set_depth(self, depth):
+    def _set_depth(self, depth: int) -> None:
         self._depth = depth
 
     # _update_ready_for_runtime_and_cached()
@@ -2465,7 +2535,7 @@ class Element(Plugin):
     # runtime dependencies and the reverse build dependencies of the element, decrementing
     # the appropriate counters.
     #
-    def _update_ready_for_runtime_and_cached(self):
+    def _update_ready_for_runtime_and_cached(self) -> None:
         assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         if not self.__ready_for_runtime_and_cached:
@@ -2474,6 +2544,7 @@ class Element(Plugin):
 
                 # Notify reverse dependencies
                 for rdep in self.__reverse_runtime_deps:
+                    assert rdep.__runtime_deps_uncached, "We should have a number here"
                     rdep.__runtime_deps_uncached -= 1
                     assert not rdep.__runtime_deps_uncached < 0
 
@@ -2482,6 +2553,7 @@ class Element(Plugin):
                         rdep._update_ready_for_runtime_and_cached()
 
                 for rdep in self.__reverse_build_deps:
+                    assert rdep.__build_deps_uncached, "We should also have a number here"
                     rdep.__build_deps_uncached -= 1
                     assert not rdep.__build_deps_uncached < 0
 
@@ -2499,7 +2571,7 @@ class Element(Plugin):
     # Returns:
     #    (Artifact): The Artifact object of the Element
     #
-    def _get_artifact(self):
+    def _get_artifact(self) -> Artifact:
         assert self.__artifact, "{}: has no Artifact object".format(self.name)
         return self.__artifact
 
@@ -2511,7 +2583,7 @@ class Element(Plugin):
     # from a loaded artifact, or after pulling the artifact from
     # a remote.
     #
-    def _mimic_artifact(self):
+    def _mimic_artifact(self) -> None:
         artifact = self._get_artifact()
 
         # Load bits which have been stored on the artifact
@@ -2532,7 +2604,7 @@ class Element(Plugin):
     # Args:
     #    (Element): The Element to add as a build dependency
     #
-    def _add_build_dependency(self, dependency):
+    def _add_build_dependency(self, dependency: Element) -> None:
         self.__build_dependencies.append(dependency)
 
     # _file_is_whitelisted()
@@ -2548,7 +2620,9 @@ class Element(Plugin):
     # Returns:
     #    (bool): True of the specified `path` is whitelisted
     #
-    def _file_is_whitelisted(self, path):
+    def _file_is_whitelisted(self, path: str) -> bool:
+        assert self.__variables, "{}: has no Variables object".format(self.name)
+
         # Considered storing the whitelist regex for re-use, but public data
         # can be altered mid-build.
         # Public data is not guaranteed to stay the same for the duration of
@@ -2556,11 +2630,12 @@ class Element(Plugin):
         # If this ever changes, things will go wrong unexpectedly.
         if not self.__whitelist_regex:
             bstdata = self.get_public_data("bst")
-            whitelist = bstdata.get_sequence("overlap-whitelist", default=[])
+            assert bstdata, "We should have a bstdata section to get the whitelist"
+            whitelist: SequenceNode = bstdata.get_sequence("overlap-whitelist", [])
             whitelist_expressions = [utils._glob2re(self.__variables.subst(node)) for node in whitelist]
             expression = "^(?:" + "|".join(whitelist_expressions) + ")$"
             self.__whitelist_regex = re.compile(expression, re.MULTILINE | re.DOTALL)
-        return self.__whitelist_regex.match(os.path.join(os.sep, path))
+        return self.__whitelist_regex.match(os.path.join(os.sep, path)) is not None
 
     # _get_logs()
     #
@@ -2570,7 +2645,7 @@ class Element(Plugin):
     #    A list of log file paths
     #
     def _get_logs(self) -> List[str]:
-        return cast(Artifact, self.__artifact).get_logs()
+        return self._get_artifact().get_logs()
 
     #############################################################
     #                   Private Local Methods                   #
@@ -2591,9 +2666,9 @@ class Element(Plugin):
     # Returns:
     #    (ElementProxy): An ElementProxy to self, for owner.
     #
-    def __get_proxy(self, owner: "Element") -> ElementProxy:
-        with suppress(KeyError):
-            return self.__proxies[owner]
+    def __get_proxy(self, owner: Element) -> ElementProxy:
+        if (proxy := self.__proxies.get(owner)) is not None:
+            return proxy
 
         proxy = ElementProxy(owner, self)
         self.__proxies[owner] = proxy
@@ -2603,7 +2678,7 @@ class Element(Plugin):
     #
     # Load the Source objects from the LoadElement
     #
-    def __load_sources(self, load_element):
+    def __load_sources(self, load_element: LoadElement) -> None:
         project = self._get_project()
         workspace = self._get_workspace()
         meta_sources = []
@@ -2626,7 +2701,7 @@ class Element(Plugin):
             )
             meta_sources.append(meta)
         else:
-            sources = load_element.node.get_sequence(Symbol.SOURCES, default=[])
+            sources: SequenceNode = load_element.node.get_sequence(Symbol.SOURCES, [])
             for index, source in enumerate(sources):
                 kind = source.get_scalar(Symbol.KIND)
 
@@ -2650,6 +2725,9 @@ class Element(Plugin):
 
                     def source_provenance_attribute_check(provenance_node=provenance_node):
                         try:
+                            assert (
+                                project.source_provenance_attributes
+                            ), "Project should have source provenance atrributes before processing elements"
                             provenance_node.validate_keys(project.source_provenance_attributes.keys())
                         except LoadError as E:
                             raise LoadError(
@@ -2700,11 +2778,20 @@ class Element(Plugin):
     # Returns:
     #    (list [str]): A list of refs of all dependencies in staging order.
     #
-    def __get_dependency_artifact_names(self):
-        return [
-            os.path.join(dep.project_name, _get_normal_name(dep.name), dep._get_cache_key())
-            for dep in self._dependencies(_Scope.BUILD)
-        ]
+    def __get_dependency_artifact_names(self) -> list[str]:
+        refs = []
+        for dep in self._dependencies(_Scope.BUILD):
+            key = dep._get_cache_key()
+            if key is None:
+               key = ""
+            refs.append(
+                os.path.join(
+                    dep.project_name,
+                    _get_normal_name(dep.name),
+                    key,
+                )
+            )
+        return refs
 
     # __get_last_build_artifact()
     #
@@ -2714,7 +2801,7 @@ class Element(Plugin):
     # Returns:
     #    (Artifact): The Artifact of the previous build or None
     #
-    def __get_last_build_artifact(self):
+    def __get_last_build_artifact(self) -> Optional[Artifact]:
         workspace = self._get_workspace()
         if not workspace:
             # Currently incremental builds are only supported for workspaces
@@ -2748,7 +2835,7 @@ class Element(Plugin):
     #
     # Internal method for calling public abstract configure_sandbox() method.
     #
-    def __configure_sandbox(self, sandbox):
+    def __configure_sandbox(self, sandbox: Sandbox) -> None:
 
         self.configure_sandbox(sandbox)
 
@@ -2756,7 +2843,7 @@ class Element(Plugin):
     #
     # Internal method for calling public abstract stage() method.
     #
-    def __stage(self, sandbox):
+    def __stage(self, sandbox: Sandbox) -> None:
 
         # Enable the overlap collector during the staging process
         with self.__collect_overlaps(sandbox):
@@ -2767,7 +2854,7 @@ class Element(Plugin):
     # A internal wrapper for calling the abstract preflight() method on
     # the element and its sources.
     #
-    def __preflight(self):
+    def __preflight(self) -> None:
 
         if self.BST_FORBID_RDEPENDS and self.BST_FORBID_BDEPENDS:
             if any(self._dependencies(_Scope.RUN, recurse=False)) or any(
@@ -2813,7 +2900,7 @@ class Element(Plugin):
     # is the part of the cache key which is element instance
     # specific and automatically generated by BuildStream core.
     #
-    def __get_base_key(self):
+    def __get_base_key(self) -> dict[str, str | None]:
         return {
             "build-root": self.get_variable("build-root"),
         }
@@ -2822,7 +2909,7 @@ class Element(Plugin):
     #
     # Raises an error if the artifact is not cached.
     #
-    def __assert_cached(self):
+    def __assert_cached(self) -> None:
         assert self._cached(), "{}: Missing artifact {}".format(self, self._get_display_key().brief)
 
     # __get_tainted():
@@ -2839,18 +2926,18 @@ class Element(Plugin):
     #    This method should only be called after the element's
     #    artifact is present in the local artifact cache.
     #
-    def __get_tainted(self, recalculate=False):
+    def __get_tainted(self, recalculate: bool = False) -> bool:
+        artifact = self._get_artifact()
         if recalculate or self.__tainted is None:
 
             # Whether this artifact has a workspace
-            workspaced = self.__artifact.get_metadata_workspaced()
+            workspaced = artifact.get_metadata_workspaced()
 
             # Whether this artifact's dependencies have workspaces
-            workspaced_dependencies = self.__artifact.get_metadata_workspaced_dependencies()
+            workspaced_dependencies = artifact.get_metadata_workspaced_dependencies()
 
             # Other conditions should be or-ed
-            self.__tainted = workspaced or workspaced_dependencies
-
+            self.__tainted = workspaced or bool(workspaced_dependencies)
         return self.__tainted
 
     # __collect_overlaps():
@@ -2862,7 +2949,7 @@ class Element(Plugin):
     # this context manager.
     #
     @contextmanager
-    def __collect_overlaps(self, sandbox):
+    def __collect_overlaps(self, sandbox: Sandbox) -> Generator:
         self._overlap_collectors[sandbox] = OverlapCollector(self)
         try:
             yield
@@ -2886,7 +2973,13 @@ class Element(Plugin):
     #    (Sandbox): A usable sandbox
     #
     @contextmanager
-    def __sandbox(self, stdout=None, stderr=None, config=None, allow_remote=True):
+    def __sandbox(
+        self,
+        stdout: Optional[TextIO] = None,
+        stderr: Optional[TextIO] = None,
+        config: Optional[SandboxConfig] = None,
+        allow_remote: bool = True,
+    ) -> Generator[Sandbox]:
         context = self._get_context()
         project = self._get_project()
         platform = context.platform
@@ -2927,7 +3020,7 @@ class Element(Plugin):
     #
     # Normal element initialization procedure.
     #
-    def __initialize_from_yaml(self, load_element: "LoadElement", plugin_conf: Optional[str]):
+    def __initialize_from_yaml(self, load_element: LoadElement, plugin_conf: Optional[str]) -> None:
 
         context = self._get_context()
         project = self._get_project()
@@ -2971,7 +3064,7 @@ class Element(Plugin):
     #
     # Initialize the element state from an artifact key
     #
-    def __initialize_from_artifact_key(self, key: str):
+    def __initialize_from_artifact_key(self, key: str) -> None:
         # At this point we only know the key which was specified on the command line,
         # so we will pretend all keys are equal.
         #
@@ -2996,7 +3089,7 @@ class Element(Plugin):
             self._load_artifact_done()
 
     @classmethod
-    def __compose_default_splits(cls, project, defaults, first_pass):
+    def __compose_default_splits(cls, project: Project, defaults: MappingNode, first_pass: bool) -> None:
 
         element_public = defaults.get_mapping(Symbol.PUBLIC, default={})
         element_bst = element_public.get_mapping("bst", default={})
@@ -3016,7 +3109,7 @@ class Element(Plugin):
         defaults[Symbol.PUBLIC] = element_public
 
     @classmethod
-    def __init_defaults(cls, project, plugin_conf, kind, first_pass):
+    def __init_defaults(cls, project: Project, plugin_conf: Optional[str], kind: str, first_pass: bool) -> None:
         # Defaults are loaded once per class and then reused
         #
         if cls.__defaults is None:
@@ -3051,7 +3144,9 @@ class Element(Plugin):
     # creating sandboxes for this element
     #
     @classmethod
-    def __extract_environment(cls, project, load_element):
+    def __extract_environment(cls, project: Project, load_element: LoadElement) -> MappingNode:
+        assert cls.__defaults is not None, "Need defaults for element"
+
         default_env = cls.__defaults.get_mapping(Symbol.ENVIRONMENT, default={})
         element_env = load_element.node.get_mapping(Symbol.ENVIRONMENT, default={}) or Node.from_dict({})
 
@@ -3067,7 +3162,9 @@ class Element(Plugin):
         return environment
 
     @classmethod
-    def __extract_env_nocache(cls, project, load_element):
+    def __extract_env_nocache(cls, project: Project, load_element: LoadElement) -> list[str]:
+        assert cls.__defaults is not None, "Need defaults for element"
+
         if load_element.first_pass:
             project_nocache = []
         else:
@@ -3087,14 +3184,19 @@ class Element(Plugin):
     # substituting command strings to be run in the sandbox
     #
     @classmethod
-    def __extract_variables(cls, project, load_element):
+    def __extract_variables(cls, project: Project, load_element: LoadElement) -> MappingNode:
+        assert cls.__defaults is not None, "Need defaults for element"
+
         default_vars = cls.__defaults.get_mapping(Symbol.VARIABLES, default={})
         element_vars = load_element.node.get_mapping(Symbol.VARIABLES, default={}) or Node.from_dict({})
 
         if load_element.first_pass:
-            variables = project.first_pass_config.base_variables.clone()
+            base_variables = project.first_pass_config.base_variables
         else:
-            variables = project.base_variables.clone()
+            base_variables = project.base_variables
+
+        assert base_variables, "base variables should be ready to go at this point"
+        variables = base_variables.clone()
 
         default_vars._composite(variables)
         element_vars._composite(variables)
@@ -3119,7 +3221,9 @@ class Element(Plugin):
     # off to element.configure()
     #
     @classmethod
-    def __extract_config(cls, load_element):
+    def __extract_config(cls, load_element: LoadElement) -> MappingNode:
+        assert cls.__defaults is not None, "Element should have defaults"
+
         element_config = load_element.node.get_mapping(Symbol.CONFIG, default={}) or Node.from_dict({})
 
         # The default config is already composited with the project overrides
@@ -3134,12 +3238,15 @@ class Element(Plugin):
     # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
     #
     @classmethod
-    def __extract_sandbox_config(cls, project, load_element):
+    def __extract_sandbox_config(cls, project: Project, load_element: LoadElement) -> MappingNode:
+        assert cls.__defaults is not None, "Elements should have defaults"
+
         element_sandbox = load_element.node.get_mapping(Symbol.SANDBOX, default={}) or Node.from_dict({})
 
         if load_element.first_pass:
             sandbox_config = Node.from_dict({})
         else:
+            assert project.sandbox, "Project should have a sandbox config for this"
             sandbox_config = project.sandbox.clone()
 
         # The default config is already composited with the project overrides
@@ -3156,8 +3263,10 @@ class Element(Plugin):
     # elements may extend but whos defaults are defined in the project.
     #
     @classmethod
-    def __extract_public(cls, load_element):
-        element_public = load_element.node.get_mapping(Symbol.PUBLIC, default={}) or Node.from_dict({})
+    def __extract_public(cls, load_element: LoadElement) -> MappingNode:
+        assert cls.__defaults is not None, "Element should have defaults"
+
+        element_public: MappingNode = load_element.node.get_mapping(Symbol.PUBLIC, default={})
 
         base_public = cls.__defaults.get_mapping(Symbol.PUBLIC, default={})
         base_public = base_public.clone()
@@ -3166,8 +3275,8 @@ class Element(Plugin):
         base_splits = base_bst.get_mapping("split-rules", default={})
 
         element_public = element_public.clone()
-        element_bst = element_public.get_mapping("bst", default={})
-        element_splits = element_bst.get_mapping("split-rules", default={})
+        element_bst: MappingNode = element_public.get_mapping("bst", default={})
+        element_splits: MappingNode = element_bst.get_mapping("split-rules", default={})
 
         # Allow elements to extend the default splits defined in their project or
         # element specific defaults
@@ -3180,8 +3289,9 @@ class Element(Plugin):
 
         return element_public
 
-    def __init_splits(self):
+    def __init_splits(self) -> None:
         bstdata = self.get_public_data("bst")
+        assert bstdata, "bstdata required to load splits"
         splits = bstdata.get_mapping("split-rules")
         self.__splits = {
             domain: re.compile(
@@ -3206,7 +3316,11 @@ class Element(Plugin):
     # Returns:
     #    (bool): Whether to include the specified file
     #
-    def __split_filter(self, element_domains, include, exclude, orphans, path):
+    def __split_filter(
+        self, element_domains: list[str], include: list[str], exclude: list[str], orphans: bool, path: str
+    ) -> bool:
+        assert self.__splits is not None, "Splits required to filter splits"
+
         # Absolute path is required for matching
         filename = os.path.join(os.sep, path)
 
@@ -3241,13 +3355,17 @@ class Element(Plugin):
     #    (callable): Filter callback that returns True if the file is included
     #                in the specified split domains.
     #
-    def __split_filter_func(self, include=None, exclude=None, orphans=True):
+    def __split_filter_func(
+        self, include: Optional[list[str]] = None, exclude: Optional[list[str]] = None, orphans: bool = True
+    ) -> Optional[Callable[[str], bool]]:
+
         # No splitting requested, no filter needed
         if orphans and not (include or exclude):
             return None
 
         if not self.__splits:
             self.__init_splits()
+        assert self.__splits is not None, "We just ran __init_splits so this should never fail"
 
         element_domains = list(self.__splits.keys())
         if not include:
@@ -3265,10 +3383,13 @@ class Element(Plugin):
         # the required callback signature: a single `path` parameter.
         return partial(self.__split_filter, element_domains, include, exclude, orphans)
 
-    def __compute_splits(self, include=None, exclude=None, orphans=True):
+    def __compute_splits(
+        self, include: Optional[list[str]] = None, exclude: Optional[list[str]] = None, orphans: bool = True
+    ) -> Iterable[str]:
+
         filter_func = self.__split_filter_func(include=include, exclude=exclude, orphans=orphans)
 
-        files_vdir = self.__artifact.get_files()
+        files_vdir = self._get_artifact().get_files()
 
         element_files = files_vdir.list_relative_paths()
 
@@ -3284,17 +3405,17 @@ class Element(Plugin):
     #
     # Loads the public data from the cached artifact
     #
-    def __load_public_data(self):
+    def __load_public_data(self) -> None:
         self.__assert_cached()
-        assert self.__dynamic_public is None
+        assert self.__dynamic_public is None, "Element has already loaded it's dynamic public data"
 
-        self.__dynamic_public = self.__artifact.load_public_data()
+        self.__dynamic_public = self._get_artifact().load_public_data()
 
-    def __load_build_result(self):
+    def __load_build_result(self) -> None:
         self.__assert_cached()
-        assert self.__build_result is None
+        assert self.__build_result is None, "Element has already loaded it's build results"
 
-        self.__build_result = self.__artifact.load_build_result()
+        self.__build_result = self._get_artifact().load_build_result()
 
     # __update_cache_keys()
     #
@@ -3320,7 +3441,7 @@ class Element(Plugin):
     # The strict cache key is a cache key that changes if any dependencies
     # in Scope.BUILD has changed in any way.
     #
-    def __update_cache_keys(self):
+    def __update_cache_keys(self) -> None:
         assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         if self.__strict_cache_key is not None:
@@ -3338,30 +3459,12 @@ class Element(Plugin):
         # so let's ensure we only ever calculate the weak key once, even though we need
         # to resolve it before we can resolve the strict key.
         if self.__weak_cache_key is None:
-            # Weak cache key includes names of direct build dependencies
-            # so as to only trigger rebuilds when the shape of the
-            # dependencies change.
-            #
-            # Some conditions cause dependencies to be strict, such
-            # that this element will be rebuilt anyway if the dependency
-            # changes even in non strict mode, for these cases we just
-            # encode the dependency's weak cache key instead of it's name.
-            #
-            dependencies = [
-                (
-                    [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
-                    if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
-                    else [e.project_name, e.name]
-                )
-                for e in self._dependencies(_Scope.BUILD)
-            ]
-            self.__weak_cache_key = self._calculate_cache_key(dependencies)
+            self.__weak_cache_key = self._calculate_cache_key(_KeyStrength.WEAK)
 
         context = self._get_context()
 
         # Calculate the strict cache key
-        dependencies = [[e.project_name, e.name, e.__strict_cache_key] for e in self._dependencies(_Scope.BUILD)]
-        self.__strict_cache_key = self._calculate_cache_key(dependencies, self.__weak_cache_key)
+        self.__strict_cache_key = self._calculate_cache_key(_KeyStrength.STRICT, self.__weak_cache_key)
 
         if self.__strict_cache_key is None:
             # Cache keys cannot be calculated yet as a build dependency doesn't
@@ -3392,9 +3495,9 @@ class Element(Plugin):
     # as the cache key can be loaded from the cache (possibly pulling from
     # a remote cache).
     #
-    def __update_cache_key_non_strict(self):
+    def __update_cache_key_non_strict(self) -> None:
         assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
-
+        artifact = self._get_artifact()
         # The final cache key can be None here only in non-strict mode
         if self.__cache_key is None:
             if self._pull_pending():
@@ -3402,14 +3505,12 @@ class Element(Plugin):
                 pass
             elif self._cached():
                 # Load the strong cache key from the artifact
-                strong_key, _, _ = self.__artifact.get_metadata_keys()
+                strong_key, _, _ = artifact.get_metadata_keys()
                 self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
                 # Artifact will or has been built, not downloaded
                 assert self.__weak_cache_key is not None
-
-                dependencies = [[e.project_name, e.name, e._get_cache_key()] for e in self._dependencies(_Scope.BUILD)]
-                self.__cache_key = self._calculate_cache_key(dependencies, self.__weak_cache_key)
+                self.__cache_key = self._calculate_cache_key(_KeyStrength.STRONG, self.__weak_cache_key)
 
             if self.__cache_key is None:
                 # Strong cache key could not be calculated yet
@@ -3420,7 +3521,7 @@ class Element(Plugin):
             self._update_ready_for_runtime_and_cached()
 
             # Now we have the strong cache key, update the Artifact
-            self.__artifact._cache_key = self.__cache_key
+            artifact._cache_key = self.__cache_key
 
             # Update the message kwargs in use for this plugin to dispatch messages with
             self._message_kwargs["element_key"] = self._get_display_key()
@@ -3437,7 +3538,7 @@ class Element(Plugin):
 # Returns:
 #     (str): The normalised element name
 #
-def _get_normal_name(element_name):
+def _get_normal_name(element_name: str) -> str:
     return os.path.splitext(element_name.replace(os.sep, "-"))[0]
 
 
@@ -3453,7 +3554,7 @@ def _get_normal_name(element_name):
 # Returns:
 #     (str): The constructed artifact name path
 #
-def _compose_artifact_name(project_name, normal_name, cache_key):
+def _compose_artifact_name(project_name: str, normal_name: str, cache_key: str) -> str:
     valid_chars = string.digits + string.ascii_letters + "-._"
     normal_name = "".join([x if x in valid_chars else "_" for x in normal_name])
 

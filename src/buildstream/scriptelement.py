@@ -36,15 +36,15 @@ from typing import List, Optional, TYPE_CHECKING
 from .element import Element
 
 if TYPE_CHECKING:
-    from typing import Dict, Tuple
+    pass
 
 
 class ScriptElement(Element):
     __install_root = "/"
     __cwd = "/"
     __root_read_only = False
-    __commands = None  # type: OrderedDict[str, List[str]]
-    __layout = {}  # type: Dict[str, List[Tuple[Element, str]]]
+    __commands: Optional[OrderedDict[str, list[str]]] = None
+    __layout: dict[str, list[tuple[Element, str]]] = {}
 
     # The compose element's output is its dependencies, so
     # we must rebuild if the dependencies change even when
@@ -243,6 +243,7 @@ class ScriptElement(Element):
 
     def assemble(self, sandbox):
         with sandbox.batch(root_read_only=self.__root_read_only, collect=self.__install_root):
+            assert self.__commands, "Commands are required in a script element"
             for groupname, commands in self.__commands.items():
                 with sandbox.batch(root_read_only=self.__root_read_only, label="Running '{}'".format(groupname)):
                     for cmd in commands:

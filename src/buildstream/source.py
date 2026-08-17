@@ -777,7 +777,7 @@ class Source(Plugin):
     """
 
     # The defaults from the project
-    __defaults: Optional[Dict[str, Any]] = None
+    __defaults: Optional[MappingNode] = None
 
     BST_CUSTOM_SOURCE_PROVENANCE = False
     """Whether multiple sources' provenance information are provided
@@ -1186,6 +1186,7 @@ class Source(Plugin):
         if self.__mirror_directory is None:
             # Create the directory if it doesnt exist
             context = self._get_context()
+            assert context.sourcedir, "Must have a source dir to get mirror directory"
             directory = os.path.join(context.sourcedir, self.get_kind())
             os.makedirs(directory, exist_ok=True)
             self.__mirror_directory = directory
@@ -1239,7 +1240,7 @@ class Source(Plugin):
 
             url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
             project_alias_url = project.get_alias_url(url_alias, first_pass=self.__first_pass)
-
+            assert project_alias_url, "project get alias url should have returns something"
             if self.__alias_override is not None:
                 override_alias = self.__alias_override[0]
                 override_subst = self.__alias_override[1]
@@ -1361,6 +1362,7 @@ class Source(Plugin):
            The project base directory
         """
         project = self._get_project()
+        assert project.directory, "Project must have a directory"
         return project.directory
 
     @contextmanager
@@ -1433,6 +1435,9 @@ class Source(Plugin):
         if provenance_node is not None:
             # Ensure provenance node keys are valid and values are all strings
             try:
+                assert (
+                    project.source_provenance_attributes
+                ), "must have source_provenance_attributes from project for source"
                 provenance_node.validate_keys(project.source_provenance_attributes.keys())
             except LoadError as E:
                 raise LoadError(
@@ -1683,7 +1688,7 @@ class Source(Plugin):
     # Raises:
     #    (SourceError): In the case we encounter errors saving a file to disk
     #
-    def _set_ref(self, new_ref, *, save):
+    def _set_ref(self, new_ref: None | int | str | list[Any] | dict[str, Any], *, save: bool):
 
         context = self._get_context()
         project = self._get_project()
@@ -1697,12 +1702,14 @@ class Source(Plugin):
         #
         # Step 1 - Obtain the node
         #
-        node = {}
+        node: MappingNode | None = None
         if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
             node = toplevel_refs.lookup_ref(project.name, element_name, element_idx, write=True)
 
         if project is toplevel and not node:
             node = provenance._node
+
+        assert node, "Node should now be set, or we have a problem"
 
         #
         # Step 2 - Set the ref in memory, and determine changed state
@@ -1716,7 +1723,7 @@ class Source(Plugin):
         # In the following add/del/mod merge algorithm we are working with
         # dictionaries, but the plugin API calls for a MappingNode.
         #
-        modify = node.clone()
+        modify: MappingNode = node.clone()
         self.set_ref(new_ref, modify)
         to_modify = modify.strip_node_info()
 
@@ -1786,7 +1793,7 @@ class Source(Plugin):
             else:
                 assert False, "BUG: Unknown action: {}".format(action)
 
-        roundtrip_cache = {}
+        roundtrip_cache: dict[str, Any] = {}
         for key, action in actions.items():
             # Obtain the top level node and its file
             if action == "add":
@@ -1795,6 +1802,7 @@ class Source(Plugin):
                 provenance = node.get_node(key).get_provenance()
 
             toplevel_node = provenance._toplevel
+            assert toplevel_node is not None, "Must have a top level node for the provenance"
 
             # Get the path to whatever changed
             if action == "add":
@@ -1891,7 +1899,7 @@ class Source(Plugin):
     def _get_brief_display_key(self):
         context = self._get_context()
         key = self._key
-
+        assert context.log_key_length, "Need log key length"
         length = min(len(key), context.log_key_length)
         return key[:length]
 
@@ -2030,7 +2038,8 @@ class Source(Plugin):
 
                 else:
                     # No break occurred, raise the last detected error
-                    raise last_error
+                    if last_error:
+                        raise last_error
 
         # Default codepath is to reinstantiate the Source
         #
@@ -2056,7 +2065,8 @@ class Source(Plugin):
                 return
 
             # Re raise the last detected error
-            raise last_error
+            if last_error:
+                raise last_error
 
     # Tries to call track for every mirror, stopping once it succeeds
     def __do_track(self, **kwargs):
@@ -2080,11 +2090,11 @@ class Source(Plugin):
                 continue
 
             return ref
-
-        raise last_error
+        if last_error:
+            raise last_error
 
     @classmethod
-    def __init_defaults(cls, project, meta):
+    def __init_defaults(cls, project: "Project", meta: MetaSource):
         if cls.__defaults is None:
             if meta.first_pass:
                 sources = project.first_pass_config.source_overrides
@@ -2096,7 +2106,8 @@ class Source(Plugin):
     # off to source.configure()
     #
     @classmethod
-    def __extract_config(cls, meta):
+    def __extract_config(cls, meta: MetaSource) -> MappingNode:
+        assert cls.__defaults, "Need source plugin defaults here"
         config = cls.__defaults.get_mapping("config", default={})
         config = config.clone()
 
@@ -2108,7 +2119,7 @@ class Source(Plugin):
 
 def _extract_alias(url):
     parts = url.split(utils._ALIAS_SEPARATOR, 1)
-    if len(parts) > 1 and not parts[0].lower() in utils._URI_SCHEMES:
+    if len(parts) > 1 and parts[0].lower() not in utils._URI_SCHEMES:
         return parts[0]
     else:
         return ""

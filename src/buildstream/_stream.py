@@ -258,7 +258,7 @@ class Stream:
     #
     def shell(
         self,
-        target: str,
+        target: Optional[str],
         scope: _Scope,
         prompt: Callable[[Element], str],
         *,
@@ -278,6 +278,9 @@ class Stream:
         if unique_id and target is None:
             element = Plugin._lookup(unique_id)
         else:
+            assert (
+                target
+            ), "If method is called from bst shell cli, the cli ensures a target is present, but other uses must provide a unique_id or target"
             if usebuildtree:
                 selection = _PipelineSelection.NONE
             elif scope == _Scope.BUILD:
@@ -414,6 +417,7 @@ class Stream:
         # Assert that the elements are consistent
         _pipeline.assert_consistent(self._context, elements)
 
+        assert self._sourcecache, "Stream must have source cache"
         source_push_enabled = self._sourcecache.has_push_remotes()
 
         # If source push is enabled, the source cache status of all elements
@@ -423,7 +427,7 @@ class Stream:
         # Now construct the queues
         #
         self._reset()
-
+        assert self._artifacts, "Stream must have artifacts"
         if self._artifacts.has_fetch_remotes():
             self._add_queue(PullQueue(self._scheduler))
 
@@ -552,6 +556,7 @@ class Stream:
 
         self.query_cache(elements, only_sources=True)
 
+        assert self._sourcecache, "Stream must have source cache"
         if not self._sourcecache.has_push_remotes():
             raise StreamError("No source caches available for pushing sources")
 
@@ -601,6 +606,7 @@ class Stream:
             ignore_project_artifact_remotes=ignore_project_artifact_remotes,
         )
 
+        assert self._artifacts, "Stream must have artifacts"
         if not self._artifacts.has_fetch_remotes():
             raise StreamError("No artifact caches available for pulling artifacts")
 
@@ -649,6 +655,7 @@ class Stream:
             ignore_project_artifact_remotes=ignore_project_artifact_remotes,
         )
 
+        assert self._artifacts, "Stream must have artifacts"
         if not self._artifacts.has_push_remotes():
             raise StreamError("No artifact caches available for pushing artifacts")
 
@@ -812,7 +819,7 @@ class Stream:
         self.query_cache(target_objects)
 
         not_cached_locally = [element for element in target_objects if not element._cached()]
-
+        assert self._artifacts, "Stream must have artifacts"
         if self._artifacts.has_fetch_remotes():
             self._resolve_cached_remotely(not_cached_locally)
 
@@ -905,6 +912,7 @@ class Stream:
         ref_removed = False
         for ref in remove_refs:
             try:
+                assert self._artifacts, "Stream must have artifacts"
                 self._artifacts.remove(ref)
             except ArtifactError as e:
                 self._context.messenger.warn(str(e))
@@ -936,7 +944,7 @@ class Stream:
         self,
         target: str,
         *,
-        location: Optional[str] = None,
+        location: str = "",
         force: bool = False,
         deps=_PipelineSelection.NONE,
         except_targets: Iterable[str] = (),
@@ -1230,6 +1238,7 @@ class Stream:
     #    (list of str): The element names after redirecting
     #
     def redirect_element_names(self, elements):
+        assert self._project, "Stream must have project to redirect element names"
         element_dir = self._project.element_path
         load_elements = []
         output_elements = set()
@@ -1274,7 +1283,8 @@ class Stream:
     #
     def get_default_targets(self):
         self._assert_project("Unable to determine default targets")
-        return self._project.get_default_targets()
+        # (Type checker still thinks self._project could be None, but we assert it with the function above, so error ignored)
+        return self._project.get_default_targets()  # type: ignore
 
     #############################################################
     #                 Scheduler API forwarding                  #
@@ -1445,6 +1455,7 @@ class Stream:
         targets = list(itertools.chain(*target_groups))
 
         with PROFILER.profile(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, "-") for t in targets)):
+            assert self._project, "Stream must have a project loaded"
             elements = self._project.load_elements(targets)
 
             # Now create element groups to match the input target groups
@@ -1618,6 +1629,7 @@ class Stream:
 
         # We can track anything if the toplevel project uses project.refs
         #
+        assert self._project, "Stream must have a project loaded to track cross junction filter"
         if self._project.ref_storage == ProjectRefStorage.PROJECT_REFS:
             return elements
 
@@ -1914,7 +1926,7 @@ class Stream:
     def _source_checkout(
         self,
         elements,
-        location=None,
+        location: str = "",
         force=False,
         deps="none",
         tar=False,
@@ -2135,6 +2147,7 @@ class Stream:
 
         # Glob the artifact names and add the results to the set
         #
+        assert self._artifacts, "Stream must have artifacts to process globs"
         for glob in artifact_globs:
             glob_results = self._artifacts.list_artifacts(glob=glob)
             for artifact_name in glob_results:
