@@ -420,7 +420,7 @@ def help_command(ctx, command):
 @click.option(
     "--min-version",
     type=click.STRING,
-    default="2.7",
+    default="2.8",
     show_default=True,
     help="The required format version",
 )
