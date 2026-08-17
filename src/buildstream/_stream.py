@@ -1174,6 +1174,9 @@ class Stream:
             workspaces.save_config()
             self.workspace_open([element._get_full_name()], no_checkout=False, force=True, custom_dir=workspace_path)
 
+        if soft:
+            workspaces.save_config()
+
     # workspace_exists
     #
     # Check if a workspace exists
