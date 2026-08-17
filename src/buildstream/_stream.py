@@ -916,6 +916,84 @@ class Stream:
         if not ref_removed:
             self._context.messenger.info("No artifacts were removed")
 
+    # buildtree_checkout()
+    #
+    # Checkout target buildtree artifact to the specified location
+    #
+    # Args:
+    #    target: Target to checkout
+    #    location: Location to checkout the artifact to
+    #    force: Whether files can be overwritten if necessary
+    #    hardlinks: Whether checking out files hardlinked to
+    #               their artifacts is acceptable
+    #    tar: If true, a tarball from the artifact contents will
+    #         be created, otherwise the file tree of the artifact
+    #         will be placed at the given location. If true and
+    #         location is '-', the tarball will be dumped on the
+    #         standard output.
+    #    artifact_remotes: Artifact cache remotes specified on the commmand line
+    #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
+    #
+    def buildtree_checkout(
+        self,
+        target: str,
+        *,
+        location: Optional[str] = None,
+        buildroot: bool = False,
+        force: bool = False,
+        hardlinks: bool = False,
+        compression: str = "",
+        tar: bool = False,
+        artifact_remotes: Iterable[RemoteSpec] = (),
+        ignore_project_artifact_remotes: bool = False,
+    ):
+        elements = self._load(
+            (target,),
+            selection=_PipelineSelection.NONE,
+            load_artifacts=True,
+            attempt_artifact_metadata=True,
+            connect_artifact_cache=True,
+            artifact_remotes=artifact_remotes,
+            ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+        )
+
+        assert len(elements) == 1
+        element: Element = elements[0]
+
+        self._check_location_writable(location, force=force, tar=tar)
+
+        self.query_cache([element])
+        self._pull_missing_artifacts([element])
+
+        if buildroot:
+            # If the user requested the buildroot but no buildroot is available, fail.
+            if not element._buildroot_exists():
+                raise StreamError("No buildroot artifact available", reason="missing-buildroot")
+        else:
+            # If the user requested the buildtree but no buildtree is available,
+            # suggest checking out the buildroot if one is available.
+            # Otherwise, fail if neither is available.
+            if not element._buildtree_exists():
+                if element._buildroot_exists():
+                    raise StreamError(
+                        "No buildtree artifact available, but a buildroot is available. "
+                        "Use the --buildroot option to check out the buildroot.",
+                        reason="missing-buildtree-buildroot-exists",
+                    )
+                raise StreamError(
+                    "Neither a buildtree nor a buildroot artifact is available.",
+                    reason="missing-buildtree-and-buildroot",
+                )
+
+        try:
+            artifact = element._get_artifact()
+            virdir = artifact.get_buildroot() if buildroot else artifact.get_buildtree()
+            self._export_artifact(tar, location, compression, element, hardlinks, virdir)
+        except BstError as e:
+            raise StreamError(
+                "Error while exporting buildtree artifacts" ": '{}'".format(e), detail=e.detail, reason=e.reason
+            ) from e
+
     # source_checkout()
     #
     # Checkout sources of the target element to the specified location
