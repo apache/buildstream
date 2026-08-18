@@ -12,7 +12,10 @@
 #  limitations under the License.
 #
 from typing import Optional
+from ruamel.yaml import CommentedMap
 
 from .node import MappingNode
 
 def load(filename: str, shortname: str, copy_tree: bool = False, project: Optional[object] = None) -> MappingNode: ...
+def roundtrip_load(filename: str, *, allow_missing: bool = False) -> CommentedMap: ...
+def roundtrip_dump(contents, file): ...

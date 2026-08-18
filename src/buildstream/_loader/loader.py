@@ -21,7 +21,7 @@ from .._exceptions import LoadError
 from ..exceptions import LoadErrorReason
 from .. import _yaml
 from ..element import Element
-from ..node import Node
+from ..node import Node, MappingNode
 from .._profile import Topics, PROFILER
 from .._includes import Includes
 from .._utils import valid_chars_name
@@ -1014,7 +1014,9 @@ class Loader:
     #            - (str): name of the element
     #            - (Loader): loader for sub-project
     #
-    def _parse_name(self, name, provenance_node, *, load_subprojects=True):
+    def _parse_name(
+        self, name: str, provenance_node: MappingNode, *, load_subprojects: bool = True
+    ) -> tuple[str | None, str, "Loader"]:
         # We allow to split only once since deep junctions names are forbidden.
         # Users who want to refer to elements in sub-sub-projects are required
         # to create junctions on the top level project.
