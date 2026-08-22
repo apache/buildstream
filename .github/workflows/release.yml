@@ -14,7 +14,7 @@ jobs:
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
         # BuildStream requires tags to be able to find its version.
         with:
           fetch-depth: 0
@@ -35,7 +35,7 @@ jobs:
 
           tar -C doc/build/html -zcf docs.tgz .
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: docs
           path: docs.tgz
@@ -44,14 +44,14 @@ jobs:
     name: "Build Python source distribution tarball"
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
 
     - name: Build sdist
       run: pipx run build --sdist
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: sdist
         path: dist/*.tar.gz
@@ -64,7 +64,7 @@ jobs:
         os: [ubuntu-24.04]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -74,7 +74,7 @@ jobs:
       - name: Build wheels
         run: pipx run cibuildwheel==v3.1.4
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels
           path: ./wheelhouse/*.whl
@@ -96,11 +96,11 @@ jobs:
           - wheels-manylinux_2_28-cp314
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: wheels
           path: ./wheelhouse
@@ -114,11 +114,11 @@ jobs:
     needs: [build_docs, build_sdist, build_wheels, test_wheels]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: docs
 
@@ -134,12 +134,12 @@ jobs:
     needs: [build_docs, build_sdist, build_wheels, test_wheels]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sdist
           path: dist
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: wheels
           path: dist
