@@ -36,6 +36,13 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 def build_session(integration_cache, datafiles, element_name):
     project = str(datafiles)
 
+    # Interactive tests need a usable TERM so tools like click's pager (less)
+    # run interactively.  Containers used for CI often leave TERM unset even
+    # when pexpect allocates a PTY.
+    env = os.environ.copy()
+    if not env.get("TERM") or env["TERM"] == "dumb":
+        env["TERM"] = "xterm"
+
     # Spawn interactive session using `configured()` context manager in order
     # to get the same config file as the `cli` fixture.
     with runcli.configured(project, config={"sourcedir": integration_cache.sources}) as config_file:
@@ -50,6 +57,7 @@ def build_session(integration_cache, datafiles, element_name):
                 "build",
                 element_name,
             ],
+            env=env,
             timeout=PEXPECT_TIMEOUT_SHORT,
         )
         yield session
