@@ -54,7 +54,7 @@ jobs:
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Check out repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
         # BuildStream requires tags to be able to find its version.
         with:
           fetch-depth: 0
@@ -82,7 +82,7 @@ jobs:
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Check out repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
         # BuildStream requires tags to be able to find its version.
         with:
           fetch-depth: 0
@@ -98,7 +98,7 @@ jobs:
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Check out repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
         # BuildStream requires tags to be able to find its version.
         with:
           fetch-depth: 0
@@ -115,7 +115,7 @@ jobs:
             docs
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docs
           path: doc/build/html
@@ -128,7 +128,7 @@ jobs:
         os: [ubuntu-24.04]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -138,7 +138,7 @@ jobs:
       - name: Build wheels
         run: pipx run cibuildwheel==v3.1.4
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels
           path: ./wheelhouse/*.whl
@@ -160,11 +160,11 @@ jobs:
           - wheels-manylinux_2_28-cp314
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: wheels
           path: ./wheelhouse
