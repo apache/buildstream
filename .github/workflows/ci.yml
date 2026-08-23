@@ -39,6 +39,7 @@ jobs:
           - debian-12
           - debian-13
           - fedora-44
+          - fedora-45
           - fedora-missing-deps
           - ubuntu-22.04
           - lint

@@ -34,6 +34,10 @@ services:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:44-${CI_IMAGE_VERSION:-latest}
 
+  fedora-45:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:45-${CI_IMAGE_VERSION:-latest}
+
   ubuntu-22.04:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:22.04-${CI_IMAGE_VERSION:-latest}
