@@ -72,7 +72,7 @@ jobs:
         run: ${GITHUB_WORKSPACE}/.github/wheel-helpers/fetch-latest-buildbox-release.sh
 
       - name: Build wheels
-        run: pipx run cibuildwheel==v3.1.4
+        run: pipx run cibuildwheel~=4.0
 
       - uses: actions/upload-artifact@v7
         with:
