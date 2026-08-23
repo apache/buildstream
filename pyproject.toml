@@ -43,6 +43,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Topic :: Software Development :: Build Tools",
 ]
 
@@ -57,7 +58,7 @@ Tracker = "https://github.com/apache/buildstream/issues"
 bst = "buildstream._frontend:cli"
 
 [tool.black]
-target-version = ["py310", "py311", "py312", "py313", "py314"]
+target-version = ["py310", "py311", "py312", "py313", "py314", "py315"]
 line-length = 119
 exclude = '''
 (
