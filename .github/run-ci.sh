@@ -102,7 +102,7 @@ function runServiceTest() {
 
 
 if [ -z "${test_names}" ]; then
-    for test_name in mypy debian-12 debian-13 fedora-44 fedora-missing-deps ubuntu-22.04; do
+    for test_name in mypy debian-12 debian-13 fedora-44 fedora-45 fedora-missing-deps ubuntu-22.04; do
 	if ! runTest "${test_name}"; then
 	    echo "Tests failed"
 	    exit 1

@@ -34,6 +34,10 @@ services:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:44-${CI_IMAGE_VERSION:-latest}
 
+  fedora-45:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:45-${CI_IMAGE_VERSION:-latest}
+
   ubuntu-22.04:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:22.04-${CI_IMAGE_VERSION:-latest}
@@ -116,3 +120,8 @@ services:
     <<: *tests-template
     image: quay.io/pypa/manylinux_2_28_x86_64
     command: .github/wheel-helpers/test-wheel-manylinux.sh cp314-cp314 /opt/python/cp314-cp314/bin/python3
+
+  wheels-manylinux_2_28-cp315:
+    <<: *tests-template
+    image: quay.io/pypa/manylinux_2_28_x86_64
+    command: .github/wheel-helpers/test-wheel-manylinux.sh cp315-cp315 /opt/python/cp315-cp315/bin/python3
