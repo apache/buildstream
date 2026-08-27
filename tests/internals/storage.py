@@ -73,9 +73,11 @@ def test_merge_same_casdirs(tmpdir, datafiles, directories):
         clear_gitkeeps(directory)
         utime_recursively(directory, (100, 100))
 
-    with setup_backend(CasBasedDirectory, str(tmpdir)) as c, setup_backend(
-        CasBasedDirectory, str(tmpdir)
-    ) as a, setup_backend(CasBasedDirectory, str(tmpdir)) as b:
+    with (
+        setup_backend(CasBasedDirectory, str(tmpdir)) as c,
+        setup_backend(CasBasedDirectory, str(tmpdir)) as a,
+        setup_backend(CasBasedDirectory, str(tmpdir)) as b,
+    ):
         a.import_files(before)
         b.import_files(after)
         c.import_files(buildtree)
@@ -150,9 +152,12 @@ def test_merge_casdir_properties(tmpdir, datafiles, modification):
 def _test_merge_dirs(
     before: str, after: str, buildtree: str, tmpdir: str, properties: Optional[List[str]] = None
 ) -> bool:
-    with setup_backend(CasBasedDirectory, tmpdir) as c, setup_backend(
-        CasBasedDirectory, tmpdir
-    ) as copy, setup_backend(CasBasedDirectory, tmpdir) as a, setup_backend(CasBasedDirectory, tmpdir) as b:
+    with (
+        setup_backend(CasBasedDirectory, tmpdir) as c,
+        setup_backend(CasBasedDirectory, tmpdir) as copy,
+        setup_backend(CasBasedDirectory, tmpdir) as a,
+        setup_backend(CasBasedDirectory, tmpdir) as b,
+    ):
         a._import_files_internal(before, properties=properties)
         b._import_files_internal(after, properties=properties)
         c._import_files_internal(buildtree, properties=properties)

@@ -590,7 +590,7 @@ class Plugin:
         activity_name: str,
         *,
         detail: Optional[str] = None,
-        silent_nested: bool = False
+        silent_nested: bool = False,
     ) -> T1:
         """Execute a blocking activity in the background.
 

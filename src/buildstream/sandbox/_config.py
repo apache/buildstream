@@ -53,7 +53,7 @@ class SandboxConfig:
         build_uid: Optional[int] = None,
         build_gid: Optional[int] = None,
         remote_apis_socket_path: Optional[str] = None,
-        remote_apis_socket_action_cache_enable_update: bool = False
+        remote_apis_socket_action_cache_enable_update: bool = False,
     ):
         self.build_os = build_os
         self.build_arch = build_arch

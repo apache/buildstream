@@ -235,7 +235,7 @@ class FileBasedDirectory(Directory):
         filter_callback: Optional[Callable[[str], bool]] = None,
         update_mtime: Optional[float] = None,
         properties: Optional[List[str]] = None,
-        collect_result: bool = True
+        collect_result: bool = True,
     ) -> FileListResult:
 
         # See if we can get a source directory to copy from
@@ -405,7 +405,7 @@ class FileBasedDirectory(Directory):
         *,
         path_prefix: str = "",
         update_mtime: Optional[float] = None,
-        result: FileListResult
+        result: FileListResult,
     ) -> None:
 
         # Iterate over entries in the source directory

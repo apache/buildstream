@@ -340,7 +340,7 @@ class Messenger:
         task_name: Optional[str] = None,
         detail: Optional[str] = None,
         silent_nested: bool = False,
-        **kwargs
+        **kwargs,
     ) -> Iterator[Optional[Task]]:
         # Bypass use of State when none exists (e.g. tests)
         if not self._state:

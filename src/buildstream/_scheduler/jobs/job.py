@@ -206,7 +206,7 @@ class Job:
             message,
             element_name=self._message_element_name,
             element_key=self._message_element_key,
-            **kwargs
+            **kwargs,
         )
         self._messenger.message(message)
 
