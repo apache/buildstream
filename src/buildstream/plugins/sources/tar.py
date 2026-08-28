@@ -149,42 +149,18 @@ class TarSource(DownloadableFileSource):
                     if base_dir and not base_dir.endswith(os.sep):
                         base_dir = base_dir + os.sep
 
-                filter_function = functools.partial(self._extract_filter, base_dir)
+                filter_function = functools.partial(self._preextract_filter, base_dir)
                 filtered_members = []
                 for member in tar.getmembers():
                     member = filter_function(member, directory)
                     if member is not None:
                         filtered_members.append(member)
-                tar.extractall(path=directory, members=filtered_members, filter="tar")
+                tar.extractall(path=directory, members=filtered_members, filter=self._extract_filter)
 
         except (tarfile.TarError, OSError) as e:
             raise SourceError("{}: Error staging source: {}".format(self, e)) from e
 
-    # Assert that a tarfile is safe to extract; specifically, make
-    # sure that we don't do anything outside of the target
-    # directory (this is possible, if, say, someone engineered a
-    # tarfile to contain paths that start with ..).
-    def _assert_safe(self, member: tarfile.TarInfo, target_dir: str):
-        final_path = os.path.abspath(os.path.join(target_dir, member.path))
-        if not final_path.startswith(target_dir):
-            raise SourceError(
-                "{}: Tarfile attempts to extract outside the staging area: "
-                "{} -> {}".format(self, member.path, final_path)
-            )
-
-        if member.islnk():
-            linked_path = os.path.abspath(os.path.join(target_dir, member.linkname))
-            if not linked_path.startswith(target_dir):
-                raise SourceError(
-                    "{}: Tarfile attempts to hardlink outside the staging area: "
-                    "{} -> {}".format(self, member.path, final_path)
-                )
-
-        # Don't need to worry about symlinks because they're just
-        # files here and won't be able to do much harm once we are
-        # in a sandbox.
-
-    def _extract_filter(
+    def _preextract_filter(
         self, base_dir: Optional[str], member: tarfile.TarInfo, target_dir: str
     ) -> Optional[tarfile.TarInfo]:
         if base_dir:
@@ -216,13 +192,19 @@ class TarSource(DownloadableFileSource):
 
             member.path = member.path[L:]
 
-        self._assert_safe(member, target_dir)
-
         # Skip device nodes
         if member.isdev():
             return None
 
         return member
+
+    def _extract_filter(self, member: tarfile.TarInfo, target_dir: str) -> Optional[tarfile.TarInfo]:
+        if member.issym():
+            # `data_filter` is too restrictive as we need to preserve, e.g., absolute symbolic links.
+            # `tar_filter` still makes sure that symlinks aren't followed if they escape the target directory.
+            return tarfile.tar_filter(member, target_dir)
+        else:
+            return tarfile.data_filter(member, target_dir)
 
     # We want to iterate over all paths of a tarball, but getmembers()
     # is not enough because some tarballs simply do not contain the leading
