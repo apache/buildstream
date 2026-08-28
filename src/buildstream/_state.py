@@ -150,7 +150,7 @@ class Task:
     # Args:
     #    progress: The maximum progress possible for this task
     #
-    def set_maximum_progress(self, progress: int) -> None:
+    def set_maximum_progress(self, progress: int | None) -> None:
         self.maximum_progress = progress
         self._notify_task_changed()
 

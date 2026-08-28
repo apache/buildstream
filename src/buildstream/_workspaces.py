@@ -374,7 +374,7 @@ class Workspaces:
     # Returns:
     #    (None|Workspace)
     #
-    def get_workspace(self, element_name):
+    def get_workspace(self, element_name: str) -> Workspace | None:
         if element_name not in self._workspaces:
             return None
         return self._workspaces[element_name]

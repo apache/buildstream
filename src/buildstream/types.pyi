@@ -47,7 +47,7 @@ class OverlapAction(Enum):
 from ._types import MetaFastEnum as MetaFastEnum
 from .node import MappingNode as MappingNode, SequenceNode as SequenceNode
 from _typeshed import Incomplete
-from typing import Any
+from typing import Any, Literal
 from enum import Enum
 
 class FastEnum(metaclass=MetaFastEnum):
@@ -83,11 +83,11 @@ class CoreWarnings:
     Some common warnings which are raised by core functionalities within BuildStream are found in this class.
     """
 
-    OVERLAPS: str
-    UNSTAGED_FILES: str
-    REF_NOT_IN_TRACK: str
-    UNALIASED_URL: str
-    UNAVAILABLE_SOURCE_INFO: str
+    OVERLAPS = "overlaps"
+    UNSTAGED_FILES = "unstaged-files"
+    REF_NOT_IN_TRACK = "ref-not-in-track"
+    UNALIASED_URL = "unaliased-url"
+    UNAVAILABLE_SOURCE_INFO = "unavailable-source-info"
 
 class OverlapAction(Enum):
     """OverlapAction()
@@ -111,19 +111,20 @@ class OverlapAction(Enum):
        as a :ref:`fatal warning <configurable_warnings>`.
     """
 
-    ERROR: str
-    WARNING: str
-    IGNORE: str
+    ERROR = "error"
+    WARNING = "warning"
+    IGNORE = "ignore"
 
 class _Scope(Enum):
-    ALL: int
-    BUILD: int
-    RUN: int
-    NONE: int
+    ALL = 1
+    BUILD = 2
+    RUN = 3
+    NONE = 4
 
 class _KeyStrength(Enum):
-    STRONG: int
-    WEAK: int
+    STRONG = 1
+    WEAK = 2
+    STRICT = 3
 
 class _DisplayKey:
     full: str
@@ -132,27 +133,27 @@ class _DisplayKey:
     def __init__(self, full: str, brief: str, strict: bool) -> None: ...
 
 class _SchedulerErrorAction(Enum):
-    CONTINUE: str
-    QUIT: str
-    TERMINATE: str
+    CONTINUE = "continue"
+    QUIT = "quit"
+    TERMINATE = "terminate"
 
 class _CacheBuildTrees(Enum):
-    ALWAYS: str
-    AUTO: str
-    NEVER: str
+    ALWAYS = "always"
+    AUTO = "auto"
+    NEVER = "never"
 
 class _SourceUriPolicy(Enum):
-    ALL: str
-    ALIASES: str
-    MIRRORS: str
-    USER: str
+    ALL = "all"
+    ALIASES = "aliases"
+    MIRRORS = "mirrors"
+    USER = "user"
 
 class _PipelineSelection(Enum):
-    NONE: str
-    REDIRECT: str
-    ALL: str
-    BUILD: str
-    RUN: str
+    NONE = "none"
+    REDIRECT = "redirect"
+    ALL = "all"
+    BUILD = "build"
+    RUN = "run"
 
 class _ProjectInformation:
     project: Incomplete

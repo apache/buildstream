@@ -15,22 +15,25 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
-from typing import TYPE_CHECKING, Optional, Dict, Union, List, Sequence, Callable
 
 import os
 import urllib.parse
 from pathlib import Path
+from typing import TYPE_CHECKING, Optional, Dict, Union, List, Sequence, Callable, Self
+
 from pluginbase import PluginBase
+
 from . import utils
 from . import _site
 from . import _yaml
+from ._loader.loadelement import LoadElement
 from ._variables import Variables
 from .utils import UtilError
 from ._profile import Topics, PROFILER
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
 from ._options import OptionPool
-from .node import ScalarNode, MappingNode, ProvenanceInformation, _assert_symbol_name
+from .node import ScalarNode, MappingNode, _assert_symbol_name, Node, SequenceNode
 from ._pluginfactory import ElementFactory, SourceFactory, SourceMirrorFactory, load_plugin_origin
 from .types import CoreWarnings, _HostMount, _SourceUriPolicy
 from ._projectrefs import ProjectRefs, ProjectRefStorage
@@ -40,7 +43,7 @@ from ._includes import Includes
 from ._workspaces import WORKSPACE_PROJECT_FILE
 from ._remotespec import RemoteSpec
 from .sourcemirror import SourceMirror
-from .source import AliasSubstitution, SourceError
+from .source import AliasSubstitution, SourceError, Source
 
 if TYPE_CHECKING:
     from ._context import Context
@@ -53,14 +56,14 @@ _PROJECT_CONF_FILE = "project.conf"
 
 # Represents project configuration that can have different values for junctions.
 class ProjectConfig:
-    def __init__(self):
-        self.options = None  # OptionPool
-        self.base_variables = None  # The base set of variables
-        self.element_overrides = {}  # Element specific configurations
-        self.source_overrides = {}  # Source specific configurations
-        self.mirrors = {}  # Dictionary of SourceMirror objects
-        self.default_mirror = None  # The name of the preferred mirror.
-        self._aliases = None  # Aliases dictionary
+    def __init__(self: Self):
+        self.options: Optional[OptionPool] = None  # OptionPool
+        self.base_variables: Optional[MappingNode] = None  # The base set of variables
+        self.element_overrides: MappingNode = Node.from_dict({})  # Element specific configurations
+        self.source_overrides: MappingNode = Node.from_dict({})  # Source specific configurations
+        self.mirrors: dict[str, SourceMirror] = {}  # Dictionary of SourceMirror objects
+        self.default_mirror: Optional[str] = None  # The name of the preferred mirror.
+        self._aliases: Optional[MappingNode] = None  # Aliases dictionary
 
 
 # Project()
@@ -87,7 +90,7 @@ class Project:
         cli_options: Optional[Dict[str, str]] = None,
         default_mirror: Optional[str] = None,
         parent_loader: Optional[Loader] = None,
-        provenance_node: Optional[ProvenanceInformation] = None,
+        provenance_node: Optional[Node] = None,
         search_for_project: bool = True,
         fetch_subprojects=None,
     ):
@@ -102,7 +105,7 @@ class Project:
         self.loader: Optional[Loader] = None  # The loader associated to this project
         self.junction: Optional["JunctionElement"] = junction  # The junction Element object, if this is a subproject
 
-        self.ref_storage: Optional[ProjectRefStorage] = None  # Where to store source refs
+        self.ref_storage: Optional[str] = None  # Where to store source refs
         self.refs: Optional[ProjectRefs] = None
         self.junction_refs: Optional[ProjectRefs] = None
         self.disallow_subproject_uris: bool = False
@@ -110,7 +113,7 @@ class Project:
         self.config: ProjectConfig = ProjectConfig()
         self.first_pass_config: ProjectConfig = ProjectConfig()
 
-        self.base_environment: Union[MappingNode, Dict[str, str]] = {}  # The base set of environment variables
+        self.base_environment: MappingNode = Node.from_dict({})  # The base set of environment variables
         self.base_env_nocache: List[str] = []  # The base nocache mask (list) for the environment
 
         # Remote specs for communicating with remote services
@@ -148,17 +151,17 @@ class Project:
         # This is a lookup table of lists indexed by project,
         # the child dictionaries are lists of ScalarNodes indicating
         # junction names
-        self._junction_duplicates: Dict[str, List[str]] = {}
+        self._junction_duplicates: Dict[str, List[ScalarNode]] = {}
 
         # A list of project relative junctions to consider as 'internal',
         # stored as ScalarNodes.
-        self._junction_internal: List[str] = []
+        self._junction_internal: SequenceNode | list[ScalarNode] = []
 
         self._partially_loaded: bool = False
         self._fully_loaded: bool = False
         self._project_includes: Optional[Includes] = None
 
-        self._fully_loaded_callbacks: List[Callable[[], None]] = []
+        self._fully_loaded_callbacks: Optional[List[Callable[[], None]]] = []
 
         #
         # Initialization body
@@ -192,15 +195,15 @@ class Project:
         return self.config.options
 
     @property
-    def base_variables(self):
+    def base_variables(self) -> Optional[MappingNode]:
         return self.config.base_variables
 
     @property
-    def element_overrides(self):
+    def element_overrides(self) -> MappingNode:
         return self.config.element_overrides
 
     @property
-    def source_overrides(self):
+    def source_overrides(self) -> MappingNode:
         return self.config.source_overrides
 
     ########################################################
@@ -244,7 +247,7 @@ class Project:
     # This method is provided for :class:`.Source` objects to resolve
     # fully qualified urls based on the shorthand which is allowed
     # to be specified in the YAML
-    def translate_url(self, url, *, source, first_pass=False):
+    def translate_url(self, url: str, *, source: Source, first_pass=False) -> str:
 
         if url and utils._ALIAS_SEPARATOR in url:
             url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
@@ -312,6 +315,7 @@ class Project:
     def get_path_from_node(self, node, *, check_is_file=False, check_is_dir=False):
         path_str = node.as_str()
         path = Path(path_str)
+        assert self._absolute_directory_path, "Must have an absolute directory path"
         full_path = self._absolute_directory_path / path
 
         if full_path.is_symlink():
@@ -389,7 +393,8 @@ class Project:
     # Returns:
     #    (Element): A newly created Element object of the appropriate kind
     #
-    def create_element(self, load_element):
+    def create_element(self, load_element: LoadElement) -> Element:
+        assert self.element_factory, "must have a element factory"
         return self.element_factory.create(self._context, self, load_element)
 
     # create_source()
@@ -404,6 +409,7 @@ class Project:
     #    (Source): A newly created Source object of the appropriate kind
     #
     def create_source(self, meta, variables):
+        assert self.source_factory, "must have a source factory"
         return self.source_factory.create(self._context, self, meta, variables)
 
     # alias_exists()
@@ -443,7 +449,7 @@ class Project:
                     ),
                     reason="missing-alias-mapping",
                 )
-
+        assert config._aliases, "Must have aliases"
         return config._aliases.get_str(alias, default=None) is not None
 
     # get_alias_uris()
@@ -467,6 +473,7 @@ class Project:
         else:
             config = self.config
 
+        assert config._aliases, "Must have aliases"
         if not alias or alias not in config._aliases:  # pylint: disable=unsupported-membership-test
             return [None]
 
@@ -494,6 +501,7 @@ class Project:
                     uri_list += list_to_add
 
         if policy in (_SourceUriPolicy.ALL, _SourceUriPolicy.ALIASES):
+            assert config._aliases, "Must have aliases"
             uri_list.append(config._aliases.get_str(alias))
 
         return [AliasSubstitution(alias, mirror) for mirror in uri_list]
@@ -509,9 +517,10 @@ class Project:
     #    (list): A list of loaded Element
     #
     def load_elements(self, targets):
-
+        assert self.loader, "must have a loader"
         with self._context.messenger.simple_task("Loading elements", silent_nested=True) as task:
             self.load_context.set_task(task)
+
             load_elements = self.loader.load(targets)
             self.load_context.set_task(None)
 
@@ -630,9 +639,11 @@ class Project:
     # Returns:
     #    (bool): Whether the loader is specified as duplicate
     #
-    def junction_is_duplicated(self, project_name, loader):
+    def junction_is_duplicated(self, project_name: str, loader: Loader) -> bool:
 
-        junctions = self._junction_duplicates.get(project_name, {})
+        assert self.loader, "must have a loader"
+
+        junctions: list[ScalarNode] = self._junction_duplicates.get(project_name, [])
 
         # Iterate over all paths specified by this project and see
         # if we find a match for the specified loader.
@@ -660,7 +671,9 @@ class Project:
     # Returns:
     #    (bool): Whether the loader is specified as internal
     #
-    def junction_is_internal(self, loader):
+    def junction_is_internal(self, loader: Loader) -> bool:
+
+        assert self.loader, "must have a loader"
 
         # Iterate over all paths specified by this project and see
         # if we find a match for the specified loader.
@@ -702,7 +715,8 @@ class Project:
     #    callback (Callable[[], None]): A function to call once fully loaded
     #
     def register_fully_loaded_callback(self, callback: Callable[[], None]):
-        assert not self._fully_loaded
+        assert not self._fully_loaded, "You can't register a new callback after the project is fully loaded."
+        assert self._fully_loaded_callbacks is not None, "Callbacks are missing, so they must have been processed"
         self._fully_loaded_callbacks.append(callback)
 
     ########################################################
@@ -839,9 +853,10 @@ class Project:
     #
     # Raises: LoadError if there was a problem with the project.conf
     #
-    def _load(self, *, parent_loader=None, provenance_node=None):
+    def _load(self, *, parent_loader=None, provenance_node: Optional[Node] = None):
 
         # Load builtin default
+        assert self.directory, "project must have a directory by this point"
         projectfile = os.path.join(self.directory, _PROJECT_CONF_FILE)
         self._default_config_node = _yaml.load(_site.default_project_config, shortname="projectconfig.yaml")
 
@@ -935,6 +950,7 @@ class Project:
             )
 
         if self.ref_storage == ProjectRefStorage.PROJECT_REFS:
+            assert self.junction_refs, "Project must have junction refs by this point"
             self.junction_refs.load(self.first_pass_config.options)
 
     # _load_second_pass()
@@ -943,6 +959,7 @@ class Project:
     #
     def _load_second_pass(self):
         project_conf_second_pass = self._project_conf.clone()
+        assert self._project_includes, "Project must have includes by this point"
         self._project_includes.process(project_conf_second_pass, process_project_options=False)
         config = self._default_config_node.clone()
         project_conf_second_pass._composite(config)
@@ -993,6 +1010,7 @@ class Project:
 
         # Load project.refs if it exists, this may be ignored.
         if self.ref_storage == ProjectRefStorage.PROJECT_REFS:
+            assert self.refs, "Project must have refs by this point"
             self.refs.load(self.options)
 
         # Parse shell options
@@ -1030,8 +1048,9 @@ class Project:
             "source-provenance-attributes", None
         ) or config.get_mapping("source-provenance-attributes")
 
-        for callback in self._fully_loaded_callbacks:
-            callback()
+        if self._fully_loaded_callbacks:
+            for callback in self._fully_loaded_callbacks:
+                callback()
         self._fully_loaded_callbacks = None
 
     # _load_pass():
@@ -1044,10 +1063,11 @@ class Project:
     #    output (ProjectConfig) - ProjectConfig to load configuration onto.
     #    ignore_unknown (bool) - Whether option loader shoud ignore unknown options.
     #
-    def _load_pass(self, config, output, *, ignore_unknown=False):
+    def _load_pass(self, config: MappingNode, output: ProjectConfig, *, ignore_unknown: bool = False):
 
         # Load project options
         options_node = config.get_mapping("options", default={})
+        assert output.options, "Must have options"
         output.options.load(options_node)
         if self.junction:
             # load before user configuration
@@ -1144,6 +1164,7 @@ class Project:
         # even if the mirrors are specified in user configuration.
         variables.expand(mirrors_node)
 
+        assert self.source_mirror_factory, "Project must have a mirror factory by this point"
         # Collect SourceMirror objects
         for mirror_node in mirrors_node:
             mirror = self.source_mirror_factory.create(self._context, self, mirror_node)

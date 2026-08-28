@@ -32,6 +32,10 @@ import tempfile
 import itertools
 import traceback
 from contextlib import contextmanager, ExitStack
+from types import TracebackType
+from os import PathLike
+from itertools import batched
+from typing import Optional, Any, Generator, TYPE_CHECKING
 from ruamel import yaml
 import pytest
 
@@ -42,27 +46,43 @@ import pytest
 # CliRunner convenience API (click.testing module) does not support
 # separation of stdout/stderr.
 #
-from _pytest.capture import MultiCapture, FDCapture, FDCaptureBinary
+from _pytest.capture import MultiCapture, FDCapture, FDCaptureBinary, CaptureBase
 
 # Import the main cli entrypoint
 from buildstream._frontend import cli as bst_cli
 from buildstream import _yaml, node
 from buildstream._cas import CASCache
-from buildstream.element import _get_normal_name, _compose_artifact_name
+from buildstream.element import _get_normal_name, _compose_artifact_name, Element
+from buildstream.node import MappingNode
+from buildstream.exceptions import ErrorDomain
+from buildstream._protos.build.bazel.remote.execution.v2.remote_execution_pb2 import Digest
+from buildstream._testing.integration import IntegrationCache
 
 # Special private exception accessor, for test case purposes
 from buildstream._exceptions import BstError, get_last_exception, get_last_task_error
 from buildstream._protos.buildstream.v2 import artifact_pb2
 
+if TYPE_CHECKING:
+    from tests.conftest import RemoteServices
+
 
 # Wrapper for the click.testing result
 class Result:
-    def __init__(self, exit_code=None, exception=None, exc_info=None, output=None, stderr=None):
-        self.exit_code = exit_code
-        self.exc = exception
-        self.exc_info = exc_info
-        self.output = output
-        self.stderr = stderr
+    def __init__(
+        self,
+        exit_code: int | None = None,
+        exception: SystemExit | Exception | None = None,
+        exc_info: tuple[type[BaseException], BaseException, TracebackType] | tuple[None, None, None] | None = None,
+        output: str | None = None,
+        stderr: str | None = None,
+    ):
+        self.exit_code: int | None = exit_code
+        self.exc: SystemExit | Exception | None = exception
+        self.exc_info: tuple[type[BaseException], BaseException, TracebackType] | tuple[None, None, None] | None = (
+            exc_info
+        )
+        self.output: str | None = output
+        self.stderr: str | None = stderr
         self.unhandled_exception = False
 
         # The last exception/error state is stored at exception
@@ -99,11 +119,11 @@ class Result:
     # Raises:
     #    (AssertionError): If the session did not complete successfully
     #
-    def assert_success(self, fail_message=""):
+    def assert_success(self, fail_message: str = ""):
         assert self.exit_code == 0, fail_message
         assert self.exc is None, fail_message
         assert self.exception is None, fail_message
-        assert self.unhandled_exception is False
+        assert self.unhandled_exception is False, fail_message
 
     # assert_main_error()
     #
@@ -119,7 +139,10 @@ class Result:
     # Raises:
     #    (AssertionError): If any of the assertions fail
     #
-    def assert_main_error(self, error_domain, error_reason, fail_message="", *, debug=False):
+    def assert_main_error(
+        self, error_domain: ErrorDomain, error_reason: Any, fail_message: str = "", *, debug: bool = False
+    ):
+        assert self.exception is not None, fail_message
         if debug:
             print("""
                 Exit code: {}
@@ -129,9 +152,8 @@ class Result:
                 """.format(self.exit_code, self.exception, self.exception.domain, self.exception.reason))
         assert self.exit_code == -1, fail_message
         assert self.exc is not None, fail_message
-        assert self.exception is not None, fail_message
         assert isinstance(self.exception, BstError), fail_message
-        assert self.unhandled_exception is False
+        assert self.unhandled_exception is False, fail_message
 
         assert self.exception.domain == error_domain, fail_message
         assert self.exception.reason == error_reason, fail_message
@@ -150,7 +172,7 @@ class Result:
     # Raises:
     #    (AssertionError): If any of the assertions fail
     #
-    def assert_task_error(self, error_domain, error_reason, fail_message=""):
+    def assert_task_error(self, error_domain: ErrorDomain, error_reason, fail_message: str = ""):
 
         assert self.exit_code == -1, fail_message
         assert self.exc is not None, fail_message
@@ -172,7 +194,7 @@ class Result:
     # Raises:
     #    (AssertionError): If any of the assertions fail
     #
-    def assert_shell_error(self, fail_message=""):
+    def assert_shell_error(self, fail_message: str = ""):
         assert self.exit_code == 1, fail_message
 
     # get_start_order()
@@ -186,7 +208,8 @@ class Result:
     # Returns:
     #    (list): A list of element names in the order which they first appeared in the result
     #
-    def get_start_order(self, activity):
+    def get_start_order(self, activity: str):
+        assert self.stderr is not None, "No stderr available to read"
         results = re.findall(r"\[\s*{}:(\S+)\s*\]\s*START\s*.*\.log".format(activity), self.stderr)
         if results is None:
             return []
@@ -203,6 +226,7 @@ class Result:
     #    (list): A list of element names
     #
     def get_tracked_elements(self):
+        assert self.stderr is not None, "No stderr available to read"
         tracked = re.findall(r"\[\s*track:(\S+)\s*]", self.stderr)
         if tracked is None:
             return []
@@ -210,6 +234,7 @@ class Result:
         return list(tracked)
 
     def get_built_elements(self):
+        assert self.stderr is not None, "No stderr available to read"
         built = re.findall(r"\[\s*build:(\S+)\s*\]\s*SUCCESS\s*Caching artifact", self.stderr)
         if built is None:
             return []
@@ -217,6 +242,7 @@ class Result:
         return list(built)
 
     def get_pushed_elements(self):
+        assert self.stderr is not None, "No stderr available to read"
         pushed = re.findall(r"\[\s*push:(\S+)\s*\]\s*INFO\s*Pushed artifact", self.stderr)
         if pushed is None:
             return []
@@ -224,6 +250,7 @@ class Result:
         return list(pushed)
 
     def get_pulled_elements(self):
+        assert self.stderr is not None, "No stderr available to read"
         pulled = re.findall(r"\[\s*pull:(\S+)\s*\]\s*INFO\s*Pulled artifact", self.stderr)
         if pulled is None:
             return []
@@ -231,6 +258,7 @@ class Result:
         return list(pulled)
 
     def get_discarded_elements(self):
+        assert self.stderr is not None, "No stderr available to read"
         discarded = re.findall(r"\[\s*(?:main|pull):(\S+)\s*\]\s*INFO\s*Discarded failed build", self.stderr)
         if discarded is None:
             return []
@@ -239,18 +267,18 @@ class Result:
 
 
 class Cli:
-    def __init__(self, directory, verbose=True, default_options=None):
-        self.directory = directory
-        self.config = None
-        self.verbose = verbose
-        self.artifact = TestArtifact()
+    def __init__(self, directory: str, verbose: bool = True, default_options: list[str] | None = None):
+        self.directory: str = directory
+        self.config: dict[str, Any] | None = None
+        self.verbose: bool = verbose
+        self.artifact: TestArtifact = TestArtifact()
 
         os.makedirs(directory)
 
         if default_options is None:
             default_options = []
 
-        self.default_options = default_options
+        self.default_options: list[str] = default_options
 
     # configure():
     #
@@ -260,7 +288,7 @@ class Cli:
     # Args:
     #    config (dict): The user configuration to use
     #
-    def configure(self, config):
+    def configure(self, config: dict):
         if self.config is None:
             self.config = {}
 
@@ -276,16 +304,18 @@ class Cli:
     #    element_name (str): The name of the element artifact
     #    cache_dir (str): Specific cache dir to remove artifact from
     #
-    def remove_artifact_from_cache(self, project, element_name, *, cache_dir=None):
+    def remove_artifact_from_cache(self, project: str, element_name: str, *, cache_dir: str | None = None):
         # Read configuration to figure out where artifacts are stored
         if not cache_dir:
             default = os.path.join(project, "cache")
 
             if self.config is not None:
                 cache_dir = self.config.get("cachedir", default)
+                assert isinstance(
+                    cache_dir, str
+                ), f"Cache directory in the config is not a valid string path: it's a {type(cache_dir)}"
             else:
                 cache_dir = default
-
         self.artifact.remove_artifact_from_cache(cache_dir, element_name)
 
     # run():
@@ -301,7 +331,16 @@ class Cli:
     #    args (list): A list of arguments to pass buildstream
     #    binary_capture (bool): Whether to capture the stdout/stderr as binary
     #
-    def run(self, project=None, silent=False, env=None, cwd=None, options=None, args=None, binary_capture=False):
+    def run(
+        self,
+        project: str | None = None,
+        silent: bool = False,
+        env: Optional[dict[str, str]] = None,
+        cwd: str | None = None,
+        options: list[str] | None = None,
+        args: list[str] | None = None,
+        binary_capture: bool = False,
+    ) -> Result:
 
         # We don't want to carry the state of one bst invocation into another
         # bst invocation. Since node _FileInfo objects hold onto BuildStream
@@ -333,7 +372,7 @@ class Cli:
             if project:
                 bst_args += ["--directory", str(project)]
 
-            for option, value in options:
+            for option, value in batched(options, n=2):
                 bst_args += ["--option", option, value]
 
             bst_args += args
@@ -355,22 +394,22 @@ class Cli:
             if result.stderr:
                 print("Program stderr was:\n{}".format(result.stderr))
 
-            if result.exc_info and result.exc_info[0] != SystemExit:
+            if result.exc_info and result.exc_info[0] is not SystemExit:
                 traceback.print_exception(*result.exc_info)
 
         return result
 
-    def _invoke(self, cli_object, args=None, binary_capture=False):
+    def _invoke(self, cli_object, args: list[str] | None = None, binary_capture: bool = False) -> Result:
         exc_info = None
-        exception = None
-        exit_code = 0
+        exception: Optional[Exception | SystemExit] = None
+        exit_code: int | str | None = 0
 
         # Temporarily redirect sys.stdin to /dev/null to ensure that
         # Popen doesn't attempt to read pytest's dummy stdin.
         old_stdin = sys.stdin
         with open(os.devnull, "rb") as devnull:
             sys.stdin = devnull
-            capture_kind = FDCaptureBinary if binary_capture else FDCapture
+            capture_kind: type[CaptureBase] = FDCaptureBinary if binary_capture else FDCapture
             capture = MultiCapture(out=capture_kind(1), err=capture_kind(2), in_=None)
             capture.start_capturing()
 
@@ -398,7 +437,7 @@ class Cli:
         sys.stdin = old_stdin
         out, err = capture.readouterr()
         capture.stop_capturing()
-
+        assert isinstance(exit_code, int | None), "Exit code should be a number or None at this point"
         return Result(exit_code=exit_code, exception=exception, exc_info=exc_info, output=out, stderr=err)
 
     # Fetch an element state by name by
@@ -407,22 +446,26 @@ class Cli:
     # If you need to get the states of multiple elements,
     # then use get_element_states(s) instead.
     #
-    def get_element_state(self, project, element_name):
+    def get_element_state(self, project: str, element_name: str) -> str:
         result = self.run(
             project=project, silent=True, args=["show", "--deps", "none", "--format", "%{state}", element_name]
         )
         result.assert_success()
+        assert result.output is not None, "bst show was successful, but doesn't seem to have shown anything in stdout"
+
         return result.output.strip()
 
     # Fetch the states of elements for a given target / deps
     #
     # Returns a dictionary with the element names as keys
     #
-    def get_element_states(self, project, targets, deps="all"):
+    def get_element_states(self, project: str, targets: list[str], deps: str = "all") -> dict[str, str]:
         result = self.run(
             project=project, silent=True, args=["show", "--deps", deps, "--format", "%{name}||%{state}", *targets]
         )
         result.assert_success()
+        assert result.output is not None, "bst show was successful, but doesn't seem to have shown anything in stdout"
+
         lines = result.output.splitlines()
         states = {}
         for line in lines:
@@ -433,16 +476,18 @@ class Cli:
     # Fetch an element's cache key by invoking bst show
     # on the project with the CLI
     #
-    def get_element_key(self, project, element_name):
+    def get_element_key(self, project: str, element_name: str) -> str:
         result = self.run(
             project=project, silent=True, args=["show", "--deps", "none", "--format", "%{full-key}", element_name]
         )
         result.assert_success()
+
+        assert result.output is not None, "bst show was successful, but doesn't seem to have shown anything in stdout"
         return result.output.strip()
 
     # Get the decoded config of an element.
     #
-    def get_element_config(self, project, element_name):
+    def get_element_config(self, project: str, element_name: str) -> Any:
         result = self.run(
             project=project, silent=True, args=["show", "--deps", "none", "--format", "%{config}", element_name]
         )
@@ -453,7 +498,7 @@ class Cli:
     # Fetch the elements that would be in the pipeline with the given
     # arguments.
     #
-    def get_pipeline(self, project, elements, except_=None, scope="all"):
+    def get_pipeline(self, project: str, elements: list[str], except_: list[str] | None = None, scope: str = "all"):
         if except_ is None:
             except_ = []
 
@@ -462,12 +507,15 @@ class Cli:
 
         result = self.run(project=project, silent=True, args=args + elements)
         result.assert_success()
+
+        assert result.output is not None, "bst show was successful, but doesn't seem to have shown anything in stdout"
         return result.output.splitlines()
 
     # Fetch an element's complete artifact name, cache_key will be generated
     # if not given.
     #
-    def get_artifact_name(self, project, project_name, element_name, cache_key=None):
+    def get_artifact_name(self, project: str, project_name: str, element_name: str, cache_key: str | None = None):
+
         if not cache_key:
             cache_key = self.get_element_key(project, element_name)
 
@@ -482,7 +530,16 @@ class CliIntegration(Cli):
     #
     # This supports the same arguments as Cli.run(), see run_project_config().
     #
-    def run(self, project=None, silent=False, env=None, cwd=None, options=None, args=None, binary_capture=False):
+    def run(
+        self,
+        project: str | None = None,
+        silent: bool = False,
+        env: dict | None = None,
+        cwd: str | None = None,
+        options: list[str] | None = None,
+        args: list[str] | None = None,
+        binary_capture: bool = False,
+    ):
         return self.run_project_config(
             project=project, silent=silent, env=env, cwd=cwd, options=options, args=args, binary_capture=binary_capture
         )
@@ -500,7 +557,7 @@ class CliIntegration(Cli):
     # be a dictionary of additional project configuration options, and
     # will be composited on top of the already loaded project.conf
     #
-    def run_project_config(self, *, project_config=None, **kwargs):
+    def run_project_config(self, *, project_config: MappingNode | None = None, **kwargs) -> Result:
 
         # First load the project.conf and substitute {project_dir}
         #
@@ -569,9 +626,16 @@ class CliRemote(CliIntegration):
     #
     # Returns a list of configured services (by names).
     #
-    def ensure_services(self, actions=True, execution=True, storage=True, artifacts=False, sources=False):
+    def ensure_services(
+        self,
+        actions: bool = True,
+        execution: bool = True,
+        storage: bool = True,
+        artifacts: bool = False,
+        sources: bool = False,
+    ) -> list[str]:
         # Build a list of configured services by name:
-        configured_services = []
+        configured_services: list[str] = []
         if not self.config:
             return configured_services
 
@@ -621,7 +685,7 @@ class TestArtifact:
     #    cache_dir (str): Specific cache dir to remove artifact from
     #    element_name (str): The name of the element artifact
     #
-    def remove_artifact_from_cache(self, cache_dir, element_name):
+    def remove_artifact_from_cache(self, cache_dir: str, element_name: str):
 
         cache_dir = os.path.join(cache_dir, "artifacts", "refs")
 
@@ -648,7 +712,7 @@ class TestArtifact:
     # Returns:
     #   (bool): If the cache contains the element's artifact
     #
-    def is_cached(self, cache_dir, element, element_key):
+    def is_cached(self, cache_dir: str, element: Element, element_key: str) -> bool:
 
         # cas = CASCache(str(cache_dir))
         artifact_ref = element.get_artifact_name(element_key)
@@ -666,7 +730,7 @@ class TestArtifact:
     # Returns:
     #   (Digest): The digest stored in the ref
     #
-    def get_digest(self, cache_dir, element, element_key):
+    def get_digest(self, cache_dir: str, element: Element, element_key: str) -> Digest:
 
         artifact_ref = element.get_artifact_name(element_key)
         artifact_dir = os.path.join(cache_dir, "artifacts", "refs")
@@ -688,10 +752,12 @@ class TestArtifact:
     #    (str): path to extracted buildtree directory, does not guarantee
     #           existence.
     @contextmanager
-    def extract_buildtree(self, cache_dir, tmpdir, ref):
+    def extract_buildtree(
+        self, cache_dir: str | PathLike[str], tmpdir: str | PathLike[str], ref: str
+    ) -> Generator[str | None]:
         artifact = artifact_pb2.Artifact()
         try:
-            with open(os.path.join(cache_dir, "artifacts", "refs", ref), "rb") as f:
+            with open(os.path.join(str(cache_dir), "artifacts", "refs", ref), "rb") as f:
                 artifact.ParseFromString(f.read())
         except FileNotFoundError:
             yield None
@@ -717,7 +783,7 @@ class TestArtifact:
     #    (str): path to extracted subdir directory, does not guarantee
     #           existence.
     @contextmanager
-    def _extract_subdirectory(self, tmpdir, digest):
+    def _extract_subdirectory(self, tmpdir: str | PathLike[str], digest: Digest) -> Generator[str | None]:
         with tempfile.TemporaryDirectory() as extractdir:
             try:
                 cas = CASCache(str(tmpdir), casd=None)
@@ -732,7 +798,7 @@ class TestArtifact:
 # Use result = cli.run([arg1, arg2]) to run buildstream commands
 #
 @pytest.fixture()
-def cli(tmpdir):
+def cli(tmpdir: str | PathLike[str]) -> Cli:
     directory = os.path.join(str(tmpdir), "cache")
     return Cli(directory)
 
@@ -744,7 +810,7 @@ def cli(tmpdir):
 # when running `bst shell`, but unfortunately cannot produce nice
 # stacktraces.
 @pytest.fixture()
-def cli_integration(tmpdir, integration_cache):
+def cli_integration(tmpdir: str | PathLike[str], integration_cache: IntegrationCache) -> Generator[CliIntegration]:
     directory = os.path.join(str(tmpdir), "cache")
     fixture = CliIntegration(directory)
 
@@ -776,7 +842,7 @@ def cli_integration(tmpdir, integration_cache):
 # when running `bst shell`, but unfortunately cannot produce nice
 # stacktraces.
 @pytest.fixture()
-def cli_remote_execution(tmpdir, remote_services):
+def cli_remote_execution(tmpdir: str | PathLike[str], remote_services: "RemoteServices") -> CliRemote:
     directory = os.path.join(str(tmpdir), "cache")
     fixture = CliRemote(directory)
 
@@ -823,7 +889,7 @@ def cli_remote_execution(tmpdir, remote_services):
 
 
 @contextmanager
-def chdir(directory):
+def chdir(directory: str | PathLike[str]) -> Generator[None]:
     old_dir = os.getcwd()
     os.chdir(directory)
     yield
@@ -831,7 +897,7 @@ def chdir(directory):
 
 
 @contextmanager
-def environment(env):
+def environment(env: dict) -> Generator[None]:
 
     old_env = {}
     for key, value in env.items():
@@ -851,7 +917,7 @@ def environment(env):
 
 
 @contextmanager
-def configured(directory, config=None):
+def configured(directory: str | PathLike[str], config: dict | None = None) -> Generator[str]:
 
     # Ensure we've at least relocated the caches to a temp directory
     if not config:
