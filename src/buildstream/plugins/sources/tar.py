@@ -63,10 +63,15 @@ documentation.
 import functools
 import os
 import sys
-import tarfile
 from contextlib import contextmanager
 from tempfile import TemporaryFile
 from typing import Optional
+
+# We require the extraction filter support introduced in Python 3.12
+if sys.version_info >= (3, 12):
+    import tarfile
+else:
+    from . import _tarfile as tarfile
 
 from buildstream import DownloadableFileSource, SourceError
 from buildstream import utils
@@ -150,10 +155,7 @@ class TarSource(DownloadableFileSource):
                     member = filter_function(member, directory)
                     if member is not None:
                         filtered_members.append(member)
-                if sys.version_info >= (3, 12):
-                    tar.extractall(path=directory, members=filtered_members, filter="tar")
-                else:
-                    tar.extractall(path=directory, members=filtered_members)
+                tar.extractall(path=directory, members=filtered_members, filter="tar")
 
         except (tarfile.TarError, OSError) as e:
             raise SourceError("{}: Error staging source: {}".format(self, e)) from e
