@@ -71,6 +71,7 @@ exclude = '''
     | dist
   )/
   | src/buildstream/_protos
+  | src/buildstream/plugins/sources/_tarfile.py
 )
 '''
 
