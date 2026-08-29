@@ -765,10 +765,20 @@ class LinkFallbackError(FilterError):
 # filter function
 _FILTER_ERRORS = (FilterError, OSError, ExtractError)
 
+def _realpath_allow_missing(path):
+    # Supported in Python 3.14 and security updates of older versions
+    if hasattr(os.path, "ALLOW_MISSING"):
+        return os.path.realpath(path, strict=os.path.ALLOW_MISSING)
+
+    try:
+        return os.path.realpath(path, strict=True)
+    except FileNotFoundError:
+        return os.path.realpath(path, strict=False)
+
 def _get_filtered_attrs(member, dest_path, for_data=True):
     new_attrs = {}
     name = member.name
-    dest_path = os.path.realpath(dest_path, strict=os.path.ALLOW_MISSING)
+    dest_path = _realpath_allow_missing(dest_path)
     # Strip leading / (tar's directory separator) from filenames.
     # Include os.sep (target OS directory separator) as well.
     if name.startswith(('/', os.sep)):
@@ -778,8 +788,7 @@ def _get_filtered_attrs(member, dest_path, for_data=True):
         # For example, 'C:/foo' on Windows.
         raise AbsolutePathError(member)
     # Ensure we stay in the destination
-    target_path = os.path.realpath(os.path.join(dest_path, name),
-                                   strict=os.path.ALLOW_MISSING)
+    target_path = _realpath_allow_missing(os.path.join(dest_path, name))
     if os.path.commonpath([target_path, dest_path]) != dest_path:
         raise OutsideDestinationError(member, target_path)
     # Limit permissions (no high bits, and go-w)
@@ -833,8 +842,7 @@ def _get_filtered_attrs(member, dest_path, for_data=True):
                 target_path = os.path.join(dest_path, link_dir, normalized)
             else:
                 target_path = os.path.join(dest_path, normalized)
-            target_path = os.path.realpath(target_path,
-                                           strict=os.path.ALLOW_MISSING)
+            target_path = _realpath_allow_missing(target_path)
             if os.path.commonpath([target_path, dest_path]) != dest_path:
                 raise LinkOutsideDestinationError(member, target_path)
     return new_attrs
