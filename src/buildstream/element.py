@@ -505,55 +505,6 @@ class Element(Plugin):
 
         return None
 
-    def node_subst_vars(self, node: "ScalarNode") -> str:
-        """Replace any variables in the string contained in the node and returns it.
-
-        **Warning**: The method is deprecated and will get removed in the next version
-
-        Args:
-           node: A ScalarNode loaded from YAML
-
-        Returns:
-           The value with all variables replaced
-
-        Raises:
-           :class:`.LoadError`: When the node doesn't contain a string or a variable was not found.
-
-        **Example:**
-
-        .. code:: python
-
-          # Expect a string 'name' in 'node', substituting any
-          # variables in the returned string
-          name = self.node_subst_vars(node.get_scalar('name'))
-        """
-        # FIXME: remove this
-        warnings.warn(
-            "configuration is now automatically expanded, this is a no-op and will be removed.", DeprecationWarning
-        )
-        return node.as_str()
-
-    def node_subst_sequence_vars(self, node: "SequenceNode[ScalarNode]") -> List[str]:
-        """Substitute any variables in the given sequence
-
-        **Warning**: The method is deprecated and will get removed in the next version
-
-        Args:
-          node: A SequenceNode loaded from YAML
-
-        Returns:
-          The list with every variable replaced
-
-        Raises:
-          :class:`.LoadError`
-
-        """
-        # FIXME: remove this
-        warnings.warn(
-            "configuration is now automatically expanded, this is a no-op and will be removed.", DeprecationWarning
-        )
-        return node.as_str_list()
-
     def compute_manifest(
         self, *, include: Optional[List[str]] = None, exclude: Optional[List[str]] = None, orphans: bool = True
     ) -> str:
