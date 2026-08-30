@@ -440,7 +440,11 @@ class Element(Plugin):
     def dependencies(
         self, selection: Optional[Sequence["Element"]] = None, *, recurse: bool = True
     ) -> Iterator["Element"]:
-        """A generator function which yields the build dependencies of the given element.
+        """A generator function which yields dependencies of the given element.
+
+        Normally `dependencies` yields build dependencies. If the given element is the result of a
+        previous call to `dependencies` or `selection` is set to a dependency of the given element
+        then `dependencies` yields runtime dependencies.
 
         This generator gives the Element access to all of the dependencies which it is has
         access to at build time. As explained in :ref:`the dependency type documentation <format_dependencies_types>`,
