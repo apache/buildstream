@@ -510,6 +510,7 @@ def test_reset(cli, tmpdir, datafiles):
 def test_reset_soft(cli, tmpdir, datafiles):
     # Open the workspace
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "tar")
+    workspace_config_path = os.path.join(project, ".bst2", "workspaces.yml")
 
     assert cli.get_element_state(project, element_name) == "buildable"
 
@@ -527,6 +528,10 @@ def test_reset_soft(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, element_name) == "cached"
     key_2 = cli.get_element_key(project, element_name)
     assert key_2 != "{:?<64}".format("")
+
+    workspace_config = _yaml.load(workspace_config_path, shortname="workspaces.yml")
+    workspace_node = workspace_config.get_mapping("workspaces").get_mapping(element_name)
+    assert workspace_node.get_str("last_build", default=None) is not None
 
     # workspace keys are not recalculated
     assert key_1 == key_2
@@ -549,6 +554,17 @@ def test_reset_soft(cli, tmpdir, datafiles):
     assert not os.path.exists(os.path.join(workspace, "usr", "bin"))
     # and added this one
     assert os.path.exists(os.path.join(workspace, "etc", "pony.conf"))
+
+    workspace_config = _yaml.load(workspace_config_path, shortname="workspaces.yml")
+    workspace_node = workspace_config.get_mapping("workspaces").get_mapping(element_name)
+    assert workspace_node.get_str("last_build", default=None) is None
+
+    # A new BuildStream invocation must keep the soft-reset state.
+    result = cli.run(project=project, args=["workspace", "list"])
+    result.assert_success()
+    workspace_config = _yaml.load(workspace_config_path, shortname="workspaces.yml")
+    workspace_node = workspace_config.get_mapping("workspaces").get_mapping(element_name)
+    assert workspace_node.get_str("last_build", default=None) is None
 
     assert cli.get_element_state(project, element_name) == "buildable"
     key_3 = cli.get_element_key(project, element_name)
