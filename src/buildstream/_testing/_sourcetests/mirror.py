@@ -238,7 +238,7 @@ def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
     new_element = _yaml.load(element_path, shortname=element_name)
     source = new_element.get_sequence("sources").mapping_at(0)
     if "ref" in source:
-        assert source.get_str("ref") == upstream_ref
+        assert source.get_node("ref").strip_node_info() == upstream_ref
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -293,4 +293,4 @@ def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
     new_element = _yaml.load(element_path, shortname=element_name)
     source = new_element.get_sequence("sources").mapping_at(0)
     if "ref" in source:
-        assert source.get_str("ref") == mirror_ref
+        assert source.get_node("ref").strip_node_info() == mirror_ref
