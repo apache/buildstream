@@ -233,6 +233,15 @@ def test_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
     else:
         result.assert_success()
 
+        # And now fetch it: The Source has probably already cached the
+        # latest ref locally, but it is not required to have cached
+        # the associated content of the latest ref at track time, that
+        # is the job of fetch.
+        result = cli.run(
+            project=project, args=["source", "fetch", "--deps", "none", "junction.bst:import-etc-repo.bst"]
+        )
+        result.assert_success()
+
         assert cli.get_element_state(project, "junction.bst:import-etc-repo.bst") == "buildable"
 
         assert os.path.exists(os.path.join(project, "project.refs"))
