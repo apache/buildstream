@@ -3337,6 +3337,8 @@ class Element(Plugin):
         # This code can be run multiple times until the strict key can be calculated,
         # so let's ensure we only ever calculate the weak key once, even though we need
         # to resolve it before we can resolve the strict key.
+        build_dependencies = list(self._dependencies(_Scope.BUILD))
+
         if self.__weak_cache_key is None:
             # Weak cache key includes names of direct build dependencies
             # so as to only trigger rebuilds when the shape of the
@@ -3353,14 +3355,14 @@ class Element(Plugin):
                     if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
                     else [e.project_name, e.name]
                 )
-                for e in self._dependencies(_Scope.BUILD)
+                for e in build_dependencies
             ]
             self.__weak_cache_key = self._calculate_cache_key(dependencies)
 
         context = self._get_context()
 
         # Calculate the strict cache key
-        dependencies = [[e.project_name, e.name, e.__strict_cache_key] for e in self._dependencies(_Scope.BUILD)]
+        dependencies = [[e.project_name, e.name, e.__strict_cache_key] for e in build_dependencies]
         self.__strict_cache_key = self._calculate_cache_key(dependencies, self.__weak_cache_key)
 
         if self.__strict_cache_key is None:

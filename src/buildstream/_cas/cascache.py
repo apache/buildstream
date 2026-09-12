@@ -286,7 +286,7 @@ class CASCache:
                 "Failed to fetch directory tree {}: {}: {}".format(dir_digest.hash, e.code().name, e.details())
             ) from e
 
-        required_blobs = self.required_blobs_for_directory(dir_digest)
+        required_blobs = self.required_blobs_for_directory(dir_digest, _fetch_tree=False)
         self.fetch_blobs(remote, required_blobs)
 
     # pull_tree():
