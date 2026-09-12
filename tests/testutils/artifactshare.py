@@ -30,6 +30,8 @@ from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution
 from buildstream._protos.buildstream.v2 import artifact_pb2
 from buildstream._protos.google.rpc import code_pb2
 
+from .http_cas_server import HTTPCASServer
+
 REMOTE_ASSET_ARTIFACT_URN_TEMPLATE = "urn:fdc:buildstream.build:2020:artifact:{}"
 REMOTE_ASSET_SOURCE_URN_TEMPLATE = "urn:fdc:buildstream.build:2020:source:{}"
 
@@ -327,6 +329,22 @@ def create_split_share(directory1, directory2, *, quota=None):
     finally:
         index.close()
         storage.close()
+
+
+@contextmanager
+def create_artifact_and_http_share(directory, *, quota=None):
+    share = ArtifactShare(directory, quota=quota)
+    try:
+        # Read-only access to the same CAS objects using a HTTP REST protocol
+        # https://github.com/buchgr/bazel-remote/
+        httpserver = HTTPCASServer(share.repodir)
+        httpserver.start()
+        try:
+            yield share, httpserver
+        finally:
+            httpserver.stop()
+    finally:
+        share.close()
 
 
 # create_dummy_artifact_share()
