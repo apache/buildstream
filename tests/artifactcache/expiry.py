@@ -135,7 +135,7 @@ def test_expiry_order(cli, datafiles):
     element_path = "elements"
     checkout = os.path.join(project, "workspace")
 
-    cli.configure({"cache": {"quota": 9000000, "low-watermark": "50%"}})
+    cli.configure({"cache": {"quota": 9000000, "low-watermark": "80%"}})
 
     # Create an artifact
     create_element_size("dep.bst", project, element_path, [], 2000000)
@@ -169,14 +169,14 @@ def test_expiry_order(cli, datafiles):
 
     # While dep.bst was the first element to be created, it should not
     # have been removed.
-    # Note that buildstream will reduce the cache to 50% of the
+    # Note that buildstream will reduce the cache to 80% of the
     # original size - we therefore remove multiple elements.
     check_elements = ["unrelated.bst", "target.bst", "target2.bst", "dep.bst", "expire.bst"]
     states = cli.get_element_states(project, check_elements)
     assert tuple(states[element] for element in check_elements) == (
         "buildable",
         "buildable",
-        "buildable",
+        "cached",
         "cached",
         "cached",
     )
@@ -209,7 +209,7 @@ def test_keep_dependencies(cli, datafiles):
     res.assert_success()
 
     # Now create some other unrelated artifact
-    create_element_size("unrelated.bst", project, element_path, [], 4000000)
+    create_element_size("unrelated.bst", project, element_path, [], 3500000)
     res = cli.run(project=project, args=["build", "unrelated.bst"])
     res.assert_success()
 
