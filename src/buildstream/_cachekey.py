@@ -17,7 +17,7 @@
 
 import hashlib
 
-import ujson
+import orjson
 
 # Internal record of the size of a cache key
 _CACHEKEY_SIZE = len(hashlib.sha256().hexdigest())
@@ -58,5 +58,5 @@ def is_key(key):
 #    (str): An sha256 hex digest of the given value
 #
 def generate_key(value):
-    ustring = ujson.dumps(value, sort_keys=True, escape_forward_slashes=False).encode("utf-8")
+    ustring = orjson.dumps(value, option=orjson.OPT_SORT_KEYS)
     return hashlib.sha256(ustring).hexdigest()
