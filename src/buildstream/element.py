@@ -62,6 +62,9 @@ Class Reference
 ---------------
 """
 
+# For 3.7+ support, not necessary and deprecated in 3.14+
+from __future__ import annotations
+
 import os
 import re
 import stat
@@ -73,6 +76,7 @@ from itertools import chain
 import string
 from threading import Lock
 from typing import cast, TYPE_CHECKING, Dict, Iterator, Iterable, List, Optional, Set, Sequence
+
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
@@ -2058,6 +2062,7 @@ class Element(Plugin):
     #    prompt (str): A suitable prompt string for PS1
     #    command (list): An argv to launch in the sandbox
     #    usebuildtree (bool): Use the buildtree as its source
+    #    other_elements (List[Element]): Optional list of other runtime elements to stage in the sandbox
     #
     # Returns: Exit code
     def _shell(
