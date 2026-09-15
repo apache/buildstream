@@ -14,6 +14,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+import sys
 import tempfile
 from typing import Callable, Generator
 import os
@@ -264,7 +265,9 @@ class Loader:
     #    modify_element_function (Callable[[CommentedMap],None]): A function to modify a given CommentedMap
     #
     @contextmanager
-    def temporary_modified_element(self,target:str,modify_element_function:Callable[[CommentedMap],None]) -> Generator[None, None, None]:
+    def temporary_modified_element(
+        self, target: str, modify_element_function: Callable[[CommentedMap], None]
+    ) -> Generator[None, None, None]:
 
         _, target_name, target_loader = self._parse_name(target, MappingNode.from_dict({}))
 
@@ -273,16 +276,18 @@ class Loader:
 
         modify_element_function(target_node)
 
-        with tempfile.NamedTemporaryFile(
+        # FIXME When 3.12 hits EOL, replace this with tempfile.NamedTemporaryFile itself.
+        with _legacy_named_temporary_file_delete_on_close(
             delete_on_close=False, prefix=f"{target_name.replace('/','_')}_temp", suffix=".bst"
         ) as temp_target_file:
             _yaml.roundtrip_dump(target_node, temp_target_file)
             temp_target_file.close()  # delete_on_close is false so this doesn't remove the file, but delete is True(default) so we delete the file when we leave the context manager.
             target_loader._set_fullpath_override(target_name, temp_target_file.name)
 
-            yield
-
-            target_loader._set_fullpath_override(target_name,None)
+            try:
+                yield
+            finally:
+                target_loader._set_fullpath_override(target_name, None)
 
     ###########################################
     #            Private Methods              #
@@ -1141,3 +1146,30 @@ class Loader:
 
         self._meta_elements = {}
         self._elements = {}
+
+
+# _legacy_named_temporary_file_delete_on_close()
+#
+# Helper for python 3.10 and 3.11 support
+#
+#  NamedTemporaryFile attribute `delete_on_close=False` was not added until 3.12
+#
+# FIXME: When 3.11 hits end of life remove this function.
+#
+@contextmanager
+def _legacy_named_temporary_file_delete_on_close(delete_on_close=False, prefix=None, suffix=None):
+
+    assert not delete_on_close, "Don't use this function unless you explicitly need delete_on_close set to false"
+    if sys.version_info >= (3, 12):
+        # Use the `delete_on_close` attribute if it's available
+        yield tempfile.NamedTemporaryFile(delete_on_close=delete_on_close, prefix=prefix, suffix=suffix)
+    else:
+        # Otherwise implement it for ourselves.
+        file = tempfile.NamedTemporaryFile(prefix=prefix, suffix=suffix, delete=False)
+        try:
+            yield file
+        finally:
+            try:
+                os.unlink(file.name)
+            except OSError:
+                pass

@@ -32,7 +32,6 @@ from ruamel.yaml import CommentedMap
 
 
 from ._context import Context
-from .node import MappingNode
 from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._artifactproject import ArtifactProject
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
@@ -282,9 +281,9 @@ class Stream:
                     "Only BUILD and RUN scopes are supported",
                     detail="Use the --build and --use-buildtree options to shell into a build tree",
                     reason="only-build-run-supported",
-            )
+                )
 
-        with self._project.loader.temporary_modified_element(target,add_deps_to_element):
+        with self._project.loader.temporary_modified_element(target, add_deps_to_element):
             self.build([target])
             return self.shell(target, scope, *args, **kwargs)
 
