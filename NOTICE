@@ -42,3 +42,8 @@ Software deriving from third parties:
 
     This file is derived from Python and licensed under the
     Python Software Foundation License Version 2.
+
+  * src/buildstream/plugins/sources/_tarfile.py
+
+    This file is derived from Python and licensed under the
+    MIT license.

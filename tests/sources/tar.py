@@ -15,6 +15,7 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
+import io
 import os
 from shutil import copyfile
 import subprocess
@@ -606,3 +607,34 @@ def test_symlinks(cli, tmpdir, datafiles):
 
     assert os.readlink(checkoutdir + "/absolute-symlink") == absolute_target
     assert os.readlink(checkoutdir + "/relative-symlink") == relative_target
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "symlinks"))
+def test_symlink_escape(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
+
+    os.mkdir(tmpdir / "OUTSIDE")
+
+    src_tar = tmpdir / "contents.tar.gz"
+    with tarfile.open(src_tar, "w:gz") as tar:
+        d = tarfile.TarInfo("contents")
+        d.type = tarfile.DIRTYPE
+        tar.addfile(d)
+
+        s = tarfile.TarInfo("contents/evil")
+        s.type = tarfile.SYMTYPE
+        s.linkname = str(tmpdir / "OUTSIDE")
+        tar.addfile(s)
+
+        f = tarfile.TarInfo("contents/evil/pwned")
+        data = b"pwned"
+        f.size = len(data)
+        tar.addfile(f, io.BytesIO(data))
+
+    result = cli.run(project=project, args=["source", "track", "target.bst"])
+    result.assert_success()
+    result = cli.run(project=project, args=["source", "fetch", "target.bst"])
+    result.assert_main_error(ErrorDomain.STREAM, None)
+    assert "would be extracted to" in result.stderr
+    assert "which is outside the destination" in result.stderr
