@@ -784,9 +784,11 @@ def shell(
         bst shell --build example.bst
 
     For all examples on this page:
+    
     - example.bst is a simple import element with no dependencies
        that imports a file called example.txt
     - base.bst provides a basic alpine sysroot with a standard set of unix tooling (sh, df, cat etc).
+
     """
 
     # Buildtree can only be used with build shells
