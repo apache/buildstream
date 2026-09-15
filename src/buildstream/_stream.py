@@ -284,7 +284,6 @@ class Stream:
                 )
 
         with self._project.loader.temporary_modified_element(target, add_deps_to_element):
-            self.build([target])
             return self.shell(target, scope, *args, **kwargs)
 
     # shell()
