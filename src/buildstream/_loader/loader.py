@@ -14,8 +14,11 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+import tempfile
+from typing import Callable, Generator
 import os
-from contextlib import suppress
+from contextlib import suppress, contextmanager
+from ruamel.yaml import CommentedMap
 
 from .._exceptions import LoadError
 from ..exceptions import LoadErrorReason
@@ -251,22 +254,56 @@ class Loader:
         for parent in self._alternative_parents:
             yield from foreach_parent(parent)
 
+    # temporary_modified_element()
+    #
+    # Temporarily modify an element by loading the element and applying modify_elements_function to make the modifications
+    #
+    #
+    # Args:
+    #    target (str): The element-path relative bst file
+    #    modify_element_function (Callable[[CommentedMap],None]): A function to modify a given CommentedMap
+    #
+    @contextmanager
+    def temporary_modified_element(self,target:str,modify_element_function:Callable[[CommentedMap],None]) -> Generator[None, None, None]:
+
+        _, target_name, target_loader = self._parse_name(target, MappingNode.from_dict({}))
+
+        target_path = os.path.join(target_loader._basedir, target_name)
+        target_node: CommentedMap = _yaml.roundtrip_load(target_path)
+
+        modify_element_function(target_node)
+
+        with tempfile.NamedTemporaryFile(
+            delete_on_close=False, prefix=f"{target_name.replace('/','_')}_temp", suffix=".bst"
+        ) as temp_target_file:
+            _yaml.roundtrip_dump(target_node, temp_target_file)
+            temp_target_file.close()  # delete_on_close is false so this doesn't remove the file, but delete is True(default) so we delete the file when we leave the context manager.
+            target_loader._set_fullpath_override(target_name, temp_target_file.name)
+
+            yield
+
+            target_loader._set_fullpath_override(target_name,None)
+
     ###########################################
     #            Private Methods              #
     ###########################################
 
-    # set_fullpath_override()
+    # _set_fullpath_override()
     #
     # Set an fullpath override for a element-path relative bst file
     #
     # This enables runtime modified elements to be pulled from a temporary directory
+    # Passing None as a fullpath remove the entry
     #
     # Args:
     #    filename (str): The element-path relative bst file
-    #    fullpath (str): A fullpath to the bst file
+    #    fullpath (str|None): A fullpath to the bst file, or None
     #
-    def set_fullpath_override(self, filename: str, fullpath: str):
-        self._fullpath_overrides[filename] = fullpath
+    def _set_fullpath_override(self, filename: str, fullpath: str | None):
+        if fullpath:
+            self._fullpath_overrides[filename] = fullpath
+        else:
+            self._fullpath_overrides.pop(filename, None)
 
     # _load_file_no_deps():
     #

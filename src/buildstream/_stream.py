@@ -262,40 +262,29 @@ class Stream:
         assert self._project, "Must have a project"
         assert self._project.loader, "Project must have loader"
 
-        _, target_name, target_loader = self._project.loader._parse_name(target, MappingNode.from_dict({}))
+        def add_deps_to_element(target_node: CommentedMap):
+            if scope == _Scope.RUN:
+                r_depends = target_node.get("runtime-depends", [])
 
-        target_path = os.path.join(target_loader._basedir, target_name)
-        target_node: CommentedMap = _yaml.roundtrip_load(target_path)
+                for other_target in other_targets:
+                    r_depends.append(other_target)
 
-        if scope == _Scope.RUN:
-            r_depends = target_node.get("runtime-depends", [])
+                target_node["runtime-depends"] = r_depends
+            elif scope == _Scope.BUILD:
+                r_depends = target_node.get("build-depends", [])
 
-            for other_target in other_targets:
-                r_depends.append(other_target)
+                for other_target in other_targets:
+                    r_depends.append(other_target)
 
-            target_node["runtime-depends"] = r_depends
-        elif scope == _Scope.BUILD:
-            r_depends = target_node.get("build-depends", [])
-
-            for other_target in other_targets:
-                r_depends.append(other_target)
-
-            target_node["build-depends"] = r_depends
-        else:
-            raise StreamError(
-                "Only BUILD and RUN scopes are supported",
-                detail="Use the --build and --use-buildtree options to shell into a build tree",
-                reason="only-build-run-supported",
+                target_node["build-depends"] = r_depends
+            else:
+                raise StreamError(
+                    "Only BUILD and RUN scopes are supported",
+                    detail="Use the --build and --use-buildtree options to shell into a build tree",
+                    reason="only-build-run-supported",
             )
 
-        with tempfile.NamedTemporaryFile(
-            delete_on_close=False, prefix=f"{target_name.replace('/','_')}_temp", suffix=".bst"
-        ) as temp_target_file:
-            _yaml.roundtrip_dump(target_node, temp_target_file)
-            temp_target_file.close()  # delete_on_close is false so this doesn't remove the file, but delete is True(default) so we delete the file when we leave the context manager.
-
-            target_loader.set_fullpath_override(target_name, temp_target_file.name)
-
+        with self._project.loader.temporary_modified_element(target,add_deps_to_element):
             self.build([target])
             return self.shell(target, scope, *args, **kwargs)
 
