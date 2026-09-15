@@ -255,7 +255,7 @@ class Loader:
     #            Private Methods              #
     ###########################################
 
-    # _set_fullpath_overrides()
+    # set_fullpath_override()
     #
     # Set an fullpath override for a element-path relative bst file
     #
@@ -265,7 +265,7 @@ class Loader:
     #    filename (str): The element-path relative bst file
     #    fullpath (str): A fullpath to the bst file
     #
-    def _set_fullpath_overrides(self, filename: str, fullpath: str):
+    def set_fullpath_override(self, filename: str, fullpath: str):
         self._fullpath_overrides[filename] = fullpath
 
     # _load_file_no_deps():
