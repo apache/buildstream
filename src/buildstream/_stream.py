@@ -294,7 +294,7 @@ class Stream:
             _yaml.roundtrip_dump(target_node, temp_target_file)
             temp_target_file.close()  # delete_on_close is false so this doesn't remove the file, but delete is True(default) so we delete the file when we leave the context manager.
 
-            target_loader._set_fullpath_overrides(target_name, temp_target_file.name)
+            target_loader.set_fullpath_override(target_name, temp_target_file.name)
 
             self.build([target])
             return self.shell(target, scope, *args, **kwargs)
