@@ -1,4 +1,16 @@
 =================
+buildstream 2.8.1
+=================
+
+  o tar.py: Always use extraction filter (#2192)
+
+  o Fix soft workspace reset not persisting (#2116)
+
+  o Fixes for the source tests (#2189, #2187)
+
+  o Performance optimizations (#2172)
+
+=================
 buildstream 2.8.0
 =================
 
