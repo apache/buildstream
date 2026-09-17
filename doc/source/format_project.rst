@@ -204,9 +204,14 @@ URLs which are to be used in the individual ``.bst`` files.
      foo: git://git.foo.org/
      bar: http://bar.com/downloads/
 
+If you want to use this project's alias definitions in source plugin ``url``'s,
+see :ref:`Declaring Sources for elements <format_sources>`
+
 If you want this project's alias definitions to also be used for subprojects,
 see :ref:`Mapping source aliases of subprojects <project_junctions_source_aliases>`.
 
+If you want to map this project's alias definitions to mirrors,
+see :ref:`project_essentials_mirrors`
 
 Sandbox options
 ~~~~~~~~~~~~~~~
