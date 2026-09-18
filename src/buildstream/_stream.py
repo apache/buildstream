@@ -844,7 +844,7 @@ class Stream:
                 self._context.messenger.warn("{} is cached without log files".format(ref))
                 continue
 
-            artifact_logs[obj.name] = obj._get_logs()
+            artifact_logs[obj._get_full_name()] = obj._get_logs()
 
         return artifact_logs
 
@@ -869,15 +869,12 @@ class Stream:
             ref = obj.get_artifact_name()
             if not obj._cached():
                 self._context.messenger.warn("{} is not cached".format(ref))
-                obj.name = {ref: "No artifact cached"}
                 continue
-            if isinstance(obj, ArtifactElement):
-                obj.name = ref
 
             # Just hand over a Directory here
             artifact = obj._get_artifact()
             files = artifact.get_files()
-            elements_to_files[obj.name] = files
+            elements_to_files[obj._get_full_name()] = files
 
         return elements_to_files
 
