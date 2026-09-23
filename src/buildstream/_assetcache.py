@@ -56,6 +56,9 @@ class AssetRemote(BaseRemote):
     #     RemoteError: If the upstream has a problem
     #
     def _check(self):
+        if self.spec.protocol != "grpc":
+            raise RemoteError("Index servers are supported only with the 'grpc' protocol")
+
         request = remote_asset_pb2.FetchBlobRequest()
         if self.instance_name:
             request.instance_name = self.instance_name
@@ -324,6 +327,12 @@ class AssetCache:
 
             remote = RemotePair(casd, spec)
             if remote.error:
+                if spec.protocol == "http" and "failed to connect to all addresses" in remote.error:
+                    # Received gRPC error message even though protocol was set to 'http'
+                    remote.error = (
+                        "Your version of buildbox-casd may be too old to support the HTTP REST protocol for CAS"
+                    )
+
                 self.context.messenger.warn("Failed to initialize remote {}: {}".format(spec.url, remote.error))
 
             self._remotes[spec] = remote
