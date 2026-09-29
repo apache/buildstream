@@ -14,14 +14,19 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+from buildstream import utils
+import sys
+import tempfile
+from typing import Callable, Generator
 import os
-from contextlib import suppress
+from contextlib import suppress, contextmanager
+from ruamel.yaml import CommentedMap
 
 from .._exceptions import LoadError
 from ..exceptions import LoadErrorReason
 from .. import _yaml
 from ..element import Element
-from ..node import Node
+from ..node import Node, MappingNode
 from .._profile import Topics, PROFILER
 from .._includes import Includes
 from .._utils import valid_chars_name
@@ -73,7 +78,7 @@ class Loader:
         self._links = {}  # Dict of link target target paths indexed by link element paths
         self._loaders = {}  # Dict of junction loaders
         self._loader_search_provenances = {}  # Dictionary of provenance nodes of ongoing child loader searches
-
+        self._fullpath_overrides: dict[str, str] = {}  # Dictionary: Original Path, Replacement Path
         self._includes = Includes(self, copy_tree=True)
 
         assert project.name is not None
@@ -251,9 +256,57 @@ class Loader:
         for parent in self._alternative_parents:
             yield from foreach_parent(parent)
 
+    # temporary_modified_element()
+    #
+    # Temporarily modify an element by loading the element and applying modify_elements_function to make the modifications
+    #
+    #
+    # Args:
+    #    target (str): The element-path relative bst file
+    #    modify_element_function (Callable[[CommentedMap],None]): A function to modify a given CommentedMap
+    #
+    @contextmanager
+    def temporary_modified_element(
+        self, target: str, modify_element_function: Callable[[CommentedMap], None]
+    ) -> Generator[None, None, None]:
+
+        _, target_name, target_loader = self._parse_name(target, MappingNode.from_dict({}))
+
+        target_path = os.path.join(target_loader._basedir, target_name)
+        target_node: CommentedMap = _yaml.roundtrip_load(target_path)
+
+        modify_element_function(target_node)
+
+        with utils._tempnamedfile(prefix=f"{target_name.replace('/','_')}_temp", suffix=".bst" ) as temp_target_file:
+            _yaml.roundtrip_dump(target_node, temp_target_file)
+            temp_target_file.flush()
+            target_loader._set_fullpath_override(target_name, temp_target_file.name)
+
+            try:
+                yield
+            finally:
+                target_loader._set_fullpath_override(target_name, None)
+
     ###########################################
     #            Private Methods              #
     ###########################################
+
+    # _set_fullpath_override()
+    #
+    # Set an fullpath override for a element-path relative bst file
+    #
+    # This enables runtime modified elements to be pulled from a temporary directory
+    # Passing None as a fullpath remove the entry
+    #
+    # Args:
+    #    filename (str): The element-path relative bst file
+    #    fullpath (str|None): A fullpath to the bst file, or None
+    #
+    def _set_fullpath_override(self, filename: str, fullpath: str | None):
+        if fullpath:
+            self._fullpath_overrides[filename] = fullpath
+        else:
+            self._fullpath_overrides.pop(filename, None)
 
     # _load_file_no_deps():
     #
@@ -275,8 +328,8 @@ class Loader:
 
         self._assert_element_name(filename, provenance_node)
 
-        # Load the data and process any conditional statements therein
-        fullpath = os.path.join(self._basedir, filename)
+        fullpath = self._fullpath_overrides.get(filename, os.path.join(self._basedir, filename))
+
         try:
             node = _yaml.load(
                 fullpath, shortname=filename, copy_tree=self.load_context.rewritable, project=self.project
@@ -1014,7 +1067,9 @@ class Loader:
     #            - (str): name of the element
     #            - (Loader): loader for sub-project
     #
-    def _parse_name(self, name, provenance_node, *, load_subprojects=True):
+    def _parse_name(
+        self, name: str, provenance_node: MappingNode, *, load_subprojects: bool = True
+    ) -> tuple[str | None, str, "Loader"]:
         # We allow to split only once since deep junctions names are forbidden.
         # Users who want to refer to elements in sub-sub-projects are required
         # to create junctions on the top level project.
