@@ -94,8 +94,27 @@ class UploadTreeResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class RemoteApisSocketConfig(_message.Message):
+    __slots__ = ("instance_name", "path", "action_cache_update_enabled", "instance_map")
+    class InstanceMapEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: str
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+    INSTANCE_NAME_FIELD_NUMBER: _ClassVar[int]
+    PATH_FIELD_NUMBER: _ClassVar[int]
+    ACTION_CACHE_UPDATE_ENABLED_FIELD_NUMBER: _ClassVar[int]
+    INSTANCE_MAP_FIELD_NUMBER: _ClassVar[int]
+    instance_name: str
+    path: str
+    action_cache_update_enabled: bool
+    instance_map: _containers.ScalarMap[str, str]
+    def __init__(self, instance_name: _Optional[str] = ..., path: _Optional[str] = ..., action_cache_update_enabled: bool = ..., instance_map: _Optional[_Mapping[str, str]] = ...) -> None: ...
+
 class StageTreeRequest(_message.Message):
-    __slots__ = ("instance_name", "root_digest", "path", "access_credentials", "remote_apis_socket_path", "pre_unstage_commands", "staging_mode")
+    __slots__ = ("instance_name", "root_digest", "path", "access_credentials", "remote_apis_socket", "pre_unstage_commands", "staging_mode")
     class StagingMode(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
         __slots__ = ()
         DEFAULT: _ClassVar[StageTreeRequest.StagingMode]
@@ -115,17 +134,17 @@ class StageTreeRequest(_message.Message):
     ROOT_DIGEST_FIELD_NUMBER: _ClassVar[int]
     PATH_FIELD_NUMBER: _ClassVar[int]
     ACCESS_CREDENTIALS_FIELD_NUMBER: _ClassVar[int]
-    REMOTE_APIS_SOCKET_PATH_FIELD_NUMBER: _ClassVar[int]
+    REMOTE_APIS_SOCKET_FIELD_NUMBER: _ClassVar[int]
     PRE_UNSTAGE_COMMANDS_FIELD_NUMBER: _ClassVar[int]
     STAGING_MODE_FIELD_NUMBER: _ClassVar[int]
     instance_name: str
     root_digest: _remote_execution_pb2.Digest
     path: str
     access_credentials: StageTreeRequest.Credentials
-    remote_apis_socket_path: str
+    remote_apis_socket: RemoteApisSocketConfig
     pre_unstage_commands: _containers.RepeatedScalarFieldContainer[str]
     staging_mode: StageTreeRequest.StagingMode
-    def __init__(self, instance_name: _Optional[str] = ..., root_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., path: _Optional[str] = ..., access_credentials: _Optional[_Union[StageTreeRequest.Credentials, _Mapping]] = ..., remote_apis_socket_path: _Optional[str] = ..., pre_unstage_commands: _Optional[_Iterable[str]] = ..., staging_mode: _Optional[_Union[StageTreeRequest.StagingMode, str]] = ...) -> None: ...
+    def __init__(self, instance_name: _Optional[str] = ..., root_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., path: _Optional[str] = ..., access_credentials: _Optional[_Union[StageTreeRequest.Credentials, _Mapping]] = ..., remote_apis_socket: _Optional[_Union[RemoteApisSocketConfig, _Mapping]] = ..., pre_unstage_commands: _Optional[_Iterable[str]] = ..., staging_mode: _Optional[_Union[StageTreeRequest.StagingMode, str]] = ...) -> None: ...
 
 class StageTreeResponse(_message.Message):
     __slots__ = ("path",)
@@ -133,8 +152,31 @@ class StageTreeResponse(_message.Message):
     path: str
     def __init__(self, path: _Optional[str] = ...) -> None: ...
 
+class ExportFilesRequest(_message.Message):
+    __slots__ = ("instance_name", "path", "output_files")
+    INSTANCE_NAME_FIELD_NUMBER: _ClassVar[int]
+    PATH_FIELD_NUMBER: _ClassVar[int]
+    OUTPUT_FILES_FIELD_NUMBER: _ClassVar[int]
+    instance_name: str
+    path: str
+    output_files: _containers.RepeatedCompositeFieldContainer[_remote_execution_pb2.OutputFile]
+    def __init__(self, instance_name: _Optional[str] = ..., path: _Optional[str] = ..., output_files: _Optional[_Iterable[_Union[_remote_execution_pb2.OutputFile, _Mapping]]] = ...) -> None: ...
+
+class ExportFilesResponse(_message.Message):
+    __slots__ = ("responses",)
+    class Response(_message.Message):
+        __slots__ = ("path", "status")
+        PATH_FIELD_NUMBER: _ClassVar[int]
+        STATUS_FIELD_NUMBER: _ClassVar[int]
+        path: str
+        status: _status_pb2.Status
+        def __init__(self, path: _Optional[str] = ..., status: _Optional[_Union[_status_pb2.Status, _Mapping]] = ...) -> None: ...
+    RESPONSES_FIELD_NUMBER: _ClassVar[int]
+    responses: _containers.RepeatedCompositeFieldContainer[ExportFilesResponse.Response]
+    def __init__(self, responses: _Optional[_Iterable[_Union[ExportFilesResponse.Response, _Mapping]]] = ...) -> None: ...
+
 class CaptureTreeRequest(_message.Message):
-    __slots__ = ("instance_name", "root", "path", "bypass_local_cache", "node_properties", "move_files", "output_directory_format", "skip_upload", "unix_mode_mask")
+    __slots__ = ("instance_name", "root", "path", "bypass_local_cache", "node_properties", "move_files", "output_directory_format", "skip_upload", "unix_mode_mask", "allow_chmod_to_read")
     INSTANCE_NAME_FIELD_NUMBER: _ClassVar[int]
     ROOT_FIELD_NUMBER: _ClassVar[int]
     PATH_FIELD_NUMBER: _ClassVar[int]
@@ -144,6 +186,7 @@ class CaptureTreeRequest(_message.Message):
     OUTPUT_DIRECTORY_FORMAT_FIELD_NUMBER: _ClassVar[int]
     SKIP_UPLOAD_FIELD_NUMBER: _ClassVar[int]
     UNIX_MODE_MASK_FIELD_NUMBER: _ClassVar[int]
+    ALLOW_CHMOD_TO_READ_FIELD_NUMBER: _ClassVar[int]
     instance_name: str
     root: str
     path: _containers.RepeatedScalarFieldContainer[str]
@@ -153,27 +196,65 @@ class CaptureTreeRequest(_message.Message):
     output_directory_format: _remote_execution_pb2.Command.OutputDirectoryFormat
     skip_upload: bool
     unix_mode_mask: _wrappers_pb2.UInt32Value
-    def __init__(self, instance_name: _Optional[str] = ..., root: _Optional[str] = ..., path: _Optional[_Iterable[str]] = ..., bypass_local_cache: bool = ..., node_properties: _Optional[_Iterable[str]] = ..., move_files: bool = ..., output_directory_format: _Optional[_Union[_remote_execution_pb2.Command.OutputDirectoryFormat, str]] = ..., skip_upload: bool = ..., unix_mode_mask: _Optional[_Union[_wrappers_pb2.UInt32Value, _Mapping]] = ...) -> None: ...
+    allow_chmod_to_read: bool
+    def __init__(self, instance_name: _Optional[str] = ..., root: _Optional[str] = ..., path: _Optional[_Iterable[str]] = ..., bypass_local_cache: bool = ..., node_properties: _Optional[_Iterable[str]] = ..., move_files: bool = ..., output_directory_format: _Optional[_Union[_remote_execution_pb2.Command.OutputDirectoryFormat, str]] = ..., skip_upload: bool = ..., unix_mode_mask: _Optional[_Union[_wrappers_pb2.UInt32Value, _Mapping]] = ..., allow_chmod_to_read: bool = ...) -> None: ...
 
 class CaptureTreeResponse(_message.Message):
     __slots__ = ("responses",)
     class Response(_message.Message):
-        __slots__ = ("path", "tree_digest", "status", "root_directory_digest")
+        __slots__ = ("path", "tree_digest", "status", "root_directory_digest", "total_size_bytes")
         PATH_FIELD_NUMBER: _ClassVar[int]
         TREE_DIGEST_FIELD_NUMBER: _ClassVar[int]
         STATUS_FIELD_NUMBER: _ClassVar[int]
         ROOT_DIRECTORY_DIGEST_FIELD_NUMBER: _ClassVar[int]
+        TOTAL_SIZE_BYTES_FIELD_NUMBER: _ClassVar[int]
         path: str
         tree_digest: _remote_execution_pb2.Digest
         status: _status_pb2.Status
         root_directory_digest: _remote_execution_pb2.Digest
-        def __init__(self, path: _Optional[str] = ..., tree_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., status: _Optional[_Union[_status_pb2.Status, _Mapping]] = ..., root_directory_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ...) -> None: ...
+        total_size_bytes: int
+        def __init__(self, path: _Optional[str] = ..., tree_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., status: _Optional[_Union[_status_pb2.Status, _Mapping]] = ..., root_directory_digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., total_size_bytes: _Optional[int] = ...) -> None: ...
     RESPONSES_FIELD_NUMBER: _ClassVar[int]
     responses: _containers.RepeatedCompositeFieldContainer[CaptureTreeResponse.Response]
     def __init__(self, responses: _Optional[_Iterable[_Union[CaptureTreeResponse.Response, _Mapping]]] = ...) -> None: ...
 
+class HashFilesRequest(_message.Message):
+    __slots__ = ("instance_name", "root", "path", "node_properties", "unix_mode_mask", "allow_chmod_to_read")
+    INSTANCE_NAME_FIELD_NUMBER: _ClassVar[int]
+    ROOT_FIELD_NUMBER: _ClassVar[int]
+    PATH_FIELD_NUMBER: _ClassVar[int]
+    NODE_PROPERTIES_FIELD_NUMBER: _ClassVar[int]
+    UNIX_MODE_MASK_FIELD_NUMBER: _ClassVar[int]
+    ALLOW_CHMOD_TO_READ_FIELD_NUMBER: _ClassVar[int]
+    instance_name: str
+    root: str
+    path: _containers.RepeatedScalarFieldContainer[str]
+    node_properties: _containers.RepeatedScalarFieldContainer[str]
+    unix_mode_mask: _wrappers_pb2.UInt32Value
+    allow_chmod_to_read: bool
+    def __init__(self, instance_name: _Optional[str] = ..., root: _Optional[str] = ..., path: _Optional[_Iterable[str]] = ..., node_properties: _Optional[_Iterable[str]] = ..., unix_mode_mask: _Optional[_Union[_wrappers_pb2.UInt32Value, _Mapping]] = ..., allow_chmod_to_read: bool = ...) -> None: ...
+
+class HashFilesResponse(_message.Message):
+    __slots__ = ("responses",)
+    class Response(_message.Message):
+        __slots__ = ("path", "digest", "status", "is_executable", "node_properties")
+        PATH_FIELD_NUMBER: _ClassVar[int]
+        DIGEST_FIELD_NUMBER: _ClassVar[int]
+        STATUS_FIELD_NUMBER: _ClassVar[int]
+        IS_EXECUTABLE_FIELD_NUMBER: _ClassVar[int]
+        NODE_PROPERTIES_FIELD_NUMBER: _ClassVar[int]
+        path: str
+        digest: _remote_execution_pb2.Digest
+        status: _status_pb2.Status
+        is_executable: bool
+        node_properties: _remote_execution_pb2.NodeProperties
+        def __init__(self, path: _Optional[str] = ..., digest: _Optional[_Union[_remote_execution_pb2.Digest, _Mapping]] = ..., status: _Optional[_Union[_status_pb2.Status, _Mapping]] = ..., is_executable: bool = ..., node_properties: _Optional[_Union[_remote_execution_pb2.NodeProperties, _Mapping]] = ...) -> None: ...
+    RESPONSES_FIELD_NUMBER: _ClassVar[int]
+    responses: _containers.RepeatedCompositeFieldContainer[HashFilesResponse.Response]
+    def __init__(self, responses: _Optional[_Iterable[_Union[HashFilesResponse.Response, _Mapping]]] = ...) -> None: ...
+
 class CaptureFilesRequest(_message.Message):
-    __slots__ = ("instance_name", "root", "path", "bypass_local_cache", "node_properties", "move_files", "skip_upload", "unix_mode_mask")
+    __slots__ = ("instance_name", "root", "path", "bypass_local_cache", "node_properties", "move_files", "skip_upload", "unix_mode_mask", "allow_chmod_to_read")
     INSTANCE_NAME_FIELD_NUMBER: _ClassVar[int]
     ROOT_FIELD_NUMBER: _ClassVar[int]
     PATH_FIELD_NUMBER: _ClassVar[int]
@@ -182,6 +263,7 @@ class CaptureFilesRequest(_message.Message):
     MOVE_FILES_FIELD_NUMBER: _ClassVar[int]
     SKIP_UPLOAD_FIELD_NUMBER: _ClassVar[int]
     UNIX_MODE_MASK_FIELD_NUMBER: _ClassVar[int]
+    ALLOW_CHMOD_TO_READ_FIELD_NUMBER: _ClassVar[int]
     instance_name: str
     root: str
     path: _containers.RepeatedScalarFieldContainer[str]
@@ -190,7 +272,8 @@ class CaptureFilesRequest(_message.Message):
     move_files: bool
     skip_upload: bool
     unix_mode_mask: _wrappers_pb2.UInt32Value
-    def __init__(self, instance_name: _Optional[str] = ..., root: _Optional[str] = ..., path: _Optional[_Iterable[str]] = ..., bypass_local_cache: bool = ..., node_properties: _Optional[_Iterable[str]] = ..., move_files: bool = ..., skip_upload: bool = ..., unix_mode_mask: _Optional[_Union[_wrappers_pb2.UInt32Value, _Mapping]] = ...) -> None: ...
+    allow_chmod_to_read: bool
+    def __init__(self, instance_name: _Optional[str] = ..., root: _Optional[str] = ..., path: _Optional[_Iterable[str]] = ..., bypass_local_cache: bool = ..., node_properties: _Optional[_Iterable[str]] = ..., move_files: bool = ..., skip_upload: bool = ..., unix_mode_mask: _Optional[_Union[_wrappers_pb2.UInt32Value, _Mapping]] = ..., allow_chmod_to_read: bool = ...) -> None: ...
 
 class CaptureFilesResponse(_message.Message):
     __slots__ = ("responses",)
@@ -232,7 +315,7 @@ class GetInstanceNameForRemoteResponse(_message.Message):
     def __init__(self, instance_name: _Optional[str] = ...) -> None: ...
 
 class Remote(_message.Message):
-    __slots__ = ("url", "instance_name", "server_cert", "client_key", "client_cert", "access_token_path", "access_token_reload_interval", "keepalive_time", "retry_limit", "retry_delay", "request_timeout", "read_only")
+    __slots__ = ("url", "instance_name", "server_cert", "client_key", "client_cert", "access_token_path", "access_token_reload_interval", "keepalive_time", "retry_limit", "retry_delay", "request_timeout", "read_only", "protocol")
     URL_FIELD_NUMBER: _ClassVar[int]
     INSTANCE_NAME_FIELD_NUMBER: _ClassVar[int]
     SERVER_CERT_FIELD_NUMBER: _ClassVar[int]
@@ -245,6 +328,7 @@ class Remote(_message.Message):
     RETRY_DELAY_FIELD_NUMBER: _ClassVar[int]
     REQUEST_TIMEOUT_FIELD_NUMBER: _ClassVar[int]
     READ_ONLY_FIELD_NUMBER: _ClassVar[int]
+    PROTOCOL_FIELD_NUMBER: _ClassVar[int]
     url: str
     instance_name: str
     server_cert: bytes
@@ -257,7 +341,8 @@ class Remote(_message.Message):
     retry_delay: _duration_pb2.Duration
     request_timeout: _duration_pb2.Duration
     read_only: bool
-    def __init__(self, url: _Optional[str] = ..., instance_name: _Optional[str] = ..., server_cert: _Optional[bytes] = ..., client_key: _Optional[bytes] = ..., client_cert: _Optional[bytes] = ..., access_token_path: _Optional[str] = ..., access_token_reload_interval: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., keepalive_time: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., retry_limit: _Optional[int] = ..., retry_delay: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., request_timeout: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., read_only: bool = ...) -> None: ...
+    protocol: str
+    def __init__(self, url: _Optional[str] = ..., instance_name: _Optional[str] = ..., server_cert: _Optional[bytes] = ..., client_key: _Optional[bytes] = ..., client_cert: _Optional[bytes] = ..., access_token_path: _Optional[str] = ..., access_token_reload_interval: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., keepalive_time: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., retry_limit: _Optional[int] = ..., retry_delay: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., request_timeout: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ..., read_only: bool = ..., protocol: _Optional[str] = ...) -> None: ...
 
 class GetInstanceNameForRemotesRequest(_message.Message):
     __slots__ = ("instance_name", "content_addressable_storage", "remote_asset", "action_cache", "execution")
@@ -279,20 +364,6 @@ class GetInstanceNameForRemotesResponse(_message.Message):
     instance_name: str
     def __init__(self, instance_name: _Optional[str] = ...) -> None: ...
 
-class GetInstanceNameForNamespaceRequest(_message.Message):
-    __slots__ = ("instance_name", "root")
-    INSTANCE_NAME_FIELD_NUMBER: _ClassVar[int]
-    ROOT_FIELD_NUMBER: _ClassVar[int]
-    instance_name: str
-    root: str
-    def __init__(self, instance_name: _Optional[str] = ..., root: _Optional[str] = ...) -> None: ...
-
-class GetInstanceNameForNamespaceResponse(_message.Message):
-    __slots__ = ("instance_name",)
-    INSTANCE_NAME_FIELD_NUMBER: _ClassVar[int]
-    instance_name: str
-    def __init__(self, instance_name: _Optional[str] = ...) -> None: ...
-
 class GetLocalDiskUsageRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
@@ -304,3 +375,26 @@ class GetLocalDiskUsageResponse(_message.Message):
     size_bytes: int
     quota_bytes: int
     def __init__(self, size_bytes: _Optional[int] = ..., quota_bytes: _Optional[int] = ...) -> None: ...
+
+class NestedServerRequest(_message.Message):
+    __slots__ = ("instance_name", "path", "access_credentials", "remote_apis_socket")
+    class Credentials(_message.Message):
+        __slots__ = ("uid", "gid")
+        UID_FIELD_NUMBER: _ClassVar[int]
+        GID_FIELD_NUMBER: _ClassVar[int]
+        uid: int
+        gid: int
+        def __init__(self, uid: _Optional[int] = ..., gid: _Optional[int] = ...) -> None: ...
+    INSTANCE_NAME_FIELD_NUMBER: _ClassVar[int]
+    PATH_FIELD_NUMBER: _ClassVar[int]
+    ACCESS_CREDENTIALS_FIELD_NUMBER: _ClassVar[int]
+    REMOTE_APIS_SOCKET_FIELD_NUMBER: _ClassVar[int]
+    instance_name: str
+    path: str
+    access_credentials: NestedServerRequest.Credentials
+    remote_apis_socket: RemoteApisSocketConfig
+    def __init__(self, instance_name: _Optional[str] = ..., path: _Optional[str] = ..., access_credentials: _Optional[_Union[NestedServerRequest.Credentials, _Mapping]] = ..., remote_apis_socket: _Optional[_Union[RemoteApisSocketConfig, _Mapping]] = ...) -> None: ...
+
+class NestedServerResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...

@@ -16,6 +16,7 @@
 # pylint: disable=redefined-outer-name
 
 import os
+import shutil
 
 import pytest
 
@@ -24,7 +25,7 @@ from buildstream._project import Project
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from buildstream._testing import cli  # pylint: disable=unused-import
 
-from tests.testutils import create_artifact_share, dummy_context
+from tests.testutils import create_artifact_share, create_artifact_and_http_share, dummy_context
 
 # Project directory
 DATA_DIR = os.path.join(
@@ -121,6 +122,94 @@ def test_pull(cli, tmpdir, datafiles, connection_config):
             context.initialize_remotes(True, True, None, None)
 
             assert artifactcache.has_push_remotes(plugin=element), "No remote configured for element target.bst"
+            assert artifactcache.pull(element, element_key), "Pull operation failed"
+
+            assert cli.artifact.is_cached(cache_dir, element, element_key)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_pull_http(cli, tmpdir, datafiles):
+    project_dir = str(datafiles)
+
+    # Set up an artifact cache.
+    with create_artifact_and_http_share(os.path.join(str(tmpdir), "artifactshare")) as (share, httpserver):
+        # Configure artifact share
+        cache_dir = os.path.join(str(tmpdir), "cache")
+        user_config_file = str(tmpdir.join("buildstream.conf"))
+        server = {
+            "url": share.repo,
+            "push": True,
+        }
+        user_config = {
+            "scheduler": {"pushers": 1},
+            "artifacts": {"servers": [server]},
+            "cachedir": cache_dir,
+        }
+
+        # Write down the user configuration file
+        _yaml.roundtrip_dump(user_config, file=user_config_file)
+        # Ensure CLI calls will use it
+        cli.configure(user_config)
+
+        # First build the project with the artifact cache configured
+        result = cli.run(project=project_dir, args=["build", "target.bst"])
+        result.assert_success()
+
+        # Assert that we are now cached locally
+        assert cli.get_element_state(project_dir, "target.bst") == "cached"
+        # Assert that we shared/pushed the cached artifact
+        assert share.get_artifact(cli.get_artifact_name(project_dir, "test", "target.bst"))
+
+        # Now we've pushed, clear the user's local cache
+        cas = os.path.join(cli.directory, "cas")
+        shutil.rmtree(cas)
+        artifact_dir = os.path.join(cli.directory, "artifacts")
+        shutil.rmtree(artifact_dir)
+
+        # Assert that we are not cached locally anymore
+        assert cli.get_element_state(project_dir, "target.bst") != "cached"
+
+        # Switch gRPC server to index-only and add HTTP server
+        server["type"] = "index"
+        server2 = {
+            "url": httpserver.base_url(),
+            "type": "storage",
+            "protocol": "http",
+        }
+        user_config["artifacts"]["servers"] = [server, server2]
+
+        # Write down the user configuration file
+        _yaml.roundtrip_dump(user_config, file=user_config_file)
+        # Ensure CLI calls will use it
+        cli.configure(user_config)
+
+        with dummy_context(config=user_config_file) as context:
+            # Load the project
+            project = Project(project_dir, context)
+            project.ensure_fully_loaded()
+
+            # Assert that the element's artifact is **not** cached
+            element = project.load_elements(["target.bst"])[0]
+            element_key = cli.get_element_key(project_dir, "target.bst")
+            assert not cli.artifact.is_cached(cache_dir, element, element_key)
+
+            context.cachedir = cache_dir
+            context.casdir = os.path.join(cache_dir, "cas")
+            context.tmpdir = os.path.join(cache_dir, "tmp")
+
+            # Load the project manually
+            project = Project(project_dir, context)
+            project.ensure_fully_loaded()
+
+            # Create a local artifact cache handle
+            artifactcache = context.artifactcache
+
+            # Initialize remotes
+            context.initialize_remotes(True, True, None, None)
+
+            assert artifactcache.has_fetch_remotes(
+                plugin=element
+            ), "No remote configured for element target.bst (likely due to missing HTTP REST protocol support in buildbox-casd)"
             assert artifactcache.pull(element, element_key), "Pull operation failed"
 
             assert cli.artifact.is_cached(cache_dir, element, element_key)

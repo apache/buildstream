@@ -19,7 +19,14 @@
 #           William Salmon <will.salmon@codethink.co.uk>
 #
 
-from .artifactshare import create_artifact_share, create_split_share, assert_shared, assert_not_shared, ArtifactShare
+from .artifactshare import (
+    create_artifact_share,
+    create_artifact_and_http_share,
+    create_split_share,
+    assert_shared,
+    assert_not_shared,
+    ArtifactShare,
+)
 from .casd import casd_cache
 from .context import dummy_context
 from .element_generators import create_element_size

@@ -64,6 +64,11 @@ class LocalContentAddressableStorageStub(object):
                 request_serializer=build_dot_buildgrid_dot_local__cas__pb2.StageTreeRequest.SerializeToString,
                 response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.StageTreeResponse.FromString,
                 _registered_method=True)
+        self.ExportFiles = channel.unary_unary(
+                '/build.buildgrid.LocalContentAddressableStorage/ExportFiles',
+                request_serializer=build_dot_buildgrid_dot_local__cas__pb2.ExportFilesRequest.SerializeToString,
+                response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.ExportFilesResponse.FromString,
+                _registered_method=True)
         self.CaptureTree = channel.unary_unary(
                 '/build.buildgrid.LocalContentAddressableStorage/CaptureTree',
                 request_serializer=build_dot_buildgrid_dot_local__cas__pb2.CaptureTreeRequest.SerializeToString,
@@ -73,6 +78,11 @@ class LocalContentAddressableStorageStub(object):
                 '/build.buildgrid.LocalContentAddressableStorage/CaptureFiles',
                 request_serializer=build_dot_buildgrid_dot_local__cas__pb2.CaptureFilesRequest.SerializeToString,
                 response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.CaptureFilesResponse.FromString,
+                _registered_method=True)
+        self.HashFiles = channel.unary_unary(
+                '/build.buildgrid.LocalContentAddressableStorage/HashFiles',
+                request_serializer=build_dot_buildgrid_dot_local__cas__pb2.HashFilesRequest.SerializeToString,
+                response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.HashFilesResponse.FromString,
                 _registered_method=True)
         self.GetInstanceNameForRemote = channel.unary_unary(
                 '/build.buildgrid.LocalContentAddressableStorage/GetInstanceNameForRemote',
@@ -84,15 +94,15 @@ class LocalContentAddressableStorageStub(object):
                 request_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesRequest.SerializeToString,
                 response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesResponse.FromString,
                 _registered_method=True)
-        self.GetInstanceNameForNamespace = channel.unary_unary(
-                '/build.buildgrid.LocalContentAddressableStorage/GetInstanceNameForNamespace',
-                request_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForNamespaceRequest.SerializeToString,
-                response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForNamespaceResponse.FromString,
-                _registered_method=True)
         self.GetLocalDiskUsage = channel.unary_unary(
                 '/build.buildgrid.LocalContentAddressableStorage/GetLocalDiskUsage',
                 request_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetLocalDiskUsageRequest.SerializeToString,
                 response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetLocalDiskUsageResponse.FromString,
+                _registered_method=True)
+        self.NestedServer = channel.stream_stream(
+                '/build.buildgrid.LocalContentAddressableStorage/NestedServer',
+                request_serializer=build_dot_buildgrid_dot_local__cas__pb2.NestedServerRequest.SerializeToString,
+                response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.NestedServerResponse.FromString,
                 _registered_method=True)
 
 
@@ -201,6 +211,25 @@ class LocalContentAddressableStorageServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ExportFiles(self, request, context):
+        """Export files to a user specified location on the local filesystem.
+
+        The way in which files are populated is implementation defined,
+        however, the server will guarantee that mutations to these files
+        will not corrupt the local cache.
+
+        This does not create any directories. The client needs to ensure that
+        the parent directory of each output file exists and is writable.
+
+        Missing blobs are fetched, if a CAS remote is configured.
+
+        Errors:
+        * `FAILED_PRECONDITION`: The destination directory does not exist.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def CaptureTree(self, request, context):
         """Capture a directory tree from the local filesystem.
 
@@ -247,6 +276,21 @@ class LocalContentAddressableStorageServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def HashFiles(self, request, context):
+        """Hash files from the local filesystem.
+
+        This asks the local CAS server to hash the file on behalf of the
+        client and populate the inode cache for efficent subqeuent hashing
+        of the same file.
+
+        Unlike CaptureFiles which always store the file content either to
+        local storage or remote CAS or both. HashFiles only return the hash
+        and populate the inode cache.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetInstanceNameForRemote(self, request, context):
         """Configure remote CAS endpoint.
 
@@ -270,19 +314,23 @@ class LocalContentAddressableStorageServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetInstanceNameForNamespace(self, request, context):
-        """Configure sandboxed clients.
-
-        This returns a string that can be used as instance_name to access
-        this service from clients running in the specified filesystem/mount
-        namespace or chroot environment
+    def GetLocalDiskUsage(self, request, context):
+        """Query total space used by the local cache.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetLocalDiskUsage(self, request, context):
-        """Query total space used by the local cache.
+    def NestedServer(self, request_iterator, context):
+        """Create a nested server restricted to a directory tree in the local filesystem.
+
+        The nested server is started when the server receives the initial request
+        and it is ready to be used on the initial (non-error) response from the
+        server.
+
+        The nested server will shut down when the server either receives an
+        additional request (with all fields unset) or when the stream is closed.
+        The server will send an additional response after cleanup is complete.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -321,6 +369,11 @@ def add_LocalContentAddressableStorageServicer_to_server(servicer, server):
                     request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.StageTreeRequest.FromString,
                     response_serializer=build_dot_buildgrid_dot_local__cas__pb2.StageTreeResponse.SerializeToString,
             ),
+            'ExportFiles': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExportFiles,
+                    request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.ExportFilesRequest.FromString,
+                    response_serializer=build_dot_buildgrid_dot_local__cas__pb2.ExportFilesResponse.SerializeToString,
+            ),
             'CaptureTree': grpc.unary_unary_rpc_method_handler(
                     servicer.CaptureTree,
                     request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.CaptureTreeRequest.FromString,
@@ -330,6 +383,11 @@ def add_LocalContentAddressableStorageServicer_to_server(servicer, server):
                     servicer.CaptureFiles,
                     request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.CaptureFilesRequest.FromString,
                     response_serializer=build_dot_buildgrid_dot_local__cas__pb2.CaptureFilesResponse.SerializeToString,
+            ),
+            'HashFiles': grpc.unary_unary_rpc_method_handler(
+                    servicer.HashFiles,
+                    request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.HashFilesRequest.FromString,
+                    response_serializer=build_dot_buildgrid_dot_local__cas__pb2.HashFilesResponse.SerializeToString,
             ),
             'GetInstanceNameForRemote': grpc.unary_unary_rpc_method_handler(
                     servicer.GetInstanceNameForRemote,
@@ -341,15 +399,15 @@ def add_LocalContentAddressableStorageServicer_to_server(servicer, server):
                     request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesRequest.FromString,
                     response_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesResponse.SerializeToString,
             ),
-            'GetInstanceNameForNamespace': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetInstanceNameForNamespace,
-                    request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForNamespaceRequest.FromString,
-                    response_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForNamespaceResponse.SerializeToString,
-            ),
             'GetLocalDiskUsage': grpc.unary_unary_rpc_method_handler(
                     servicer.GetLocalDiskUsage,
                     request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetLocalDiskUsageRequest.FromString,
                     response_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetLocalDiskUsageResponse.SerializeToString,
+            ),
+            'NestedServer': grpc.stream_stream_rpc_method_handler(
+                    servicer.NestedServer,
+                    request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.NestedServerRequest.FromString,
+                    response_serializer=build_dot_buildgrid_dot_local__cas__pb2.NestedServerResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -525,6 +583,33 @@ class LocalContentAddressableStorage(object):
             _registered_method=True)
 
     @staticmethod
+    def ExportFiles(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/build.buildgrid.LocalContentAddressableStorage/ExportFiles',
+            build_dot_buildgrid_dot_local__cas__pb2.ExportFilesRequest.SerializeToString,
+            build_dot_buildgrid_dot_local__cas__pb2.ExportFilesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def CaptureTree(request,
             target,
             options=(),
@@ -568,6 +653,33 @@ class LocalContentAddressableStorage(object):
             '/build.buildgrid.LocalContentAddressableStorage/CaptureFiles',
             build_dot_buildgrid_dot_local__cas__pb2.CaptureFilesRequest.SerializeToString,
             build_dot_buildgrid_dot_local__cas__pb2.CaptureFilesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def HashFiles(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/build.buildgrid.LocalContentAddressableStorage/HashFiles',
+            build_dot_buildgrid_dot_local__cas__pb2.HashFilesRequest.SerializeToString,
+            build_dot_buildgrid_dot_local__cas__pb2.HashFilesResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -633,33 +745,6 @@ class LocalContentAddressableStorage(object):
             _registered_method=True)
 
     @staticmethod
-    def GetInstanceNameForNamespace(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/build.buildgrid.LocalContentAddressableStorage/GetInstanceNameForNamespace',
-            build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForNamespaceRequest.SerializeToString,
-            build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForNamespaceResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
     def GetLocalDiskUsage(request,
             target,
             options=(),
@@ -676,6 +761,33 @@ class LocalContentAddressableStorage(object):
             '/build.buildgrid.LocalContentAddressableStorage/GetLocalDiskUsage',
             build_dot_buildgrid_dot_local__cas__pb2.GetLocalDiskUsageRequest.SerializeToString,
             build_dot_buildgrid_dot_local__cas__pb2.GetLocalDiskUsageResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def NestedServer(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_stream(
+            request_iterator,
+            target,
+            '/build.buildgrid.LocalContentAddressableStorage/NestedServer',
+            build_dot_buildgrid_dot_local__cas__pb2.NestedServerRequest.SerializeToString,
+            build_dot_buildgrid_dot_local__cas__pb2.NestedServerResponse.FromString,
             options,
             channel_credentials,
             insecure,
