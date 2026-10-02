@@ -654,10 +654,12 @@ class CasBasedDirectory(Directory):
                 self.__subtree_read_only = prop.value == "true"
 
         for dentry in pb2_directory.directories:
+            _validate_cas_node_name(dentry.name)
             self.__index[dentry.name] = _IndexEntry(
                 self.__cas_cache, dentry.name, FileType.DIRECTORY, digest=dentry.digest
             )
         for entry in pb2_directory.files:
+            _validate_cas_node_name(entry.name)
             mtime: Optional[timestamp_pb2.Timestamp]
             if entry.node_properties.HasField("mtime"):
                 mtime = entry.node_properties.mtime
@@ -673,6 +675,7 @@ class CasBasedDirectory(Directory):
                 mtime=mtime,
             )
         for lentry in pb2_directory.symlinks:
+            _validate_cas_node_name(lentry.name)
             self.__index[lentry.name] = _IndexEntry(
                 self.__cas_cache, lentry.name, FileType.SYMLINK, target=lentry.target
             )
@@ -908,3 +911,17 @@ class CasBasedDirectory(Directory):
                 subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
             else:
                 result.files_written.append(relative_pathname)
+
+
+# _validate_cas_node_name():
+#
+# Validates that a CAS Directory entry name is a single path segment.
+#
+# Args:
+#    name (str): The name of a CAS Directory entry
+#
+def _validate_cas_node_name(name: str):
+    if os.path.basename(name) != name or name in (".", ".."):
+        raise DirectoryError(
+            f"Invalid name in a CAS Directory node: '{name}' (every child in the directory must have a path of exactly one segment)"
+        )
