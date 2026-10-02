@@ -225,7 +225,14 @@ class CASCache:
         for symlinknode in directory.symlinks:
             # symlink
             fullpath = os.path.join(dest, symlinknode.name)
-            os.symlink(symlinknode.target, fullpath)
+            try:
+                os.symlink(symlinknode.target, fullpath)
+            except FileExistsError:
+                try:
+                    os.unlink(fullpath)
+                except OSError as e:
+                    raise CASCacheError(f"Failed to remove destination file '{fullpath}': {e}") from e
+                os.symlink(symlinknode.target, fullpath)
 
         node_properties = directory.node_properties
         if node_properties.HasField("mtime"):
