@@ -34,7 +34,7 @@ import tempfile
 import threading
 import itertools
 from contextlib import contextmanager
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Callable, IO, Iterable, Iterator, Optional, Tuple, Union, Pattern
 from google.protobuf import timestamp_pb2
 
@@ -1064,7 +1064,10 @@ def _copy_directories(srcdir, destdir, target):
 #
 def _ensure_real_directory(root, path):
     destpath = root
-    for name in os.path.split(path):
+    purepath = PurePath(path)
+    if purepath.is_absolute():
+        raise UtilError(f"Expected relative path, got absolute path: {path}")
+    for name in purepath.parts:
         destpath = os.path.join(destpath, name)
         try:
             deststat = os.lstat(destpath)
