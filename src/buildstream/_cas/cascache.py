@@ -185,8 +185,10 @@ class CASCache:
         with open(self.objpath(tree), "rb") as f:
             directory.ParseFromString(f.read())
 
+        names = set[str]()
+
         for filenode in directory.files:
-            _validate_cas_node_name(filenode.name)
+            _validate_cas_node_name(filenode.name, names)
 
             # regular file, create hardlink
             fullpath = os.path.join(dest, filenode.name)
@@ -216,13 +218,13 @@ class CASCache:
                 os.chmod(fullpath, mode)
 
         for dirnode in directory.directories:
-            _validate_cas_node_name(dirnode.name)
+            _validate_cas_node_name(dirnode.name, names)
             fullpath = os.path.join(dest, dirnode.name)
             self.checkout(fullpath, dirnode.digest, can_link=can_link, _fetch=False)
 
         for symlinknode in directory.symlinks:
             # symlink
-            _validate_cas_node_name(symlinknode.name)
+            _validate_cas_node_name(symlinknode.name, names)
             fullpath = os.path.join(dest, symlinknode.name)
             os.symlink(symlinknode.target, fullpath)
 
@@ -835,9 +837,14 @@ def _grouper(iterable, n):
 #
 # Args:
 #    name (str): The name of a CAS Directory entry
+#    names (set): The set of names in the directory
 #
-def _validate_cas_node_name(name: str):
+def _validate_cas_node_name(name: str, names: set[str]):
     if os.path.basename(name) != name or name in (".", ".."):
         raise CASCacheError(
             f"Invalid name in a CAS Directory node: '{name}' (every child in the directory must have a path of exactly one segment)"
         )
+
+    if name in names:
+        raise CASCacheError(f"Duplicate name in a CAS Directory node: '{name}'")
+    names.add(name)
