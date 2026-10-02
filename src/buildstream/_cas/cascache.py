@@ -186,6 +186,8 @@ class CASCache:
             directory.ParseFromString(f.read())
 
         for filenode in directory.files:
+            _validate_cas_node_name(filenode.name)
+
             # regular file, create hardlink
             fullpath = os.path.join(dest, filenode.name)
 
@@ -214,11 +216,13 @@ class CASCache:
                 os.chmod(fullpath, mode)
 
         for dirnode in directory.directories:
+            _validate_cas_node_name(dirnode.name)
             fullpath = os.path.join(dest, dirnode.name)
             self.checkout(fullpath, dirnode.digest, can_link=can_link, _fetch=False)
 
         for symlinknode in directory.symlinks:
             # symlink
+            _validate_cas_node_name(symlinknode.name)
             fullpath = os.path.join(dest, symlinknode.name)
             os.symlink(symlinknode.target, fullpath)
 
@@ -823,3 +827,17 @@ def _grouper(iterable, n):
         except StopIteration:
             return
         yield itertools.chain([current], itertools.islice(iterable, n - 1))
+
+
+# _validate_cas_node_name():
+#
+# Validates that a CAS Directory entry name is a single path segment.
+#
+# Args:
+#    name (str): The name of a CAS Directory entry
+#
+def _validate_cas_node_name(name: str):
+    if os.path.basename(name) != name or name in (".", ".."):
+        raise CASCacheError(
+            f"Invalid name in a CAS Directory node: '{name}' (every child in the directory must have a path of exactly one segment)"
+        )
