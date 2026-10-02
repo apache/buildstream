@@ -220,6 +220,11 @@ class CASCache:
         for dirnode in directory.directories:
             _validate_cas_node_name(dirnode.name, names)
             fullpath = os.path.join(dest, dirnode.name)
+            # If the destination is a regular file, `os.makedirs()` will catch it.
+            # However, it will not raise an error if it's a valid directory symlink,
+            # so check here that we're not unexpectedly following a symlink.
+            if os.path.islink(fullpath):
+                raise CASCacheError(f"Destination already exists and is a symlink, not a directory: {fullpath}")
             self.checkout(fullpath, dirnode.digest, can_link=can_link, _fetch=False)
 
         for symlinknode in directory.symlinks:
