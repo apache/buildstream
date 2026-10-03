@@ -142,6 +142,9 @@ class FileBasedDirectory(Directory):
         subdir = self.__open_directory(paths[:-1])
         newpath = os.path.join(subdir.__external_directory, paths[-1])
 
+        if subdir.exists(paths[-1]) and not subdir.isfile(paths[-1]):
+            raise DirectoryError("{} in {} is not a file".format(paths[-1], str(subdir)))
+
         if mode not in ["r", "rb", "w", "wb", "w+", "w+b", "x", "xb", "x+", "x+b"]:
             raise ValueError("Unsupported mode: `{}`".format(mode))
 
@@ -157,8 +160,8 @@ class FileBasedDirectory(Directory):
             if "x" in mode:
                 # This check is not atomic, however, we're operating with a
                 # single thread in a private directory tree.
-                if subdir.exists(path[-1]):
-                    raise DirectoryError("{} already exists in {}".format(path[-1], str(subdir)))
+                if subdir.exists(paths[-1]):
+                    raise DirectoryError("{} already exists in {}".format(paths[-1], str(subdir)))
                 mode = "w" + mode[1:]
 
             with utils.save_file_atomic(newpath, mode=mode, encoding=encoding) as f:
