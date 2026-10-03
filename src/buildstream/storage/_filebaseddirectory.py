@@ -268,7 +268,11 @@ class FileBasedDirectory(Directory):
             )
             if update_mtime:
                 for f in import_result.files_written:
-                    os.utime(os.path.join(self.__external_directory, f), times=(update_mtime, update_mtime))
+                    os.utime(
+                        os.path.join(self.__external_directory, f),
+                        times=(update_mtime, update_mtime),
+                        follow_symlinks=False,
+                    )
         else:
             #
             # We're dealing with an abstract Directory object
