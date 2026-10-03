@@ -15,7 +15,7 @@ import os
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Iterator
 
-from . import _cachekey
+from . import _cachekey, utils
 from ._exceptions import SkipJob
 from ._context import Context
 from ._protos.buildstream.v2 import source_pb2
@@ -191,11 +191,11 @@ class ElementSources:
     def init_workspace(self, directory: str):
         for source in self.sources():
             if source._directory:
-                srcdir = os.path.join(directory, source._directory)
+                subdir = source._directory.lstrip(os.path.sep)
+                utils._ensure_real_directory(directory, subdir)
+                srcdir = os.path.join(directory, subdir)
             else:
                 srcdir = directory
-
-            os.makedirs(srcdir, exist_ok=True)
 
             source._init_workspace(srcdir)
 
