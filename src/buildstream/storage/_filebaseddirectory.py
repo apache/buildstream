@@ -61,12 +61,19 @@ class FileBasedDirectory(Directory):
         return self.__open_directory(paths, create=create, follow_symlinks=follow_symlinks)
 
     def import_single_file(self, external_pathspec: str) -> FileListResult:
-        dstpath = os.path.join(self.__external_directory, os.path.basename(external_pathspec))
+        basename = os.path.basename(external_pathspec)
+        dstpath = os.path.join(self.__external_directory, basename)
         result = FileListResult()
-        if os.path.exists(dstpath):
-            result.ignored.append(dstpath)
-        else:
-            shutil.copyfile(external_pathspec, dstpath, follow_symlinks=False)
+        if os.path.lexists(dstpath):
+            # `os.path.isdir()` follows symlinks. The following condition is
+            # equivalent to `if not os.path.isdir(dstpath)` but without following symlinks.
+            if os.path.islink(dstpath) or not os.path.isdir(dstpath):
+                result.overwritten.append(basename)
+            if not utils.safe_remove(dstpath):
+                result.ignored.append(basename)
+                return result
+        shutil.copyfile(external_pathspec, dstpath, follow_symlinks=False)
+        result.files_written.append(basename)
         return result
 
     # Add a directory entry deterministically to a tar file
