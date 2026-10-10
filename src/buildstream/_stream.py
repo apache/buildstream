@@ -679,6 +679,8 @@ class Stream:
     #         will be placed at the given location. If true and
     #         location is '-', the tarball will be dumped on the
     #         standard output.
+    #    buildtree: Checkout the cached build tree instead of the artifact
+    #    buildroot: Checkout the cached build root instead of the artifact
     #    artifact_remotes: Artifact cache remotes specified on the commmand line
     #    ignore_project_artifact_remotes: Whether to ignore artifact remotes specified by projects
     #
@@ -693,9 +695,16 @@ class Stream:
         hardlinks: bool = False,
         compression: str = "",
         tar: bool = False,
+        buildtree: bool = False,
+        buildroot: bool = False,
         artifact_remotes: Iterable[RemoteSpec] = (),
         ignore_project_artifact_remotes: bool = False,
     ):
+        # The build tree and build root are stored in the artifact of the
+        # target element itself, dependencies are not needed.
+        assert not (buildtree and buildroot)
+        if buildtree or buildroot:
+            selection = _PipelineSelection.NONE
 
         elements = self._load(
             (target,),
@@ -721,6 +730,10 @@ class Stream:
         self.query_cache(elements)
         self._pull_missing_artifacts(elements)
 
+        if buildtree or buildroot:
+            self._checkout_buildtree(element, location, compression, tar, hardlinks, buildroot=buildroot)
+            return
+
         try:
             scope = {
                 _PipelineSelection.RUN: _Scope.RUN,
@@ -735,6 +748,75 @@ class Stream:
         except BstError as e:
             raise StreamError(
                 "Error while staging dependencies into a sandbox" ": '{}'".format(e), detail=e.detail, reason=e.reason
+            ) from e
+
+    # _checkout_buildtree()
+    #
+    # Checkout the build tree or the build root of a cached artifact
+    #
+    # Args:
+    #    element (Element/ArtifactElement): The Element/ArtifactElement we want to checkout
+    #    location (str): The name of the directory/the tarfile we want to export to/create
+    #    compression (str): The type of compression for the tarball
+    #    tar (bool): Whether we want to create a tarfile
+    #    hardlinks (bool): Whether to checkout hardlinks instead of copying
+    #    buildroot (bool): Whether to checkout the build root instead of the build tree
+    #
+    def _checkout_buildtree(self, element, location, compression, tar, hardlinks, *, buildroot=False):
+        pull_detail = "pull-buildtrees configuration is needed if the buildtree is not available locally"
+
+        if not element._cached():
+            raise StreamError("Artifact not cached locally or in available remotes", reason="missing-artifact")
+
+        if buildroot:
+            if not element._cached_buildroot():
+                if element._buildroot_exists():
+                    raise StreamError(
+                        "Buildroot is not cached locally or in available remotes",
+                        detail=pull_detail,
+                        reason="missing-buildroot-not-cached",
+                    )
+                raise StreamError(
+                    "Artifact was created without buildroot",
+                    detail="Use the cache-buildtrees configuration to cache buildroots when building",
+                    reason="missing-buildroot-artifact-created-without-buildroot",
+                )
+        elif not element._cached_buildtree():
+            if element._buildtree_exists():
+                raise StreamError(
+                    "Buildtree is not cached locally or in available remotes",
+                    detail=pull_detail,
+                    reason="missing-buildtree-not-cached",
+                )
+            if element._buildroot_exists():
+                # Only build elements have a build tree, other elements
+                # such as script or compose elements only have a build root
+                raise StreamError(
+                    "Artifact was created without buildtree, but a buildroot is available",
+                    detail="Use the --buildroot option to checkout the buildroot instead",
+                    reason="missing-buildtree-buildroot-available",
+                )
+            raise StreamError(
+                "Artifact was created without buildtree",
+                detail="Use the cache-buildtrees configuration to cache buildtrees when building",
+                reason="missing-buildtree-artifact-created-without-buildtree",
+            )
+
+        # Raise warning if the element is cached in a failed state
+        if element._cached_failure():
+            self._context.messenger.warn(
+                "using a {} from a failed build.".format("buildroot" if buildroot else "buildtree")
+            )
+
+        try:
+            artifact = element._get_artifact()
+            virdir = artifact.get_buildroot() if buildroot else artifact.get_buildtree()
+            self._export_artifact(tar, location, compression, element, hardlinks, virdir)
+        except BstError as e:
+            raise StreamError(
+                "Error while exporting {}: '{}'".format("buildroot" if buildroot else "buildtree", e),
+                detail=e.detail,
+                reason=e.reason,
             ) from e
 
     # _export_artifact()

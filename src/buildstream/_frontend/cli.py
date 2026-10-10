@@ -1346,16 +1346,33 @@ def artifact_show(app, deps, artifact_remotes, ignore_project_artifact_remotes, 
 @click.option(
     "--deps",
     "-d",
-    default=str(_PipelineSelection.RUN),
-    show_default=True,
+    default=None,
     type=FastEnumType(
         _PipelineSelection,
         [_PipelineSelection.RUN, _PipelineSelection.BUILD, _PipelineSelection.NONE, _PipelineSelection.ALL],
     ),
-    help="The dependencies to checkout",
+    help="The dependencies to checkout  [default: run]",
 )
 @click.option("--integrate/--no-integrate", default=None, is_flag=True, help="Whether to run integration commands")
 @click.option("--hardlinks", is_flag=True, help="Checkout hardlinks instead of copying if possible")
+@click.option(
+    "--buildtree",
+    is_flag=True,
+    help=(
+        "Checkout the cached build tree of the element instead of the artifact. "
+        "Will fail if a build tree is not available. "
+        "pull-buildtrees configuration is needed if the build tree is not available locally."
+    ),
+)
+@click.option(
+    "--buildroot",
+    is_flag=True,
+    help=(
+        "Checkout the cached build root (the whole build sandbox) of the element instead of the artifact. "
+        "Will fail if a build root is not available. "
+        "pull-buildtrees configuration is needed if the build root is not available locally."
+    ),
+)
 @click.option(
     "--tar",
     default=None,
@@ -1394,6 +1411,8 @@ def artifact_checkout(
     deps,
     integrate,
     hardlinks,
+    buildtree,
+    buildroot,
     tar,
     compression,
     directory,
@@ -1405,8 +1424,30 @@ def artifact_checkout(
 
     When this command is executed from a workspace directory, the default
     is to checkout the artifact of the workspace element.
+
+    Use the --buildtree option to checkout the build directory of the
+    element as it was cached at the end of the build, or the --buildroot
+    option to checkout the whole build sandbox. Build trees and build roots
+    are only cached according to the cache-buildtrees configuration, and
+    only build elements have a build tree.
     """
     from .. import utils
+
+    if buildtree and buildroot:
+        click.echo("ERROR: options --buildtree and --buildroot conflict", err=True)
+        sys.exit(-1)
+
+    if buildtree or buildroot:
+        option = "--buildtree" if buildtree else "--buildroot"
+        if deps is not None:
+            click.echo("ERROR: options --deps and {} conflict".format(option), err=True)
+            sys.exit(-1)
+        if integrate is not None:
+            click.echo("ERROR: options --integrate/--no-integrate and {} conflict".format(option), err=True)
+            sys.exit(-1)
+
+    if deps is None:
+        deps = _PipelineSelection.RUN
 
     if hardlinks and tar:
         click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
@@ -1459,6 +1500,8 @@ def artifact_checkout(
             hardlinks=hardlinks,
             compression=compression,
             tar=bool(tar),
+            buildtree=buildtree,
+            buildroot=buildroot,
             artifact_remotes=artifact_remotes,
             ignore_project_artifact_remotes=ignore_project_artifact_remotes,
         )
