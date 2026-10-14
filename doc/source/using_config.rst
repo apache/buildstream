@@ -853,6 +853,7 @@ Cache server configuration is declared in the following way:
    override-project-caches: false
    servers:
    - url: https://cache-server.com/cache:11001
+     protocol: grpc
      instance-name: main
      type: all
      push: true
@@ -887,6 +888,13 @@ Attributes
 
     Indicates the ``http`` or ``https`` url and optionally the port number of
     where the cache server is located.
+
+  * ``protocol``
+
+    The protocol to use. This is optional and defaults to ``grpc``, the gRPC-based
+    `Remote Execution API (REAPI) <https://github.com/bazelbuild/remote-apis>`_.
+    For ``storage`` servers where ``push`` is disabled, this can be set to ``http``
+    to instead use a `HTTP REST protocol <https://github.com/buchgr/bazel-remote/#http11-rest-api>`_.
 
   * ``instance-name``
 

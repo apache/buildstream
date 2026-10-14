@@ -100,6 +100,21 @@ service LocalContentAddressableStorage {
   // cleanup is complete.
   rpc StageTree(stream StageTreeRequest) returns (stream StageTreeResponse) {}
 
+  // Export files to a user specified location on the local filesystem.
+  //
+  // The way in which files are populated is implementation defined,
+  // however, the server will guarantee that mutations to these files
+  // will not corrupt the local cache.
+  //
+  // This does not create any directories. The client needs to ensure that
+  // the parent directory of each output file exists and is writable.
+  //
+  // Missing blobs are fetched, if a CAS remote is configured.
+  //
+  // Errors:
+  // * `FAILED_PRECONDITION`: The destination directory does not exist.
+  rpc ExportFiles(ExportFilesRequest) returns (ExportFilesResponse) {}
+
   // Capture a directory tree from the local filesystem.
   //
   // This imports the specified path from the local filesystem into CAS.
@@ -138,6 +153,17 @@ service LocalContentAddressableStorage {
   // workflows where an upload step adds unnecessary latency.
   rpc CaptureFiles(CaptureFilesRequest) returns (CaptureFilesResponse) {}
 
+  // Hash files from the local filesystem.
+  //
+  // This asks the local CAS server to hash the file on behalf of the
+  // client and populate the inode cache for efficent subqeuent hashing
+  // of the same file.
+  //
+  // Unlike CaptureFiles which always store the file content either to
+  // local storage or remote CAS or both. HashFiles only return the hash
+  // and populate the inode cache.
+  rpc HashFiles(HashFilesRequest) returns (HashFilesResponse) {}
+
   // Configure remote CAS endpoint.
   //
   // This returns a string that can be used as instance_name to access the
@@ -153,15 +179,20 @@ service LocalContentAddressableStorage {
   // specified endpoints in further requests.
   rpc GetInstanceNameForRemotes(GetInstanceNameForRemotesRequest) returns (GetInstanceNameForRemotesResponse) {}
 
-  // Configure sandboxed clients.
-  //
-  // This returns a string that can be used as instance_name to access
-  // this service from clients running in the specified filesystem/mount
-  // namespace or chroot environment
-  rpc GetInstanceNameForNamespace(GetInstanceNameForNamespaceRequest) returns (GetInstanceNameForNamespaceResponse) {}
-
   // Query total space used by the local cache.
   rpc GetLocalDiskUsage(GetLocalDiskUsageRequest) returns (GetLocalDiskUsageResponse) {}
+
+
+  // Create a nested server restricted to a directory tree in the local filesystem.
+  //
+  // The nested server is started when the server receives the initial request
+  // and it is ready to be used on the initial (non-error) response from the
+  // server.
+  //
+  // The nested server will shut down when the server either receives an
+  // additional request (with all fields unset) or when the stream is closed.
+  // The server will send an additional response after cleanup is complete.
+  rpc NestedServer(stream NestedServerRequest) returns (stream NestedServerResponse) {}
 }
 
 // A request message for
@@ -306,6 +337,26 @@ message UploadTreeRequest {
 message UploadTreeResponse {
 }
 
+message RemoteApisSocketConfig {
+  // The instance of the execution system clients of the additional server
+  // socket will operate against.
+  string instance_name = 1;
+
+  // The path, relative to the staging directory, where a server socket should
+  // be created for access to the Remote Execution API.
+  string path = 2;
+
+  // If true, allow clients of the additional server socket to update the
+  // action cache of the specified instance.
+  bool action_cache_update_enabled = 3;
+
+  // A map from cloned instance name to base instance name.
+  // The nested server will clone each base instance and expose it
+  // under the corresponding cloned name (the key).
+  // Cannot be used together with instance_name.
+  map<string, string> instance_map = 4;
+}
+
 // A request message for
 // [LocalContentAddressableStorage.StageTree][build.buildgrid.v2.LocalContentAddressableStorage.StageTree].
 message StageTreeRequest {
@@ -344,9 +395,9 @@ message StageTreeRequest {
   // for access without risking corruption of files in the local cache.
   Credentials access_credentials = 4;
 
-  // The path, relative to the staging directory, where a server socket should
-  // be created for access to the Remote Execution API.
-  string remote_apis_socket_path = 7;
+  // Optional configuration of an additional server socket to be created for
+  // access to the Remote Execution API.
+  RemoteApisSocketConfig remote_apis_socket = 8;
 
   // The commands to run against the tree before it is cleaned.
   // Each command must be an absolute path to an executable which can be run as
@@ -380,6 +431,39 @@ message StageTreeRequest {
 message StageTreeResponse {
   // The path in the local filesystem where the specified tree has been staged.
   string path = 1;
+}
+
+// A request message for
+// [LocalContentAddressableStorage.ExportFiles][build.buildgrid.v2.LocalContentAddressableStorage.ExportFiles].
+message ExportFilesRequest {
+  // The instance of the execution system to operate against. A server may
+  // support multiple instances of the execution system (with their own workers,
+  // storage, caches, etc.). The server MAY require use of this field to select
+  // between them in an implementation-defined fashion, otherwise it can be
+  // omitted.
+  string instance_name = 1;
+
+  // Output paths of individual files will be resolved relative to this path.
+  string path = 2;
+
+  // The individual files to export.
+  repeated build.bazel.remote.execution.v2.OutputFile output_files = 3;
+}
+
+// A response message for
+// [LocalContentAddressableStorage.ExportFiles][build.buildgrid.v2.LocalContentAddressableStorage.ExportFiles].
+message ExportFilesResponse {
+  // A response corresponding to a single blob that the client tried to export.
+  message Response {
+    // The path to which this response corresponds.
+    string path = 1;
+
+    // The result of attempting to export the file.
+    google.rpc.Status status = 2;
+  }
+
+  // The responses to the requests.
+  repeated Response responses = 1;
 }
 
 // A request message for
@@ -432,6 +516,12 @@ message CaptureTreeRequest {
   // For example, a mask of `0222` will result in contents being captured as read-only.
   // This is only effective when the unix_mode property is captured.
   google.protobuf.UInt32Value unix_mode_mask = 9;
+
+  // If true, temporarily grant read permissions to files lacking read access
+  // during capture, then restore original permissions afterwards.
+  // The files/directories are expected to be owned by the same user running
+  // the capture.
+  bool allow_chmod_to_read = 10;
 }
 
 // A response message for
@@ -454,6 +544,66 @@ message CaptureTreeResponse {
     // [Tree][build.bazel.remote.execution.v2.Directory] proto containing the
     // directory's contents, if successful.
     build.bazel.remote.execution.v2.Digest root_directory_digest = 4;
+
+    // The accumulated total size of all blobs in the tree
+    int64 total_size_bytes = 5;
+  }
+
+  // The responses to the requests.
+  repeated Response responses = 1;
+}
+
+// A request message for
+// [LocalContentAddressableStorage.HashFiles][build.buildgrid.v2.LocalContentAddressableStorage.HashFiles].
+message HashFilesRequest {
+  // The instance of the execution system to operate against. A server may
+  // support multiple instances of the execution system (with their own workers,
+  // storage, caches, etc.). The server MAY require use of this field to select
+  // between them in an implementation-defined fashion, otherwise it can be
+  // omitted.
+  string instance_name = 1;
+
+  // The optional root path to restrict hash to a subtree.
+  // If specified, `path` will be resolved inside this root.
+  // No files outside the root will be hashed
+  string root = 3;
+
+  // The path(s) in the local filesystem to capture.
+  repeated string path = 2;
+
+  // The properties of path(s) in the local filesystem to capture.
+  repeated string node_properties = 4;
+
+  // The mask to apply to the files being captured.
+  // For example, a mask of `0222` will result in contents being captured as read-only.
+  // This is only effective when the unix_mode property is captured.
+  google.protobuf.UInt32Value unix_mode_mask = 5;
+
+  // If true, temporarily grant read permissions to files lacking read access
+  // during capture, then restore original permissions afterwards.
+  // The files/directories are expected to be owned by the same user running
+  // the capture.
+  bool allow_chmod_to_read = 6;
+}
+
+// A response message for
+// [LocalContentAddressableStorage.HashFiles][build.buildgrid.v2.LocalContentAddressableStorage.HashFiles].
+message HashFilesResponse {
+  // A response corresponding to a single blob that the client tried to upload.
+  message Response {
+    // The path to which this response corresponds.
+    string path = 1;
+
+    // The digest of the hashed file's content, if successful.
+    build.bazel.remote.execution.v2.Digest digest = 2;
+
+    // The result of attempting to hash the file and populate the inode cache.
+    google.rpc.Status status = 3;
+
+    // True if the hashed file was executable, false otherwise.
+    bool is_executable = 4;
+
+    build.bazel.remote.execution.v2.NodeProperties node_properties = 5;
   }
 
   // The responses to the requests.
@@ -500,6 +650,12 @@ message CaptureFilesRequest {
   // For example, a mask of `0222` will result in contents being captured as read-only.
   // This is only effective when the unix_mode property is captured.
   google.protobuf.UInt32Value unix_mode_mask = 8;
+
+  // If true, temporarily grant read permissions to files lacking read access
+  // during capture, then restore original permissions afterwards.
+  // The files/directories are expected to be owned by the same user running
+  // the capture.
+  bool allow_chmod_to_read = 9;
 }
 
 // A response message for
@@ -612,6 +768,10 @@ message Remote {
 
   // If set, don't upload any blobs, action results or assets to the remote.
   bool read_only = 12;
+
+  // Protocol to use for communication with the server, acceptable values
+  // are 'grpc' and 'http' (read-only). It defaults to 'grpc'.
+  string protocol = 13;
 }
 
 // A request message for
@@ -638,27 +798,6 @@ message GetInstanceNameForRemotesResponse {
 
 
 // A request message for
-// [LocalContentAddressableStorage.GetInstanceNameForRemote][build.buildgrid.v2.LocalContentAddressableStorage.GetInstanceNameForNamespace].
-message GetInstanceNameForNamespaceRequest {
-  // The instance of the execution system to operate against. A server may
-  // support multiple instances of the execution system (with their own workers,
-  // storage, caches, etc.). The server MAY require use of this field to select
-  // between them in an implementation-defined fashion, otherwise it can be
-  // omitted.
-  string instance_name = 1;
-
-  // The root path of the mount namespace to restrict capture and staging.
-  // All paths in requests to the new instance will be resolved inside this root.
-  string root = 2;
-}
-
-// A response message for
-// [LocalContentAddressableStorage.GetInstanceNameForRemote][build.buildgrid.v2.LocalContentAddressableStorage.GetInstanceNameForNamespace].
-message GetInstanceNameForNamespaceResponse {
-  string instance_name = 1;
-}
-
-// A request message for
 // [LocalContentAddressableStorage.GetLocalDiskUsage][build.buildgrid.v2.LocalContentAddressableStorage.GetLocalDiskUsage].
 message GetLocalDiskUsageRequest {
 }
@@ -671,4 +810,39 @@ message GetLocalDiskUsageResponse {
 
   // Disk quota for the local cache, in bytes. A value of 0 means no quota is set.
   int64 quota_bytes = 2;
+}
+
+
+// A request message for
+// [LocalContentAddressableStorage.NestedServer][build.buildgrid.v2.LocalContentAddressableStorage.NestedServer].
+message NestedServerRequest {
+  // The instance of the execution system to operate against. A server may
+  // support multiple instances of the execution system (with their own workers,
+  // storage, caches, etc.). The server MAY require use of this field to select
+  // between them in an implementation-defined fashion, otherwise it can be
+  // omitted.
+  string instance_name = 1;
+
+  // The path in the local filesystem that is used as filesystem root in
+  // requests sent to the nested server.
+  string path = 2;
+
+  message Credentials {
+    int64 uid = 1;
+    int64 gid = 2;
+  }
+
+  // The UNIX credentials of the processes that will access the nested server.
+  // This will be used to ensure that the socket has the right access
+  // permission.
+  Credentials access_credentials = 3;
+
+  // Configuration of the additional server socket to be created for access to
+  // the Remote Execution API.
+  RemoteApisSocketConfig remote_apis_socket = 4;
+}
+
+// A response message for
+// [LocalContentAddressableStorage.NestedServer][build.buildgrid.v2.LocalContentAddressableStorage.NestedServer].
+message NestedServerResponse {
 }
