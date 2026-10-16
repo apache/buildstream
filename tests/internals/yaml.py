@@ -184,6 +184,43 @@ def test_composite_preserve_originals(datafiles):
     assert orig_extra.get_str("old") == "new"
 
 
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_composite_strings(datafiles):
+
+    filename = os.path.join(datafiles, "basics.yaml")
+    overlayfile = os.path.join(datafiles, "stringappend.yaml")
+
+    base = _yaml.load(filename, shortname=None)
+    overlay = _yaml.load(overlayfile, shortname=None)
+    overlay._composite(base)
+
+    assert base.get_str("description") == "incoming potato(The vehicle of choice for rainbow travel)potato"
+
+
+@pytest.mark.parametrize("directive", ["(<)", "(>)", "(=)"])
+@pytest.mark.parametrize(
+    "target,operand",
+    [
+        ("base", "[suffix]"),
+        ("base", "{nested: suffix}"),
+        ({"(>)": "one"}, "suffix"),
+        ({"(>)": ["one"]}, "suffix"),
+        ({"(>)": "one"}, "[suffix]"),
+    ],
+)
+def test_invalid_string_directive_operand(tmp_path, directive, target, operand):
+    base = Node.from_dict({"s": target})
+    overlay_file = tmp_path / "overlay.yaml"
+    overlay_file.write_text("s:\n  '{}': {}\n".format(directive, operand))
+    overlay = _yaml.load(str(overlay_file), shortname="overlay.yaml")
+
+    with pytest.raises(LoadError) as exc:
+        overlay._composite(base)
+    assert exc.value.reason == LoadErrorReason.ILLEGAL_COMPOSITE
+    assert "overlay.yaml" in str(exc.value)
+    assert "['s']" in str(exc.value)
+
+
 # Tests for list composition
 #
 # Each test composits a filename on top of basics.yaml, and tests
