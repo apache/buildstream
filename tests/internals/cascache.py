@@ -15,8 +15,12 @@ import os
 import time
 from unittest.mock import MagicMock
 
+import pytest
+
 from buildstream._cas import casdprocessmanager
+from buildstream._exceptions import CASCacheError
 from buildstream._messenger import Messenger
+from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from tests.testutils import casd_cache
 
 #
@@ -128,3 +132,87 @@ def test_casd_redirects_stderr_to_file_and_rotate(tmp_path, monkeypatch):
         assert len(existing_log_files) == n_max_log_files
         assert evicted_file not in existing_log_files
         assert existing_log_files[-1].read_text() == "hello\n"
+
+
+def add_directory(cas, *, files=None, directories=None, symlinks=None):
+    directory = remote_execution_pb2.Directory()
+    for name, digest in (files or {}).items():
+        filenode = directory.files.add()
+        filenode.name = name
+        filenode.digest.CopyFrom(digest)
+    for name, digest in (directories or {}).items():
+        dirnode = directory.directories.add()
+        dirnode.name = name
+        dirnode.digest.CopyFrom(digest)
+    for name, target in (symlinks or {}).items():
+        symlinknode = directory.symlinks.add()
+        symlinknode.name = name
+        symlinknode.target = target
+    return cas.add_object(buffer=directory.SerializeToString())
+
+
+# Test that `checkout()` doesn't follow a symlink in the destination
+# directory when checking out a subdirectory.
+#
+@pytest.mark.parametrize("can_link", [False, True], ids=["copy", "link"])
+def test_checkout_existing_directory_symlink(tmp_path, can_link):
+    dest = tmp_path.joinpath("dest")
+    outside = tmp_path.joinpath("outside")
+    dest.mkdir()
+    outside.mkdir()
+    dest.joinpath("subdir").symlink_to(outside)
+
+    with casd_cache(tmp_path.joinpath("cas")) as cas:
+        subdir = add_directory(cas, files={"file": cas.add_object(buffer=b"content")}, symlinks={"link": "target"})
+        tree = add_directory(cas, directories={"subdir": subdir})
+
+        with pytest.raises(CASCacheError, match="symlink"):
+            cas.checkout(str(dest), tree, can_link=can_link)
+
+    assert os.listdir(outside) == []
+    assert dest.joinpath("subdir").is_symlink()
+
+
+# Test that `checkout()` replaces an existing symlink in the destination
+# directory with a regular file instead of writing to the symlink target.
+#
+@pytest.mark.parametrize("can_link", [False, True], ids=["copy", "link"])
+def test_checkout_replace_symlink_with_file(tmp_path, can_link):
+    dest = tmp_path.joinpath("dest")
+    outside = tmp_path.joinpath("outside")
+    dest.mkdir()
+    outside.write_bytes(b"original")
+    dest.joinpath("file").symlink_to(outside)
+
+    with casd_cache(tmp_path.joinpath("cas")) as cas:
+        tree = add_directory(cas, files={"file": cas.add_object(buffer=b"content")})
+        cas.checkout(str(dest), tree, can_link=can_link)
+
+    assert outside.read_bytes() == b"original"
+    assert not dest.joinpath("file").is_symlink()
+    assert dest.joinpath("file").read_bytes() == b"content"
+
+
+# Test that `checkout()` replaces existing files in the destination
+# directory with symlinks.
+#
+@pytest.mark.parametrize("existing", ["file", "symlink", "dangling-symlink"])
+def test_checkout_replace_with_symlink(tmp_path, existing):
+    dest = tmp_path.joinpath("dest")
+    outside = tmp_path.joinpath("outside")
+    dest.mkdir()
+    outside.write_bytes(b"original")
+
+    if existing == "file":
+        dest.joinpath("link").write_bytes(b"existing")
+    elif existing == "symlink":
+        dest.joinpath("link").symlink_to(outside)
+    else:
+        dest.joinpath("link").symlink_to(tmp_path.joinpath("does-not-exist"))
+
+    with casd_cache(tmp_path.joinpath("cas")) as cas:
+        tree = add_directory(cas, symlinks={"link": "new-target"})
+        cas.checkout(str(dest), tree)
+
+    assert os.readlink(dest.joinpath("link")) == "new-target"
+    assert outside.read_bytes() == b"original"
