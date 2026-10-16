@@ -61,12 +61,17 @@ class FileBasedDirectory(Directory):
         return self.__open_directory(paths, create=create, follow_symlinks=follow_symlinks)
 
     def import_single_file(self, external_pathspec: str) -> FileListResult:
-        dstpath = os.path.join(self.__external_directory, os.path.basename(external_pathspec))
+        basename = os.path.basename(external_pathspec)
+        dstpath = os.path.join(self.__external_directory, basename)
         result = FileListResult()
-        if os.path.exists(dstpath):
-            result.ignored.append(dstpath)
-        else:
-            shutil.copyfile(external_pathspec, dstpath, follow_symlinks=False)
+        if os.path.lexists(dstpath):
+            if os.path.islink(dstpath) or not os.path.isdir(dstpath):
+                result.overwritten.append(basename)
+            if not utils.safe_remove(dstpath):
+                result.ignored.append(basename)
+                return result
+        shutil.copyfile(external_pathspec, dstpath, follow_symlinks=False)
+        result.files_written.append(basename)
         return result
 
     # Add a directory entry deterministically to a tar file
@@ -137,6 +142,9 @@ class FileBasedDirectory(Directory):
         subdir = self.__open_directory(paths[:-1])
         newpath = os.path.join(subdir.__external_directory, paths[-1])
 
+        if subdir.exists(paths[-1]) and not subdir.isfile(paths[-1]):
+            raise DirectoryError("{} in {} is not a file".format(paths[-1], str(subdir)))
+
         if mode not in ["r", "rb", "w", "wb", "w+", "w+b", "x", "xb", "x+", "x+b"]:
             raise ValueError("Unsupported mode: `{}`".format(mode))
 
@@ -152,8 +160,8 @@ class FileBasedDirectory(Directory):
             if "x" in mode:
                 # This check is not atomic, however, we're operating with a
                 # single thread in a private directory tree.
-                if subdir.exists(path[-1]):
-                    raise DirectoryError("{} already exists in {}".format(path[-1], str(subdir)))
+                if subdir.exists(paths[-1]):
+                    raise DirectoryError("{} already exists in {}".format(paths[-1], str(subdir)))
                 mode = "w" + mode[1:]
 
             with utils.save_file_atomic(newpath, mode=mode, encoding=encoding) as f:
@@ -261,7 +269,11 @@ class FileBasedDirectory(Directory):
             )
             if update_mtime:
                 for f in import_result.files_written:
-                    os.utime(os.path.join(self.__external_directory, f), times=(update_mtime, update_mtime))
+                    os.utime(
+                        os.path.join(self.__external_directory, f),
+                        times=(update_mtime, update_mtime),
+                        follow_symlinks=False,
+                    )
         else:
             #
             # We're dealing with an abstract Directory object
@@ -448,7 +460,7 @@ class FileBasedDirectory(Directory):
             if not is_dir:
                 if os.path.lexists(dest_path):
                     # Collect overlaps
-                    if not os.path.isdir(dest_path):
+                    if os.path.islink(dest_path) or not os.path.isdir(dest_path):
                         result.overwritten.append(relative_pathname)
 
                     if not utils.safe_remove(dest_path):
