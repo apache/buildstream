@@ -448,7 +448,7 @@ class FileBasedDirectory(Directory):
             if not is_dir:
                 if os.path.lexists(dest_path):
                     # Collect overlaps
-                    if not os.path.isdir(dest_path):
+                    if os.path.islink(dest_path) or not os.path.isdir(dest_path):
                         result.overwritten.append(relative_pathname)
 
                     if not utils.safe_remove(dest_path):
