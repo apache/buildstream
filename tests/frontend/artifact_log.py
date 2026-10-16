@@ -21,6 +21,8 @@ import pytest
 
 from buildstream._testing import cli  # pylint: disable=unused-import
 
+from tests.testutils import generate_junction
+
 # Project directory
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -101,3 +103,33 @@ def test_artifact_log_files(cli, datafiles):
     with open(import_bin, "r", encoding="utf-8") as f:
         data = f.read()
         assert len(re.findall(pattern, data, re.MULTILINE)) > 0
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_log_cross_junction(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    subproject_path = os.path.join(project, "files", "sub-project")
+    junction_path = os.path.join(project, "elements", "junction.bst")
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    generate_junction(tmpdir, subproject_path, junction_path)
+
+    # Ensure we have an artifact to read, alongside a regular top-level
+    # element which happens to share a basename with it.
+    result = cli.run(project=project, args=["build", "import-bin.bst", "junction.bst:import-etc.bst"])
+    result.assert_success()
+
+    logfiles = os.path.join(project, "logfiles")
+
+    result = cli.run(
+        project=project,
+        args=["artifact", "log", "--out", logfiles, "import-bin.bst", "junction.bst:import-etc.bst"],
+    )
+    result.assert_success()
+
+    # The log file for the cross junction element must be named using the
+    # full element name, including the owning junction prefix, and not just
+    # the bare element name -- otherwise it would collide with the log file
+    # of a same-named element in the top level project or another junction.
+    assert os.path.exists(os.path.join(logfiles, "import-bin.log"))
+    assert os.path.exists(os.path.join(logfiles, "junction.bst:import-etc.log"))
