@@ -215,12 +215,24 @@ class CASCache:
 
         for dirnode in directory.directories:
             fullpath = os.path.join(dest, dirnode.name)
+            # If the destination is a regular file, `os.makedirs()` will catch it.
+            # However, it will not raise an error if it's a valid directory symlink,
+            # so check here that we're not unexpectedly following a symlink.
+            if os.path.islink(fullpath):
+                raise CASCacheError(f"Destination already exists and is a symlink, not a directory: {fullpath}")
             self.checkout(fullpath, dirnode.digest, can_link=can_link, _fetch=False)
 
         for symlinknode in directory.symlinks:
             # symlink
             fullpath = os.path.join(dest, symlinknode.name)
-            os.symlink(symlinknode.target, fullpath)
+            try:
+                os.symlink(symlinknode.target, fullpath)
+            except FileExistsError:
+                try:
+                    os.unlink(fullpath)
+                except OSError as e:
+                    raise CASCacheError(f"Failed to remove destination file '{fullpath}': {e}") from e
+                os.symlink(symlinknode.target, fullpath)
 
         node_properties = directory.node_properties
         if node_properties.HasField("mtime"):
