@@ -284,6 +284,9 @@ cpdef MappingNode load(str filename, str shortname, bint copy_tree=False, object
     except IsADirectoryError as e:
         raise LoadError("{} is a directory".format(filename),
                         LoadErrorReason.LOADING_DIRECTORY) from e
+    except OSError as e:
+         raise LoadError("Failed to load file at {}: {}".format(filename, e.strerror),
+                        LoadErrorReason.LOAD_FAILED) from e
     except LoadError as e:
         raise LoadError("{}: {}".format(displayname, e), e.reason) from e
 
