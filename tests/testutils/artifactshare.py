@@ -29,6 +29,7 @@ from buildstream._protos.build.bazel.remote.asset.v1 import remote_asset_pb2, re
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from buildstream._protos.buildstream.v2 import artifact_pb2
 from buildstream._protos.google.rpc import code_pb2
+from buildstream._remotespec import RemoteSpec, RemoteType
 
 from .http_cas_server import HTTPCASServer
 
@@ -123,7 +124,7 @@ class DummyArtifactShare(BaseArtifactShare):
 #    enable_push (bool): Whether the share should allow pushes
 #
 class ArtifactShare(BaseArtifactShare):
-    def __init__(self, directory, *, quota=None, index_only=False):
+    def __init__(self, directory, *, quota=None, index_only=False, remote_cas=None):
 
         # The working directory for the artifact share (in case it
         # needs to do something outside of its backend's storage folder).
@@ -141,6 +142,8 @@ class ArtifactShare(BaseArtifactShare):
         self.quota = quota
         self.index_only = index_only
 
+        self.remote_cache_spec = RemoteSpec(RemoteType.STORAGE, url=remote_cas.repo) if remote_cas else None
+
         super().__init__()
 
         # Set after subprocess creation as it's not picklable
@@ -152,6 +155,7 @@ class ArtifactShare(BaseArtifactShare):
             quota=self.quota,
             enable_push=True,
             index_only=self.index_only,
+            remote_cache_spec=self.remote_cache_spec,
         )
 
     # has_object():
@@ -321,8 +325,8 @@ def create_artifact_share(directory, *, quota=None):
 
 @contextmanager
 def create_split_share(directory1, directory2, *, quota=None):
-    index = ArtifactShare(directory1, quota=quota, index_only=True)
     storage = ArtifactShare(directory2, quota=quota)
+    index = ArtifactShare(directory1, quota=quota, index_only=True, remote_cas=storage)
 
     try:
         yield index, storage

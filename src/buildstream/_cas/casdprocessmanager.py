@@ -169,10 +169,12 @@ class CASDProcessManager:
 
         self._lock = threading.Lock()
 
-    def __buildbox_casd(self):
+    @staticmethod
+    def __buildbox_casd():
         return utils._get_host_tool_internal("buildbox-casd", search_subprojects_dir="buildbox")
 
-    def __buildbox_casd_env(self):
+    @staticmethod
+    def __buildbox_casd_env():
         env = os.environ.copy()
 
         # buildbox-casd needs to have buildbox-fuse in its PATH at runtime,
@@ -194,12 +196,18 @@ class CASDProcessManager:
     # version information with a string which we are unprepared to parse), then
     # a warning is produced to inform the user.
     #
-    def _check_casd_version(self, messenger):
+    @staticmethod
+    def _check_casd_version(
+        messenger,
+        required_major=_REQUIRED_CASD_MAJOR,
+        required_minor=_REQUIRED_CASD_MINOR,
+        required_micro=_REQUIRED_CASD_MICRO,
+    ):
         #
         # We specify a trailing "path" argument because some versions of buildbox-casd
         # require specifying the storage path even for invoking the --version option.
         #
-        casd_args = [self.__buildbox_casd()]
+        casd_args = [CASDProcessManager.__buildbox_casd()]
         casd_args.append("--version")
         casd_args.append("/")
 
@@ -217,19 +225,19 @@ class CASDProcessManager:
             version_micro = int(version_match.group(3))
 
             acceptable_version = True
-            if version_major < _REQUIRED_CASD_MAJOR:
+            if version_major < required_major:
                 acceptable_version = False
-            elif version_major == _REQUIRED_CASD_MAJOR:
-                if version_minor < _REQUIRED_CASD_MINOR:
+            elif version_major == required_major:
+                if version_minor < required_minor:
                     acceptable_version = False
-                elif version_minor == _REQUIRED_CASD_MINOR:
-                    if version_micro < _REQUIRED_CASD_MICRO:
+                elif version_minor == required_minor:
+                    if version_micro < required_micro:
                         acceptable_version = False
 
             if not acceptable_version:
                 raise CASCacheError(
                     "BuildStream requires buildbox-casd >= {}.{}.{}".format(
-                        _REQUIRED_CASD_MAJOR, _REQUIRED_CASD_MINOR, _REQUIRED_CASD_MICRO
+                        required_major, required_minor, required_micro
                     ),
                     detail="Currently installed: {}".format(version_output),
                 )
