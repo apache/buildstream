@@ -782,29 +782,31 @@ class LogLine(Widget):
             else:
                 lines[n_lines - 1] = lines[n_lines - 1].rstrip("\n")
 
-            detail = self._indent + self._indent.join(lines)
+            # Nothing is left to print when message-lines is 0
+            if lines:
+                detail = self._indent + self._indent.join(lines)
 
-            text += "\n"
-            if message.message_type in ERROR_MESSAGES:
-                text += self._err_profile.fmt(detail, bold=True)
-            else:
-                text += self._detail_profile.fmt(detail)
+                text += "\n"
+                if message.message_type in ERROR_MESSAGES:
+                    text += self._err_profile.fmt(detail, bold=True)
+                else:
+                    text += self._detail_profile.fmt(detail)
 
-            if abbrev:
-                text += self._indent + self.content_profile.fmt(
-                    "Message contains {} additional lines".format(n_lines - self._message_lines), dim=True
-                )
-            text += "\n"
+                if abbrev:
+                    text += self._indent + self.content_profile.fmt(
+                        "Message contains {} additional lines".format(n_lines - self._message_lines), dim=True
+                    )
+                text += "\n"
 
-            extra_nl = True
+                extra_nl = True
 
         if message.scheduler and message.message_type == MessageType.FAIL:
-            text += "\n"
-
             if self.context is not None and not self.context.log_verbose:
+                text += "\n"
                 text += self._indent + self._err_profile.fmt("Log file: ")
                 text += self._indent + self._logfile_widget.render(message) + "\n"
             elif self._log_lines > 0:
+                text += "\n"
                 text += (
                     self._indent
                     + self._err_profile.fmt("Printing the last {} lines from log file:".format(self._log_lines))
