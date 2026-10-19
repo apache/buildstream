@@ -64,6 +64,7 @@ Class Reference
 
 import os
 import re
+import shlex
 import stat
 import copy
 import warnings
@@ -2165,7 +2166,7 @@ class Element(Plugin):
 
         variable_string = ""
         for var, val in self.get_environment().items():
-            variable_string += "{0}={1} ".format(var, val)
+            variable_string += "{0}={1} ".format(var, shlex.quote(val))
 
         script = script_template.format(
             name=self.normal_name,
