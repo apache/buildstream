@@ -81,7 +81,7 @@ cdef class Node:
         self.column = column
 
     # This is in order to ensure we never add a `Node` to a cache key
-    # as ujson will try to convert objects if they have a `__json__`
+    # as orjson will try to convert objects if they have a `__json__`
     # attribute.
     def __json__(self):
         raise ValueError("Nodes should not be allowed when jsonify-ing data", self)
