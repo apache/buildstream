@@ -41,7 +41,6 @@ jobs:
           - fedora-44
           - fedora-45
           - fedora-missing-deps
-          - ubuntu-22.04
           - lint
           - mypy
 
