@@ -288,10 +288,7 @@ class Artifact:
 
             # Capture queued files and store returned digests
             digests = self._cas.add_objects(paths=[entry[0] for entry in files_to_capture])
-            # add_objects() should guarantee this.
-            # `zip(..., strict=True)` could be used in Python 3.10+
-            assert len(files_to_capture) == len(digests)
-            for entry, digest in zip(files_to_capture, digests):
+            for entry, digest in zip(files_to_capture, digests, strict=True):
                 entry[1].CopyFrom(digest)
 
         # store build dependencies

@@ -43,7 +43,7 @@ if version.startswith("0+untagged"):
 # Python requirements
 ##################################################################
 REQUIRED_PYTHON_MAJOR = 3
-REQUIRED_PYTHON_MINOR = 10
+REQUIRED_PYTHON_MINOR = 11
 
 if sys.version_info[0] != REQUIRED_PYTHON_MAJOR or sys.version_info[1] < REQUIRED_PYTHON_MINOR:
     print("BuildStream requires Python >= " + str(REQUIRED_PYTHON_MAJOR) + "." + str(REQUIRED_PYTHON_MINOR))
