@@ -105,7 +105,9 @@ class Resources:
         # available. If we don't have enough, the job cannot be
         # scheduled.
         for resource in resources:
-            if self._max_resources[resource] > 0 and self._used_resources[resource] >= self._max_resources[resource]:
+            if (  # pylint: disable=chained-comparison
+                self._max_resources[resource] > 0 and self._used_resources[resource] >= self._max_resources[resource]
+            ):
                 return False
 
         # Now we register the fact that our job is using the resources
