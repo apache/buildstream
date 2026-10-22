@@ -20,7 +20,6 @@ import random
 import shutil
 import stat
 import subprocess
-import sys
 import tempfile
 import time
 from subprocess import CalledProcessError
@@ -146,12 +145,6 @@ class CASDProcessManager:
         self._start_time = time.time()
         self._logfile = self._rotate_and_get_next_logfile()
 
-        # Create a new process group for buildbox-casd such that SIGINT won't reach it.
-        if sys.version_info >= (3, 11):
-            process_group_kwargs = {"process_group": 0}
-        else:
-            process_group_kwargs = {"preexec_fn": os.setpgrp}
-
         with open(self._logfile, "w", encoding="utf-8") as logfile_fp:
             # The frontend will take care of terminating buildbox-casd.
             self.process = subprocess.Popen(  # pylint: disable=consider-using-with
@@ -160,7 +153,7 @@ class CASDProcessManager:
                 stdout=logfile_fp,
                 stderr=subprocess.STDOUT,
                 env=self.__buildbox_casd_env(),
-                **process_group_kwargs,
+                process_group=0,  # Create a new process group for buildbox-casd such that SIGINT won't reach it
             )
 
         self._casd_channel = None

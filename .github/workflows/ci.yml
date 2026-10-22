@@ -41,7 +41,6 @@ jobs:
           - fedora-44
           - fedora-45
           - fedora-missing-deps
-          - ubuntu-22.04
           - lint
           - mypy
 
@@ -153,7 +152,6 @@ jobs:
         # The names here should map to a valid service defined in
         # "../compose/ci.docker-compose.yml"
         test-name:
-          - wheels-manylinux_2_28-cp310
           - wheels-manylinux_2_28-cp311
           - wheels-manylinux_2_28-cp312
           - wheels-manylinux_2_28-cp313

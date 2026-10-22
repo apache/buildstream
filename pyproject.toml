@@ -29,7 +29,7 @@ dynamic = ["version", "dependencies"]
 description = "A framework for modelling build pipelines in YAML"
 readme = "README.rst"
 license = "Apache-2.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [
     { name = "The Apache Software Foundation", email = "dev@buildstream.apache.org" },
 ]
@@ -38,7 +38,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Operating System :: POSIX",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -58,7 +57,7 @@ Tracker = "https://github.com/apache/buildstream/issues"
 bst = "buildstream._frontend:cli"
 
 [tool.black]
-target-version = ["py310", "py311", "py312", "py313", "py314", "py315"]
+target-version = ["py311", "py312", "py313", "py314", "py315"]
 line-length = 119
 exclude = '''
 (
