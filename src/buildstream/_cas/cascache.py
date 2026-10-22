@@ -16,6 +16,7 @@
 
 import itertools
 import os
+import re
 import stat
 import contextlib
 import time
@@ -39,6 +40,10 @@ _BUFFER_SIZE = 65536
 
 # Refresh interval for disk usage of local cache in seconds
 _CACHE_USAGE_REFRESH = 5
+
+
+# Constant for SHA-256 validation (64 hexadecimal digits)
+_HASH_REGEX = re.compile(r"[0-9a-f]{64}")
 
 
 class CASLogLevel(FastEnum):
@@ -335,6 +340,9 @@ class CASCache:
     #     (str): The path of the object
     #
     def objpath(self, digest):
+        if not _HASH_REGEX.fullmatch(digest.hash):
+            raise ValueError(f"Invalid hash: `{digest.hash}`")
+
         return os.path.join(self.casdir, "objects", digest.hash[:2], digest.hash[2:])
 
     # open():
