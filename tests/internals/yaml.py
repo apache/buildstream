@@ -183,6 +183,23 @@ def test_composite_preserve_originals(datafiles):
     # But the original node is not effected by the override.
     assert orig_extra.get_str("old") == "new"
 
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_composite_strings(datafiles):
+
+    filename = os.path.join(datafiles, "basics.yaml")
+    overlayfile = os.path.join(datafiles, "stringappend.yaml")
+
+    base = _yaml.load(filename, shortname=None)
+    overlay = _yaml.load(overlayfile, shortname=None)
+    base_copy = base.clone()
+    overlay._composite(base_copy)
+
+    copy_extra = base_copy.get_mapping("extra")
+    orig_extra = base.get_mapping("extra")
+
+    assert base_copy.get_str("description") == (
+        "incoming potato(The vehicle of choice for rainbow travel)potato"
+    )
 
 # Tests for list composition
 #

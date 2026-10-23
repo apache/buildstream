@@ -977,6 +977,9 @@ cdef class MappingNode(Node):
                 if type(target_value) is SequenceNode:
                     # Composite list composes into a list
                     self._compose_on_list(target_value)
+                elif isinstance((<ScalarNode> target_value).value, str):
+                    # Composite list composes into a string
+                    self._compose_on_string(target_value)
                 elif target_value._is_composite_list():
                     # Composite list merges into composite list
                     self._compose_on_composite_dict(target_value)
@@ -1015,6 +1018,26 @@ cdef class MappingNode(Node):
                 target.value.insert(0, v)
         if suffix is not None:
             target.value.extend(suffix.value)
+
+    # _compose_on_string(target)
+    #
+    # Compose the current node on the given string.
+    #
+    # Args:
+    #   target (.SequenceNode): sequence on which to compose the current composite dict
+    #
+    cdef void _compose_on_string(self, ScalarNode target):
+        cdef ScalarNode clobber = self.value.get("(=)")
+        cdef ScalarNode prefix = self.value.get("(<)")
+        cdef ScalarNode suffix = self.value.get("(>)")
+
+        if clobber is not None:
+            target.value.clear()
+            target.value.extend(clobber.value)
+        if prefix is not None:
+            target.value = prefix.value + target.value
+        if suffix is not None:
+            target.value += suffix.value
 
     # _compose_on_composite_dict(target)
     #
