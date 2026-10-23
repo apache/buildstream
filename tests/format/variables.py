@@ -316,3 +316,32 @@ def test_notparallel_twice(cli, datafiles):
     assert parallel_vars.get_str("element-name") == "parallel.bst"
     assert parallel_vars.get_str("max-jobs") == "2"
     assert parallel_vars.get_str("MAKEFLAGS") == "-j2"
+
+
+#
+# The working directory and the other directories that elements set up in
+# the sandbox must be absolute paths, a relative path is reported as an
+# error when loading the element instead of failing later in the build.
+#
+@pytest.mark.parametrize(
+    "target",
+    ["script-cwd.bst", "script-install-root.bst", "manual-build-root.bst", "manual-install-root.bst"],
+)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "relative_directories"))
+def test_relative_directory(cli, datafiles, target):
+    project = str(datafiles)
+    result = cli.run(project=project, args=["show", target])
+    result.assert_main_error(ErrorDomain.ELEMENT, "relative-sandbox-directory")
+
+
+#
+# The check is done on the resolved value, so a directory given by
+# another variable which resolves to an absolute path is accepted.
+#
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "relative_directories"))
+def test_absolute_directory_from_variable(cli, datafiles):
+    project = str(datafiles)
+    result = cli.run(project=project, args=["show", "--format", "%{vars}", "script-cwd-variable.bst"])
+    result.assert_success()
+    result_vars = _yaml.load_data(result.output)
+    assert result_vars.get_str("cwd") == "/buildstream/pony/script-cwd-variable.bst"
