@@ -76,12 +76,6 @@ class ElementProxy(PluginProxy):
         #
         return cast("Element", self._plugin)._search(_Scope.RUN, name)
 
-    def node_subst_vars(self, node: "ScalarNode") -> str:
-        return cast("Element", self._plugin).node_subst_vars(node)
-
-    def node_subst_sequence_vars(self, node: "SequenceNode[ScalarNode]") -> List[str]:
-        return cast("Element", self._plugin).node_subst_sequence_vars(node)
-
     def compute_manifest(
         self, *, include: Optional[List[str]] = None, exclude: Optional[List[str]] = None, orphans: bool = True
     ) -> str:
