@@ -38,7 +38,7 @@ class BuildQueue(Queue):
         if not element._buildable():
             return QueueStatus.PENDING
 
-        return QueueStatus.READY
+        return self._deduplicate(element)
 
     def done(self, job, element, result, status):
 
