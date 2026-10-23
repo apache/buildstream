@@ -33,7 +33,7 @@ import os
 from collections import OrderedDict
 from typing import List, Optional, TYPE_CHECKING
 
-from .element import Element
+from .element import Element, ElementError
 
 if TYPE_CHECKING:
     from typing import Dict, Tuple
@@ -178,7 +178,14 @@ class ScriptElement(Element):
     #             Abstract Method Implementations               #
     #############################################################
     def preflight(self):
-        pass
+        # The sandbox only accepts absolute paths for these, report a relative
+        # path here instead of failing an assertion later in the build.
+        for name, directory in (("working directory", self.__cwd), ("install root", self.__install_root)):
+            if not directory.startswith("/"):
+                raise ElementError(
+                    "The {} must be an absolute path, got '{}'".format(name, directory),
+                    reason="relative-sandbox-directory",
+                )
 
     def get_unique_key(self):
         sorted_locations = sorted(self.__layout)
