@@ -202,7 +202,11 @@ class CASCache:
                 if mtime is not None:
                     utils._set_file_mtime(fullpath, mtime)
 
-            if filenode.is_executable:
+            # Restore the full file mode if available (including setuid/setgid bits).
+            # Otherwise fall back to the legacy is_executable-based behavior.
+            if node_properties.HasField("unix_mode"):
+                os.chmod(fullpath, node_properties.unix_mode.value)
+            elif filenode.is_executable:
                 st = os.stat(fullpath)
                 mode = st.st_mode
                 if mode & stat.S_IRUSR:
@@ -222,6 +226,11 @@ class CASCache:
                 raise CASCacheError(f"Destination already exists and is a symlink, not a directory: {fullpath}")
             self.checkout(fullpath, dirnode.digest, can_link=can_link, _fetch=False)
 
+            # Restore directory mode if available (fixes setgid bit inheritance, etc.)
+            dir_node_properties = dirnode.node_properties
+            if dir_node_properties.HasField("unix_mode"):
+                os.chmod(fullpath, dir_node_properties.unix_mode.value)
+
         for symlinknode in directory.symlinks:
             # symlink
             fullpath = os.path.join(dest, symlinknode.name)
@@ -238,6 +247,9 @@ class CASCache:
         if node_properties.HasField("mtime"):
             mtime = utils._parse_protobuf_timestamp(node_properties.mtime)
             utils._set_file_mtime(dest, mtime)
+        # Restore root directory mode if available
+        if node_properties.HasField("unix_mode"):
+            os.chmod(dest, node_properties.unix_mode.value)
 
     # ensure_tree():
     #

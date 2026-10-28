@@ -75,6 +75,10 @@ class FileBasedDirectory(Directory):
     # First, it sorts the results of os.listdir() to ensure the ordering of
     # the files in the archive is the same.  Second, it sets a fixed
     # timestamp for each entry. See also https://bugs.python.org/issue24465.
+    #
+    # Note: We intentionally preserve the full file mode (including setuid/setgid
+    # bits) to avoid losing critical file metadata in artifacts and images.
+    # UID/GID are normalized to 0 for reproducibility, as they depend on the build host.
     def export_to_tar(self, tarfile: TarFile, destination_dir: str, mtime: int = BST_ARBITRARY_TIMESTAMP) -> None:
         # We need directories here, including non-empty ones,
         # so list_relative_paths is not used.
@@ -83,6 +87,8 @@ class FileBasedDirectory(Directory):
             arcname = os.path.join(destination_dir, filename)
             tarinfo = tarfile.gettarinfo(source_name, arcname)
             tarinfo.mtime = mtime
+            # Normalize UID/GID to 0 for reproducibility, but DO NOT strip
+            # the full file mode (permission bits + setuid/setgid bits).
             tarinfo.uid = 0
             tarinfo.gid = 0
             tarinfo.uname = ""
@@ -380,7 +386,10 @@ class FileBasedDirectory(Directory):
         # If any of the executable bits are set, lets call it executable
         executable = bool(st.st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
 
-        return FileStat(file_type, executable=executable, size=st.st_size, mtime=st.st_mtime)
+        # Capture the full file mode including setuid/setgid bits
+        mode = stat.S_IMODE(st.st_mode)
+
+        return FileStat(file_type, executable=executable, size=st.st_size, mtime=st.st_mtime, mode=mode)
 
     # __find_root()
     #
@@ -467,7 +476,12 @@ class FileBasedDirectory(Directory):
 
                     actionfunc(src_path, dest_path, mtime, result)
 
-                    if filestat.executable:
+                    # Restore the full file mode (including setuid/setgid bits)
+                    # when available; otherwise fall back to the old executable-based
+                    # behavior which would strip those critical bits.
+                    if filestat.mode is not None:
+                        os.chmod(dest_path, filestat.mode)
+                    elif filestat.executable:
                         os.chmod(
                             dest_path,
                             stat.S_IRUSR

@@ -93,7 +93,13 @@ class FileStat:
     """
 
     def __init__(
-        self, file_type: int, *, executable: bool = False, size: int = 0, mtime: float = BST_ARBITRARY_TIMESTAMP
+        self,
+        file_type: int,
+        *,
+        executable: bool = False,
+        size: int = 0,
+        mtime: float = BST_ARBITRARY_TIMESTAMP,
+        mode: Optional[int] = None,
     ) -> None:
 
         self.file_type: int = file_type
@@ -108,6 +114,9 @@ class FileStat:
         self.mtime: float = mtime
         """The modification time of the file"""
 
+        self.mode: Optional[int] = mode
+        """The full unix file mode (permission bits including setuid/setgid), if available."""
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FileStat):
             return NotImplemented
@@ -117,6 +126,7 @@ class FileStat:
             and self.executable == other.file_type
             and self.size == other.size
             and self.mtime == other.mtime
+            and self.mode == other.mode
         )
 
 

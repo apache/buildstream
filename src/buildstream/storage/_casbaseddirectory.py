@@ -48,6 +48,7 @@ class _IndexEntry:
         is_executable: bool = False,
         directory: Optional["CasBasedDirectory"] = None,
         mtime: Optional[timestamp_pb2.Timestamp] = None,  # pylint: disable=no-member
+        mode: Optional[int] = None,
     ) -> None:
         # The CAS cache
         self.cas_cache: CASCache = cas_cache
@@ -74,6 +75,10 @@ class _IndexEntry:
 
         # The mtime of the file, if provided
         self.mtime: Optional[timestamp_pb2.Timestamp] = mtime  # pylint: disable=no-member
+
+        # The full unix file mode (including setuid/setgid bits), if available.
+        # For regular files this includes permission bits and special bits.
+        self.mode: Optional[int] = mode
 
     def get_directory(self, parent: "CasBasedDirectory") -> "CasBasedDirectory":
         if self.directory is None:
@@ -110,6 +115,7 @@ class _IndexEntry:
             target=self.target,
             is_executable=self.is_executable,
             mtime=self.mtime,
+            mode=self.mode,
         )
 
     def __eq__(self, other: object) -> bool:
@@ -117,7 +123,7 @@ class _IndexEntry:
             return NotImplemented
 
         def get_equivalency_properties(e: _IndexEntry):
-            return (e.name, e.type, e.target, e.is_executable, e.mtime, e.get_digest())
+            return (e.name, e.type, e.target, e.is_executable, e.mtime, e.mode, e.get_digest())
 
         return get_equivalency_properties(self) == get_equivalency_properties(other)
 
@@ -192,15 +198,26 @@ class CasBasedDirectory(Directory):
                 tarinfo = tarfilelib.TarInfo(arcname)
                 tarinfo.mtime = mtime
                 tarinfo.type = tarfilelib.DIRTYPE
-                tarinfo.mode = 0o755
+                # Use stored mode if available, otherwise default to 0o755
+                if entry.mode is not None:
+                    tarinfo.mode = entry.mode & 0o7777
+                else:
+                    tarinfo.mode = 0o755
                 tarfile.addfile(tarinfo)
                 self.open_directory(filename).export_to_tar(tarfile, arcname, mtime)
             elif entry.type == FileType.REGULAR_FILE:
                 source_name = self.__cas_cache.objpath(entry.digest)
                 tarinfo = tarfilelib.TarInfo(arcname)
                 tarinfo.mtime = mtime
-                if entry.is_executable:
-                    tarinfo.mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+                # Use stored mode if available (preserving setuid/setgid bits),
+                # otherwise derive from executable flag
+                if entry.mode is not None:
+                    tarinfo.mode = entry.mode & 0o7777
+                else:
+                    if entry.is_executable:
+                        tarinfo.mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
+                    else:
+                        tarinfo.mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
                 tarinfo.size = os.path.getsize(source_name)
                 with open(source_name, "rb") as f:
                     tarfile.addfile(tarinfo, f)
@@ -208,7 +225,10 @@ class CasBasedDirectory(Directory):
                 assert entry.target is not None
                 tarinfo = tarfilelib.TarInfo(arcname)
                 tarinfo.mtime = mtime
-                tarinfo.mode = 0o777
+                if entry.mode is not None:
+                    tarinfo.mode = entry.mode & 0o7777
+                else:
+                    tarinfo.mode = 0o777
                 tarinfo.linkname = entry.target
                 tarinfo.type = tarfilelib.SYMTYPE
                 sio = StringIO(entry.target)
@@ -252,7 +272,7 @@ class CasBasedDirectory(Directory):
         if entry.mtime is not None:
             mtime = utils._parse_protobuf_timestamp(entry.mtime)
 
-        return FileStat(entry.type, executable=executable, size=size, mtime=mtime)
+        return FileStat(entry.type, executable=executable, size=size, mtime=mtime, mode=entry.mode)
 
     @contextmanager
     def open_file(self, path: str, *, mode: str = "r") -> Iterator[IO]:
@@ -566,6 +586,10 @@ class CasBasedDirectory(Directory):
                         dirnode.digest.CopyFrom(subdir._get_digest())
                     else:
                         dirnode.digest.CopyFrom(entry.digest)
+
+                    # Preserve directory mode (permission bits) when available
+                    if entry.mode is not None:
+                        dirnode.node_properties.unix_mode.value = entry.mode & 0o7777
                 elif entry.type == FileType.REGULAR_FILE:
                     filenode = pb2_directory.files.add()
                     filenode.name = name
@@ -573,10 +597,17 @@ class CasBasedDirectory(Directory):
                     filenode.is_executable = entry.is_executable
                     if entry.mtime is not None:
                         filenode.node_properties.mtime.CopyFrom(entry.mtime)
+                    # Preserve the full file mode (including setuid/setgid bits)
+                    # when available. This is critical for bootable images and
+                    # tools that rely on setuid/setgid binaries.
+                    if entry.mode is not None:
+                        filenode.node_properties.unix_mode.value = entry.mode & 0o7777
                 elif entry.type == FileType.SYMLINK:
                     symlinknode = pb2_directory.symlinks.add()
                     symlinknode.name = name
                     symlinknode.target = entry.target
+                    if entry.mode is not None:
+                        symlinknode.node_properties.unix_mode.value = entry.mode & 0o7777
 
             self.__digest = self.__cas_cache.add_object(buffer=pb2_directory.SerializeToString())
 
@@ -654,8 +685,11 @@ class CasBasedDirectory(Directory):
                 self.__subtree_read_only = prop.value == "true"
 
         for dentry in pb2_directory.directories:
+            dir_mode: Optional[int] = None
+            if dentry.node_properties.HasField("unix_mode"):
+                dir_mode = dentry.node_properties.unix_mode.value
             self.__index[dentry.name] = _IndexEntry(
-                self.__cas_cache, dentry.name, FileType.DIRECTORY, digest=dentry.digest
+                self.__cas_cache, dentry.name, FileType.DIRECTORY, digest=dentry.digest, mode=dir_mode
             )
         for entry in pb2_directory.files:
             mtime: Optional[timestamp_pb2.Timestamp]
@@ -664,6 +698,10 @@ class CasBasedDirectory(Directory):
             else:
                 mtime = None
 
+            file_mode: Optional[int] = None
+            if entry.node_properties.HasField("unix_mode"):
+                file_mode = entry.node_properties.unix_mode.value
+
             self.__index[entry.name] = _IndexEntry(
                 self.__cas_cache,
                 entry.name,
@@ -671,10 +709,14 @@ class CasBasedDirectory(Directory):
                 digest=entry.digest,
                 is_executable=entry.is_executable,
                 mtime=mtime,
+                mode=file_mode,
             )
         for lentry in pb2_directory.symlinks:
+            link_mode: Optional[int] = None
+            if lentry.node_properties.HasField("unix_mode"):
+                link_mode = lentry.node_properties.unix_mode.value
             self.__index[lentry.name] = _IndexEntry(
-                self.__cas_cache, lentry.name, FileType.SYMLINK, target=lentry.target
+                self.__cas_cache, lentry.name, FileType.SYMLINK, target=lentry.target, mode=link_mode
             )
 
     def __add_directory(self, name: str) -> "CasBasedDirectory":
@@ -696,6 +738,12 @@ class CasBasedDirectory(Directory):
             mtime = timestamp_pb2.Timestamp()  # pylint: disable=no-member
             utils._get_file_protobuf_mtimestamp(mtime, path)
 
+        # Capture the full file mode including special bits (setuid/setgid/sticky).
+        # This is essential for preserving critical file metadata in artifacts
+        # and images (fixes issue #38).
+        st = os.lstat(path)
+        file_mode = stat.S_IMODE(st.st_mode)
+
         entry = _IndexEntry(
             self.__cas_cache,
             name,
@@ -703,6 +751,7 @@ class CasBasedDirectory(Directory):
             digest=digest,
             is_executable=is_executable,
             mtime=mtime,
+            mode=file_mode,
         )
         self.__index[name] = entry
 
