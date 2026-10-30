@@ -83,7 +83,7 @@ artifact collection purposes.
 
 import os
 
-from .element import Element
+from .element import Element, ElementError
 
 _command_steps = ["configure-commands", "build-commands", "install-commands", "strip-commands"]
 
@@ -140,7 +140,15 @@ class BuildElement(Element):
             element_list.append((dep.element, dep.path))
 
     def preflight(self):
-        pass
+        # The sandbox only accepts absolute paths for these, report a relative
+        # path here instead of failing an assertion later in the build.
+        for name in ("build-root", "install-root"):
+            directory = self.get_variable(name)
+            if not directory or not directory.startswith("/"):
+                raise ElementError(
+                    "The '{}' variable must be an absolute path, got '{}'".format(name, directory),
+                    reason="relative-sandbox-directory",
+                )
 
     def get_unique_key(self):
         dictionary = {}
