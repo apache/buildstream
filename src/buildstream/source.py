@@ -497,6 +497,11 @@ class SourceVersionType(FastEnum):
     An sha256 checksum of the content of a file
     """
 
+    SHA512 = "sha512"
+    """
+    An sha512 checksum of the content of a file
+    """
+
     CAS_DIGEST = "cas-digest"
     """
     A CAS digest expressed as ``{hash}/{size}``.
