@@ -285,6 +285,9 @@ of the default behavior which is to replace it.
 
 When applying to a list, it will place the new list items at the end of the list.
 When applying to a string, it will place the string value as a postfix.
+Whitespace is preserved during composition and stripped from the final value.
+For example, ``(>): " -foo"`` appends a space followed by ``-foo`` to a flags variable.
+
 
 **Example:**
 

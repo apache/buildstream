@@ -194,7 +194,7 @@ def test_composite_strings(datafiles):
     overlay = _yaml.load(overlayfile, shortname=None)
     overlay._composite(base)
 
-    assert base.get_str("description") == "incoming potato(The vehicle of choice for rainbow travel)potato"
+    assert base.get_str("description") == "incoming potato( The vehicle of choice for rainbow travel )potato"
 
 
 @pytest.mark.parametrize("directive", ["(<)", "(>)", "(=)"])
@@ -432,6 +432,10 @@ def test_convert_value_to_string(datafiles):
     assert user_config == "1.23.4"
 
     user_config = test_dict.get_str("Test3")
+    assert isinstance(user_config, str)
+    assert user_config == "1.20"
+
+    user_config = test_dict.get_str("Test3space")
     assert isinstance(user_config, str)
     assert user_config == "1.20"
 

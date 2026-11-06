@@ -278,7 +278,7 @@ cdef class ScalarNode(Node):
         cdef value_type = type(value)
 
         if value_type is str:
-            value = value.strip()
+            pass
         elif value_type is bool:
             if value:
                 value = "True"
@@ -322,9 +322,9 @@ cdef class ScalarNode(Node):
             return self.value
 
         # Don't coerce strings to booleans, this makes "False" strings evaluate to True
-        if self.value in ('True', 'true', '1'):
+        if self.as_str() in ('True', 'true', '1'):
             return True
-        elif self.value in ('False', 'false', '0'):
+        elif self.as_str() in ('False', 'false', '0'):
             return False
         else:
             provenance = self.get_provenance()
@@ -363,7 +363,7 @@ cdef class ScalarNode(Node):
             :class:`FastEnum` or :class:`Enum`: the value contained in the node, as a member of `constraint`
         """
         try:
-            return constraint(self.value)
+            return constraint(self.as_str())
         except ValueError:
             provenance = self.get_provenance()
             path = provenance._toplevel._find(self)[-1]
@@ -401,7 +401,7 @@ cdef class ScalarNode(Node):
         # We keep 'None' as 'None' to simplify the API's usage and allow chaining for users
         if self.value is None:
             return None
-        return str(self.value)
+        return str(self.value).strip()
 
     cpdef bint is_none(self):
         """Determine whether the current scalar is `None`.
@@ -421,7 +421,7 @@ cdef class ScalarNode(Node):
         )
 
     cpdef object strip_node_info(self):
-        return self.value
+        return self.as_str()
 
     #############################################################
     #              Private Methods implementations              #
