@@ -1,4 +1,16 @@
 =================
+buildstream 2.8.2
+=================
+
+  o Check that protobuf messages follow the REAPI spec (#2201, #2203)
+
+  o Fixes for symlink handling (#2204, #2205, #2206)
+
+  o Fix env export for `bst source checkout --include-build-scripts` (#2207)
+
+  o Fix extra empty lines (#2208)
+
+=================
 buildstream 2.8.1
 =================
 

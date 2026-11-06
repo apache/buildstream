@@ -16,6 +16,7 @@
 
 import itertools
 import os
+import re
 import stat
 import contextlib
 import time
@@ -39,6 +40,10 @@ _BUFFER_SIZE = 65536
 
 # Refresh interval for disk usage of local cache in seconds
 _CACHE_USAGE_REFRESH = 5
+
+
+# Constant for SHA-256 validation (64 hexadecimal digits)
+_HASH_REGEX = re.compile(r"[0-9a-f]{64}")
 
 
 class CASLogLevel(FastEnum):
@@ -185,7 +190,11 @@ class CASCache:
         with open(self.objpath(tree), "rb") as f:
             directory.ParseFromString(f.read())
 
+        names = set[str]()
+
         for filenode in directory.files:
+            _validate_cas_node_name(filenode.name, names)
+
             # regular file, create hardlink
             fullpath = os.path.join(dest, filenode.name)
 
@@ -214,13 +223,27 @@ class CASCache:
                 os.chmod(fullpath, mode)
 
         for dirnode in directory.directories:
+            _validate_cas_node_name(dirnode.name, names)
             fullpath = os.path.join(dest, dirnode.name)
+            # If the destination is a regular file, `os.makedirs()` will catch it.
+            # However, it will not raise an error if it's a valid directory symlink,
+            # so check here that we're not unexpectedly following a symlink.
+            if os.path.islink(fullpath):
+                raise CASCacheError(f"Destination already exists and is a symlink, not a directory: {fullpath}")
             self.checkout(fullpath, dirnode.digest, can_link=can_link, _fetch=False)
 
         for symlinknode in directory.symlinks:
             # symlink
+            _validate_cas_node_name(symlinknode.name, names)
             fullpath = os.path.join(dest, symlinknode.name)
-            os.symlink(symlinknode.target, fullpath)
+            try:
+                os.symlink(symlinknode.target, fullpath)
+            except FileExistsError:
+                try:
+                    os.unlink(fullpath)
+                except OSError as e:
+                    raise CASCacheError(f"Failed to remove destination file '{fullpath}': {e}") from e
+                os.symlink(symlinknode.target, fullpath)
 
         node_properties = directory.node_properties
         if node_properties.HasField("mtime"):
@@ -323,6 +346,9 @@ class CASCache:
     #     (str): The path of the object
     #
     def objpath(self, digest):
+        if not _HASH_REGEX.fullmatch(digest.hash):
+            raise ValueError(f"Invalid hash: `{digest.hash}`")
+
         return os.path.join(self.casdir, "objects", digest.hash[:2], digest.hash[2:])
 
     # open():
@@ -823,3 +849,22 @@ def _grouper(iterable, n):
         except StopIteration:
             return
         yield itertools.chain([current], itertools.islice(iterable, n - 1))
+
+
+# _validate_cas_node_name():
+#
+# Validates that a CAS Directory entry name is a single path segment.
+#
+# Args:
+#    name (str): The name of a CAS Directory entry
+#    names (set): The set of names in the directory
+#
+def _validate_cas_node_name(name: str, names: set[str]):
+    if os.path.basename(name) != name or name in ("", ".", ".."):
+        raise CASCacheError(
+            f"Invalid name in a CAS Directory node: '{name}' (every child in the directory must have a path of exactly one segment)"
+        )
+
+    if name in names:
+        raise CASCacheError(f"Duplicate name in a CAS Directory node: '{name}'")
+    names.add(name)

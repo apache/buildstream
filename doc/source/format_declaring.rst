@@ -260,10 +260,40 @@ in order to build itself, in this case the sources might be listed as:
      ref: 9d4b1147f8cf244b0002ba74bfb0b8dfb3...
 
 Like Elements, Source types are plugins which are indicated by the ``kind`` attribute.
-Asides from the common ``kind`` and ``directory`` attributes which may be applied to all
-Sources, refer to the Source specific documentation for meaningful attributes for the
-particular Source.
+The ``kind``, ``directory`` and ``provenance`` attributes may be applied to all :ref:`Sources <core_source_builtins>`.
 
+Another common attribute that a number of source plugins share is the ``url`` attribute.
+These source plugins deal with downloading files from a url.
+The ``url`` attribute can be a bare-url such as:
+
+.. code:: yaml
+
+   sources:
+
+   # Specify the source which should be built
+   - kind: git
+     url: https://my-upstream-forge.com/bananas/modulename.git
+     track: master
+     ref: d0b38561afb8122a3fc6bafc5a733ec502fcaed6
+
+Alternatively the ``url`` attribute can make use of
+:ref:`Source aliases declared in the project.conf <project_source_aliases>`
+to abstract the download location, to enable the use of mirrors.
+This is done by replacing the start of the url (e.g. ``https://my-upstream-forge.com/bananas/``)
+with the name of the alias followed by a colon (e.g ``upstream:``), as complete example:
+
+.. code:: yaml
+
+   sources:
+
+   # Specify the source which should be built
+   - kind: git
+     url: upstream:bananas/modulename.git
+     track: master
+     ref: d0b38561afb8122a3fc6bafc5a733ec502fcaed6
+
+For ``url`` support and all other attributes refer to the :ref:`Source specific documentation <plugins_sources>` for meaningful attributes for the
+particular Source plugin.
 
 Variables
 ~~~~~~~~~

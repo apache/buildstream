@@ -105,6 +105,11 @@ This tarball is a sysroot which provides the C runtime libraries
 and some programs - this is what will be providing the programs we're
 going to run in this example.
 
+.. tip::
+   Note how we use the source alias ``alpine`` as part of the url
+   instead of the full url with the tar plugin.
+   For further information see see :ref:`Declaring Sources for elements <format_sources>`
+
 
 ``elements/base.bst``
 ~~~~~~~~~~~~~~~~~~~~~
@@ -170,7 +175,7 @@ The :mod:`manual <elements.manual>` element however is the most basic
 and does not provide any default commands, so we have instructed it
 to use ``make`` to build and install our program.
 
-     
+
 Using the project
 -----------------
 

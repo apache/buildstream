@@ -15,16 +15,23 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
+import datetime
 import os
 import re
 
+import click
 import pytest
 
 from buildstream._testing import create_repo
 
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain
+from buildstream._frontend.profile import Profile
+from buildstream._frontend.widget import LogLine
+from buildstream._message import Message, MessageType
 from buildstream._testing import cli  # pylint: disable=unused-import
+
+from tests.testutils import dummy_context
 
 # Project directory
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -225,3 +232,53 @@ def test_log_line_element_names(cli, datafiles):
         assert log_name == staged_name
         assert log_key == staged_key
         assert log_key == keys[log_name]
+
+
+# Render a message with LogLine the same way the frontend does, without colors
+#
+def render_log_line(context, message):
+    profile = Profile()
+    logger = LogLine(context, None, profile, profile, profile, profile, profile)
+    return click.unstyle(logger.render(message))
+
+
+# Test that message details are truncated to the configured message-lines,
+# and that setting it to 0 does not leave empty lines behind.
+#
+@pytest.mark.parametrize(
+    "message_lines,expected",
+    [
+        (0, "Running commands\n"),
+        (2, "Running commands\n\n    line 1\n    line 2\n    Message contains 1 additional lines\n\n"),
+    ],
+    ids=["zero", "two"],
+)
+def test_message_lines(message_lines, expected):
+    with dummy_context() as context:
+        context.log_message_format = "%{message}"
+        context.log_message_lines = message_lines
+
+        message = Message(
+            MessageType.INFO, "Running commands", element_name="test.bst", detail="line 1\nline 2\nline 3"
+        )
+        assert render_log_line(context, message) == expected
+
+
+# Test that a failure message is still followed by a single empty line,
+# and not two, when error-lines is set to 0.
+#
+def test_error_lines_zero():
+    with dummy_context() as context:
+        context.log_message_format = "%{message}"
+        context.log_verbose = True
+        context.log_error_lines = 0
+
+        message = Message(
+            MessageType.FAIL,
+            "Running commands",
+            element_name="test.bst",
+            elapsed=datetime.timedelta(),
+            logfile="test.log",
+            scheduler=True,
+        )
+        assert render_log_line(context, message) == "Running commands\n\n"
