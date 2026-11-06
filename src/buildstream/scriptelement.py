@@ -33,7 +33,7 @@ import os
 from collections import OrderedDict
 from typing import List, Optional, TYPE_CHECKING
 
-from .element import Element
+from .element import Element, ElementError
 
 if TYPE_CHECKING:
     from typing import Dict, Tuple
@@ -73,11 +73,15 @@ class ScriptElement(Element):
         Args:
            work_dir: The working directory. If called without this argument
                      set, it'll default to the value of the variable ``cwd``.
+
+        Raises:
+           :class:`.ElementError`: If the working directory is not an absolute path
         """
         if work_dir is None:
-            self.__cwd = self.get_variable("cwd") or "/"
-        else:
-            self.__cwd = work_dir
+            work_dir = self.get_variable("cwd") or "/"
+
+        self.__check_absolute_path("working directory", work_dir)
+        self.__cwd = work_dir
 
     def set_install_root(self, install_root: Optional[str] = None) -> None:
         """Sets the install root
@@ -88,11 +92,15 @@ class ScriptElement(Element):
         Args:
            install_root: The install root. If called without this argument
                          set, it'll default to the value of the variable ``install-root``.
+
+        Raises:
+           :class:`.ElementError`: If the install root is not an absolute path
         """
         if install_root is None:
-            self.__install_root = self.get_variable("install-root") or "/"
-        else:
-            self.__install_root = install_root
+            install_root = self.get_variable("install-root") or "/"
+
+        self.__check_absolute_path("install root", install_root)
+        self.__install_root = install_root
 
     def set_root_read_only(self, root_read_only: bool) -> None:
         """Sets root read-only
@@ -256,6 +264,30 @@ class ScriptElement(Element):
 
         # Return where the result can be collected from
         return self.__install_root
+
+    #############################################################
+    #                   Private Local Methods                   #
+    #############################################################
+
+    # __check_absolute_path()
+    #
+    # The sandbox only accepts absolute paths for the working directory
+    # and the install root, report a relative path when the element is
+    # configured instead of failing an assertion later in the build.
+    #
+    # Args:
+    #    name: The name of the directory, for the error message
+    #    directory: The directory to check
+    #
+    # Raises:
+    #    (ElementError): If the directory is not an absolute path
+    #
+    def __check_absolute_path(self, name: str, directory: str) -> None:
+        if not directory.startswith("/"):
+            raise ElementError(
+                "{}: The {} must be an absolute path, got '{}'".format(self, name, directory),
+                reason="relative-sandbox-directory",
+            )
 
 
 def setup():

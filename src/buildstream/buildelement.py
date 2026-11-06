@@ -83,7 +83,7 @@ artifact collection purposes.
 
 import os
 
-from .element import Element
+from .element import Element, ElementError
 
 _command_steps = ["configure-commands", "build-commands", "install-commands", "strip-commands"]
 
@@ -106,6 +106,16 @@ class BuildElement(Element):
 
         for command_name in _command_steps:
             self.__commands[command_name] = node.get_str_list(command_name, [])
+
+        # The sandbox only accepts absolute paths for these, report a relative
+        # path here instead of failing an assertion later in the build.
+        for name in ("build-root", "install-root"):
+            directory = self.get_variable(name)
+            if not directory or not directory.startswith("/"):
+                raise ElementError(
+                    "{}: The '{}' variable must be an absolute path, got '{}'".format(self, name, directory),
+                    reason="relative-sandbox-directory",
+                )
 
     def configure_dependencies(self, dependencies):
 
