@@ -684,7 +684,7 @@ def show(app, elements, deps, except_, order, format_):
     type=click.Tuple([click.Path(exists=True), str]),
     multiple=True,
     metavar="HOSTPATH PATH",
-    help="Mount a file or directory into the sandbox",
+    help="Mount a file or directory into the sandbox at the absolute PATH",
 )
 @click.option("--isolate", is_flag=True, help="Create an isolated build sandbox")
 @click.option(
@@ -770,6 +770,14 @@ def shell(
                 raise AppError('Missing argument "TARGET".')
 
         mounts = [_HostMount(path, host_path) for host_path, path in mount]
+
+        # The sandbox only accepts absolute paths to mount at
+        for host_mount in mounts:
+            if not host_mount.path.startswith("/"):
+                raise AppError(
+                    "Cannot mount at '{}': the path in the sandbox must be absolute".format(host_mount.path),
+                    reason="relative-mount-path",
+                )
 
         try:
             exitcode = app.stream.shell(
