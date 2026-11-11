@@ -16,6 +16,7 @@
 #
 
 import os
+import stat
 
 # To make use of these test utilities it is necessary to have pytest
 # available. However, we don't want to have a hard dependency on
@@ -44,11 +45,41 @@ from .. import ALL_REPO_KINDS
 #
 @pytest.fixture(params=ALL_REPO_KINDS.keys())
 def kind(request, datafiles):
+    # The tests write into their copy of the project
+    make_writable(str(datafiles))
+
     # Register plugins both on the toplevel project and on its junctions
     for project_dir in [str(datafiles), os.path.join(str(datafiles), "files", "sub-project")]:
         add_plugins_conf(project_dir, request.param)
 
     yield request.param
+
+
+# make_writable()
+#
+# Make the files and directories under the given path writable by their owner.
+#
+# The `datafiles` fixture keeps the permissions of the files it copies, so the
+# copy of the project is read-only when buildstream is installed read-only, for
+# example in the Nix store.
+#
+# Args:
+#   path (str): path to the directory to make writable
+#
+def make_writable(path):
+    # Directories also need to be readable and searchable to be walked
+    _add_owner_permissions(path, stat.S_IRWXU)
+    for root, dirs, files in os.walk(path):
+        for name in dirs:
+            _add_owner_permissions(os.path.join(root, name), stat.S_IRWXU)
+        for name in files:
+            _add_owner_permissions(os.path.join(root, name), stat.S_IWUSR)
+
+
+def _add_owner_permissions(path, permissions):
+    mode = os.lstat(path).st_mode
+    if not stat.S_ISLNK(mode):
+        os.chmod(path, mode | permissions)
 
 
 # add_plugins_conf()
