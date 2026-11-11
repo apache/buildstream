@@ -231,7 +231,7 @@ class Result:
         return list(pulled)
 
     def get_discarded_elements(self):
-        discarded = re.findall(r"\[\s*(?:main|pull):(\S+)\s*\]\s*INFO\s*Discarded failed build", self.stderr)
+        discarded = re.findall(r"\[\s*(?:cache-query|pull):(\S+)\s*\]\s*INFO\s*Discarded failed build", self.stderr)
         if discarded is None:
             return []
 
