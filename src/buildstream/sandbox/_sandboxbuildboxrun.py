@@ -16,6 +16,7 @@ import signal
 import subprocess
 import sys
 from contextlib import ExitStack
+from pathlib import Path
 
 import grpc
 import psutil
@@ -174,7 +175,8 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 interactive=(flags & _SandboxFlags.INTERACTIVE),
             )
 
-            action_result = remote_execution_pb2.ActionResult().FromString(result_file.read())
+            action_result_bytes = Path(result_file.name).read_bytes()
+            action_result = remote_execution_pb2.ActionResult().FromString(action_result_bytes)
 
         if self.re_remote and context.remote_execution_specs.storage_spec and context.remote_cache_spec:
             # This ensures that the outputs are uploaded to the cache storage-service
