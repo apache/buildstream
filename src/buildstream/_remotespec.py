@@ -272,6 +272,7 @@ class RemoteSpec:
         basedir: Optional[str] = None,
         *,
         remote_execution: bool = False,
+        storage: bool = False,
         action_cache: bool = False,
     ) -> "RemoteSpec":
         server_cert: Optional[str] = None
@@ -281,6 +282,9 @@ class RemoteSpec:
         access_token_reload_interval: Optional[int] = None
         push: bool = False
         remote_type: str = RemoteType.ENDPOINT
+
+        if storage:
+            remote_type = RemoteType.STORAGE
 
         valid_keys: List[str] = ["url", "protocol", "instance-name", "auth", "connection-config"]
         if not remote_execution:
@@ -588,7 +592,7 @@ class RemoteExecutionSpec:
 
         storage_spec: Optional[RemoteSpec]
         if storage_node:
-            storage_spec = RemoteSpec.new_from_node(storage_node, basedir, remote_execution=True)
+            storage_spec = RemoteSpec.new_from_node(storage_node, basedir, remote_execution=True, storage=True)
         else:
             storage_spec = None
 
