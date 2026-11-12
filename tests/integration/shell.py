@@ -287,6 +287,18 @@ def test_cli_mount(cli, datafiles, path):
     assert result.output == "pony\n"
 
 
+# Test that a relative path to mount at is reported as an error
+@pytest.mark.parametrize("path", [("pony.txt"), ("usr/share/pony/pony.txt")])
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_cli_mount_relative_path(cli, datafiles, path):
+    project = str(datafiles)
+    ponyfile = os.path.join(project, "files", "shell-mount", "pony.txt")
+
+    result = execute_shell(cli, project, ["cat", path], mount=(ponyfile, path))
+    result.assert_main_error(ErrorDomain.APP, "relative-mount-path")
+
+
 # Test that we can see the workspace files in a shell
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
