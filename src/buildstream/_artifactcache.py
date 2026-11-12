@@ -238,6 +238,28 @@ class ArtifactCache(AssetCache):
 
         utils.safe_link(os.path.join(self._basedir, oldref), os.path.join(self._basedir, newref))
 
+    # link_element_key():
+    #
+    # Add a reference to an existing artifact for another element
+    # with the same cache key.
+    #
+    # Args:
+    #     element (Element): The Element whose artifact is to be linked
+    #     other (Element): The Element to add the reference for
+    #     key (str): The cache key of the artifact
+    #
+    def link_element_key(self, element, other, key):
+        ref = element.get_artifact_name(key)
+        otherref = other.get_artifact_name(key)
+
+        if ref == otherref:
+            # The two refs are identical, nothing to do
+            return
+
+        dest = os.path.join(self._basedir, otherref)
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        utils.safe_link(os.path.join(self._basedir, ref), dest)
+
     # check_remotes_for_element()
     #
     # Check if the element is available in any of the remotes

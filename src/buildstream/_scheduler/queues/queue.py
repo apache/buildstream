@@ -32,7 +32,7 @@ from ..._message import Message, MessageType
 from ...types import FastEnum
 
 if TYPE_CHECKING:
-    from typing import List, Optional
+    from typing import Dict, List, Optional
 
 
 # Queue status for a given element
@@ -47,6 +47,21 @@ class QueueStatus(FastEnum):
 
     # The element is ready for processing in this queue.
     READY = 3
+
+    # Another element with the same strong cache key is being
+    # processed in this queue, see Queue._deduplicate().
+    WAIT = 4
+
+
+# _KeyGroup()
+#
+# Element instances sharing a strong cache key in a Queue
+#
+class _KeyGroup:
+    def __init__(self):
+        self.owner = None  # The element currently being processed
+        self.cached_element = None  # An element which successfully cached the artifact
+        self.waiters = []  # Elements waiting for the owner to complete
 
 
 # Queue()
@@ -75,6 +90,7 @@ class Queue:
         self._done_queue = deque()  # Processed / Skipped elements
         self._max_retries = 0
         self._queued_elements = 0  # Number of elements queued
+        self._key_groups = {}  # type: Dict[str, _KeyGroup]
 
         self._required_element_check = False  # Whether we should check that elements are required before enqueuing
 
@@ -366,6 +382,70 @@ class Queue:
                 self._task_group.add_processed_task()
             else:
                 self._task_group.add_failed_task(element._get_full_name())
+        finally:
+            self._release_key_group(element, status == JobStatus.OK)
+
+    # _deduplicate()
+    #
+    # Ensures that only one of the Element instances sharing a strong
+    # cache key is processed at a time, e.g. the same element loaded
+    # through multiple junctions. Other instances wait for it, then
+    # either adopt its artifact or take over if it failed.
+    #
+    # This is called by Queue implementations from status() for
+    # elements which are otherwise ready to be processed.
+    #
+    # Args:
+    #    element (Element): The element which is ready
+    #
+    # Returns:
+    #    (QueueStatus): The status of the element
+    #
+    def _deduplicate(self, element):
+        key = element._get_cache_key()
+        if key is None:
+            return QueueStatus.READY
+
+        group = self._key_groups.setdefault(key, _KeyGroup())
+        if group.cached_element is not None:
+            element._adopt_artifact(group.cached_element)
+            return QueueStatus.SKIP
+        elif group.owner is not None and group.owner is not element:
+            return QueueStatus.WAIT
+
+        group.owner = element
+        return QueueStatus.READY
+
+    # _release_key_group()
+    #
+    # Re-enqueues elements waiting for the given element, see _deduplicate().
+    #
+    # Args:
+    #    element (Element): The element which completed
+    #    success (bool): Whether the job completed successfully
+    #
+    def _release_key_group(self, element, success):
+        group = self._key_groups.get(element._get_cache_key())
+        if group is None:
+            return
+
+        try:
+            if success and group.cached_element is None and element._cached_success():
+                group.cached_element = element
+
+            if group.owner is element:
+                group.owner = None
+                waiters, group.waiters = group.waiters, []
+                for waiter in waiters:
+                    self._enqueue_element(waiter)
+        except Exception:  # pylint: disable=broad-except
+            # Report unhandled exceptions, the job completion must not be interrupted
+            self._message(
+                element,
+                MessageType.BUG,
+                "Unhandled exception while releasing waiting elements",
+                detail=traceback.format_exc(),
+            )
 
     # Convenience wrapper for Queue implementations to send
     # a message for the element they are processing
@@ -406,6 +486,9 @@ class Queue:
             # Push elements which are ready to be processed immediately into the queue
             heapq.heappush(self._ready_queue, (element._depth, self._queued_elements, element))
             self._queued_elements += 1
+        elif status == QueueStatus.WAIT:
+            # Element is re-enqueued by _release_key_group()
+            self._key_groups[element._get_cache_key()].waiters.append(element)
         else:
             # Register a queue specific callback for pending elements
             self.register_pending_element(element)
