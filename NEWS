@@ -10,6 +10,8 @@ buildstream 2.8.2
 
   o Fix extra empty lines (#2208)
 
+  o Fix reading of action result with latest buildbox-run (#2222)
+
 =================
 buildstream 2.8.1
 =================
