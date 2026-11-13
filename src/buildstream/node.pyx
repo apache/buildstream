@@ -274,11 +274,12 @@ cdef class ScalarNode(Node):
     .. note:: You should never have to create a :class:`.ScalarNode` directly
     """
 
-    def __cinit__(self, int file_index, int line, int column, object value):
+    def __cinit__(self, int file_index, int line, int column, object value, bint strip_value=True):
         cdef value_type = type(value)
 
         if value_type is str:
-            pass
+            if strip_value:
+                value = value.strip()
         elif value_type is bool:
             if value:
                 value = "True"
@@ -296,7 +297,7 @@ cdef class ScalarNode(Node):
     def __reduce__(self):
         return (
             ScalarNode.__new__,
-            (ScalarNode, self.file_index, self.line, self.column, self.value),
+            (ScalarNode, self.file_index, self.line, self.column, self.value, False),
         )
 
     #############################################################
@@ -322,9 +323,9 @@ cdef class ScalarNode(Node):
             return self.value
 
         # Don't coerce strings to booleans, this makes "False" strings evaluate to True
-        if self.as_str() in ('True', 'true', '1'):
+        if self.value in ('True', 'true', '1'):
             return True
-        elif self.as_str() in ('False', 'false', '0'):
+        elif self.value in ('False', 'false', '0'):
             return False
         else:
             provenance = self.get_provenance()
@@ -363,7 +364,7 @@ cdef class ScalarNode(Node):
             :class:`FastEnum` or :class:`Enum`: the value contained in the node, as a member of `constraint`
         """
         try:
-            return constraint(self.as_str())
+            return constraint(self.value)
         except ValueError:
             provenance = self.get_provenance()
             path = provenance._toplevel._find(self)[-1]
@@ -401,7 +402,7 @@ cdef class ScalarNode(Node):
         # We keep 'None' as 'None' to simplify the API's usage and allow chaining for users
         if self.value is None:
             return None
-        return str(self.value).strip()
+        return self.value
 
     cpdef bint is_none(self):
         """Determine whether the current scalar is `None`.
@@ -417,11 +418,11 @@ cdef class ScalarNode(Node):
 
     cpdef ScalarNode clone(self):
         return ScalarNode.__new__(
-            ScalarNode, self.file_index, self.line, self.column, self.value
+            ScalarNode, self.file_index, self.line, self.column, self.value, False
         )
 
     cpdef object strip_node_info(self):
-        return self.as_str()
+        return self.value
 
     #############################################################
     #              Private Methods implementations              #
@@ -1041,6 +1042,7 @@ cdef class MappingNode(Node):
             target.value = prefix.value + target.value
         if suffix is not None:
             target.value += suffix.value
+        target.value = target.value.strip()
 
     # _compose_on_composite_dict(target)
     #
