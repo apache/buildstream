@@ -245,12 +245,17 @@ author to assert some invalid configurations.
 
 .. _format_directives_list_prepend:
 
-(<) List Prepend
+(<) Prepend
 ~~~~~~~~~~~~~~~~
-Indicates that the list should be prepended to the target list,
-instead of the default behavior which is to replace the target list.
+Indicates that the value should be prepended to the target value,
+instead of the default behaviour which is to replace the target value.
+
+When applying to a list, it will insert the new list items before the target list items.
+When applying to a string, it will prefix the new string onto the target string.
 
 **Example:**
+
+For lists:
 
 .. code:: yaml
 
@@ -262,12 +267,27 @@ instead of the default behavior which is to replace the target list.
        - cp %{datadir}/automake-*/config.{sub,guess} .
 
 
+For strings:
+
+.. code:: yaml
+
+   string-property:
+     (<): "start"
+
+
 .. _format_directives_list_append:
 
-(>) List Append
+(>) Append
 ~~~~~~~~~~~~~~~
-Indicates that the list should be appended to the target list, instead
-of the default behavior which is to replace the target list.
+Indicates that the values should be appended to its target, instead
+of the default behavior which is to replace it.
+
+
+When applying to a list, it will place the new list items at the end of the list.
+When applying to a string, it will place the string value as a postfix.
+Whitespace is preserved during composition and stripped from the final value.
+For example, ``(>): " -foo"`` appends a space followed by ``-foo`` to a flags variable.
+
 
 **Example:**
 
@@ -285,21 +305,20 @@ of the default behavior which is to replace the target list.
 
 .. _format_directives_list_overwrite:
 
-(=) List Overwrite
+(=) Overwrite
 ~~~~~~~~~~~~~~~~~~
-Indicates that the list should be overwritten completely.
+Indicates that the value should be overwritten completely.
 
-This exists mostly for completeness, and we recommend using literal
-lists most of the time instead of list overwrite directives when the
-intent is to overwrite a list.
+This exists mostly for completeness, and we recommend using literals
+instead of the overwrite directive when the intent is to overwrite.
 
-This has the same behavior as a literal list, except that an
+This has the same behavior as a literal, except that an
 error will be triggered in the case that there is no underlying
-list to overwrite; whereas a literal list will simply create a new
-list.
+property to overwrite; whereas a literal entry will simply create a new
+property.
 
 The added error protection can be useful when intentionally
-overwriting a list in an element's *public data*, which is mostly
+overwriting a value in an element's *public data*, which is mostly
 free form and not validated.
 
 

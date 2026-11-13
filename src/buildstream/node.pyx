@@ -274,11 +274,12 @@ cdef class ScalarNode(Node):
     .. note:: You should never have to create a :class:`.ScalarNode` directly
     """
 
-    def __cinit__(self, int file_index, int line, int column, object value):
+    def __cinit__(self, int file_index, int line, int column, object value, bint strip_value=True):
         cdef value_type = type(value)
 
         if value_type is str:
-            value = value.strip()
+            if strip_value:
+                value = value.strip()
         elif value_type is bool:
             if value:
                 value = "True"
@@ -296,7 +297,7 @@ cdef class ScalarNode(Node):
     def __reduce__(self):
         return (
             ScalarNode.__new__,
-            (ScalarNode, self.file_index, self.line, self.column, self.value),
+            (ScalarNode, self.file_index, self.line, self.column, self.value, False),
         )
 
     #############################################################
@@ -401,7 +402,7 @@ cdef class ScalarNode(Node):
         # We keep 'None' as 'None' to simplify the API's usage and allow chaining for users
         if self.value is None:
             return None
-        return str(self.value)
+        return self.value
 
     cpdef bint is_none(self):
         """Determine whether the current scalar is `None`.
@@ -417,7 +418,7 @@ cdef class ScalarNode(Node):
 
     cpdef ScalarNode clone(self):
         return ScalarNode.__new__(
-            ScalarNode, self.file_index, self.line, self.column, self.value
+            ScalarNode, self.file_index, self.line, self.column, self.value, False
         )
 
     cpdef object strip_node_info(self):
@@ -966,6 +967,7 @@ cdef class MappingNode(Node):
 
     cdef void _compose_on(self, str key, MappingNode target, list path) except *:
         cdef Node target_value
+        cdef Node operand
 
         if self._is_composite_list():
             if key not in target.value:
@@ -977,13 +979,19 @@ cdef class MappingNode(Node):
                 if type(target_value) is SequenceNode:
                     # Composite list composes into a list
                     self._compose_on_list(target_value)
-                elif target_value._is_composite_list():
+                elif (type(target_value) is ScalarNode and isinstance((<ScalarNode> target_value).value, str) and
+                        all(type(operand) is ScalarNode for operand in self.value.values())):
+                    # Composite list composes into a string
+                    self._compose_on_string(target_value)
+                elif (target_value._is_composite_list() and
+                        all(type(operand) is SequenceNode for operand in self.value.values()) and
+                        all(type(operand) is SequenceNode for operand in (<MappingNode> target_value).value.values())):
                     # Composite list merges into composite list
                     self._compose_on_composite_dict(target_value)
                 else:
                     # Else composing on top of normal dict or a scalar, so raise...
                     raise _CompositeError(path,
-                                          "{}: Cannot compose lists onto {}".format(
+                                          "{}: Cannot compose directives onto {}".format(
                                                self.get_provenance(),
                                                target_value.get_provenance()))
         else:
@@ -1015,6 +1023,26 @@ cdef class MappingNode(Node):
                 target.value.insert(0, v)
         if suffix is not None:
             target.value.extend(suffix.value)
+
+    # _compose_on_string(target)
+    #
+    # Compose the current node on the given string.
+    #
+    # Args:
+    #   target (.ScalarNode): sequence on which to compose the current composite dict
+    #
+    cdef void _compose_on_string(self, ScalarNode target):
+        cdef ScalarNode clobber = self.value.get("(=)")
+        cdef ScalarNode prefix = self.value.get("(<)")
+        cdef ScalarNode suffix = self.value.get("(>)")
+
+        if clobber is not None:
+            target.value = clobber.value
+        if prefix is not None:
+            target.value = prefix.value + target.value
+        if suffix is not None:
+            target.value += suffix.value
+        target.value = target.value.strip()
 
     # _compose_on_composite_dict(target)
     #
