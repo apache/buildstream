@@ -31,7 +31,7 @@ from typing import List, Tuple, Optional, Iterable, Callable
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._artifactproject import ArtifactProject
-from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
+from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError, LoadError
 from ._scheduler import (
     Scheduler,
     SchedStatus,
@@ -1505,14 +1505,18 @@ class Stream:
         seen.add(loader)
 
         project = loader.project
-        for name in sorted(project.list_element_files()):
-            if self._search_match(pattern, name):
-                results.append(prefix + name)
+        names = sorted(project.list_element_files())
+        results.extend(prefix + name for name in names if self._search_match(pattern, name))
 
+        for name in names:
             path = os.path.join(project.element_path, name)
             kind = _yaml.load(path, shortname=name).get_str("kind", None)
             if kind == "junction":
-                subloader = loader.get_loader(name, None)
+                try:
+                    subloader = loader.get_loader(name, None)
+                except LoadError as e:
+                    self._context.messenger.warn("Skipping junction {}{}".format(prefix, name), detail=str(e))
+                    continue
                 self._search_loader(subloader, prefix + name + ":", pattern, results, seen)
 
     # _search_match()
