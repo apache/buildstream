@@ -610,16 +610,21 @@ class Project:
     #
     # List all element files in this project's element path.
     #
+    # Args:
+    #    skip_subprojects: Do not recurse into directories containing a project.conf
+    #
     # Returns:
     #    (list): Element names, relative to the element path
     #
-    def list_element_files(self):
+    def list_element_files(self, *, skip_subprojects=False):
         element_files = []
         for root, dirs, files in os.walk(self.element_path):
             # Do not recurse down the ".bst" directory which is where we stage
             # junctions and other BuildStream internals.
             if ".bst" in dirs:
                 dirs.remove(".bst")
+            if skip_subprojects:
+                dirs[:] = [d for d in dirs if not os.path.exists(os.path.join(root, d, _PROJECT_CONF_FILE))]
             for file in files:
                 if file.endswith(".bst"):
                     rel_dir = os.path.relpath(root, self.element_path)

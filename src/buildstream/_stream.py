@@ -1505,7 +1505,7 @@ class Stream:
         seen.add(loader)
 
         project = loader.project
-        names = sorted(project.list_element_files())
+        names = sorted(project.list_element_files(skip_subprojects=True))
         results.extend(prefix + name for name in names if self._search_match(pattern, name))
 
         for name in names:
