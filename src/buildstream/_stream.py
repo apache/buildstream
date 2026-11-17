@@ -16,6 +16,7 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+import fnmatch
 import itertools
 import os
 import sys
@@ -1283,6 +1284,30 @@ class Stream:
 
         return False
 
+    # search()
+    #
+    # Search for element files in the project and its junctions.
+    #
+    # Args:
+    #    pattern: An element name, basename or glob pattern
+    #    junction: Only search in the project behind this junction
+    #
+    # Returns:
+    #    (list): Fully qualified names of the matching elements
+    #
+    def search(self, pattern: str, *, junction: Optional[str] = None) -> List[str]:
+        self._assert_project("Unable to search for elements")
+
+        loader = self._project.loader
+        prefix = ""
+        if junction:
+            loader = loader.get_loader(junction, None)
+            prefix = junction + ":"
+
+        results: List[str] = []
+        self._search_loader(loader, prefix, pattern, results, set())
+        return results
+
     # workspace_list
     #
     # Serializes the workspaces and dumps them in YAML to stdout.
@@ -1462,6 +1487,46 @@ class Stream:
     #############################################################
     #                    Private Methods                        #
     #############################################################
+
+    # _search_loader()
+    #
+    # Recursively search a loader's project and its junctions.
+    #
+    # Args:
+    #    loader: The Loader to search
+    #    prefix: The junction prefix for names in this loader
+    #    pattern: The pattern to match
+    #    results: The list to append matches to
+    #    seen: The loaders already searched
+    #
+    def _search_loader(self, loader, prefix: str, pattern: str, results: List[str], seen: set) -> None:
+        if loader in seen:
+            return
+        seen.add(loader)
+
+        project = loader.project
+        for name in sorted(project.list_element_files()):
+            if self._search_match(pattern, name):
+                results.append(prefix + name)
+
+            path = os.path.join(project.element_path, name)
+            kind = _yaml.load(path, shortname=name).get_str("kind", None)
+            if kind == "junction":
+                subloader = loader.get_loader(name, None)
+                self._search_loader(subloader, prefix + name + ":", pattern, results, seen)
+
+    # _search_match()
+    #
+    # Check whether an element name matches a search pattern.
+    #
+    # The pattern matches the relative path, the basename with or
+    # without the ".bst" extension, or either of these as a glob.
+    #
+    @staticmethod
+    def _search_match(pattern: str, name: str) -> bool:
+        basename = os.path.basename(name)
+        candidates = (name, basename, basename[: -len(".bst")])
+        return any(fnmatch.fnmatchcase(candidate, pattern) for candidate in candidates)
 
     # _assert_project()
     #
