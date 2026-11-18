@@ -416,13 +416,13 @@ class Stream:
 
         source_push_enabled = self._sourcecache.has_push_remotes()
 
-        # If source push is enabled, the source cache status of all elements
-        # is required, independent of whether the artifact is already available.
-        self.query_cache(elements, sources_of_cached_elements=source_push_enabled)
-
         # Now construct the queues
         #
         self._reset()
+
+        # If source push is enabled, the source cache status of all elements
+        # is required, independent of whether the artifact is already available.
+        self._add_queue(CacheQueryQueue(self._scheduler, sources_if_cached=source_push_enabled))
 
         if self._artifacts.has_fetch_remotes():
             self._add_queue(PullQueue(self._scheduler))
