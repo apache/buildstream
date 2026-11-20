@@ -120,6 +120,16 @@ class ArtifactElement(Element):
         # Always operate in strict mode as artifact key has been specified explicitly.
         return super()._load_artifact(pull=pull, strict=True)
 
+    # An ArtifactElement is identified by its artifact name (which includes
+    # its cache key) rather than by its element name, since it may not even
+    # belong to a loaded project. Cache key is not yet known
+    # when this is first called from Plugin.__init__(), before our own
+    # __init__() has had a chance to set it via artifact_key.
+    def _get_full_name(self):
+        if self._get_cache_key() is None:
+            return super()._get_full_name()
+        return self.get_artifact_name()
+
     # Once we've finished loading an artifact, we assume the
     # state of the loaded artifact. This is also used if the
     # artifact is loaded after pulling.
