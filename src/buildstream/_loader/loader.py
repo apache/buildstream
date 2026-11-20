@@ -16,6 +16,7 @@
 
 import os
 from contextlib import suppress
+from pathlib import PurePath
 
 from .._exceptions import LoadError
 from ..exceptions import LoadErrorReason
@@ -168,7 +169,20 @@ class Loader:
 
         return target_elements
 
-    def _normalize_element_name(self, filename):
+    def _normalize_element_name(self, filename, provenance_node):
+        error_message = None
+
+        purepath = PurePath(filename)
+        if purepath.is_absolute():
+            error_message = "Element '{}' is an absolute path".format(filename)
+        elif ".." in purepath.parts:
+            error_message = "Element '{}' contains a `..` segment, which is not permitted".format(filename)
+
+        if error_message:
+            if provenance_node is not None:
+                error_message = "{}: {}".format(provenance_node.get_provenance(), error_message)
+            raise LoadError(error_message, LoadErrorReason.PROJ_PATH_INVALID)
+
         # Keep equivalent relative spellings on the same loader identity path,
         # so ref lookup, cache keys and workspace handling stay consistent.
         return os.path.normpath(filename)
@@ -405,7 +419,7 @@ class Loader:
     #
     def _load_one_file(self, filename, provenance_node, *, load_subprojects=True):
 
-        filename = self._normalize_element_name(filename)
+        filename = self._normalize_element_name(filename, provenance_node)
 
         element = None
 
@@ -1020,10 +1034,10 @@ class Loader:
         # to create junctions on the top level project.
         junction_path = name.rsplit(":", 1)
         if len(junction_path) == 1:
-            return None, self._normalize_element_name(junction_path[-1]), self
+            return None, self._normalize_element_name(junction_path[-1], provenance_node), self
         else:
             loader = self.get_loader(junction_path[-2], provenance_node, load_subprojects=load_subprojects)
-            return junction_path[-2], self._normalize_element_name(junction_path[-1]), loader
+            return junction_path[-2], self._normalize_element_name(junction_path[-1], provenance_node), loader
 
     # _warn():
     #
