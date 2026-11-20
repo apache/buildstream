@@ -779,6 +779,8 @@ class Loader:
     # Returns: A Loader or None if specified junction does not exist
     #
     def _get_loader(self, filename, provenance_node, *, load_subprojects=True):
+        filename = self._normalize_element_name(filename, provenance_node)
+
         loader = None
 
         # return previously determined result
