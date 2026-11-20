@@ -604,19 +604,34 @@ class Project:
             return tuple(self._default_targets)
 
         # If default targets are not configured, default to all project elements
-        default_targets = []
+        return tuple(self.list_element_files())
+
+    # list_element_files()
+    #
+    # List all element files in this project's element path.
+    #
+    # Args:
+    #    skip_subprojects: Do not recurse into directories containing a project.conf
+    #
+    # Returns:
+    #    (list): Element names, relative to the element path
+    #
+    def list_element_files(self, *, skip_subprojects=False):
+        element_files = []
         for root, dirs, files in os.walk(self.element_path):
             # Do not recurse down the ".bst" directory which is where we stage
             # junctions and other BuildStream internals.
             if ".bst" in dirs:
                 dirs.remove(".bst")
+            if skip_subprojects:
+                dirs[:] = [d for d in dirs if not os.path.exists(os.path.join(root, d, _PROJECT_CONF_FILE))]
             for file in files:
                 if file.endswith(".bst"):
                     rel_dir = os.path.relpath(root, self.element_path)
                     rel_file = os.path.join(rel_dir, file).lstrip("./")
-                    default_targets.append(rel_file)
+                    element_files.append(rel_file)
 
-        return tuple(default_targets)
+        return element_files
 
     # junction_is_duplicated()
     #
