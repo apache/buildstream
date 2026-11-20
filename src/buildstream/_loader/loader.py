@@ -47,10 +47,8 @@ from .loadelement import LoadElement, Dependency, DependencyType, extract_depend
 class Loader:
     def __init__(self, project, *, parent=None, provenance_node=None):
 
-        # Ensure we have an absolute path for the base directory
-        basedir = project.element_path
-        if not os.path.isabs(basedir):
-            basedir = os.path.abspath(basedir)
+        # Ensure we have the canonical path for the base directory
+        basedir = os.path.realpath(project.element_path, strict=True)
 
         #
         # Public members
@@ -289,9 +287,33 @@ class Loader:
 
         self._assert_element_name(filename, provenance_node)
 
+        provenance_prefix = "{}: ".format(provenance_node.get_provenance()) if provenance_node else ""
+
         # Load the data and process any conditional statements therein
-        fullpath = os.path.join(self._basedir, filename)
         try:
+            fullpath = os.path.join(self._basedir, filename)
+            try:
+                realpath = os.path.realpath(fullpath, strict=True)
+            except (FileNotFoundError, NotADirectoryError) as e:
+                raise LoadError(
+                    f"{provenance_prefix}Could not find file at '{fullpath}'", LoadErrorReason.MISSING_FILE
+                ) from e
+            except OSError as e:
+                raise LoadError(
+                    f"{provenance_prefix}Failed to resolve path of '{filename}': {e.strerror}",
+                    LoadErrorReason.PROJ_PATH_INVALID,
+                ) from e
+            if os.path.commonpath([realpath, self._basedir]) != self._basedir:
+                raise LoadError(
+                    f"{provenance_prefix}'{filename}' resolves to a path outside `element-path` of the project: {realpath}",
+                    LoadErrorReason.PROJ_PATH_INVALID,
+                )
+            if realpath != fullpath:
+                raise LoadError(
+                    f"{provenance_prefix}A path component of '{filename}' is a symlink, which isn't supported",
+                    LoadErrorReason.PROJ_PATH_INVALID,
+                )
+
             node = _yaml.load(
                 fullpath, shortname=filename, copy_tree=self.load_context.rewritable, project=self.project
             )
@@ -303,7 +325,9 @@ class Loader:
                         filename, self.project.junction.name
                     )
                 else:
-                    message = "Could not find element '{}' in elements directory '{}'".format(filename, self._basedir)
+                    message = "Could not find element '{}' in elements directory '{}'".format(
+                        filename, self.project.element_path
+                    )
 
                 if provenance_node:
                     message = "{}: {}".format(provenance_node.get_provenance(), message)
@@ -312,7 +336,7 @@ class Loader:
                 # alternatives by stripping the element-path from the given
                 # filename, and verifying that it exists.
                 detail = None
-                elements_dir = os.path.relpath(self._basedir, self.project.directory)
+                elements_dir = os.path.relpath(self.project.element_path, self.project.directory)
                 element_relpath = os.path.relpath(filename, elements_dir)
                 if filename.startswith(elements_dir) and os.path.exists(os.path.join(self._basedir, element_relpath)):
                     detail = "Did you mean '{}'?".format(element_relpath)
