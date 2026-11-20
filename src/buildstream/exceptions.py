@@ -160,3 +160,6 @@ class LoadErrorReason(Enum):
     """
     Thee source provenance attribute specified was not defined in the project config
     """
+
+    LOAD_FAILED = 30
+    """Failed to load a yaml file due to some error"""

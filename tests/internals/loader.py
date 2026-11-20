@@ -110,3 +110,25 @@ def test_invalid_directory_load(datafiles):
         loader.load(["element.bst"])
 
     assert exc.value.reason == LoadErrorReason.LOADING_DIRECTORY
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "onefile"))
+def test_invalid_nested_file_path(datafiles):
+
+    basedir = str(datafiles)
+    with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
+        loader.load(["elements/onefile.bst/onefile.bst"])
+
+    assert exc.value.reason == LoadErrorReason.LOAD_FAILED
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "onefile"))
+def test_fail_load_open_error(datafiles):
+
+    basedir = str(datafiles)
+    # remove read prermission
+    os.chmod(f"{basedir}/elements/onefile.bst", 0o333)
+    with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
+        loader.load(["elements/onefile.bst"])
+
+    assert exc.value.reason == LoadErrorReason.LOAD_FAILED
