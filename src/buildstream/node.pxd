@@ -65,6 +65,7 @@ cdef class MappingNode(Node):
     # Protected Methods
     cdef void _compose_on_composite_dict(self, MappingNode target)
     cdef void _compose_on_list(self, SequenceNode target)
+    cdef void _compose_on_string(self, ScalarNode target)
 
     # Private Methods
     cdef void __composite(self, MappingNode target, list path) except *

@@ -19,6 +19,7 @@ import pytest
 from buildstream import _yaml, Node, ProvenanceInformation, SequenceNode
 from buildstream.exceptions import LoadErrorReason
 from buildstream._exceptions import LoadError
+from buildstream._variables import Variables
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -182,6 +183,67 @@ def test_composite_preserve_originals(datafiles):
 
     # But the original node is not effected by the override.
     assert orig_extra.get_str("old") == "new"
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_composite_strings(datafiles):
+
+    filename = os.path.join(datafiles, "basics.yaml")
+    overlayfile = os.path.join(datafiles, "stringappend.yaml")
+
+    base = _yaml.load(filename, shortname=None)
+    overlay = _yaml.load(overlayfile, shortname=None)
+    overlay._composite(base)
+
+    assert base.get_str("description") == "incoming potato( The vehicle of choice for rainbow travel )potato"
+
+
+def test_expansion_preserves_trailing_space():
+    variables = Variables(Node.from_dict({"cmake-local": ""}))
+    node = Node.from_dict({"cmake-args": "-DFOO %{cmake-local}"})
+
+    variables.expand(node)
+
+    # Expansion-generated whitespace was preserved before string composition.
+    assert node.get_str("cmake-args") == "-DFOO "
+
+
+@pytest.mark.parametrize("clone", [False, True])
+def test_composite_strings_preserve_quoted_spaces(tmp_path, clone):
+    overlay_file = tmp_path / "overlay.yaml"
+    overlay_file.write_text("s:\n  (<): 'prefix '\n  (>): \" suffix\"\n")
+    overlay = _yaml.load(str(overlay_file), shortname=None)
+    if clone:
+        overlay = overlay.clone()
+    base = Node.from_dict({"s": "base"})
+
+    overlay._composite(base)
+
+    assert base.get_str("s") == "prefix base suffix"
+
+
+@pytest.mark.parametrize("directive", ["(<)", "(>)", "(=)"])
+@pytest.mark.parametrize(
+    "target,operand",
+    [
+        ("base", "[suffix]"),
+        ("base", "{nested: suffix}"),
+        ({"(>)": "one"}, "suffix"),
+        ({"(>)": ["one"]}, "suffix"),
+        ({"(>)": "one"}, "[suffix]"),
+    ],
+)
+def test_invalid_string_directive_operand(tmp_path, directive, target, operand):
+    base = Node.from_dict({"s": target})
+    overlay_file = tmp_path / "overlay.yaml"
+    overlay_file.write_text("s:\n  '{}': {}\n".format(directive, operand))
+    overlay = _yaml.load(str(overlay_file), shortname="overlay.yaml")
+
+    with pytest.raises(LoadError) as exc:
+        overlay._composite(base)
+    assert exc.value.reason == LoadErrorReason.ILLEGAL_COMPOSITE
+    assert "overlay.yaml" in str(exc.value)
+    assert "['s']" in str(exc.value)
 
 
 # Tests for list composition
@@ -395,6 +457,10 @@ def test_convert_value_to_string(datafiles):
     assert user_config == "1.23.4"
 
     user_config = test_dict.get_str("Test3")
+    assert isinstance(user_config, str)
+    assert user_config == "1.20"
+
+    user_config = test_dict.get_str("Test3space")
     assert isinstance(user_config, str)
     assert user_config == "1.20"
 

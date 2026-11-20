@@ -176,8 +176,11 @@ cdef class Representer:
 
     cdef RepresenterState _handle_wait_value_ScalarEvent(self, object ev):
         key = self.keys.pop()
+        # Preserve separators in quoted string prefixes and suffixes only.
+        strip_value = not (key in ("(<)", "(>)") and ev.style in ("'", '"'))
         (<MappingNode> self.output[-1]).value[key] = \
-            ScalarNode.__new__(ScalarNode, self._file_index, ev.start_mark.line, ev.start_mark.column, ev.value)
+            ScalarNode.__new__(ScalarNode, self._file_index, ev.start_mark.line, ev.start_mark.column,
+                               ev.value, strip_value)
         return RepresenterState.wait_key
 
     cdef RepresenterState _handle_wait_value_MappingStartEvent(self, object ev):
