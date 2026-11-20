@@ -2072,16 +2072,30 @@ class Element(Plugin):
         usebuildtree: bool = False,
     ):
 
+        # Fetch the main toplevel project, in case this is a junctioned
+        # subproject, we want to use the rules defined by the main one.
+        context = self._get_context()
+        project = context.get_toplevel_project()
+        shell_command, shell_environment, shell_host_files = project.get_shell_config()
+
+        if mounts is None:
+            mounts = []
+
+        # The sandbox only accepts absolute paths to mount at, check this
+        # before staging anything. Mounts of non-existing host files are
+        # skipped below, so they are not checked here either.
+        if not isolate:
+            for mount in shell_host_files + mounts:
+                if os.path.exists(mount.host_path) and not mount.path.startswith("/"):
+                    raise ElementError(
+                        "Cannot mount at '{}': the path in the sandbox must be absolute".format(mount.path),
+                        reason="relative-mount-path",
+                    )
+
         with self._prepare_sandbox(scope, shell=True, usebuildtree=usebuildtree) as sandbox:
             environment = sandbox._get_configured_environment() or self.get_environment()
             environment = copy.copy(environment)
             flags = _SandboxFlags.INTERACTIVE | _SandboxFlags.ROOT_READ_ONLY
-
-            # Fetch the main toplevel project, in case this is a junctioned
-            # subproject, we want to use the rules defined by the main one.
-            context = self._get_context()
-            project = context.get_toplevel_project()
-            shell_command, shell_environment, shell_host_files = project.get_shell_config()
 
             if prompt is not None:
                 environment["PS1"] = prompt
@@ -2098,9 +2112,6 @@ class Element(Plugin):
                     environment[key] = value
 
                 # Setup any requested bind mounts
-                if mounts is None:
-                    mounts = []
-
                 for mount in shell_host_files + mounts:
                     if not os.path.exists(mount.host_path):
                         if not mount.optional:

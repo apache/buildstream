@@ -684,7 +684,7 @@ def show(app, elements, deps, except_, order, format_):
     type=click.Tuple([click.Path(exists=True), str]),
     multiple=True,
     metavar="HOSTPATH PATH",
-    help="Mount a file or directory into the sandbox",
+    help="Mount a file or directory into the sandbox at the absolute PATH",
 )
 @click.option("--isolate", is_flag=True, help="Create an isolated build sandbox")
 @click.option(
