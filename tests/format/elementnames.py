@@ -55,3 +55,35 @@ def test_invalid_element_names(cli, datafiles, target, domain, reason, provenanc
     result.assert_main_error(domain, reason)
     if provenance:
         assert provenance in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_dotdot_dependency(cli, datafiles):
+    project = os.path.join(str(datafiles), "elementnames")
+    result = cli.run(project=project, silent=True, args=["show", "dotdot-dep.bst"])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.PROJ_PATH_INVALID)
+    assert "dotdot-dep.bst [line 3 column 2]" in result.stderr
+
+
+@pytest.mark.parametrize(
+    "target,link,link_target,message",
+    [
+        ("symlink-dep.bst", "link.bst", "target.bst", "is a symlink"),
+        ("symlink-dir-dep.bst", "linkdir", ".", "is a symlink"),
+        ("symlink-dep.bst", "link.bst", "../outside.bst", "resolves to a path outside `element-path`"),
+    ],
+    ids=["file", "directory", "outside-element-path"],
+)
+@pytest.mark.datafiles(DATA_DIR)
+def test_symlink_dependency(cli, datafiles, target, link, link_target, message):
+    project = os.path.join(str(datafiles), "elementnames")
+
+    # Valid element outside of the project, only reachable via symlink
+    with open(os.path.join(str(datafiles), "outside.bst"), "w", encoding="utf-8") as f:
+        f.write("kind: stack\n")
+
+    os.symlink(link_target, os.path.join(project, link))
+    result = cli.run(project=project, silent=True, args=["show", target])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.PROJ_PATH_INVALID)
+    assert "{} [line 3 column 2]".format(target) in result.stderr
+    assert message in result.stderr
