@@ -713,6 +713,37 @@ def search(app, element, pattern):
             click.echo(name)
 
 
+@cli.command(short_help="Find elements providing a file in cached artifacts")
+@click.option(
+    "--junction",
+    "-j",
+    "element",
+    default=None,
+    type=click.Path(readable=False),
+    help="Only search in the project behind this junction",
+)
+@click.argument("pattern", type=click.STRING)
+@click.pass_obj
+def element_provides(app, element, pattern):
+    """Print elements whose locally cached artifacts contain a matching file.
+
+    PATTERN matches a filename or an artifact-relative path. Shell style
+    wildcards are supported. All projects, including junctions, are searched
+    unless --junction is specified. Directories are not matched.
+
+    Artifacts must already be cached locally; this command does not build
+    elements or download artifacts. A warning reports skipped elements.
+
+    Example:
+
+    \b
+        bst element-provides FindBoost.cmake
+    """
+    with app.initialized():
+        for name in app.stream.element_provides(pattern, junction=element):
+            click.echo(name)
+
+
 ##################################################################
 #                          Shell Command                         #
 ##################################################################

@@ -1308,6 +1308,33 @@ class Stream:
         self._search_loader(loader, prefix, pattern, results, set())
         return results
 
+    # Find elements whose locally cached artifacts contain a matching file.
+    def element_provides(self, pattern: str, *, junction: Optional[str] = None) -> List[str]:
+        names = self.search("*", junction=junction)
+        if not names:
+            return []
+
+        elements = self._load(names, ignore_junction_targets=True)
+        self.query_cache(elements)
+
+        results = []
+        uncached = 0
+        for element in elements:
+            if not element._cached():
+                uncached += 1
+                continue
+            files = element._get_artifact().get_files()
+            if any(
+                (fnmatch.fnmatchcase(path, pattern) or fnmatch.fnmatchcase(os.path.basename(path), pattern))
+                and not files.isdir(path)
+                for path in files.list_relative_paths()
+            ):
+                results.append(element._get_full_name())
+
+        if uncached:
+            self._context.messenger.warn("Skipped {} elements without locally cached artifacts".format(uncached))
+        return sorted(set(results))
+
     # workspace_list
     #
     # Serializes the workspaces and dumps them in YAML to stdout.
