@@ -984,18 +984,12 @@ class Loader:
     #    (ScalarNode): The link target real node, if a link target was returned
     #
     def _shallow_load_path(self, path, provenance_node):
-        if ":" in path:
-            junction, element_name = path.rsplit(":", 1)
-            target_loader = self.get_loader(junction, provenance_node, load_subprojects=False)
+        junction, element_name, target_loader = self._parse_name(path, provenance_node, load_subprojects=False)
 
-            # Subproject not loaded, discard this shallow load attempt
-            #
-            if target_loader is None:
-                return None, None
-        else:
-            junction = None
-            element_name = path
-            target_loader = self
+        # Subproject not loaded, discard this shallow load attempt
+        #
+        if target_loader is None:
+            return None, None
 
         # If the element is already loaded in the target loader, then there
         # is no need for a shallow load.
