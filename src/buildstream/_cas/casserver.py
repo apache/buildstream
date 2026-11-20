@@ -32,6 +32,7 @@ from .._protos.build.bazel.remote.execution.v2 import (
 )
 from .._protos.google.bytestream import bytestream_pb2_grpc
 from .casdprocessmanager import CASDProcessManager
+from .._exceptions import CASCacheError
 
 # The default limit for gRPC messages is 4 MiB.
 # Limit payload to 1 MiB to leave sufficient headroom for metadata.
@@ -82,15 +83,28 @@ class LogLevel(click.Choice):
 #     index_only (bool): Whether to store CAS blobs or only artifacts
 #
 @contextlib.contextmanager
-def create_server(repo, *, enable_push, quota, index_only, log_level=LogLevel.Levels.WARNING):
+def create_server(repo, *, enable_push, quota, index_only, log_level=LogLevel.Levels.WARNING, remote_cache_spec=None):
     logger = logging.getLogger("buildstream._cas.casserver")
     logger.setLevel(LogLevel.get_logging_equivalent(log_level))
     handler = logging.StreamHandler(sys.stderr)
     handler.setFormatter(logging.Formatter(fmt="%(levelname)s: %(funcName)s: %(message)s"))
     logger.addHandler(handler)
 
+    if index_only and remote_cache_spec:
+        # Local action/asset cache with remote CAS requires buildbox-casd 1.4.29 or later
+        try:
+            CASDProcessManager._check_casd_version(None, 1, 4, 29)
+        except CASCacheError:
+            remote_cache_spec = None
+
     casd = CASDProcessManager(
-        os.path.abspath(repo), os.path.join(os.path.abspath(repo), "logs"), log_level, quota, None, False, None
+        os.path.abspath(repo),
+        os.path.join(os.path.abspath(repo), "logs"),
+        log_level,
+        quota,
+        remote_cache_spec,
+        False,
+        None,
     )
 
     try:
