@@ -754,6 +754,28 @@ def test_build(cli, tmpdir_factory, datafiles, kind, strict, from_workspace, gue
     assert not os.path.exists(os.path.join(checkout, "usr", "bin", "hello"))
 
 
+# The mtimes of workspace files must not end up in the artifact, or the
+# elements depending on it would stage other files than without a workspace.
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_without_workspace_mtimes(cli, tmpdir, datafiles):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "tar")
+    compose = {"kind": "compose", "build-depends": [element_name]}
+    _yaml.roundtrip_dump(compose, os.path.join(project, "elements", "compose.bst"))
+
+    # A modification time that a checkout would not give the file anyway
+    mtime = 1000000000
+    os.utime(os.path.join(workspace, "usr", "bin", "hello"), (mtime, mtime))
+
+    result = cli.run(project=project, args=["build", "compose.bst"])
+    result.assert_success()
+
+    for name in (element_name, "compose.bst"):
+        checkout = os.path.join(str(tmpdir), "checkout-" + name)
+        result = cli.run(project=project, args=["artifact", "checkout", "--directory", checkout, name])
+        result.assert_success()
+        assert os.stat(os.path.join(checkout, "usr", "bin", "hello")).st_mtime != mtime
+
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_buildable_no_ref(cli, tmpdir, datafiles):
     project = str(datafiles)
