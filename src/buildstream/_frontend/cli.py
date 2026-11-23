@@ -675,6 +675,76 @@ def show(app, elements, deps, except_, order, format_):
 
 
 ##################################################################
+#                         Search Command                         #
+##################################################################
+@cli.command(short_help="Search for elements across junctions")
+@click.option(
+    "--junction",
+    "-j",
+    "element",
+    default=None,
+    type=click.Path(readable=False),
+    help="Only search in the project behind this junction",
+)
+@click.argument("pattern", type=click.STRING)
+@click.pass_obj
+def search(app, element, pattern):
+    """Search for elements by name and print their full names
+
+    PATTERN matches an element's project relative path, or its
+    basename with or without the ".bst" extension. Shell style
+    wildcards are supported.
+
+    By default, the whole project is searched, including all
+    junctioned projects. Use --junction to only search in the
+    project behind a given junction.
+
+    Junctioned elements are printed with their junction prefix,
+    so the output can be used directly as an element name.
+
+    Examples:
+
+    \b
+        bst search glib
+        bst search 'components/gtk*' --junction freedesktop-sdk.bst
+    """
+    with app.initialized():
+        for name in app.stream.search(pattern, junction=element):
+            click.echo(name)
+
+
+@cli.command(short_help="Find elements providing a file in cached artifacts")
+@click.option(
+    "--junction",
+    "-j",
+    "element",
+    default=None,
+    type=click.Path(readable=False),
+    help="Only search in the project behind this junction",
+)
+@click.argument("pattern", type=click.STRING)
+@click.pass_obj
+def element_provides(app, element, pattern):
+    """Print elements whose locally cached artifacts contain a matching file.
+
+    PATTERN matches a filename or an artifact-relative path. Shell style
+    wildcards are supported. All projects, including junctions, are searched
+    unless --junction is specified. Directories are not matched.
+
+    Artifacts must already be cached locally; this command does not build
+    elements or download artifacts. A warning reports skipped elements.
+
+    Example:
+
+    \b
+        bst element-provides FindBoost.cmake
+    """
+    with app.initialized():
+        for name in app.stream.element_provides(pattern, junction=element):
+            click.echo(name)
+
+
+##################################################################
 #                          Shell Command                         #
 ##################################################################
 @cli.command(short_help="Shell into an element's sandbox environment")

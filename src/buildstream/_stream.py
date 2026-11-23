@@ -16,6 +16,7 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+import fnmatch
 import itertools
 import os
 import sys
@@ -30,7 +31,7 @@ from typing import List, Tuple, Optional, Iterable, Callable
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._artifactproject import ArtifactProject
-from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
+from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError, LoadError
 from ._scheduler import (
     Scheduler,
     SchedStatus,
@@ -1283,6 +1284,57 @@ class Stream:
 
         return False
 
+    # search()
+    #
+    # Search for element files in the project and its junctions.
+    #
+    # Args:
+    #    pattern: An element name, basename or glob pattern
+    #    junction: Only search in the project behind this junction
+    #
+    # Returns:
+    #    (list): Fully qualified names of the matching elements
+    #
+    def search(self, pattern: str, *, junction: Optional[str] = None) -> List[str]:
+        self._assert_project("Unable to search for elements")
+
+        loader = self._project.loader
+        prefix = ""
+        if junction:
+            loader = loader.get_loader(junction, None)
+            prefix = junction + ":"
+
+        results: List[str] = []
+        self._search_loader(loader, prefix, pattern, results, set())
+        return results
+
+    # Find elements whose locally cached artifacts contain a matching file.
+    def element_provides(self, pattern: str, *, junction: Optional[str] = None) -> List[str]:
+        names = self.search("*", junction=junction)
+        if not names:
+            return []
+
+        elements = self._load(names, ignore_junction_targets=True)
+        self.query_cache(elements)
+
+        results = []
+        uncached = 0
+        for element in elements:
+            if not element._cached():
+                uncached += 1
+                continue
+            files = element._get_artifact().get_files()
+            if any(
+                (fnmatch.fnmatchcase(path, pattern) or fnmatch.fnmatchcase(os.path.basename(path), pattern))
+                and not files.isdir(path)
+                for path in files.list_relative_paths()
+            ):
+                results.append(element._get_full_name())
+
+        if uncached:
+            self._context.messenger.warn("Skipped {} elements without locally cached artifacts".format(uncached))
+        return sorted(set(results))
+
     # workspace_list
     #
     # Serializes the workspaces and dumps them in YAML to stdout.
@@ -1462,6 +1514,50 @@ class Stream:
     #############################################################
     #                    Private Methods                        #
     #############################################################
+
+    # _search_loader()
+    #
+    # Recursively search a loader's project and its junctions.
+    #
+    # Args:
+    #    loader: The Loader to search
+    #    prefix: The junction prefix for names in this loader
+    #    pattern: The pattern to match
+    #    results: The list to append matches to
+    #    seen: The loaders already searched
+    #
+    def _search_loader(self, loader, prefix: str, pattern: str, results: List[str], seen: set) -> None:
+        if loader in seen:
+            return
+        seen.add(loader)
+
+        project = loader.project
+        names = sorted(project.list_element_files(skip_subprojects=True))
+        results.extend(prefix + name for name in names if self._search_match(pattern, name))
+
+        for name in names:
+            path = os.path.join(project.element_path, name)
+            kind = _yaml.load(path, shortname=name).get_str("kind", None)
+            if kind == "junction":
+                try:
+                    subloader = loader.get_loader(name, None)
+                except LoadError as e:
+                    self._context.messenger.warn("Skipping junction {}{}".format(prefix, name), detail=str(e))
+                    continue
+                self._search_loader(subloader, prefix + name + ":", pattern, results, seen)
+
+    # _search_match()
+    #
+    # Check whether an element name matches a search pattern.
+    #
+    # The pattern matches the relative path, the basename with or
+    # without the ".bst" extension, or either of these as a glob.
+    #
+    @staticmethod
+    def _search_match(pattern: str, name: str) -> bool:
+        basename = os.path.basename(name)
+        candidates = (name, basename, basename[: -len(".bst")])
+        return any(fnmatch.fnmatchcase(candidate, pattern) for candidate in candidates)
 
     # _assert_project()
     #

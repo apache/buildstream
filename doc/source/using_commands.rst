@@ -136,6 +136,20 @@ Top-level commands
 
 ----
 
+.. _invoking_search:
+
+.. click:: buildstream._frontend.cli:search
+   :prog: bst search
+
+----
+
+.. _invoking_element_provides:
+
+.. click:: buildstream._frontend.cli:element_provides
+   :prog: bst element-provides
+
+----
+
 .. _invoking_shell:
 
 .. click:: buildstream._frontend.cli:shell

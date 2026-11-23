@@ -41,7 +41,10 @@ from tests.testutils.repo.tar import Tar
 #################################################
 def pytest_addoption(parser):
     parser.addoption("--integration", action="store_true", default=False, help="Run integration tests")
-    parser.addoption("--plugins", action="store_true", default=False, help="Run only plugins tests")
+    # Pytest uses "plugins" for its built-in -p option.
+    parser.addoption(
+        "--plugins", dest="bst_plugins", action="store_true", default=False, help="Run only plugins tests"
+    )
     parser.addoption("--remote-execution", action="store_true", default=False, help="Run remote-execution tests only")
     parser.addoption("--remote-cache", action="store_true", default=False, help="Run remote-cache tests only")
 
@@ -74,7 +77,7 @@ def pytest_collection_modifyitems(session, config, items):
                 item.add_marker(pytest.mark.skip("skipping remote-cache test"))
 
         # With --plugins only run plugins tests
-        if config.getvalue("plugins"):
+        if config.getvalue("bst_plugins"):
             if not item.get_closest_marker("generic_source_test"):
                 item.add_marker(pytest.mark.skip("Skipping not generic source test"))
 
@@ -129,7 +132,7 @@ register_repo_kind("tar", Tar, None)
 # This hook enables pytest to collect the templated source tests from
 # buildstream._testing
 def pytest_sessionstart(session):
-    if session.config.getvalue("plugins"):
+    if session.config.getvalue("bst_plugins"):
         # Enable all plugins that implement the 'buildstream.tests.source_plugins' hook
         for entrypoint in entry_points(group="buildstream.tests.source_plugins"):
             module = entrypoint.load()

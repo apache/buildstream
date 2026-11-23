@@ -22,7 +22,18 @@ from buildstream._testing import cli  # pylint: disable=unused-import
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "completions")
 
-MAIN_COMMANDS = ["artifact ", "build ", "help ", "init ", "shell ", "show ", "source ", "workspace "]
+MAIN_COMMANDS = [
+    "artifact ",
+    "build ",
+    "element-provides ",
+    "help ",
+    "init ",
+    "search ",
+    "shell ",
+    "show ",
+    "source ",
+    "workspace ",
+]
 
 MAIN_OPTIONS = [
     "--builders ",
