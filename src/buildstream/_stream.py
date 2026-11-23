@@ -268,6 +268,17 @@ class Stream:
                 reason= "only-with-or-buildtree-supported"
             )
 
+        if ":" in target:
+            junctions = target.split(":")[:-1]
+            for junction in junctions:
+                _other_targets:list[str] = []
+                for other_target in  other_targets:
+                    if other_target.startswith(f"{junction}:"):
+                        _other_targets.append(other_target.removeprefix(f"{junction}:"))
+                    else:
+                        raise StreamError("For target element in a junction, temporary runtime dependencies specified with the `--with` argument must be available in the target elements junction")
+                other_targets = _other_targets
+
         def add_deps_to_element(target_node: CommentedMap):
             r_depends = target_node.get("runtime-depends", [])
 
