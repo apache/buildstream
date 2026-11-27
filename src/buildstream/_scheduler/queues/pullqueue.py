@@ -34,10 +34,10 @@ class PullQueue(Queue):
         return PullQueue._pull_or_skip
 
     def status(self, element):
-        if element._pull_pending():
-            return QueueStatus.READY
-        else:
+        if not element._pull_pending():
             return QueueStatus.SKIP
+
+        return self._deduplicate(element)
 
     def done(self, _, element, result, status):
 

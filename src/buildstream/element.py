@@ -1661,6 +1661,23 @@ class Element(Plugin):
             workspace.last_build = key
             self._get_context().get_workspaces().save_config()
 
+    # _adopt_artifact():
+    #
+    # Adopt the cached artifact of another element with the same strong
+    # cache key instead of building or pulling it again.
+    #
+    # Args:
+    #    element (Element): The element which cached the artifact
+    #
+    def _adopt_artifact(self, element):
+        self.__artifacts.link_element_key(element, self, self._get_cache_key())
+
+        if self.__assemble_scheduled:
+            self._assemble_done(True)
+        else:
+            self._load_artifact(pull=False)
+            self._load_artifact_done()
+
     # _assemble():
     #
     # Internal method for running the entire build phase.
