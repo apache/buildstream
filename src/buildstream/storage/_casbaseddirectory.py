@@ -460,6 +460,19 @@ class CasBasedDirectory(Directory):
         self.__subtree_read_only = read_only
         self.__invalidate_digest()
 
+    # _clear_mtimes()
+    #
+    # Removes the mtime property from all files in this directory and its
+    # subdirectories, so that they are staged with the default mtime.
+    #
+    def _clear_mtimes(self) -> None:
+        for entry in self.__index.values():
+            if entry.type == FileType.DIRECTORY:
+                entry.get_directory(self)._clear_mtimes()
+            elif entry.mtime is not None:
+                entry.mtime = None
+                self.__invalidate_digest()
+
     # _apply_changes():
     #
     # Apply changes from dir_a to dir_b to this directory. The use

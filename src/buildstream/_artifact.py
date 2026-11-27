@@ -244,7 +244,12 @@ class Artifact:
         # Store files
         if collectvdir is not None:
             filesvdir = CasBasedDirectory(cas_cache=self._cas)
-            filesvdir._import_files_internal(collectvdir, properties=properties, collect_result=False)
+            filesvdir._import_files_internal(collectvdir, collect_result=False)
+            if artifact.was_workspaced:
+                # The real mtimes of a workspace build are only needed in the
+                # build tree, for incremental builds. Elements depending on this
+                # one must stage the same files as without a workspace.
+                filesvdir._clear_mtimes()
             artifact.files.CopyFrom(filesvdir._get_digest())
 
         with tempfile.TemporaryDirectory() as tmpdir:
