@@ -165,6 +165,35 @@ class DependencyConfiguration:
         if no custom configuration was provided"""
 
 
+class _StagingDedup:
+    """De-duplicates staging and integration of elements by name.
+
+    The --with elements (from `bst shell --with`) are loaded as separate Element
+    instances from the primary element's closure, so they have different UIDs even
+    when they represent the same pipeline element. We therefore de-duplicate by
+    element name (via :meth:`Element._get_full_name`) rather than by UID.
+    """
+
+    def __init__(self, pre_staged: List["Element"] = []):
+        self._staged_names: set[str] = set()
+        self._integrated_names: set[str] = set()
+        for element in pre_staged:
+            self.mark_staged(element)
+            self.mark_integrated(element)
+
+    def is_staged(self, element: "Element") -> bool:
+        return element._get_full_name() in self._staged_names
+
+    def mark_staged(self, element: "Element") -> None:
+        self._staged_names.add(element._get_full_name())
+
+    def is_integrated(self, element: "Element") -> bool:
+        return element._get_full_name() in self._integrated_names
+
+    def mark_integrated(self, element: "Element") -> None:
+        self._integrated_names.add(element._get_full_name())
+
+
 class Element(Plugin):
     """Element()
 
@@ -376,7 +405,7 @@ class Element(Plugin):
         """
         raise ImplError("element plugin '{kind}' does not implement configure_sandbox()".format(kind=self.get_kind()))
 
-    def stage(self, sandbox: "Sandbox") -> None:
+    def stage(self, sandbox: Sandbox) -> None:
         """Stage inputs into the sandbox directories
 
         Args:
@@ -703,6 +732,26 @@ class Element(Plugin):
         with overlap_collector.session(action, path):
             for dep in self.dependencies(selection):
                 dep._stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans, owner=self)
+
+    #
+    # Stage an "additional" element (e.g. one requested via `bst shell --with`) into the sandbox
+    #
+    def _stage_additional_element(self, sandbox: Sandbox, other: Element, dedup: _StagingDedup):
+        for dep in other._dependencies(_Scope.RUN):
+            if dedup.is_staged(dep):
+                continue
+            dedup.mark_staged(dep)
+            dep._stage_artifact(sandbox, owner=self)
+
+    # Stage a set of additional elements into the sandbox, sharing a single
+    # de-duplication set so that each element's artifact is staged at most once.
+    def _stage_additional_elements(self, sandbox: "Sandbox", other_elements: List[Element], dedup: _StagingDedup):
+
+        collector = self._overlap_collectors.get(sandbox)
+        assert collector is not None, "Attempted to stage additional elements without an overlap collector"
+        with collector.session(OverlapAction.WARNING, None):
+            for other in other_elements:
+                self._stage_additional_element(sandbox, other, dedup=dedup)
 
     def integrate(self, sandbox: "Sandbox") -> None:
         """Integrate currently staged filesystem against this artifact.
@@ -1430,7 +1479,14 @@ class Element(Plugin):
     # is used to stage things by the `bst artifact checkout` codepath
     #
     @contextmanager
-    def _prepare_sandbox(self, scope, shell=False, integrate=True, usebuildtree=False):
+    def _prepare_sandbox(
+        self,
+        scope,
+        shell: bool = False,
+        integrate=True,
+        usebuildtree=False,
+        other_elements: List[Element] | None = None,
+    ):
 
         # Assert first that we have a sandbox configuration
         if not self.__sandbox_config:
@@ -1446,16 +1502,54 @@ class Element(Plugin):
 
             if usebuildtree:
                 # Configure the sandbox from artifact metadata
+                assert self.__artifact, "Can't use buildtree with no artifact"
                 self.__artifact.configure_sandbox(sandbox)
 
                 # Use the cached buildroot directly
                 buildrootvdir = self.__artifact.get_buildroot()
                 sandbox_vroot = sandbox.get_virtual_directory()
                 sandbox_vroot._import_files_internal(buildrootvdir, collect_result=False)
+
+                if other_elements:
+                    dedup = _StagingDedup(self._dependencies(scope))
+                    with self.__collect_overlaps(sandbox), self.timed_activity(
+                        "Staging additional elements", silent_nested=True
+                    ):
+                        self._stage_additional_elements(sandbox, other_elements, dedup=dedup)
+                    with self.timed_activity("Integrating sandbox"), sandbox.batch():
+                        # Note we are not re-running integration commands that were previously run for the cached buildtree
+                        # So funky behaviour may occur.
+                        for other in other_elements:
+                            if not dedup.is_integrated(other):
+                                other.integrate(sandbox)
+                                dedup.mark_integrated(other)
+
             elif shell and scope == _Scope.BUILD:
                 self.__configure_sandbox(sandbox)
                 # Stage what we need
-                self.__stage(sandbox)
+                with self.__collect_overlaps(sandbox):
+
+                    # stage the other elements
+                    # _dependencies does it's own deduping, so start with that for other_elements processing
+                    dedup = _StagingDedup(self._dependencies(scope))
+                    if other_elements:
+                        with self.timed_activity("Staging additional elements", silent_nested=True):
+                            self._stage_additional_elements(sandbox, other_elements, dedup=dedup)
+
+                    # Note: stage() stages the artifacts and then runs the integrate on them.
+                    # So stage the other_elements first,
+                    # and run the integration of other_elements afterwards.
+                    # Note: Stage may fail at this point, if it's not implemented or supported by the element plugin (e.g. junction)
+                    # It would be nice if we could do check this earlier..
+                    self.stage(sandbox)
+
+                    # integrate the other elements
+                    if other_elements:
+                        with self.timed_activity("Integrating additional elements into sandbox"), sandbox.batch():
+                            for other in other_elements:
+                                if not dedup.is_integrated(other):
+                                    other.integrate(sandbox)
+                                    dedup.mark_integrated(other)
             else:
                 # Runtime shell or `bst artifact checkout`
 
@@ -1464,8 +1558,16 @@ class Element(Plugin):
                 sandbox.set_environment(self.get_environment())
 
                 # Stage deps in the sandbox root
-                with self.timed_activity("Staging dependencies", silent_nested=True), self.__collect_overlaps(sandbox):
-                    self._stage_dependency_artifacts(sandbox, scope)
+                # _dependencies does it's own deduping, so start with that for other_elements processing
+                dedup = _StagingDedup(self._dependencies(scope))
+                with self.__collect_overlaps(sandbox):
+                    with self.timed_activity("Staging dependencies", silent_nested=True):
+                        self._stage_dependency_artifacts(sandbox, scope)
+
+                    if other_elements:
+
+                        with self.timed_activity("Staging additional elements", silent_nested=True):
+                            self._stage_additional_elements(sandbox, other_elements, dedup=dedup)
 
                 # Run any integration commands provided by the dependencies
                 # once they are all staged and ready
@@ -1473,6 +1575,11 @@ class Element(Plugin):
                     with self.timed_activity("Integrating sandbox"), sandbox.batch():
                         for dep in self._dependencies(scope):
                             dep.integrate(sandbox)
+                        if other_elements:
+                            for other in other_elements:
+                                if not dedup.is_integrated(other):
+                                    other.integrate(sandbox)
+                                    dedup.mark_integrated(other)
 
             yield sandbox
 
@@ -1723,7 +1830,8 @@ class Element(Plugin):
                 self.log("Build environment for element {}".format(self.name), detail=env_dump)
 
                 # Step 2 - Stage
-                self.__stage(sandbox)
+                with self.__collect_overlaps(sandbox):
+                    self.stage(sandbox)
                 try:
                     # Step 3 - Assemble
                     collect = self.assemble(sandbox)  # pylint: disable=assignment-from-no-return
@@ -2077,7 +2185,9 @@ class Element(Plugin):
         other_elements: List[Element] | None = None,
     ):
 
-        with self._prepare_sandbox(scope, shell=True, usebuildtree=usebuildtree) as sandbox:
+        with self._prepare_sandbox(
+            scope, shell=True, usebuildtree=usebuildtree, other_elements=other_elements
+        ) as sandbox:
             environment = sandbox._get_configured_environment() or self.get_environment()
             environment = copy.copy(environment)
             flags = _SandboxFlags.INTERACTIVE | _SandboxFlags.ROOT_READ_ONLY
@@ -2090,17 +2200,6 @@ class Element(Plugin):
 
             if prompt is not None:
                 environment["PS1"] = prompt
-
-            with self.timed_activity("Staging other_targets", silent_nested=True), self.__collect_overlaps(sandbox):
-                self.stage_dependency_artifacts(sandbox, other_elements)
-
-            if other_elements:
-                # Stage artifacts from other_elements into the sandbox.
-                for element in other_elements:
-                    # Stage deps in the sandbox root
-                    with element.timed_activity("Integrating sandbox"), sandbox.batch():
-                        for dep in element._dependencies(_Scope.RUN):
-                            dep.integrate(sandbox)
 
             # Special configurations for non-isolated sandboxes
             if not isolate:
@@ -2768,16 +2867,6 @@ class Element(Plugin):
     def __configure_sandbox(self, sandbox):
 
         self.configure_sandbox(sandbox)
-
-    # __stage():
-    #
-    # Internal method for calling public abstract stage() method.
-    #
-    def __stage(self, sandbox):
-
-        # Enable the overlap collector during the staging process
-        with self.__collect_overlaps(sandbox):
-            self.stage(sandbox)
 
     # __preflight():
     #

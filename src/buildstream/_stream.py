@@ -279,6 +279,7 @@ class Stream:
         # Load the Element via the unique_id if given
         if unique_id and target is None:
             element = Plugin._lookup(unique_id)
+            other_elements = []
         else:
             if usebuildtree:
                 selection = _PipelineSelection.NONE
@@ -286,6 +287,27 @@ class Stream:
                 selection = _PipelineSelection.BUILD
             else:
                 selection = _PipelineSelection.RUN
+
+            # Load the additional elements to stage in the sandbox, if any.
+            #
+            # Note that the additional elements are always loaded with the RUN
+            # selection (and their artifacts), regardless of the shell scope: the
+            # --with elements contribute their *runtime* closure to the sandbox, even
+            # when shelling into a build sandbox or a cached buildtree.
+            other_targets = list(other_targets)
+            other_elements = []
+            if other_targets:
+                other_elements = self.load_selection(
+                    other_targets,
+                    selection=_PipelineSelection.RUN,
+                    load_artifacts=True,
+                    connect_artifact_cache=True,
+                    connect_source_cache=True,
+                    artifact_remotes=artifact_remotes,
+                    source_remotes=source_remotes,
+                    ignore_project_artifact_remotes=ignore_project_artifact_remotes,
+                    ignore_project_source_remotes=ignore_project_source_remotes,
+                )
 
             try:
                 elements = self.load_selection(
@@ -319,6 +341,8 @@ class Stream:
             else:
                 pull_elements = elements
 
+            pull_elements += other_elements
+
             # Check whether the required elements are cached, and then
             # try to pull them if they are not already cached.
             #
@@ -328,6 +352,7 @@ class Stream:
         # We dont need dependency artifacts to shell into a cached build tree
         if not usebuildtree:
             missing_deps = [dep for dep in _pipeline.dependencies([element], scope) if not dep._cached()]
+            missing_deps += [other for other in other_elements if not other._cached()]
             if missing_deps:
                 raise StreamError(
                     "Elements need to be built or downloaded before staging a shell environment",
@@ -358,38 +383,6 @@ class Stream:
             self.query_cache([element], only_sources=True)
             self._fetch([element])
             _pipeline.assert_sources_cached(self._context, [element])
-
-        # Load the other targets
-        try:
-            other_elements = self.load_selection(
-                other_targets,
-                selection=_PipelineSelection.RUN,
-                load_artifacts=True,
-                connect_artifact_cache=True,
-                connect_source_cache=True,
-                artifact_remotes=artifact_remotes,
-                source_remotes=source_remotes,
-                ignore_project_artifact_remotes=ignore_project_artifact_remotes,
-                ignore_project_source_remotes=ignore_project_source_remotes,
-            )
-        except StreamError as e:
-            if e.reason == "deps-not-supported":
-                raise StreamError(
-                    "Only buildtrees are supported with artifact names",
-                    detail="Use the --build and --use-buildtree options to shell into a cached build tree",
-                    reason="only-buildtrees-supported",
-                ) from e
-            raise
-
-        self.query_cache(other_elements)
-        self._pull_missing_artifacts(other_elements)
-        missing_deps = [dep for dep in _pipeline.dependencies(other_elements, _Scope.RUN) if not dep._cached()]
-        if missing_deps:
-            raise StreamError(
-                "Elements need to be built or downloaded before staging a shell environment",
-                detail="\n".join(list(map(lambda x: x._get_full_name(), missing_deps))),
-                reason="shell-missing-deps",
-            )
 
         return element._shell(
             scope,

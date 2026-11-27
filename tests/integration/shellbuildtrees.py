@@ -443,6 +443,48 @@ def test_shell_script_element(datafiles, cli_integration):
     assert "Hi" in result.output
 
 
+# Ensure --with works together with --build and with --use-buildtree
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_buildtree_with_other_targets(cli_integration, datafiles):
+    project = str(datafiles)
+    element_name = "build-shell/buildtree.bst"
+
+    res = cli_integration.run(project=project, args=["--cache-buildtrees", "always", "build", element_name])
+    res.assert_success()
+
+    # --build with --with: the extra element's artifact (base.bst provides /bin/cat)
+    # is staged into the build sandbox alongside the element being built
+    res = cli_integration.run(
+        project=project,
+        args=["shell", "--build", "--with", "base.bst", element_name, "--", "sh", "-c", "ls /bin/cat"],
+    )
+    res.assert_success()
+    assert "/bin/cat" in res.output
+
+    # --build --use-buildtree with --with: the cached buildtree is present (so the
+    # element's own built `test` file is readable) and the extra element's artifact
+    # (base.bst's /bin/cat) is staged on top of it
+    res = cli_integration.run(
+        project=project,
+        args=[
+            "shell",
+            "--build",
+            "--use-buildtree",
+            "--with",
+            "base.bst",
+            element_name,
+            "--",
+            "sh",
+            "-c",
+            "cat test; ls /bin/cat",
+        ],
+    )
+    res.assert_success()
+    assert "Hi" in res.output
+    assert "/bin/cat" in res.output
+
+
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
 @pytest.mark.parametrize(

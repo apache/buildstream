@@ -128,6 +128,93 @@ def test_with_other_targets(cli, datafiles):
     assert result.output == "This is a test\n"
 
 
+# Test that a --with element that is also a transitive runtime dependency of the
+# primary element is still staged (and usable) without being staged twice.
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_with_other_targets_transitive_dependency(cli, datafiles):
+    project = str(datafiles)
+
+    # compose/test-integration.bst is a stack whose only runtime dependency is
+    # base.bst, so base.bst is already in the primary element's runtime closure.
+    # Requesting it again with --with must not fail or double-stage it, and its
+    # files (/bin/cat) must still be available.
+    result = execute_shell(
+        cli,
+        project,
+        ["/bin/cat", "/tests/test"],
+        element="compose/test-integration.bst",
+        other_elements=["base.bst"],
+    )
+    assert result.exit_code == 0, "cat should be available even though base.bst is already a runtime dependency"
+    assert result.output == "This is a test\n"
+
+
+# Test that two --with elements which share a runtime dependency (base.bst) are staged correctly
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_with_other_targets_shared_dependency(cli, datafiles):
+    project = str(datafiles)
+
+    # compose/test.bst and compose/test-integration.bst both depend on base.bst.
+    # base.bst is a build dependency for both, so it is *not* part of either one's
+    # runtime closure -- this exercises the shared-dependency de-duplication between
+    # the two --with elements rather than against the primary closure.
+    #
+    # base.bst provides /bin/cat (via its transitive dep base-alpine.bst). Use it to
+    # read the test file staged by compose/test.bst.
+    result = execute_shell(
+        cli,
+        project,
+        ["/bin/cat", "/tests/test"],
+        element="manual/import-file.bst",
+        other_elements=["compose/test.bst", "compose/test-integration.bst"],
+    )
+    assert result.exit_code == 0, "shell with two --with elements sharing base.bst should succeed"
+    assert "This is a test\n" in result.output
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_with_other_targets_primary_element(cli, datafiles):
+    project = str(datafiles)
+
+    # compose/test-integration.bst is a stack with base.bst as its only runtime dep.
+    # Requesting it again with --with must be a no-op (no double-staging, no errors),
+    # and its files (/bin/cat) must still be available.
+    result = execute_shell(
+        cli,
+        project,
+        ["/bin/cat", "/tests/test"],
+        element="compose/test-integration.bst",
+        other_elements=["compose/test-integration.bst"],
+    )
+    assert result.exit_code == 0, "shelling with the primary element as a --with target should succeed"
+    assert result.output == "This is a test\n"
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_with_other_targets_nested_dependency(cli, datafiles):
+    project = str(datafiles)
+
+    # compose/test-integration.bst is a stack with base.bst as its only runtime dep.
+    # base.bst is a stack with base-alpine.bst as its only (build) dep.
+    #
+    # Requesting both compose/test-integration.bst and base.bst with --with means
+    # base.bst is a transitive runtime dep of the first --with element AND a direct
+    # --with target.
+    result = execute_shell(
+        cli,
+        project,
+        ["/bin/cat", "/tests/test"],
+        element="manual/import-file.bst",
+        other_elements=["compose/test-integration.bst", "base.bst"],
+    )
+    assert result.exit_code == 0, "nested --with dependency should not be double-staged"
+    assert result.output == "This is a test\n"
+
+
 # Test shell environment variable explicit assignments
 @pytest.mark.parametrize("animal", [("Horse"), ("Pony")])
 @pytest.mark.datafiles(DATA_DIR)
